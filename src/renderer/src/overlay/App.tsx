@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { AppSettings, OverlayData } from '../../../shared/types'
+import type { AppSettings, OverlayData, PoeItem } from '../../../shared/types'
 import { FilterPanel } from '../components/FilterPanel'
 import { HistoryPanel } from '../components/HistoryPanel'
 import { SettingsPanel } from '../components/SettingsPanel'
