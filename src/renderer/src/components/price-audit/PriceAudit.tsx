@@ -75,12 +75,7 @@ export function PriceAudit({ block, blockIndex, tierGroup, item, itemClass, onSe
     }
   }, [blockIndex, baseTypesKey])
 
-  if (baseTypes.length === 0)
-    return (
-      <div className="flex-1 flex items-center justify-center p-6 text-text-dim text-sm">
-        This tier is empty. Items can be moved here from other tiers.
-      </div>
-    )
+  const isEmpty = baseTypes.length === 0
 
   // Find adjacent tiers, filtered to match the hero dropdown (must have BaseType items, not ex/2x)
   const currentSib = tierGroup?.siblings.find((s) => s.blockIndex === blockIndex)
@@ -218,8 +213,6 @@ export function PriceAudit({ block, blockIndex, tierGroup, item, itemClass, onSe
     setItems([])
     setLastMovedBelow(`Moved ${count} items to ${tier}`)
     setMovedBelow(`Moved ${count} items to ${tier}`)
-    // If all items were moved out, switch back to item view to avoid rendering an empty audit
-    if (belowThreshold.length === items.length) onSelectItem?.()
   }
 
   const handleMoveAbove = async (): Promise<void> => {
@@ -239,21 +232,26 @@ export function PriceAudit({ block, blockIndex, tierGroup, item, itemClass, onSe
     setItems([])
     setLastMovedAbove(`Moved ${count} items to ${tier}`)
     setMovedAbove(`Moved ${count} items to ${tier}`)
-    // If all items were moved out, switch back to item view to avoid rendering an empty audit
-    if (aboveThreshold.length === items.length) onSelectItem?.()
   }
 
   return (
     <div className="bg-bg-card rounded overflow-hidden flex flex-col flex-1 min-h-0">
       {/* Loading */}
-      {loading && (
+      {!isEmpty && loading && (
         <div className="px-3 py-4 text-center text-[11px] text-text-dim">
           Fetching prices for {baseTypes.length} items...
         </div>
       )}
 
+      {/* Empty tier message */}
+      {isEmpty && (
+        <div className="flex-1 flex items-center justify-center p-6 text-text-dim text-[12px]">
+          Nothing currently in this tier
+        </div>
+      )}
+
       {/* Audit results */}
-      {!loading && items.length > 0 && (
+      {!isEmpty && !loading && items.length > 0 && (
         <div className="flex flex-col flex-1 min-h-0">
           {/* Header + Sliders */}
           <div className="flex flex-col gap-2 px-3 py-[10px] bg-bg-card">

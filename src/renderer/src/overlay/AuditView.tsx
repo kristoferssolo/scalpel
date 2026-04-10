@@ -67,6 +67,7 @@ export function AuditView({
     auditBlockIndex !== null ? activeTierGroup?.siblings.find((s) => s.blockIndex === auditBlockIndex) : null
   const block = selectedSib?.block ?? activeMatch.block
   const blockIndex = selectedSib?.blockIndex ?? activeMatch.blockIndex
+  // If the selected block has no base types left (emptied by retier), it's fine - PriceAudit handles empty state
   const tierGroup = activeTierGroup
 
   // Tier label
