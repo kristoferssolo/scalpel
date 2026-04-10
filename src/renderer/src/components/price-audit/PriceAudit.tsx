@@ -218,6 +218,8 @@ export function PriceAudit({ block, blockIndex, tierGroup, item, itemClass, onSe
     setItems([])
     setLastMovedBelow(`Moved ${count} items to ${tier}`)
     setMovedBelow(`Moved ${count} items to ${tier}`)
+    // If all items were moved out, switch back to item view to avoid rendering an empty audit
+    if (belowThreshold.length === items.length) onSelectItem?.()
   }
 
   const handleMoveAbove = async (): Promise<void> => {
@@ -237,6 +239,8 @@ export function PriceAudit({ block, blockIndex, tierGroup, item, itemClass, onSe
     setItems([])
     setLastMovedAbove(`Moved ${count} items to ${tier}`)
     setMovedAbove(`Moved ${count} items to ${tier}`)
+    // If all items were moved out, switch back to item view to avoid rendering an empty audit
+    if (aboveThreshold.length === items.length) onSelectItem?.()
   }
 
   return (

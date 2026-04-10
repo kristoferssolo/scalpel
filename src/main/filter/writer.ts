@@ -151,10 +151,9 @@ function removeBaseTypeFromRawLines(lines: string[], block: FilterBlock, baseTyp
       .replace(/^BaseType\s*(==\s*)?/, '')
       .trim()
     if (afterKeyword === '') {
-      // Keep an empty BaseType line so the block matches nothing
-      // (removing it entirely would make the block a catch-all for its Class)
-      const indent = lines[i].match(/^(\s*)/)?.[1] ?? '    '
-      lines[i] = `${indent}BaseType ""`
+      lines.splice(i, 1)
+      block.lineEnd--
+      i--
     } else {
       // Clean up any double spaces left behind
       lines[i] = line.replace(/  +/g, ' ')
