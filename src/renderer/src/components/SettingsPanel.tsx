@@ -95,33 +95,20 @@ export function SettingsPanel({
 
   return (
     <div className={`flex flex-col ${isOverlay ? 'gap-5 bg-bg-card rounded p-4 pb-5' : 'gap-6 pb-[18px]'}`}>
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col">
-            <h2
-              className="section-title"
-              style={!isOverlay ? { color: 'var(--accent)', fontSize: 16, fontWeight: 700 } : undefined}
-            >
-              Settings
-            </h2>
-            <span className="text-[9px] text-accent opacity-60">Beta {__APP_VERSION__}</span>
-          </div>
-          {!isOverlay && onShowOnboarding && (
-            <button onClick={onShowOnboarding} className="text-[11px] text-text-dim px-3 py-1.5">
-              Setup Wizard
-            </button>
-          )}
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col">
+          <h2
+            className="section-title"
+            style={!isOverlay ? { color: 'var(--accent)', fontSize: 16, fontWeight: 700 } : undefined}
+          >
+            Settings
+          </h2>
+          <span className="text-[9px] text-accent opacity-60">Beta {__APP_VERSION__}</span>
         </div>
-        <div className="flex gap-1">
-          {(['general', 'chat', 'filter', 'pricecheck', 'faq'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`text-[10px] px-2.5 py-1 rounded-full transition-colors ${
-                tab === t ? 'bg-accent text-bg-solid font-semibold' : 'text-text-dim hover:text-text'
-              }`}
-            >
-              {t === 'general'
+        <div className="flex gap-[6px]">
+          {(['general', 'chat', 'filter', 'pricecheck', 'faq'] as const).map((t) => {
+            const label =
+              t === 'general'
                 ? 'General'
                 : t === 'chat'
                   ? 'Chat'
@@ -129,9 +116,22 @@ export function SettingsPanel({
                     ? 'Filter'
                     : t === 'pricecheck'
                       ? 'Price Check'
-                      : 'FAQ'}
+                      : 'FAQ'
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`text-[11px] px-3 py-1.5 ${tab === t ? 'bg-accent text-bg-solid font-semibold' : 'text-text-dim'}`}
+              >
+                {label}
+              </button>
+            )
+          })}
+          {!isOverlay && onShowOnboarding && (
+            <button onClick={onShowOnboarding} className="text-[11px] text-text-dim px-3 py-1.5">
+              Setup Wizard
             </button>
-          ))}
+          )}
         </div>
       </div>
 
