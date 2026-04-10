@@ -60,7 +60,7 @@ export function SettingsPanel({
 }: Props): JSX.Element {
   const [recording, setRecording] = useState<'hotkey' | 'priceCheckHotkey' | null>(null)
   const [changelogOpen, setChangelogOpen] = useState(false)
-  const [showFaq, setShowFaq] = useState(false)
+  const [tab, setTab] = useState<'general' | 'chat' | 'filter' | 'pricecheck' | 'faq'>('general')
   const recRef = useRef<HTMLDivElement>(null)
 
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]): void => {
@@ -95,36 +95,47 @@ export function SettingsPanel({
 
   return (
     <div className={`flex flex-col ${isOverlay ? 'gap-5 bg-bg-card rounded p-4 pb-5' : 'gap-6 pb-[18px]'}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col">
-          <h2
-            className="section-title"
-            style={!isOverlay ? { color: 'var(--accent)', fontSize: 16, fontWeight: 700 } : undefined}
-          >
-            {showFaq ? 'FAQ' : 'Settings'}
-          </h2>
-          {!showFaq && <span className="text-[9px] text-accent opacity-60">Beta {__APP_VERSION__}</span>}
-        </div>
-        <div className="flex gap-[6px]">
-          {!showFaq && (
-            <button onClick={() => setShowFaq(true)} className="text-[11px] text-text-dim px-3 py-1.5">
-              FAQ
-            </button>
-          )}
-          {showFaq && (
-            <button onClick={() => setShowFaq(false)} className="text-[11px] text-text-dim px-3 py-1.5">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <h2
+              className="section-title"
+              style={!isOverlay ? { color: 'var(--accent)', fontSize: 16, fontWeight: 700 } : undefined}
+            >
               Settings
-            </button>
-          )}
-          {!isOverlay && !showFaq && onShowOnboarding && (
+            </h2>
+            <span className="text-[9px] text-accent opacity-60">Beta {__APP_VERSION__}</span>
+          </div>
+          {!isOverlay && onShowOnboarding && (
             <button onClick={onShowOnboarding} className="text-[11px] text-text-dim px-3 py-1.5">
               Setup Wizard
             </button>
           )}
         </div>
+        <div className="flex gap-1">
+          {(['general', 'chat', 'filter', 'pricecheck', 'faq'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`text-[10px] px-2.5 py-1 rounded-full transition-colors ${
+                tab === t ? 'bg-accent text-bg-solid font-semibold' : 'text-text-dim hover:text-text'
+              }`}
+            >
+              {t === 'general'
+                ? 'General'
+                : t === 'chat'
+                  ? 'Chat'
+                  : t === 'filter'
+                    ? 'Filter'
+                    : t === 'pricecheck'
+                      ? 'Price Check'
+                      : 'FAQ'}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {showFaq && (
+      {tab === 'faq' && (
         <div className="mt-3 flex flex-col gap-3">
           <div className="text-[10px] text-accent tracking-[1.5px] uppercase font-bold">General Questions</div>
           <FaqItem
@@ -163,10 +174,9 @@ export function SettingsPanel({
         </div>
       )}
 
-      {!showFaq && (
+      {tab === 'general' && (
         <>
           {/* General */}
-          <div className="text-[10px] text-accent tracking-[1.5px] uppercase mt-3 font-bold">General</div>
 
           {/* League */}
           <section>
@@ -241,9 +251,12 @@ export function SettingsPanel({
               <span className="text-xs text-text">Stash tab scrolling (Ctrl + Scroll Wheel)</span>
             </div>
           </section>
+        </>
+      )}
 
+      {tab === 'chat' && (
+        <>
           {/* Chat Commands */}
-          <div className="text-[10px] text-accent tracking-[1.5px] uppercase mt-3 font-bold">Chat Commands</div>
           <section>
             <div className="flex flex-col gap-[6px]">
               {(settings.chatCommands ?? []).map((cmd, i) => (
@@ -286,9 +299,12 @@ export function SettingsPanel({
               </button>
             </div>
           </section>
+        </>
+      )}
 
+      {tab === 'filter' && (
+        <>
           {/* Filter */}
-          <div className="text-[10px] text-accent tracking-[1.5px] uppercase mt-3 font-bold">Filter</div>
 
           {/* Filter folder & picker */}
           <section>
@@ -342,9 +358,12 @@ export function SettingsPanel({
               <span className="text-xs text-text">Automatically reload filter when switching an item's tier</span>
             </div>
           </section>
+        </>
+      )}
 
+      {tab === 'pricecheck' && (
+        <>
           {/* Price Check */}
-          <div className="text-[10px] text-accent tracking-[1.5px] uppercase mt-3 font-bold">Price Check</div>
 
           {/* Price check hotkey */}
           <section>
@@ -456,7 +475,12 @@ export function SettingsPanel({
               <PoeLoginButton />
             </div>
           </section>
+        </>
+      )}
 
+      {/* Changelog - always visible */}
+      {tab !== 'faq' && (
+        <>
           {/* Changelog */}
           <section>
             <div
