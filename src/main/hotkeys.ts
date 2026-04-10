@@ -2,7 +2,7 @@ import { uIOhook, UiohookKey } from 'uiohook-napi'
 import { execFile } from 'child_process'
 import { writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
-import { app, globalShortcut } from 'electron'
+import { app, clipboard, globalShortcut } from 'electron'
 import { OverlayController } from 'electron-overlay-window'
 
 // ─── Accelerator → uiohook keycode mapping ────────────────────────────────────
@@ -79,7 +79,10 @@ function parseAccelerator(acc: string): ParsedHotkey | null {
 let currentAccelerator: string | null = null
 let currentHotkey: ParsedHotkey | null = null // Keep parsed version for modifier release in sendCtrlCViaKeyTap
 let priceCheckAccelerator: string | null = null
-let chatCommandHotkeys: Array<{ accelerator: string; command: string }> = []
+let chatCommandHotkeys: Array<{ accelerator: string; command: string; autoSubmit: boolean }> = []
+let appMacroAccelerators: string[] = []
+let lastAppMacros: Array<{ action: string; hotkey: string }> = []
+let onAppMacro: ((action: string) => void) | null = null
 let onTrigger: (() => void) | null = null
 let onPriceCheck: (() => void) | null = null
 let onEscape: (() => void) | null = null
@@ -120,6 +123,20 @@ export function startHotkeyListener(handler: () => void): void {
     uIOhook.start()
     hookStarted = true
   }
+}
+
+/** Temporarily unregister all global shortcuts so the hotkey recorder can capture keys. */
+export function suspendHotkeys(): void {
+  globalShortcut.unregisterAll()
+}
+
+/** Re-register all global shortcuts after the hotkey recorder finishes. */
+export function resumeHotkeys(): void {
+  if (currentAccelerator) setHotkey(currentAccelerator)
+  if (priceCheckAccelerator) setPriceCheckHotkey(priceCheckAccelerator)
+  const cmds = chatCommandHotkeys.map((c) => ({ hotkey: c.accelerator, command: c.command, autoSubmit: c.autoSubmit }))
+  setChatCommands(cmds)
+  setAppMacros(lastAppMacros)
 }
 
 /** Update the active hotkey using globalShortcut (suppresses key from reaching other apps). */
@@ -164,7 +181,7 @@ export function setEscapeHandler(handler: (() => void) | null): void {
   onEscape = handler
 }
 
-export function setChatCommands(commands: Array<{ hotkey: string; command: string }>): void {
+export function setChatCommands(commands: Array<{ hotkey: string; command: string; autoSubmit?: boolean }>): void {
   // Unregister previous chat command shortcuts
   for (const ch of chatCommandHotkeys) {
     try {
@@ -175,40 +192,67 @@ export function setChatCommands(commands: Array<{ hotkey: string; command: strin
 
   for (const c of commands) {
     if (!c.hotkey || !c.command) continue
+    const autoSubmit = c.autoSubmit !== false
     try {
       globalShortcut.register(c.hotkey, () => {
-        if (OverlayController.targetHasFocus) sendChatCommand(c.command)
+        if (OverlayController.targetHasFocus) sendChatCommand(c.command, autoSubmit)
       })
-      chatCommandHotkeys.push({ accelerator: c.hotkey, command: c.command })
+      chatCommandHotkeys.push({ accelerator: c.hotkey, command: c.command, autoSubmit })
     } catch (e) {
       console.error(`[hotkeys] Failed to register chat command "${c.hotkey}":`, e)
     }
   }
 }
 
-export function sendChatCommand(command: string): Promise<void> {
-  // Release modifier keys before typing so held hotkey combos don't garble the chat message
-  uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
-  uIOhook.keyToggle(UiohookKey.Shift, 'up')
-  uIOhook.keyToggle(UiohookKey.Alt, 'up')
+export function setAppMacroHandler(handler: (action: string) => void): void {
+  onAppMacro = handler
+}
+
+export function setAppMacros(macros: Array<{ action: string; hotkey: string }>): void {
+  lastAppMacros = macros
+  for (const acc of appMacroAccelerators) {
+    try {
+      globalShortcut.unregister(acc)
+    } catch {}
+  }
+  appMacroAccelerators = []
+
+  for (const { action, hotkey } of macros) {
+    if (!hotkey || !action) continue
+    try {
+      globalShortcut.register(hotkey, () => {
+        if (onAppMacro) onAppMacro(action)
+      })
+      appMacroAccelerators.push(hotkey)
+    } catch (e) {
+      console.error(`[hotkeys] Failed to register app macro "${action}" (${hotkey}):`, e)
+    }
+  }
+}
+
+/**
+ * Paste text into PoE chat via clipboard. Layout-independent (no SendKeys typing).
+ * Opens chat, clears any existing text, pastes, optionally submits.
+ */
+function pasteToPoEChat(text: string, submit: boolean, sleepMs = 50): Promise<void> {
+  const prevClip = clipboard.readText()
+  clipboard.writeText(text)
+
+  const dir = app.getPath('userData')
+  const script = join(dir, 'chatcmd.vbs')
+  writeFileSync(
+    script,
+    [
+      'Set WshShell = CreateObject("WScript.Shell")',
+      'WshShell.AppActivate "Path of Exile"',
+      `WScript.Sleep ${sleepMs}`,
+      `WshShell.SendKeys "{ENTER}{HOME}+{END}{DEL}^v${submit ? '{ENTER}' : ''}"`,
+    ].join('\n'),
+  )
+
   return new Promise((resolve, reject) => {
-    const dir = app.getPath('userData')
-    const script = join(dir, 'chatcmd.vbs')
-    const cmd = command.startsWith('/') ? command : `/${command}`
-    // Escape VBScript SendKeys special characters to prevent injection
-    const safeCmd = cmd
-      .replace(/[+^%~(){}[\]]/g, '{$&}') // Wrap SendKeys special chars in braces to send literally
-      .replace(/"/g, '""') // Escape double quotes for VBScript string
-    writeFileSync(
-      script,
-      [
-        'Set WshShell = CreateObject("WScript.Shell")',
-        'WshShell.AppActivate "Path of Exile"',
-        'WScript.Sleep 50',
-        `WshShell.SendKeys "{ENTER}${safeCmd}{ENTER}"`,
-      ].join('\n'),
-    )
     execFile('cscript', ['//Nologo', '//B', script], (err) => {
+      setTimeout(() => clipboard.writeText(prevClip), 200)
       if (err) {
         console.error('[hotkeys] Failed to send chat command:', err)
         reject(err)
@@ -217,6 +261,14 @@ export function sendChatCommand(command: string): Promise<void> {
       resolve()
     })
   })
+}
+
+export function sendChatCommand(command: string, autoSubmit = true): Promise<void> {
+  // Release modifier keys before typing so held hotkey combos don't garble the chat message
+  uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
+  uIOhook.keyToggle(UiohookKey.Shift, 'up')
+  uIOhook.keyToggle(UiohookKey.Alt, 'up')
+  return pasteToPoEChat(command, autoSubmit)
 }
 
 export function stopHotkeyListener(): void {
@@ -241,75 +293,26 @@ function isStashGridArea(x: number, y: number, tb: { x: number; y: number; width
   return y > gridTop && y < gridBottom
 }
 
-// ─── Ctrl+C sender ───────────────────────────────────────────────────────────
-
 // ─── PoE chat command sender ─────────────────────────────────────────────────
-
-let reloadFilterScript: string | null = null
-
-function getReloadFilterScript(): string {
-  if (reloadFilterScript && existsSync(reloadFilterScript)) return reloadFilterScript
-  const dir = app.getPath('userData')
-  reloadFilterScript = join(dir, 'reloadfilter.vbs')
-  // Activate PoE, open chat with Enter, type command, send Enter
-  writeFileSync(
-    reloadFilterScript,
-    [
-      'Set WshShell = CreateObject("WScript.Shell")',
-      'WshShell.AppActivate "Path of Exile"',
-      'WScript.Sleep 100',
-      'WshShell.SendKeys "{ENTER}/reloaditemfilter{ENTER}"',
-    ].join('\n'),
-  )
-  return reloadFilterScript
-}
 
 /**
  * Send /reloaditemfilter to PoE's chat to reload the loot filter in-game.
  */
 export function sendReloadFilterToPoE(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const script = getReloadFilterScript()
-    execFile('cscript', ['//Nologo', '//B', script], (err) => {
-      if (err) {
-        console.error('[hotkeys] Failed to send reload command:', err)
-        reject(err)
-        return
-      }
-      resolve()
-    })
-  })
+  return pasteToPoEChat('/reloaditemfilter', true, 100)
 }
 
 /**
  * Send /itemfilter {name} to PoE's chat to switch the active filter in-game.
  */
-export function sendItemFilterCommand(filterName: string, currentFilter?: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const dir = app.getPath('userData')
-    const script = join(dir, 'itemfilter.vbs')
-    const lines = [
-      'Set WshShell = CreateObject("WScript.Shell")',
-      'WshShell.AppActivate "Path of Exile"',
-      'WScript.Sleep 100',
-    ]
-    if (currentFilter) {
-      // Switch to the current filter first to force PoE to rescan its filter directory,
-      // so it discovers the newly created file before we switch to it
-      lines.push(`WshShell.SendKeys "{ENTER}/itemfilter ${currentFilter}{ENTER}"`)
-      lines.push('WScript.Sleep 500')
-    }
-    lines.push(`WshShell.SendKeys "{ENTER}/itemfilter ${filterName}{ENTER}"`)
-    writeFileSync(script, lines.join('\n'))
-    execFile('cscript', ['//Nologo', '//B', script], (err) => {
-      if (err) {
-        console.error('[hotkeys] Failed to send itemfilter command:', err)
-        reject(err)
-        return
-      }
-      resolve()
-    })
-  })
+export async function sendItemFilterCommand(filterName: string, currentFilter?: string): Promise<void> {
+  if (currentFilter) {
+    // Switch to the current filter first to force PoE to rescan its filter directory,
+    // so it discovers the newly created file before we switch to it
+    await pasteToPoEChat(`/itemfilter ${currentFilter}`, true, 100)
+    await new Promise((r) => setTimeout(r, 500))
+  }
+  await pasteToPoEChat(`/itemfilter ${filterName}`, true, 100)
 }
 
 // ─── Ctrl+C sender ───────────────────────────────────────────────────────────

@@ -113,6 +113,8 @@ export const api = {
   reportPanelSide: (side: 'left' | 'right'): void => ipcRenderer.send('report-panel-side', side),
   lockInteractive: (): void => ipcRenderer.send('lock-interactive'),
   unlockInteractive: (): void => ipcRenderer.send('unlock-interactive'),
+  suspendHotkeys: (): void => ipcRenderer.send('suspend-hotkeys'),
+  resumeHotkeys: (): void => ipcRenderer.send('resume-hotkeys'),
   refreshPrices: (): Promise<void> => ipcRenderer.invoke('refresh-prices'),
 
   // Event subscriptions
@@ -140,6 +142,11 @@ export const api = {
     const handler = (): void => cb()
     ipcRenderer.on('open-settings', handler)
     return () => ipcRenderer.removeListener('open-settings', handler)
+  },
+  onOpenView: (cb: (view: string) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, view: string): void => cb(view)
+    ipcRenderer.on('open-view', handler)
+    return () => ipcRenderer.removeListener('open-view', handler)
   },
   onOverlayHide: (cb: () => void): (() => void) => {
     const handler = (): void => cb()

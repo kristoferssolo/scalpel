@@ -31,6 +31,10 @@ import {
   setEscapeHandler,
   stopHotkeyListener,
   setChatCommands,
+  setAppMacros,
+  setAppMacroHandler,
+  suspendHotkeys,
+  resumeHotkeys,
   setStashScrollEnabled,
 } from './hotkeys'
 import { refreshPrices } from './trade/prices'
@@ -183,7 +187,29 @@ app.whenReady().then(() => {
   setPriceCheckHotkey(store.get('priceCheckHotkey'))
   setEscapeHandler(() => hideOverlay())
   setChatCommands(store.get('chatCommands') ?? [])
+  const APP_MACRO_VIEWS: Record<string, string> = {
+    openSettings: 'setup',
+    openDust: 'dust',
+    openDivCards: 'divcards',
+  }
+  setAppMacroHandler((action) => {
+    const overlayWin = getOverlayWindow()
+    if (!overlayWin || overlayWin.isDestroyed()) return
+    if (action === 'openAudit') {
+      onHotkeyFired()
+      overlayWin.webContents.send('open-view', 'audit')
+    } else {
+      const view = APP_MACRO_VIEWS[action] ?? 'setup'
+      overlayWin.webContents.send('open-view', view)
+      showOverlay()
+    }
+  })
+  setAppMacros(store.get('appMacros') ?? [])
   setStashScrollEnabled(store.get('stashScrollEnabled') ?? false)
+
+  // Suspend/resume hotkeys while the hotkey recorder is active
+  ipcMain.on('suspend-hotkeys', () => suspendHotkeys())
+  ipcMain.on('resume-hotkeys', () => resumeHotkeys())
 
   // Apply close-on-click-outside setting
   setCloseOnClickOutside(store.get('closeOnClickOutside'))

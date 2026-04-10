@@ -3,7 +3,7 @@ import Store from 'electron-store'
 import { loadFilter, getColorFrequencies } from '../filter-state'
 import { getOverlayWindow, setCloseOnClickOutside, setOverlayScale } from '../overlay'
 import { getAppWindow } from '../app-window'
-import { setHotkey, setPriceCheckHotkey, setChatCommands, setStashScrollEnabled } from '../hotkeys'
+import { setHotkey, setPriceCheckHotkey, setChatCommands, setAppMacros, setStashScrollEnabled } from '../hotkeys'
 import { refreshPrices } from '../trade/prices'
 import type { AppSettings } from '../../shared/types'
 
@@ -26,6 +26,7 @@ export function register(store: Store<AppSettings>): void {
     if (key === 'league') refreshPrices(value as string)
     if (key === 'overlayScale') setOverlayScale(value as number)
     if (key === 'chatCommands') setChatCommands(value as Array<{ hotkey: string; command: string }>)
+    if (key === 'appMacros') setAppMacros(value as Array<{ action: string; hotkey: string }>)
     if (key === 'stashScrollEnabled') setStashScrollEnabled(value as boolean)
 
     // Broadcast setting change to all windows except the sender
