@@ -80,8 +80,8 @@ export function PriceAudit({ block, blockIndex, tierGroup, item, itemClass, onSe
   // Find adjacent tiers, filtered to match the hero dropdown (must have BaseType items, not ex/2x)
   const currentSib = tierGroup?.siblings.find((s) => s.blockIndex === blockIndex)
   const currentIdx = tierGroup?.siblings.indexOf(currentSib!) ?? -1
-  const isExTier = (t: string): boolean => /^(ex\d*|exhide|exshow|2x\d*)$/.test(t) || t.startsWith('exotic')
-  const isValidTier = (s: { tier: string }): boolean => !isExTier(s.tier) && s.tier !== 'rest'
+  const isExTier = (t: string): boolean => /^(ex\d*|exhide|exshow|2x\d*|rest|restex)$/.test(t) || t.startsWith('exotic')
+  const isValidTier = (s: { tier: string }): boolean => !isExTier(s.tier)
   const tiersAbove = tierGroup && currentIdx > 0 ? tierGroup.siblings.slice(0, currentIdx).filter(isValidTier) : []
   const tiersBelow = tierGroup && currentIdx >= 0 ? tierGroup.siblings.slice(currentIdx + 1).filter(isValidTier) : []
   const higherTier = tiersAbove.length > 0 ? tiersAbove[tiersAbove.length - 1] : null
