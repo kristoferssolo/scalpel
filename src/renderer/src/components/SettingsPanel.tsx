@@ -3,40 +3,17 @@ import type { AppSettings } from '../../../shared/types'
 import { CHANGELOG } from '../../../shared/changelog'
 import { Toggle } from './Toggle'
 import { FilterPicker } from './FilterPicker'
-import { Down, Right, CloseSmall } from '@icon-park/react'
+import { RemoveButton } from './RemoveButton'
+import {
+  HotkeyRecorder,
+  CommandInput,
+  FaqItem,
+  PoeLoginButton,
+  APP_MACRO_DEFS,
+  keyEventToAccelerator,
+} from './settings'
+import { Down, Right } from '@icon-park/react'
 import { IP } from '../shared/constants'
-
-export function keyEventToAccelerator(e: KeyboardEvent): string | null {
-  const KEY_MAP: Record<string, string> = {
-    Control: '',
-    Meta: '',
-    Alt: '',
-    Shift: '',
-    ' ': 'Space',
-    ArrowUp: 'Up',
-    ArrowDown: 'Down',
-    ArrowLeft: 'Left',
-    ArrowRight: 'Right',
-    Escape: 'Escape',
-    Enter: 'Return',
-    Backspace: 'Backspace',
-    Delete: 'Delete',
-    Tab: 'Tab',
-    Home: 'Home',
-    End: 'End',
-    PageUp: 'PageUp',
-    PageDown: 'PageDown',
-    Insert: 'Insert',
-  }
-  if (['Control', 'Meta', 'Alt', 'Shift'].includes(e.key)) return null
-  const parts: string[] = []
-  if (e.ctrlKey || e.metaKey) parts.push('CommandOrControl')
-  if (e.altKey) parts.push('Alt')
-  if (e.shiftKey) parts.push('Shift')
-  const key = KEY_MAP[e.key] ?? (e.key.length === 1 ? e.key.toUpperCase() : e.key)
-  parts.push(key)
-  return parts.join('+')
-}
 
 interface Props {
   settings: AppSettings
@@ -105,7 +82,7 @@ export function SettingsPanel({
           </h2>
           <span className="text-[9px] text-accent opacity-60">Beta {__APP_VERSION__}</span>
         </div>
-        <div className="flex gap-[6px]">
+        <div className="flex flex-wrap justify-end gap-[6px]">
           {(['general', 'macros', 'filter', 'pricecheck', 'faq'] as const).map((t) => {
             const label =
               t === 'general'
@@ -244,39 +221,40 @@ export function SettingsPanel({
           {/* Chat Macros */}
           <div className="text-[10px] text-accent tracking-[1.5px] uppercase mt-3 font-bold">Chat Macros</div>
           <section>
-            <div className="flex flex-col gap-[6px]">
-              {(settings.chatCommands ?? []).map((cmd, i) => (
-                <div key={i} className="flex gap-[6px] items-center">
-                  <HotkeyRecorder
-                    value={cmd.hotkey}
-                    onChange={(hotkey) => {
-                      const cmds = [...(settings.chatCommands ?? [])]
-                      cmds[i] = { ...cmds[i], hotkey }
-                      update('chatCommands', cmds)
-                    }}
-                  />
-                  <CommandInput
-                    value={cmd.command}
-                    onChange={(val) => {
-                      const cmds = [...(settings.chatCommands ?? [])]
-                      cmds[i] = { ...cmds[i], command: val }
-                      update('chatCommands', cmds)
-                    }}
-                  />
-                  <div
-                    onClick={() => {
-                      const cmds = (settings.chatCommands ?? []).filter((_, j) => j !== i)
-                      update('chatCommands', cmds)
-                    }}
-                    className="shrink-0 cursor-pointer text-text-dim flex items-center p-1"
-                  >
-                    <CloseSmall size={14} {...IP} />
+            <div className="flex flex-col gap-2">
+              {(settings.chatCommands ?? []).map((cmd, i) => {
+                const updateCmd = (patch: Partial<typeof cmd>) => {
+                  const cmds = [...(settings.chatCommands ?? [])]
+                  cmds[i] = { ...cmds[i], ...patch }
+                  update('chatCommands', cmds)
+                }
+                return (
+                  <div key={i} className="flex flex-col gap-1.5 bg-black/15 rounded p-[5px]">
+                    <div className="flex gap-[6px] items-center">
+                      <HotkeyRecorder value={cmd.hotkey} onChange={(hotkey) => updateCmd({ hotkey })} />
+                      <CommandInput value={cmd.command} onChange={(command) => updateCmd({ command })} />
+                      <RemoveButton
+                        onClick={() =>
+                          update(
+                            'chatCommands',
+                            (settings.chatCommands ?? []).filter((_, j) => j !== i),
+                          )
+                        }
+                      />
+                    </div>
+                    <div
+                      onClick={() => updateCmd({ autoSubmit: cmd.autoSubmit === false })}
+                      className="flex items-center gap-[10px] cursor-pointer select-none ml-0.5"
+                    >
+                      <Toggle checked={cmd.autoSubmit !== false} onChange={(autoSubmit) => updateCmd({ autoSubmit })} />
+                      <span className="text-[11px] text-text-dim">Submit automatically (press Enter)</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
               <button
                 onClick={() => {
-                  const cmds = [...(settings.chatCommands ?? []), { hotkey: '', command: '' }]
+                  const cmds = [...(settings.chatCommands ?? []), { hotkey: '', command: '', autoSubmit: true }]
                   update('chatCommands', cmds)
                 }}
                 className="text-[11px] text-text-dim self-start px-3 py-1.5"
@@ -298,6 +276,65 @@ export function SettingsPanel({
                 onChange={(val) => update('stashScrollEnabled', val)}
               />
               <span className="text-xs text-text">Stash tab scrolling (Ctrl + Scroll Wheel)</span>
+            </div>
+          </section>
+
+          {/* App Macros */}
+          <div className="text-[10px] text-accent tracking-[1.5px] uppercase mt-3 font-bold">App Macros</div>
+          <section>
+            <div className="flex flex-col gap-2">
+              {(settings.appMacros ?? []).map((macro, i) => {
+                const usedActions = new Set((settings.appMacros ?? []).map((m, j) => (j !== i ? m.action : '')))
+                const availableActions = APP_MACRO_DEFS.filter((d) => d.id === macro.action || !usedActions.has(d.id))
+                return (
+                  <div key={i} className="flex gap-[6px] items-center bg-black/15 rounded p-[5px]">
+                    <HotkeyRecorder
+                      value={macro.hotkey}
+                      onChange={(hotkey) => {
+                        const macros = [...(settings.appMacros ?? [])]
+                        macros[i] = { ...macros[i], hotkey }
+                        update('appMacros', macros)
+                      }}
+                    />
+                    <select
+                      value={macro.action}
+                      onChange={(e) => {
+                        const macros = [...(settings.appMacros ?? [])]
+                        macros[i] = { ...macros[i], action: e.target.value }
+                        update('appMacros', macros)
+                      }}
+                      className="text-[11px] flex-1 rounded h-[34px] box-border"
+                      style={{ padding: '4px 24px 4px 8px' }}
+                    >
+                      {availableActions.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.label}
+                        </option>
+                      ))}
+                    </select>
+                    <RemoveButton
+                      onClick={() =>
+                        update(
+                          'appMacros',
+                          (settings.appMacros ?? []).filter((_, j) => j !== i),
+                        )
+                      }
+                    />
+                  </div>
+                )
+              })}
+              {(settings.appMacros ?? []).length < APP_MACRO_DEFS.length && (
+                <button
+                  onClick={() => {
+                    const used = new Set((settings.appMacros ?? []).map((m) => m.action))
+                    const next = APP_MACRO_DEFS.find((d) => !used.has(d.id))
+                    if (next) update('appMacros', [...(settings.appMacros ?? []), { action: next.id, hotkey: '' }])
+                  }}
+                  className="text-[11px] text-text-dim self-start px-3 py-1.5"
+                >
+                  + Add App Macro
+                </button>
+              )}
             </div>
           </section>
         </>
@@ -510,173 +547,6 @@ export function SettingsPanel({
           </section>
         </>
       )}
-    </div>
-  )
-}
-
-function HotkeyRecorder({ value, onChange }: { value: string; onChange: (v: string) => void }): JSX.Element {
-  const [listening, setListening] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!listening) return
-    const onKey = (e: KeyboardEvent): void => {
-      e.preventDefault()
-      e.stopPropagation()
-      const acc = keyEventToAccelerator(e)
-      if (!acc) return
-      onChange(acc)
-      setListening(false)
-    }
-    const onClick = (e: MouseEvent): void => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setListening(false)
-    }
-    window.addEventListener('keydown', onKey)
-    window.addEventListener('mousedown', onClick)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      window.removeEventListener('mousedown', onClick)
-    }
-  }, [listening, onChange])
-
-  return (
-    <div ref={ref} className="setting-box flex-1 cursor-pointer h-[34px] box-border" onClick={() => setListening(true)}>
-      <span className={`value ${listening ? 'recording' : ''}`}>
-        {listening ? 'Press your key combo...' : value || '(none set)'}
-      </span>
-    </div>
-  )
-}
-
-const POE_COMMANDS = [
-  '/hideout',
-  '/menagerie',
-  '/delve',
-  '/kingsmarch',
-  '/monastery',
-  '/reloaditemfilter',
-  '/remaining',
-  '/passives',
-  '/played',
-  '/age',
-  '/deaths',
-  '/ladder',
-  '/pvp',
-  '/itemlevel',
-  '/reset_xp',
-  '/exit',
-  '/oos',
-  '/cls',
-  '/dance',
-  '/save_hideout',
-  '/destroy',
-  '/afk',
-  '/dnd',
-  '/autoreply',
-  '@last',
-]
-
-function CommandInput({ value, onChange }: { value: string; onChange: (v: string) => void }): JSX.Element {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const filtered = value ? POE_COMMANDS.filter((c) => c.includes(value.toLowerCase())) : POE_COMMANDS
-
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent): void => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    window.addEventListener('mousedown', handler)
-    return () => window.removeEventListener('mousedown', handler)
-  }, [open])
-
-  return (
-    <div ref={ref} className="flex-1 relative">
-      <input
-        type="text"
-        value={value}
-        placeholder="/hideout"
-        onFocus={() => setOpen(true)}
-        onChange={(e) => {
-          onChange(e.target.value)
-          setOpen(true)
-        }}
-        className="w-full text-xs font-mono h-[34px] box-border px-3 py-2 bg-black/30"
-      />
-      {open && filtered.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-0.5 bg-bg-card border border-border rounded max-h-[150px] overflow-y-auto z-10">
-          {filtered.map((cmd) => (
-            <div
-              key={cmd}
-              onClick={() => {
-                onChange(cmd)
-                setOpen(false)
-              }}
-              className="text-[11px] font-mono cursor-pointer px-3 py-[5px] hover:bg-white/5 transition-colors"
-              style={{
-                color: cmd === value ? 'var(--accent)' : 'var(--text)',
-              }}
-            >
-              {cmd}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function FaqItem({ q, a }: { q: string; a: string }): JSX.Element {
-  return (
-    <div className="rounded-[6px] border border-border px-3 py-[10px] bg-black/20">
-      <div className="text-xs font-semibold text-text mb-[6px]">{q}</div>
-      <div className="text-[11px] text-text-dim leading-normal">{a}</div>
-    </div>
-  )
-}
-
-function PoeLoginButton(): JSX.Element {
-  const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
-
-  const checkAuth = (): void => {
-    window.api.poeCheckAuth().then((r) => setLoggedIn(r.loggedIn))
-  }
-
-  useEffect(() => {
-    checkAuth()
-  }, [])
-
-  if (loggedIn === null) return <span className="text-[11px] text-text-dim">Checking...</span>
-
-  if (loggedIn) {
-    return (
-      <div className="setting-box">
-        <span className="value text-accent">Logged in</span>
-        <button
-          className="primary"
-          onClick={() => {
-            window.api.poeLogout().then(() => setLoggedIn(false))
-          }}
-        >
-          Logout
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="setting-box">
-      <span className="value text-text-dim">Not logged in</span>
-      <button
-        className="primary"
-        onClick={() => {
-          window.api.poeLogin().then(() => {
-            setTimeout(checkAuth, 2000)
-          })
-        }}
-      >
-        Login
-      </button>
     </div>
   )
 }

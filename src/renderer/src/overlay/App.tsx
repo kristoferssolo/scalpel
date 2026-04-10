@@ -54,6 +54,7 @@ export default function App(): JSX.Element {
   const [selectedStrandBpIndex, setSelectedStrandBpIndex] = useState<number | null>(null)
   const prevItemKey = useRef<string>('')
   const priceCheckPending = useRef(false)
+  const auditPending = useRef(false)
   const [auditBlockIndex, setAuditBlockIndex] = useState<number | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
@@ -130,7 +131,10 @@ export default function App(): JSX.Element {
           prevItemKey.current = itemKey
         }
 
-        if (priceCheckPending.current) {
+        if (auditPending.current) {
+          auditPending.current = false
+          setView('audit')
+        } else if (priceCheckPending.current) {
           priceCheckPending.current = false
         } else if (isNewItem) {
           // New item from hotkey: always go to item view
@@ -157,6 +161,14 @@ export default function App(): JSX.Element {
         }, 150)
       }),
       window.api.onOpenSettings(() => setView('setup')),
+      window.api.onOpenView((v) => {
+        if (v === 'audit') {
+          auditPending.current = true
+        } else {
+          const valid = ['setup', 'dust', 'divcards'] as const
+          if (valid.includes(v as (typeof valid)[number])) setView(v as View)
+        }
+      }),
       window.api.onGameBounds((bounds) => setGameBounds(bounds)),
       window.api.onSkipAnimation(() => {
         if (animRef.current) animRef.current.style.animation = 'none'

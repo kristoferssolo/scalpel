@@ -74,12 +74,12 @@ export const POE_COLOR_HEX: Record<string, string> = {
 }
 
 // Import all minimap icon PNGs
-const shapeIconModules = import.meta.glob('../assets/minimap-icons/[A-Z][a-z]*.png', {
+const shapeIconModules = import.meta.glob('../../../renderer/src/assets/minimap-icons/[A-Z][a-z]*.png', {
   eager: true,
   query: '?url',
   import: 'default',
 }) as Record<string, string>
-const colorIconModules = import.meta.glob('../assets/minimap-icons/*_*.png', {
+const colorIconModules = import.meta.glob('../../../renderer/src/assets/minimap-icons/*_*.png', {
   eager: true,
   query: '?url',
   import: 'default',

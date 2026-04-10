@@ -1,7 +1,7 @@
-import { CloseSmall } from '@icon-park/react'
 import dustIcon from '../../assets/currency/thaumaturgic-dust.png'
 import { chaosIcon } from '../../shared/icons'
 import { IconGlow } from '../../shared/IconGlow'
+import { RemoveButton } from '../RemoveButton'
 import { ActiveFilter, FilterType } from './types'
 import { ALL_FILTER_TYPES, FILTER_LABELS } from './constants'
 import { scaleRange, formatDust, formatRatio } from './utils'
@@ -171,12 +171,7 @@ export function FilterRow({
         </div>
       )}
 
-      <button
-        onClick={() => onRemove(idx)}
-        className="flex items-center justify-center w-5 h-5 shrink-0 rounded bg-white/[0.06] border-none cursor-pointer text-text-dim p-0 hover:bg-[rgba(239,83,80,0.2)] hover:text-white"
-      >
-        <CloseSmall size={14} theme="outline" fill="currentColor" className="flex" />
-      </button>
+      <RemoveButton onClick={() => onRemove(idx)} />
     </div>
   )
 }
