@@ -8,6 +8,7 @@ export interface StatFilter {
   max: number | null
   enabled: boolean
   type: string
+  foulborn?: boolean
 }
 
 export interface Listing {
@@ -25,6 +26,7 @@ export interface Listing {
     explicitMods?: string[]
     implicitMods?: string[]
     fracturedMods?: string[]
+    foulbornMods?: string[]
     ilvl?: number
     sockets?: Array<{ group: number; sColour: string }>
     gemLevel?: number

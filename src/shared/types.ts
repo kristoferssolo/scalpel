@@ -151,6 +151,7 @@ export interface AdvancedMod {
   fractured?: boolean
   crafted?: boolean
   eldritch?: boolean
+  foulborn?: boolean
 }
 
 // ─── IPC Channel Payloads ─────────────────────────────────────────────────────

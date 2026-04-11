@@ -5,6 +5,7 @@ import {
   CURRENCY_ICONS,
   SOCKET_IMGS,
   RARITY_COLORS,
+  MOD_COLORS,
   getItemSize,
   formatTimeAgo,
   socketLink,
@@ -681,11 +682,18 @@ export function TradeListings({
                         >
                           {(() => {
                             const fracturedSet = new Set(l.itemData!.fracturedMods ?? [])
+                            const foulbornSet = new Set(l.itemData!.foulbornMods ?? [])
                             return l.itemData!.explicitMods!.map((mod, mi) => (
                               <div
                                 key={mi}
                                 className="text-[10px]"
-                                style={{ color: fracturedSet.has(mod) ? 'var(--accent)' : '#8787FE' }}
+                                style={{
+                                  color: foulbornSet.has(mod)
+                                    ? MOD_COLORS.foulborn
+                                    : fracturedSet.has(mod)
+                                      ? MOD_COLORS.fractured
+                                      : '#8787FE',
+                                }}
                               >
                                 {mod}
                               </div>

@@ -103,6 +103,30 @@ export function getItemSize(itemClass: string, name?: string): [number, number] 
   return ITEM_SIZES[itemClass] ?? [2, 2]
 }
 
+export const MOD_COLORS: Record<string, string> = {
+  'temple-key': '#ffd700',
+  temple: '#c4a35a',
+  foulborn: '#EA44A8',
+  heist: '#ffcc88',
+  gem: '#a8e6cf',
+  weapon: '#88ccff',
+  defence: '#88ccff',
+  pseudo: '#88ccff',
+  implicit: '#af8aff',
+  crafted: '#b4b4ff',
+  fractured: 'var(--accent)',
+  imbued: '#a8e6cf',
+  enchant: '#a8e6cf',
+  map: '#80cbc4',
+}
+
+export const MOD_BOLD_TYPES = new Set(['pseudo', 'defence', 'temple-key'])
+
+export function getModColor(type: string, foulborn?: boolean): string {
+  if (foulborn) return MOD_COLORS.foulborn
+  return MOD_COLORS[type] ?? 'var(--text)'
+}
+
 export function formatTimeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime()
   const mins = Math.floor(ms / 60000)
