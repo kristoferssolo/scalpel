@@ -1,5 +1,6 @@
 import { net } from 'electron'
 import { POE_TRADE_API } from '../../shared/endpoints'
+import { TRANSFIGURED_GEM_DISC } from '../../shared/data/trade/transfigured-gems'
 
 // Re-export stat-matcher functions so existing importers don't need to change
 export { ensureStatsLoaded, matchModToStat, matchItemMods, ITEM_CLASS_TO_CATEGORY } from './stat-matcher'
@@ -257,8 +258,14 @@ export async function searchTrade(
     item.itemClass === 'Active Skill Gems' ||
     item.itemClass === 'Support Skill Gems'
   ) {
-    // Gems: use term search (handles transfigured gems like "Kinetic Blast of Clustering")
-    query.term = item.baseType
+    // Transfigured gems: use base gem name + discriminator from data file
+    const disc = TRANSFIGURED_GEM_DISC[item.baseType]
+    if (disc) {
+      const baseGem = item.baseType.slice(0, item.baseType.indexOf(' of '))
+      query.type = { option: baseGem, discriminator: disc }
+    } else {
+      query.type = item.baseType
+    }
   } else {
     // Non-uniques: search by item class, not base type. The implicit covers the base.
     const classCategory = _ITEM_CLASS_TO_CATEGORY[item.itemClass]
