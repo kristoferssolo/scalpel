@@ -1,5 +1,6 @@
-import { Down, Up } from '@icon-park/react'
+import { Down, Up, Star } from '@icon-park/react'
 import type { Listing } from './types'
+import { ATZOATL_KEY_ROOMS } from '../../../../shared/data/trade/atzoatl'
 import {
   CURRENCY_ICONS,
   SOCKET_IMGS,
@@ -558,7 +559,7 @@ export function TradeListings({
                           {l.itemData.ilvl ? ` (iLvl ${l.itemData.ilvl})` : ''}
                         </div>
                       )}
-                      {l.itemData.baseType === 'Chronicle of Atzoatl' && (
+                      {l.itemData.templeOpenRooms && l.itemData.templeOpenRooms.length > 0 && (
                         <div
                           className="mt-1 pt-1 w-full"
                           style={{
@@ -569,8 +570,32 @@ export function TradeListings({
                             backgroundPosition: 'top center',
                           }}
                         >
-                          <div className="text-[10px] text-[#8787FE]">Trade API does not show rooms</div>
-                          <div className="text-[10px] text-[#8787FE]">Click Open in Trade to see them</div>
+                          <div className="text-[9px] text-text-dim uppercase tracking-wider mb-[2px]">Open Rooms</div>
+                          {l.itemData.templeOpenRooms.map((room, ri) => {
+                            const isKey = ATZOATL_KEY_ROOMS.has(room)
+                            return (
+                              <div
+                                key={ri}
+                                className="text-[10px] flex items-center justify-center gap-1"
+                                style={{ color: isKey ? '#ffd700' : '#c4a35a', fontWeight: isKey ? 600 : 400 }}
+                              >
+                                {isKey && <Star size={10} theme="filled" fill="#ffd700" />}
+                                {room}
+                              </div>
+                            )
+                          })}
+                          {l.itemData.templeObstructedRooms && l.itemData.templeObstructedRooms.length > 0 && (
+                            <>
+                              <div className="text-[9px] text-text-dim uppercase tracking-wider mt-1 mb-[2px]">
+                                Obstructed
+                              </div>
+                              {l.itemData.templeObstructedRooms.map((room, ri) => (
+                                <div key={ri} className="text-[10px] text-text-dim text-center">
+                                  {room}
+                                </div>
+                              ))}
+                            </>
+                          )}
                         </div>
                       )}
                       {(l.itemData.gemLevel || l.itemData.quality) && (
@@ -654,11 +679,18 @@ export function TradeListings({
                             backgroundPosition: 'top center',
                           }}
                         >
-                          {l.itemData.explicitMods.map((mod, mi) => (
-                            <div key={mi} className="text-[10px] text-[#8787FE]">
-                              {mod}
-                            </div>
-                          ))}
+                          {(() => {
+                            const fracturedSet = new Set(l.itemData!.fracturedMods ?? [])
+                            return l.itemData!.explicitMods!.map((mod, mi) => (
+                              <div
+                                key={mi}
+                                className="text-[10px]"
+                                style={{ color: fracturedSet.has(mod) ? 'var(--accent)' : '#8787FE' }}
+                              >
+                                {mod}
+                              </div>
+                            ))
+                          })()}
                         </div>
                       )}
                       {(l.itemData.identified === false || l.itemData.corrupted || l.itemData.mirrored) && (

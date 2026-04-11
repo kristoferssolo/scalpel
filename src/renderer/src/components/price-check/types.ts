@@ -24,6 +24,7 @@ export interface Listing {
     baseType?: string
     explicitMods?: string[]
     implicitMods?: string[]
+    fracturedMods?: string[]
     ilvl?: number
     sockets?: Array<{ group: number; sColour: string }>
     gemLevel?: number
@@ -31,6 +32,8 @@ export interface Listing {
     corrupted?: boolean
     mirrored?: boolean
     identified?: boolean
+    templeOpenRooms?: string[]
+    templeObstructedRooms?: string[]
     armour?: number
     evasion?: number
     energyShield?: number
