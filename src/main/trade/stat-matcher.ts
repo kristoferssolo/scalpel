@@ -372,8 +372,10 @@ export function matchItemMods(
     }
     if (matched) {
       // Check if this contributes to a pseudo stat
+      // Skip "X per Y" mods -- they're conditional and shouldn't inflate pseudo totals
+      const isPerMod = /\bper\b/i.test(cleaned)
       const pseudo = PSEUDO_CONTRIBUTIONS[matched.statId]
-      if (pseudo && matched.value != null) {
+      if (pseudo && matched.value != null && !isPerMod) {
         if (!pseudoAccumulator[pseudo.pseudoId]) {
           pseudoAccumulator[pseudo.pseudoId] = { ...pseudo, total: 0 }
         }
@@ -437,8 +439,9 @@ export function matchItemMods(
     if (matched) {
       const lowPriority = isLowPriority(cleaned)
 
-      // Check if this mod is fractured (from advanced mod data)
+      // Check if this mod is fractured or foulborn (from advanced mod data)
       let isFractured = false
+      let isFoulborn = false
       if (advancedMods) {
         const advMod = advancedMods.find((am) => {
           if (am.type === 'implicit') return false
@@ -456,6 +459,7 @@ export function matchItemMods(
           return joinedLines === cleaned
         })
         if (advMod?.fractured) isFractured = true
+        if (advMod?.foulborn) isFoulborn = true
       }
 
       // Tinctures: disambiguate duplicate stat texts (e.g. "#% increased effect" has two stat IDs)
@@ -511,8 +515,10 @@ export function matchItemMods(
 
       // Check if this contributes to a pseudo stat
       // Skip for cluster jewels -- their mods grant passives, not item stats
+      // Skip "X per Y" mods -- they're conditional and shouldn't inflate pseudo totals
+      const isPerMod = /\bper\b/i.test(cleaned)
       const isCluster = itemInfo?.baseType?.includes('Cluster Jewel')
-      const pseudo = isCluster ? undefined : PSEUDO_CONTRIBUTIONS[matched.statId]
+      const pseudo = isCluster || isPerMod ? undefined : PSEUDO_CONTRIBUTIONS[matched.statId]
       if (pseudo && matched.value != null) {
         if (!pseudoAccumulator[pseudo.pseudoId]) {
           pseudoAccumulator[pseudo.pseudoId] = { ...pseudo, total: 0 }
@@ -549,6 +555,7 @@ export function matchItemMods(
         max: maxValue,
         enabled:
           isFractured ||
+          isFoulborn ||
           (!lowPriority &&
             !isCrafted &&
             !pseudo &&
@@ -558,6 +565,7 @@ export function matchItemMods(
             !(itemInfo?.itemClass === 'Maps')),
         type: isFractured ? 'fractured' : isCrafted ? 'crafted' : 'explicit',
         option: matched.option,
+        foulborn: isFoulborn || undefined,
       })
       // For fractured mods, also add the unfractured (explicit) version, disabled by default
       if (isFractured) {

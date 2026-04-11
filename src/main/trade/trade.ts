@@ -28,6 +28,7 @@ interface TradeListing {
     explicitMods?: string[]
     implicitMods?: string[]
     fracturedMods?: string[]
+    foulbornMods?: string[]
     ilvl?: number
     sockets?: Array<{ group: number; sColour: string }>
     gemLevel?: number
@@ -74,6 +75,7 @@ export interface StatFilter {
   type: string // 'explicit', 'implicit', etc.
   option?: number | string // for option-based stats like "Map contains #'s Citadel" or reward names
   timelessLeaders?: string[] // all leader stat IDs for timeless count group
+  foulborn?: boolean
 }
 
 // ─── Rate Limiter ─────────────────────────────────────────────────────────────
@@ -608,6 +610,7 @@ export async function searchTrade(
           ],
           implicitMods: r.item.implicitMods,
           fracturedMods: r.item.fracturedMods,
+          foulbornMods: r.item.mutatedMods,
           ilvl: r.item.ilvl,
           sockets: r.item.sockets,
           gemLevel: r.item.properties?.find((p) => p.name === 'Level')?.values?.[0]?.[0]

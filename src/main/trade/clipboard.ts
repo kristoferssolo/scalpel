@@ -579,6 +579,7 @@ function parseAdvancedMods(text: string): AdvancedMod[] {
       const isFractured = modPrefix === 'fractured'
       const isCrafted = modPrefix === 'master crafted'
       const isEldritch = modPrefix === 'searing exarch' || modPrefix === 'eater of worlds'
+      const isFoulborn = modPrefix === 'foulborn'
       currentMod = {
         type: (modType === 'unique' ? 'prefix' : modType) as 'prefix' | 'suffix' | 'implicit',
         name: match[3] ?? '',
@@ -589,6 +590,7 @@ function parseAdvancedMods(text: string): AdvancedMod[] {
         fractured: isFractured,
         crafted: isCrafted,
         eldritch: isEldritch,
+        foulborn: isFoulborn,
       }
       continue
     }

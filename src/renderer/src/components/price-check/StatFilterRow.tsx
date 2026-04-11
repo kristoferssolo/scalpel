@@ -1,5 +1,6 @@
 import { Star } from '@icon-park/react'
 import { StepInput } from './StepInput'
+import { getModColor, MOD_BOLD_TYPES } from './constants'
 import type { StatFilter } from './types'
 
 export function StatFilterRow({
@@ -41,33 +42,8 @@ export function StatFilterRow({
         onClick={() => toggleFilter(i)}
         className="flex-1 text-[11px] cursor-pointer select-none flex items-center gap-1"
         style={{
-          color:
-            f.type === 'temple-key'
-              ? '#ffd700'
-              : f.type === 'temple'
-                ? '#c4a35a'
-                : f.type === 'heist'
-                  ? '#ffcc88'
-                  : f.type === 'gem'
-                    ? '#a8e6cf'
-                    : f.type === 'weapon'
-                      ? '#88ccff'
-                      : f.type === 'defence'
-                        ? '#88ccff'
-                        : f.type === 'pseudo'
-                          ? '#88ccff'
-                          : f.type === 'implicit'
-                            ? '#af8aff'
-                            : f.type === 'crafted'
-                              ? '#b4b4ff'
-                              : f.type === 'fractured'
-                                ? 'var(--accent)'
-                                : f.type === 'imbued' || f.type === 'enchant'
-                                  ? '#a8e6cf'
-                                  : f.type === 'map'
-                                    ? '#80cbc4'
-                                    : 'var(--text)',
-          fontWeight: ['pseudo', 'defence', 'temple-key'].includes(f.type) ? 600 : 400,
+          color: getModColor(f.type, f.foulborn),
+          fontWeight: MOD_BOLD_TYPES.has(f.type) ? 600 : 400,
         }}
       >
         {f.type === 'temple-key' && <Star size={12} theme="filled" fill="#ffd700" />}
