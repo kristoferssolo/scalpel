@@ -27,6 +27,7 @@ interface TradeListing {
     baseType?: string
     explicitMods?: string[]
     implicitMods?: string[]
+    fracturedMods?: string[]
     ilvl?: number
     sockets?: Array<{ group: number; sColour: string }>
     gemLevel?: number
@@ -34,6 +35,8 @@ interface TradeListing {
     corrupted?: boolean
     mirrored?: boolean
     identified?: boolean
+    templeOpenRooms?: string[]
+    templeObstructedRooms?: string[]
   }
 }
 
@@ -569,9 +572,11 @@ export async function searchTrade(
         explicitMods?: string[]
         implicitMods?: string[]
         mutatedMods?: string[]
+        fracturedMods?: string[]
         ilvl?: number
         sockets?: Array<{ group: number; sColour: string }>
         properties?: Array<{ name: string; values: Array<[string, number]> }>
+        additionalProperties?: Array<{ name: string; values: Array<[string, number]>; type?: number }>
         corrupted?: boolean
         duplicated?: boolean
         identified?: boolean
@@ -596,8 +601,13 @@ export async function searchTrade(
       ? {
           name: r.item.name,
           baseType: r.item.baseType,
-          explicitMods: [...(r.item.explicitMods ?? []), ...(r.item.mutatedMods ?? [])],
+          explicitMods: [
+            ...(r.item.fracturedMods ?? []),
+            ...(r.item.explicitMods ?? []),
+            ...(r.item.mutatedMods ?? []),
+          ],
           implicitMods: r.item.implicitMods,
+          fracturedMods: r.item.fracturedMods,
           ilvl: r.item.ilvl,
           sockets: r.item.sockets,
           gemLevel: r.item.properties?.find((p) => p.name === 'Level')?.values?.[0]?.[0]
@@ -609,6 +619,28 @@ export async function searchTrade(
           corrupted: r.item.corrupted,
           mirrored: r.item.duplicated,
           identified: r.item.identified,
+          ...(() => {
+            const ap = r.item!.additionalProperties
+            if (!ap) return {}
+            const open: string[] = []
+            const obstructed: string[] = []
+            let target = open
+            for (const p of ap) {
+              if (p.name === 'Open Rooms:') {
+                target = open
+                continue
+              }
+              if (p.name === 'Obstructed Rooms:') {
+                target = obstructed
+                continue
+              }
+              if (p.type === 49 && p.values?.[0]?.[0]) {
+                target.push(p.values[0][0].replace(/\s*\(Tier \d+\)/, ''))
+              }
+            }
+            if (open.length === 0 && obstructed.length === 0) return {}
+            return { templeOpenRooms: open, templeObstructedRooms: obstructed }
+          })(),
           armour: r.item.extended?.ar,
           evasion: r.item.extended?.ev,
           energyShield: r.item.extended?.es,
