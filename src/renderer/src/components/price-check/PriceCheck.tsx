@@ -5,11 +5,14 @@ import {
   INFLUENCE_ICONS,
   iconMap,
   chaosIcon,
+  divineIcon,
+  ninjaIcon,
   getItemIcon,
   formatPrice,
   getItemSize,
   getChipColor,
 } from './constants'
+import { isFaustusItem } from '../../../../shared/data/trade/faustus-items'
 import { FilterChip } from './FilterChip'
 import { ItemHeader } from './ItemHeader'
 import { StatFilterRow } from './StatFilterRow'
@@ -500,6 +503,36 @@ export function PriceCheck({
             </button>
           )}
         </div>
+
+        {/* Faustus exchange warning */}
+        {isFaustusItem(item.itemClass, item.baseType) && (
+          <div className="flex items-center gap-2 px-3 py-2 mx-[-14px] bg-[rgba(255,200,60,0.08)]">
+            <div className="flex-1">
+              <div className="text-[11px] text-[#ffc83c] font-semibold">
+                You should check Faustus to price this item
+              </div>
+              <div className="text-[10px] text-text-dim">
+                The in-game Currency Exchange will have more accurate pricing than bulk trade
+              </div>
+            </div>
+            {priceInfo && priceInfo.chaosValue > 0 && (
+              <div className="flex items-center gap-[3px] bg-black/30 rounded-full px-2 py-[3px] text-[11px] shrink-0">
+                <img src={ninjaIcon} alt="" className="w-[10px] h-[10px]" />
+                {priceInfo.divineValue != null && priceInfo.divineValue >= 1 ? (
+                  <>
+                    <span className="font-semibold text-text">{formatPrice(priceInfo.divineValue)}</span>
+                    <img src={divineIcon} alt="" className="w-3 h-3" />
+                  </>
+                ) : (
+                  <>
+                    <span className="font-semibold text-text">{formatPrice(priceInfo.chaosValue)}</span>
+                    <img src={chaosIcon} alt="" className="w-3 h-3" />
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Error */}
         {error && <div className="text-[10px] text-[#ef5350] px-1">{error}</div>}
