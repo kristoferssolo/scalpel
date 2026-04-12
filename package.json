@@ -1,7 +1,7 @@
 {
   "name": "scalpel",
-  "version": "0.9.0",
-  "description": "Path of Exile loot filter overlay editor",
+  "version": "0.9.1",
+  "description": "Path of Exile's First Fourth-Party Tool",
   "author": "Scalpel",
   "license": "AGPL-3.0-only",
   "homepage": "https://github.com/scalpelpoe/scalpel",

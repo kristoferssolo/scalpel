@@ -1,5 +1,32 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.1',
+    notes: [
+      'Added tiers and advanced mods to price check results',
+      "Reworked how negative mods get defaulted to min/max based on if they're beneficial or not but it's a judgement call",
+      'Added stack pricing support',
+      'Added support for price checking facetors',
+      'Added "Base" chip to non-mirrored/corrupted/unique that searches for the item base',
+      'Moved socket details to rows in price checker because who really cares',
+      "Settings panel split into tabs so I don't hate it",
+      'Overlay scale changed from slider to preset buttons',
+      'Added auto-submit/press enter toggle per chat macro',
+      'Added ability to bind more hotkeys to other app tabs',
+      'Totally reworked hotkeying and chat macros',
+      'Added warning when price checking items that are best sold on Faustus',
+      'Fixed chronicle of atzoatl room price check',
+      'Fixed issue with fractured mods not showing on items in trade results',
+      'Fixed issue with +X for Y mods rolling into pseudos improperly for price checker',
+      'Fixed crash when retiering all items out of a tier block (Thanks Liemander)',
+      'Fixed empty tiers not being navigable or usable as retier targets, removed "rest" as usable tier',
+      "Fixed issue with some gems not exact searching and transfigured gems work now so that's nice",
+      'Fixed issue with implicit defaults in price check being poorly prioritized',
+      'Fixed crafted mods acting like regular mods when price checking. Silly crafted mods.',
+      'Fixed implicit modifiers that multiply affixes',
+      'Updated FAQ',
+    ],
+  },
+  {
     version: '0.9.0',
     notes: [
       'Scalpel is now open source and distributed via GitHub',
