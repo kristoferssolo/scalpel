@@ -274,8 +274,7 @@ export function ItemSummary({
             if (mapNames.length === 0) return null
             return (
               <div className="flex gap-[6px] flex-wrap mt-0.5 items-center">
-                <span className="inline-flex items-center gap-1 flex-wrap rounded-full text-[11px] leading-none bg-black/25 px-2 py-[3px]">
-                  <span className="text-text-dim text-[10px] mr-0.5">Drops in</span>
+                <InfoChip label="Drops in">
                   {mapNames.slice(0, 2).map((name) => (
                     <span key={name} className="text-white font-semibold inline-flex items-center gap-[3px]">
                       <span className="relative w-[10px] h-[10px] shrink-0">
@@ -302,7 +301,7 @@ export function ItemSummary({
                       Explore
                     </button>
                   )}
-                </span>
+                </InfoChip>
               </div>
             )
           })()}
@@ -313,58 +312,50 @@ export function ItemSummary({
             item.itemClass !== 'Map Fragments' &&
             item.itemClass !== 'Misc Map Items' &&
             item.itemClass !== 'Divination Cards' && (
-              <span className="inline-flex items-center gap-1 rounded-full text-[11px] bg-black/25 px-2 py-[3px]">
-                <span className="text-text-dim">iLvl</span>
+              <InfoChip label="iLvl">
                 <span className="text-text font-semibold">{item.itemLevel}</span>
-              </span>
+              </InfoChip>
             )}
           {item.quality > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full text-[11px] bg-black/25 px-2 py-[3px]">
-              <span className="text-text-dim">Quality</span>
+            <InfoChip label="Quality">
               <span className="text-text font-semibold">{item.quality}%</span>
-            </span>
+            </InfoChip>
           )}
           {hideSockets && item.reqStr > 0 && (
-            <span className="inline-flex items-center gap-[3px] rounded-full text-[11px] bg-black/25 py-[3px] pr-2 pl-1">
-              <img src={socketRed} alt="" className="w-3.5 h-3.5" />
-              <span className="text-text-dim">Str:</span>
+            <InfoChip icon={socketRed} label="Str:">
               <span className="text-text font-semibold">{item.reqStr}</span>
-            </span>
+            </InfoChip>
           )}
           {hideSockets && item.reqDex > 0 && (
-            <span className="inline-flex items-center gap-[3px] rounded-full text-[11px] bg-black/25 py-[3px] pr-2 pl-1">
-              <img src={socketGreen} alt="" className="w-3.5 h-3.5" />
-              <span className="text-text-dim">Dex:</span>
+            <InfoChip icon={socketGreen} label="Dex:">
               <span className="text-text font-semibold">{item.reqDex}</span>
-            </span>
+            </InfoChip>
           )}
           {hideSockets && item.reqInt > 0 && (
-            <span className="inline-flex items-center gap-[3px] rounded-full text-[11px] bg-black/25 py-[3px] pr-2 pl-1">
-              <img src={socketBlue} alt="" className="w-3.5 h-3.5" />
-              <span className="text-text-dim">Int:</span>
+            <InfoChip icon={socketBlue} label="Int:">
               <span className="text-text font-semibold">{item.reqInt}</span>
-            </span>
+            </InfoChip>
           )}
           {item.sockets && !hideSockets && <SocketDisplay sockets={item.sockets} onRecolor={onRecolor} />}
           {item.corrupted && item.itemClass !== 'Divination Cards' && (
-            <span className="inline-flex items-center rounded-full text-[11px] font-semibold bg-black/25 px-2 py-[3px] text-[#ef5350]">
-              Corrupted
-            </span>
+            <InfoChip color="#ef5350">
+              <span className="font-semibold">Corrupted</span>
+            </InfoChip>
           )}
           {item.mirrored && (
-            <span className="inline-flex items-center rounded-full text-[11px] font-semibold bg-black/25 px-2 py-[3px] text-[#88ccff]">
-              Mirrored
-            </span>
+            <InfoChip color="#88ccff">
+              <span className="font-semibold">Mirrored</span>
+            </InfoChip>
           )}
           {item.fractured && (
-            <span className="inline-flex items-center rounded-full text-[11px] font-semibold bg-black/25 px-2 py-[3px] text-[#a29162]">
-              Fractured
-            </span>
+            <InfoChip color="#a29162">
+              <span className="font-semibold">Fractured</span>
+            </InfoChip>
           )}
           {item.synthesised && (
-            <span className="inline-flex items-center rounded-full text-[11px] font-semibold bg-black/25 px-2 py-[3px] text-[#8888ff]">
-              Synthesised
-            </span>
+            <InfoChip color="#8888ff">
+              <span className="font-semibold">Synthesised</span>
+            </InfoChip>
           )}
           {item.influence.map((inf) => (
             <InfoChip key={inf} icon={INFLUENCE_ICONS_BY_NAME[inf]} color="#c8a96e">
