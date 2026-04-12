@@ -547,18 +547,20 @@ export function TradeListings({
 
                     {/* Right: Item info + mods */}
                     <div className="flex-1 flex flex-col gap-[2px] text-center items-center z-[1] relative max-w-[280px] mx-auto">
-                      {l.itemData.name && l.itemData.name !== l.itemData.baseType && (
+                      {l.itemData.name && (
                         <div
                           className="text-xs font-semibold"
-                          style={{ color: RARITY_COLORS[itemRarity] ?? '#c8c8c8' }}
+                          style={{ color: RARITY_COLORS[l.itemData.rarity ?? itemRarity] ?? '#c8c8c8' }}
                         >
                           {l.itemData.name}
                         </div>
                       )}
                       {l.itemData.baseType && (
                         <div className="text-[10px] text-text-dim">
-                          {l.itemData.baseType}
-                          {l.itemData.ilvl ? ` (iLvl ${l.itemData.ilvl})` : ''}
+                          {l.itemData.name !== l.itemData.baseType ? l.itemData.baseType : ''}
+                          {l.itemData.ilvl
+                            ? `${l.itemData.name !== l.itemData.baseType ? ' ' : ''}(iLvl ${l.itemData.ilvl})`
+                            : ''}
                         </div>
                       )}
                       {l.itemData.storedExperience != null && (

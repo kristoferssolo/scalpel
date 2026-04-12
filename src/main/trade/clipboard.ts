@@ -86,14 +86,30 @@ export function parseItemText(text: string): PoeItem | null {
   // Strip modifier prefixes -- filters treat these as separate conditions, not part of the base type
   // Keep Blighted/Blight-ravaged for maps and incubators since it's part of the actual base type name
   const keepBlight = itemClass === 'Maps' || itemClass === 'Incubators'
-  // Some item classes have a single canonical base type -- use it directly
-  // instead of trying to parse it from the magic name
-  const CLASS_TO_BASE: Record<string, string> = {
-    Blueprints: 'Blueprint',
-    Contracts: 'Contract',
-  }
+  // For magic blueprints/contracts, extract the base type from the name
+  // e.g. "Shocking Blueprint: Bunker of Drought" -> "Blueprint: Bunker"
+  const HEIST_LOCATIONS = new Set([
+    'Bunker',
+    'Records Office',
+    'Mansion',
+    "Smuggler's Den",
+    'Underbelly',
+    'Laboratory',
+    'Prohibited Library',
+    'Repository',
+    'Tunnels',
+  ])
+  const heistBaseType = (() => {
+    if (rarity !== 'Magic') return undefined
+    if (itemClass !== 'Blueprints' && itemClass !== 'Contracts') return undefined
+    const keyword = itemClass === 'Blueprints' ? 'Blueprint' : 'Contract'
+    for (const loc of HEIST_LOCATIONS) {
+      if (rawBaseType.includes(`${keyword}: ${loc}`)) return `${keyword}: ${loc}`
+    }
+    return keyword
+  })()
   const baseType =
-    CLASS_TO_BASE[itemClass] ??
+    heistBaseType ??
     cleanBaseType(
       rawBaseType
         .replace(/^Synthesised /, '')
