@@ -42,6 +42,7 @@ interface TradeListing {
     templeObstructedRooms?: string[]
     storedExperience?: number
     modTiers?: Record<string, { tier: string; name: string; ranges: string }>
+    rarity?: string
   }
 }
 
@@ -600,6 +601,7 @@ export async function searchTrade(
         corrupted?: boolean
         duplicated?: boolean
         identified?: boolean
+        frameType?: number
         extended?: {
           ar?: number
           ev?: number
@@ -638,6 +640,7 @@ export async function searchTrade(
       ? {
           name: r.item.name,
           baseType: r.item.baseType,
+          rarity: ['Normal', 'Magic', 'Rare', 'Unique'][r.item.frameType ?? 0] ?? 'Normal',
           explicitMods: [
             ...(r.item.fracturedMods ?? []),
             ...(r.item.explicitMods ?? []),
