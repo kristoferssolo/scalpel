@@ -1,5 +1,9 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.1e',
+    notes: ['Fixed issue with right modifiers not releasing'],
+  },
+  {
     version: '0.9.1d',
     notes: [
       'Fixed issue with certain hotkey combos breaking macros',
