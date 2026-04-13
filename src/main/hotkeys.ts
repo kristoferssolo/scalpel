@@ -149,7 +149,7 @@ export function setHotkey(accelerator: string): void {
   currentHotkey = parseAccelerator(accelerator)
   try {
     globalShortcut.register(accelerator, () => {
-      if (onTrigger) onTrigger()
+      if (!injecting && onTrigger) onTrigger()
     })
   } catch (e) {
     console.error(`[hotkeys] Failed to register hotkey "${accelerator}":`, e)
@@ -165,7 +165,7 @@ export function setPriceCheckHotkey(accelerator: string): void {
   priceCheckAccelerator = accelerator
   try {
     globalShortcut.register(accelerator, () => {
-      if (onPriceCheck) onPriceCheck()
+      if (!injecting && onPriceCheck) onPriceCheck()
     })
   } catch (e) {
     console.error(`[hotkeys] Failed to register price check hotkey "${accelerator}":`, e)
@@ -194,7 +194,7 @@ export function setChatCommands(commands: Array<{ hotkey: string; command: strin
     const autoSubmit = c.autoSubmit !== false
     try {
       globalShortcut.register(c.hotkey, () => {
-        sendChatCommand(c.command, autoSubmit)
+        if (!injecting) sendChatCommand(c.command, autoSubmit)
       })
       chatCommandHotkeys.push({ accelerator: c.hotkey, command: c.command, autoSubmit })
     } catch (e) {
@@ -220,7 +220,7 @@ export function setAppMacros(macros: Array<{ action: string; hotkey: string }>):
     if (!hotkey || !action) continue
     try {
       globalShortcut.register(hotkey, () => {
-        if (onAppMacro) onAppMacro(action)
+        if (!injecting && onAppMacro) onAppMacro(action)
       })
       appMacroAccelerators.push(hotkey)
     } catch (e) {
@@ -240,10 +240,7 @@ function pasteToPoEChat(text: string, submit: boolean): Promise<void> {
 
   const prevClip = clipboard.readText()
   clipboard.writeText(text)
-
-  // Suspend our own hotkeys so the keystrokes we send don't trigger our own handlers
-  // (e.g. Ctrl+A in the paste sequence would fire a Ctrl+A filter hotkey)
-  suspendHotkeys()
+  injecting = true
 
   // Focus PoE so keystrokes reach the game (only if it doesn't already have focus)
   if (!OverlayController.targetHasFocus) focusGameWindow()
@@ -267,46 +264,58 @@ function pasteToPoEChat(text: string, submit: boolean): Promise<void> {
     setTimeout(() => {
       clipboard.writeText(prevClip)
       chatLocked = false
-      resumeHotkeys()
+      injecting = false
       resolve()
     }, 50),
   )
 }
 
 export function sendChatCommand(command: string, autoSubmit = true): Promise<void> {
-  const held = snapshotModifiers()
-  uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
-  uIOhook.keyToggle(UiohookKey.Shift, 'up')
-  uIOhook.keyToggle(UiohookKey.Alt, 'up')
+  const held = releaseAllModifiers()
   return pasteToPoEChat(command, autoSubmit).then(() => restoreModifiers(held))
 }
 
 /** Track physically held modifier keys via uiohook (ignores synthetic key events during injection) */
-const heldModifiers = { ctrl: false, shift: false, alt: false }
+const heldModifiers = { ctrl: 0 as number, shift: 0 as number, alt: 0 as number }
 
 function initModifierTracking(): void {
   uIOhook.on('keydown', (e) => {
     if (injecting) return
-    if (e.keycode === UiohookKey.Ctrl || e.keycode === UiohookKey.CtrlRight) heldModifiers.ctrl = true
-    if (e.keycode === UiohookKey.Shift || e.keycode === UiohookKey.ShiftRight) heldModifiers.shift = true
-    if (e.keycode === UiohookKey.Alt || e.keycode === UiohookKey.AltRight) heldModifiers.alt = true
+    if (e.keycode === UiohookKey.Ctrl || e.keycode === UiohookKey.CtrlRight) heldModifiers.ctrl = e.keycode
+    if (e.keycode === UiohookKey.Shift || e.keycode === UiohookKey.ShiftRight) heldModifiers.shift = e.keycode
+    if (e.keycode === UiohookKey.Alt || e.keycode === UiohookKey.AltRight) heldModifiers.alt = e.keycode
   })
   uIOhook.on('keyup', (e) => {
     if (injecting) return
-    if (e.keycode === UiohookKey.Ctrl || e.keycode === UiohookKey.CtrlRight) heldModifiers.ctrl = false
-    if (e.keycode === UiohookKey.Shift || e.keycode === UiohookKey.ShiftRight) heldModifiers.shift = false
-    if (e.keycode === UiohookKey.Alt || e.keycode === UiohookKey.AltRight) heldModifiers.alt = false
+    if (e.keycode === UiohookKey.Ctrl || e.keycode === UiohookKey.CtrlRight) heldModifiers.ctrl = 0
+    if (e.keycode === UiohookKey.Shift || e.keycode === UiohookKey.ShiftRight) heldModifiers.shift = 0
+    if (e.keycode === UiohookKey.Alt || e.keycode === UiohookKey.AltRight) heldModifiers.alt = 0
   })
 }
 
-function snapshotModifiers(): { ctrl: boolean; shift: boolean; alt: boolean } {
-  return { ...heldModifiers }
+type ModSnapshot = { ctrl: number; shift: number; alt: number }
+
+/** Snapshot held modifiers, then release all (both left and right variants) */
+function releaseAllModifiers(): ModSnapshot {
+  const snapshot: ModSnapshot = { ...heldModifiers }
+  injecting = true
+  uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
+  uIOhook.keyToggle(UiohookKey.CtrlRight, 'up')
+  uIOhook.keyToggle(UiohookKey.Shift, 'up')
+  uIOhook.keyToggle(UiohookKey.ShiftRight, 'up')
+  uIOhook.keyToggle(UiohookKey.Alt, 'up')
+  uIOhook.keyToggle(UiohookKey.AltRight, 'up')
+  injecting = false
+  return snapshot
 }
 
-function restoreModifiers(held: { ctrl: boolean; shift: boolean; alt: boolean }): void {
-  if (held.ctrl) uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
-  if (held.shift) uIOhook.keyToggle(UiohookKey.Shift, 'down')
-  if (held.alt) uIOhook.keyToggle(UiohookKey.Alt, 'down')
+/** Re-press the exact modifier keys from a snapshot */
+function restoreModifiers(snapshot: ModSnapshot): void {
+  injecting = true
+  if (snapshot.ctrl) uIOhook.keyToggle(snapshot.ctrl, 'down')
+  if (snapshot.shift) uIOhook.keyToggle(snapshot.shift, 'down')
+  if (snapshot.alt) uIOhook.keyToggle(snapshot.alt, 'down')
+  injecting = false
 }
 
 export function stopHotkeyListener(): void {
@@ -360,10 +369,7 @@ export async function sendItemFilterCommand(filterName: string, currentFilter?: 
  */
 export function sendCtrlCToPoE(): Promise<void> {
   injecting = true
-  const held = snapshotModifiers()
-
-  if (currentHotkey?.shift) uIOhook.keyToggle(UiohookKey.Shift, 'up')
-  if (currentHotkey?.alt) uIOhook.keyToggle(UiohookKey.Alt, 'up')
+  const held = releaseAllModifiers()
 
   uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
   uIOhook.keyToggle(UiohookKey.Alt, 'down')
@@ -373,8 +379,8 @@ export function sendCtrlCToPoE(): Promise<void> {
 
   return new Promise((resolve) =>
     setTimeout(() => {
-      injecting = false
       restoreModifiers(held)
+      injecting = false
       resolve()
     }, 100),
   )
