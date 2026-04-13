@@ -1,7 +1,7 @@
 import { uIOhook, UiohookKey } from 'uiohook-napi'
 import { clipboard, globalShortcut } from 'electron'
 import { OverlayController } from 'electron-overlay-window'
-import { focusGameWindow, isGameActive } from './overlay'
+import { focusGameWindow } from './overlay'
 
 // ─── Accelerator → uiohook keycode mapping ────────────────────────────────────
 
@@ -148,7 +148,7 @@ export function setHotkey(accelerator: string): void {
   currentHotkey = parseAccelerator(accelerator)
   try {
     globalShortcut.register(accelerator, () => {
-      if (isGameActive() && onTrigger) onTrigger()
+      if (onTrigger) onTrigger()
     })
   } catch (e) {
     console.error(`[hotkeys] Failed to register hotkey "${accelerator}":`, e)
@@ -164,7 +164,7 @@ export function setPriceCheckHotkey(accelerator: string): void {
   priceCheckAccelerator = accelerator
   try {
     globalShortcut.register(accelerator, () => {
-      if (isGameActive() && onPriceCheck) onPriceCheck()
+      if (onPriceCheck) onPriceCheck()
     })
   } catch (e) {
     console.error(`[hotkeys] Failed to register price check hotkey "${accelerator}":`, e)
@@ -193,7 +193,7 @@ export function setChatCommands(commands: Array<{ hotkey: string; command: strin
     const autoSubmit = c.autoSubmit !== false
     try {
       globalShortcut.register(c.hotkey, () => {
-        if (isGameActive()) sendChatCommand(c.command, autoSubmit)
+        sendChatCommand(c.command, autoSubmit)
       })
       chatCommandHotkeys.push({ accelerator: c.hotkey, command: c.command, autoSubmit })
     } catch (e) {
@@ -219,7 +219,7 @@ export function setAppMacros(macros: Array<{ action: string; hotkey: string }>):
     if (!hotkey || !action) continue
     try {
       globalShortcut.register(hotkey, () => {
-        if (isGameActive() && onAppMacro) onAppMacro(action)
+        if (onAppMacro) onAppMacro(action)
       })
       appMacroAccelerators.push(hotkey)
     } catch (e) {

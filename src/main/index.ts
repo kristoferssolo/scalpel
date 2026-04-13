@@ -21,6 +21,7 @@ import {
   getOverlayWindow,
   setCloseOnClickOutside,
   setOverlayScale,
+  setGameFocusHandlers,
 } from './overlay'
 import { createAppWindow, showAppWindow, getAppWindow } from './app-window'
 import {
@@ -214,6 +215,10 @@ app.whenReady().then(() => {
   // Apply close-on-click-outside setting
   setCloseOnClickOutside(store.get('closeOnClickOutside'))
   setOverlayScale(store.get('overlayScale'))
+  setGameFocusHandlers(
+    () => resumeHotkeys(),
+    () => suspendHotkeys(),
+  )
 
   // Fetch prices in background, refresh every 10 minutes
   refreshPrices(store.get('league'))
