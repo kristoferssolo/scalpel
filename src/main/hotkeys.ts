@@ -240,8 +240,12 @@ function pasteToPoEChat(text: string, submit: boolean): Promise<void> {
   const prevClip = clipboard.readText()
   clipboard.writeText(text)
 
-  // Focus PoE so keystrokes reach the game
-  focusGameWindow()
+  // Suspend our own hotkeys so the keystrokes we send don't trigger our own handlers
+  // (e.g. Ctrl+A in the paste sequence would fire a Ctrl+A filter hotkey)
+  suspendHotkeys()
+
+  // Focus PoE so keystrokes reach the game (only if it doesn't already have focus)
+  if (!OverlayController.targetHasFocus) focusGameWindow()
 
   // All keystrokes fire synchronously within ~5ms so the chat window
   // opens and closes in a single frame, preventing visible flash
@@ -257,11 +261,12 @@ function pasteToPoEChat(text: string, submit: boolean): Promise<void> {
     uIOhook.keyTap(UiohookKey.Enter)
   }
 
-  // Restore clipboard after paste completes
+  // Restore clipboard and re-register hotkeys after paste completes
   return new Promise((resolve) =>
     setTimeout(() => {
       clipboard.writeText(prevClip)
       chatLocked = false
+      resumeHotkeys()
       resolve()
     }, 50),
   )
