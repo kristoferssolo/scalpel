@@ -94,7 +94,8 @@ let stashScrollEnabled = false
 export function startHotkeyListener(handler: () => void): void {
   onTrigger = handler
 
-  // uiohook is only used for Escape (overlay close) and stash scroll - main hotkeys use globalShortcut
+  // uiohook is only used for Escape (overlay close), stash scroll, and modifier tracking
+  initModifierTracking()
   uIOhook.on('keydown', (e) => {
     if (injecting) return
     if (e.keycode === UiohookKey.Escape && onEscape) {
@@ -273,11 +274,39 @@ function pasteToPoEChat(text: string, submit: boolean): Promise<void> {
 }
 
 export function sendChatCommand(command: string, autoSubmit = true): Promise<void> {
-  // Release modifier keys before typing so held hotkey combos don't garble the chat message
+  const held = snapshotModifiers()
   uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
   uIOhook.keyToggle(UiohookKey.Shift, 'up')
   uIOhook.keyToggle(UiohookKey.Alt, 'up')
-  return pasteToPoEChat(command, autoSubmit)
+  return pasteToPoEChat(command, autoSubmit).then(() => restoreModifiers(held))
+}
+
+/** Track physically held modifier keys via uiohook (ignores synthetic key events during injection) */
+const heldModifiers = { ctrl: false, shift: false, alt: false }
+
+function initModifierTracking(): void {
+  uIOhook.on('keydown', (e) => {
+    if (injecting) return
+    if (e.keycode === UiohookKey.Ctrl || e.keycode === UiohookKey.CtrlRight) heldModifiers.ctrl = true
+    if (e.keycode === UiohookKey.Shift || e.keycode === UiohookKey.ShiftRight) heldModifiers.shift = true
+    if (e.keycode === UiohookKey.Alt || e.keycode === UiohookKey.AltRight) heldModifiers.alt = true
+  })
+  uIOhook.on('keyup', (e) => {
+    if (injecting) return
+    if (e.keycode === UiohookKey.Ctrl || e.keycode === UiohookKey.CtrlRight) heldModifiers.ctrl = false
+    if (e.keycode === UiohookKey.Shift || e.keycode === UiohookKey.ShiftRight) heldModifiers.shift = false
+    if (e.keycode === UiohookKey.Alt || e.keycode === UiohookKey.AltRight) heldModifiers.alt = false
+  })
+}
+
+function snapshotModifiers(): { ctrl: boolean; shift: boolean; alt: boolean } {
+  return { ...heldModifiers }
+}
+
+function restoreModifiers(held: { ctrl: boolean; shift: boolean; alt: boolean }): void {
+  if (held.ctrl) uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
+  if (held.shift) uIOhook.keyToggle(UiohookKey.Shift, 'down')
+  if (held.alt) uIOhook.keyToggle(UiohookKey.Alt, 'down')
 }
 
 export function stopHotkeyListener(): void {
@@ -331,8 +360,8 @@ export async function sendItemFilterCommand(filterName: string, currentFilter?: 
  */
 export function sendCtrlCToPoE(): Promise<void> {
   injecting = true
+  const held = snapshotModifiers()
 
-  // Release modifier keys the user is holding from their hotkey
   if (currentHotkey?.shift) uIOhook.keyToggle(UiohookKey.Shift, 'up')
   if (currentHotkey?.alt) uIOhook.keyToggle(UiohookKey.Alt, 'up')
 
@@ -345,6 +374,7 @@ export function sendCtrlCToPoE(): Promise<void> {
   return new Promise((resolve) =>
     setTimeout(() => {
       injecting = false
+      restoreModifiers(held)
       resolve()
     }, 100),
   )
