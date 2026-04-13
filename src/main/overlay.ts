@@ -178,9 +178,9 @@ export function createOverlayWindow(): BrowserWindow {
       if (Date.now() - lastShowTime < 500) return
       overlayWindow!.setOpacity(0)
       overlayWindow!.setIgnoreMouseEvents(true)
-      // Keep alwaysOnTop -- don't surrender z-position. The window is invisible
-      // (opacity 0) and click-through, so it doesn't interfere with anything.
-      // This prevents borderless PoE from grabbing the z-slot when we try to re-show.
+      // Drop to a lower z-level so the taskbar can appear above us when alt-tabbing.
+      // We restore to screen-saver level in showInactive when PoE regains focus.
+      overlayWindow!.setAlwaysOnTop(true, 'floating')
       opacityHidden = true
       if (onGameBlur) setImmediate(onGameBlur)
     }
