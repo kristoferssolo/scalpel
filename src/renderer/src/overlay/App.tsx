@@ -6,6 +6,7 @@ import { SettingsPanel } from '../components/SettingsPanel'
 import { SocketRecolor } from '../components/SocketRecolor'
 import { DustExplorer } from '../components/dust-explorer'
 import { DivCardExplorer } from '../components/div-card-explorer'
+import { RegexTool } from '../components/regex-tool'
 import { PriceCheck } from '../components/price-check'
 import { SnapGhosts } from './SnapGhosts'
 import { TitleBar } from './TitleBar'
@@ -26,6 +27,7 @@ type View =
   | 'dust'
   | 'divcards'
   | 'pricecheck'
+  | 'regex'
 
 const PANEL_WIDTH = 540
 const PANEL_TOP = 8
@@ -165,7 +167,7 @@ export default function App(): JSX.Element {
         if (v === 'audit') {
           auditPending.current = true
         } else {
-          const valid = ['setup', 'dust', 'divcards'] as const
+          const valid = ['setup', 'dust', 'divcards', 'regex'] as const
           if (valid.includes(v as (typeof valid)[number])) setView(v as View)
         }
       }),
@@ -355,7 +357,8 @@ export default function App(): JSX.Element {
     window.addEventListener('mouseup', onUp)
   }
 
-  const isFullHeightView = view === 'dust' || view === 'divcards' || view === 'pricecheck' || view === 'item'
+  const isFullHeightView =
+    view === 'dust' || view === 'divcards' || view === 'pricecheck' || view === 'item' || view === 'regex'
 
   return (
     <>
@@ -546,6 +549,9 @@ export default function App(): JSX.Element {
               </div>
               <div className="flex-col flex-1 min-h-0" style={{ display: view === 'divcards' ? 'flex' : 'none' }}>
                 <DivCardExplorer onSelectItem={() => setView('item')} />
+              </div>
+              <div className="flex-col flex-1 min-h-0" style={{ display: view === 'regex' ? 'flex' : 'none' }}>
+                <RegexTool />
               </div>
               {view === 'audit' && overlayData && overlayData.matches.length > 0 && (
                 <AuditView

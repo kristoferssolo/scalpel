@@ -11,8 +11,9 @@
   },
   "main": "out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "node scripts/sync-regex-data.js & electron-vite dev",
     "build": "electron-vite build",
+    "sync-regex": "node scripts/sync-regex-data.js",
     "dist:win": "npm run build && electron-builder --win --x64",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "postinstall": "electron-rebuild",

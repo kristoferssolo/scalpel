@@ -8,6 +8,9 @@ dist/
 # AI slop confirmed
 .claude/
 
+# Sync metadata
+src/shared/data/regex/vendor/.sync-meta.json
+
 # Internal docs
 docs/
 

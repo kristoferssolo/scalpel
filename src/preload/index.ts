@@ -118,6 +118,7 @@ export const api = {
   unlockInteractive: (): void => ipcRenderer.send('unlock-interactive'),
   suspendHotkeys: (): void => ipcRenderer.send('suspend-hotkeys'),
   resumeHotkeys: (): void => ipcRenderer.send('resume-hotkeys'),
+  reportRegex: (regex: string): void => ipcRenderer.send('report-regex', regex),
   refreshPrices: (): Promise<void> => ipcRenderer.invoke('refresh-prices'),
 
   // Event subscriptions

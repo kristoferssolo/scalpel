@@ -4,6 +4,7 @@ import { chaosIcon } from '../shared/icons'
 import { divCardArtMap, iconMap, IP } from '../shared/constants'
 import dustIconAsset from '../assets/currency/thaumaturgic-dust.png'
 import appIcon from '../../../../resources/icon.png'
+import poereIcon from '../assets/other/poere-logo.svg'
 
 type View =
   | 'idle'
@@ -17,6 +18,7 @@ type View =
   | 'dust'
   | 'divcards'
   | 'pricecheck'
+  | 'regex'
 
 interface TitleBarProps {
   view: View
@@ -156,6 +158,21 @@ export function TitleBar({
             src="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvRGl2aW5hdGlvbi9JbnZlbnRvcnlJY29uIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/f34bf8cbb5/InventoryIcon.png"
             alt=""
             className="w-[18px] h-[18px] object-contain"
+          />
+        </button>
+        <button
+          onClick={() => onSetView('regex')}
+          title="Regex Tool"
+          className="w-[30px] h-[30px] flex items-center justify-center p-0.5"
+          style={{
+            background: view === 'regex' ? 'var(--accent)' : undefined,
+          }}
+        >
+          <img
+            src={poereIcon}
+            alt=""
+            className="w-[18px] h-[18px] object-contain"
+            style={{ filter: view === 'regex' ? 'brightness(0.1)' : 'none' }}
           />
         </button>
         <button

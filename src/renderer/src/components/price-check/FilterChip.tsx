@@ -1,5 +1,5 @@
 interface FilterChipProps {
-  label: string
+  label: React.ReactNode
   active: boolean
   onClick: () => void
   color?: string
@@ -16,9 +16,9 @@ export function FilterChip({ label, active, onClick, color = 'var(--accent)', ic
         background: active ? (isAccent ? 'rgba(200,169,110,0.13)' : `${color}22`) : 'rgba(0,0,0,0.25)',
         border: active
           ? isAccent
-            ? '1px solid rgba(200,169,110,0.4)'
-            : `1px solid ${color}66`
-          : '1px solid var(--border)',
+            ? '2px solid rgba(200,169,110,0.4)'
+            : `2px solid ${color}66`
+          : '2px solid var(--border)',
         opacity: active ? 1 : 0.5,
         color: active ? color : 'var(--text-dim)',
       }}
@@ -32,7 +32,7 @@ export function FilterChip({ label, active, onClick, color = 'var(--accent)', ic
         />
       )}
       {icon && <img src={icon} alt="" className="relative -ml-[3px]" style={{ width: 14, height: 14 }} />}
-      <span className="relative">{label}</span>
+      <span className="relative flex items-center gap-1">{label}</span>
     </div>
   )
 }

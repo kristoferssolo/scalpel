@@ -35,4 +35,6 @@ export const APP_MACRO_DEFS = [
   { id: 'openAudit', label: 'Open Audit' },
   { id: 'openDust', label: 'Open Dust Explorer' },
   { id: 'openDivCards', label: 'Open Div Card Explorer' },
+  { id: 'openRegex', label: 'Open Regex Tool' },
+  { id: 'pasteRegex', label: 'Paste Current Regex' },
 ] as const

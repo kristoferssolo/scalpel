@@ -188,12 +188,28 @@ app.whenReady().then(() => {
   setPriceCheckHotkey(store.get('priceCheckHotkey'))
   setEscapeHandler(() => hideOverlay())
   setChatCommands(store.get('chatCommands') ?? [])
+  let currentRegex = ''
+  ipcMain.on('report-regex', (_event, regex: string) => {
+    currentRegex = regex
+  })
   const APP_MACRO_VIEWS: Record<string, string> = {
     openSettings: 'setup',
     openDust: 'dust',
     openDivCards: 'divcards',
+    openRegex: 'regex',
   }
   setAppMacroHandler((action) => {
+    if (action === 'pasteRegex') {
+      if (currentRegex) {
+        const { clipboard } = require('electron') as typeof import('electron')
+        clipboard.writeText(currentRegex)
+        const { uIOhook, UiohookKey } = require('uiohook-napi') as typeof import('uiohook-napi')
+        uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
+        uIOhook.keyTap(UiohookKey.V)
+        uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
+      }
+      return
+    }
     const overlayWin = getOverlayWindow()
     if (!overlayWin || overlayWin.isDestroyed()) return
     if (action === 'openAudit') {
