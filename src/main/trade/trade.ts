@@ -716,6 +716,7 @@ export async function searchTrade(
               const hashEntries = hashes[key]
               if (!modEntries || !hashEntries || !texts) continue
               for (let i = 0; i < hashEntries.length && i < texts.length; i++) {
+                if (!hashEntries[i]?.[1]?.[0] && hashEntries[i]?.[1]?.[0] !== 0) continue
                 const modIdx = hashEntries[i][1][0]
                 const m = modEntries[modIdx]
                 if (!m) continue
