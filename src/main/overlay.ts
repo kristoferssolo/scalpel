@@ -175,11 +175,7 @@ export function createOverlayWindow(): BrowserWindow {
 
   overlayWindow.hide = () => {
     if (windowShown) {
-      if (Date.now() - lastShowTime < 500) {
-        console.log('[overlay] hide() blocked by 500ms debounce')
-        return
-      }
-      console.log('[overlay] hide() executing')
+      if (Date.now() - lastShowTime < 500) return
       overlayWindow!.setOpacity(0)
       overlayWindow!.setIgnoreMouseEvents(true)
       // Drop to a lower z-level so the taskbar can appear above us when alt-tabbing.
@@ -228,7 +224,6 @@ export function createOverlayWindow(): BrowserWindow {
     }
   })
   OverlayController.events.on('focus', () => {
-    console.log('[overlay] focus event fired, overlayVisible:', overlayVisible)
     if (!overlayWindow || overlayWindow.isDestroyed()) return
     // Always restore z-level when PoE regains focus, even if overlay is hidden.
     // Without this, returning from another app (e.g. alt-tab to Spotify and back)
@@ -268,7 +263,6 @@ function sendGameBounds(physWidth: number, physHeight: number): void {
 
 export function showOverlay(): void {
   if (!overlayWindow || overlayWindow.isDestroyed()) return
-  console.log('[overlay] showOverlay() called, opacityHidden:', overlayWindow.isVisible())
   overlayVisible = true
   lastShowTime = Date.now()
   // Call the overridden showInactive() to properly reset opacityHidden and restore visibility.
