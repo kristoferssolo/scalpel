@@ -2,7 +2,18 @@ import { useState, useEffect } from 'react'
 import { MAP_MODS, DANGER_COLORS, DANGER_LABELS, type Danger } from '../../../../shared/data/regex/map-mods'
 import { buildMapRegex, POE_REGEX_MAX_LENGTH } from './regex-engine'
 import { buildQualifierRegex, QUALIFIERS, QUALIFIER_GROUPS, type QualifierValues } from './Qualifiers'
-import { Down, Right, CloseSmall, AddOne, Forbid, CheckOne, SettingConfig, Compass, Search } from '@icon-park/react'
+import {
+  Down,
+  Right,
+  CloseSmall,
+  AddOne,
+  Forbid,
+  CheckOne,
+  SettingConfig,
+  Compass,
+  Search,
+  Save,
+} from '@icon-park/react'
 import poereIconTight from '../../assets/other/poere-logo-tight.svg'
 import { FilterChip } from '../price-check/FilterChip'
 import { InfoChip } from '../../shared/PriceChip'
@@ -61,6 +72,9 @@ export function MapMods(): JSX.Element {
   })
   const [search, setSearch] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const [presetsOpen, setPresetsOpen] = useState(false)
+  const [presetName, setPresetName] = useState('')
+  const [presets, setPresets] = useState<import('../../../../shared/types').RegexPreset[]>([])
   const [copied, setCopied] = useState(false)
   const [avoidCollapsed, setAvoidCollapsed] = useState<Set<string>>(
     new Set(['dangerous', 'annoying', 'mild', 'harmless', 'beneficial']),
@@ -87,6 +101,9 @@ export function MapMods(): JSX.Element {
   useEffect(() => {
     localStorage.setItem('scalpel:regex:nightmare', String(showNightmare))
   }, [showNightmare])
+  useEffect(() => {
+    window.api.getRegexPresets().then(setPresets)
+  }, [])
 
   const selected = tab === 'avoid' ? avoid : want
   const setSelected = tab === 'avoid' ? setAvoid : setWant
@@ -166,6 +183,35 @@ export function MapMods(): JSX.Element {
     setTimeout(() => setCopied(false), 1500)
   }
 
+  const savePreset = async () => {
+    if (!presetName.trim()) return
+    const preset: import('../../../../shared/types').RegexPreset = {
+      id: crypto.randomUUID(),
+      name: presetName.trim(),
+      avoid: [...avoid],
+      want: [...want],
+      wantMode,
+      qualifiers: Object.fromEntries(Object.entries(qualifiers).filter(([, v]) => v != null)) as Record<string, number>,
+      nightmare: showNightmare,
+    }
+    const updated = await window.api.saveRegexPreset(preset)
+    setPresets(updated)
+    setPresetName('')
+  }
+
+  const loadPreset = (preset: import('../../../../shared/types').RegexPreset) => {
+    setAvoid(new Set(preset.avoid))
+    setWant(new Set(preset.want))
+    setWantMode(preset.wantMode)
+    setQualifiers(preset.qualifiers)
+    setShowNightmare(preset.nightmare)
+  }
+
+  const deletePreset = async (id: string) => {
+    const updated = await window.api.deleteRegexPreset(id)
+    setPresets(updated)
+  }
+
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Regex output */}
@@ -229,6 +275,15 @@ export function MapMods(): JSX.Element {
               if (searchOpen) setSearch('')
             }}
           />
+          <FilterChip
+            label={
+              <>
+                <Save size={12} theme="outline" fill="currentColor" /> Presets
+              </>
+            }
+            active={presetsOpen}
+            onClick={() => setPresetsOpen((v) => !v)}
+          />
           {tab !== 'qualifiers' && (
             <FilterChip
               label="Nightmare"
@@ -266,6 +321,59 @@ export function MapMods(): JSX.Element {
                 className="absolute right-1 top-1/2 -translate-y-1/2 cursor-pointer text-text-dim hover:text-text"
               >
                 <CloseSmall size={14} theme="outline" fill="currentColor" />
+              </div>
+            )}
+          </div>
+        </div>
+        <div
+          className="overflow-hidden transition-all duration-150"
+          style={{
+            maxHeight: presetsOpen ? 200 : 0,
+            marginTop: presetsOpen ? 8 : 0,
+            opacity: presetsOpen ? 1 : 0,
+          }}
+        >
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-1">
+              <input
+                type="text"
+                placeholder="Preset name..."
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') savePreset()
+                }}
+                className="flex-1 text-[11px] bg-black/30 rounded px-2 py-[5px] border-none"
+              />
+              <button
+                onClick={savePreset}
+                disabled={!presetName.trim()}
+                className="primary text-[11px] px-3 disabled:opacity-30 disabled:cursor-default"
+              >
+                Save
+              </button>
+            </div>
+            {presets.length > 0 && (
+              <div className="flex flex-col gap-[2px] max-h-[140px] overflow-y-auto">
+                {presets.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center gap-2 px-2 py-[4px] rounded text-[11px] bg-black/20 hover:bg-black/30 transition-colors"
+                  >
+                    <span
+                      className="flex-1 truncate cursor-pointer text-text-dim hover:text-text transition-colors"
+                      onClick={() => loadPreset(p)}
+                    >
+                      {p.name}
+                    </span>
+                    <div
+                      onClick={() => deletePreset(p.id)}
+                      className="cursor-pointer text-text-dim hover:text-[#ef5350] transition-colors shrink-0"
+                    >
+                      <CloseSmall size={14} theme="outline" fill="currentColor" />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
