@@ -121,6 +121,13 @@ export const api = {
   reportRegex: (regex: string): void => ipcRenderer.send('report-regex', regex),
   refreshPrices: (): Promise<void> => ipcRenderer.invoke('refresh-prices'),
 
+  // Regex presets
+  getRegexPresets: (): Promise<import('../shared/types').RegexPreset[]> => ipcRenderer.invoke('get-regex-presets'),
+  saveRegexPreset: (preset: import('../shared/types').RegexPreset): Promise<import('../shared/types').RegexPreset[]> =>
+    ipcRenderer.invoke('save-regex-preset', preset),
+  deleteRegexPreset: (id: string): Promise<import('../shared/types').RegexPreset[]> =>
+    ipcRenderer.invoke('delete-regex-preset', id),
+
   // Event subscriptions
   onOverlayData: (cb: (data: OverlayData) => void): (() => void) => {
     const handler = (_: Electron.IpcRendererEvent, data: OverlayData): void => cb(data)
