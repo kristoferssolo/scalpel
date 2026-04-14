@@ -266,7 +266,7 @@ async function downloadFullUpgrade(): Promise<void> {
       mainWindow?.webContents.send('update-download-progress', Math.round((totalReceived / totalSize) * 100))
     })
 
-    const asarPath = join(stagingDir, 'app.asar')
+    const asarPath = join(stagingDir, 'app.asar.staged')
     await downloadFile(asarUrl, asarPath, remote.asarSize, (percent) => {
       const asarReceived = (percent / 100) * remote.asarSize
       mainWindow?.webContents.send(
@@ -360,7 +360,7 @@ ipcMain.handle('install-update', () => {
   const stagingDir = getStagingDir()
   const asarNew = join(stagingDir, 'app.asar.new')
   const electronZip = join(stagingDir, 'electron.zip')
-  const fullUpgradeAsar = join(stagingDir, 'app.asar')
+  const fullUpgradeAsar = join(stagingDir, 'app.asar.staged')
   const pendingManifest = join(stagingDir, 'manifest.pending.json')
   const resourcesDir = process.resourcesPath || join(dirname(process.execPath), 'resources')
   const installDir = dirname(resourcesDir)
@@ -392,9 +392,12 @@ ipcMain.handle('install-update', () => {
   const batLines = ['@echo off', 'timeout /t 2 /nobreak > nul']
 
   if (isFullUpgrade) {
-    // Full Electron upgrade: extract the zip over the install directory, then copy asar
+    // Full Electron upgrade: extract the zip over the install directory, then copy asar.
+    // The zip contains electron.exe which needs to be renamed to match the installed exe name.
+    const electronExe = join(installDir, 'electron.exe')
     batLines.push(
       `powershell -NoProfile -Command "Expand-Archive -Path '${electronZip}' -DestinationPath '${installDir}' -Force"`,
+      `if exist "${electronExe}" (move /y "${electronExe}" "${exePath}")`,
       `copy /y "${fullUpgradeAsar}" "${asarPath}"`,
     )
   } else {

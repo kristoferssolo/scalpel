@@ -82,6 +82,7 @@ const store = new Store<AppSettings>({
     tradePriceOption: 'chaos_divine',
     priceCheckDefaultPercent: 90,
     chatCommands: [],
+    appMacros: [],
     stashScrollEnabled: false,
     poeVersion: 1,
   },
