@@ -1,5 +1,9 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.1g',
+    notes: ['Updated the way PoE windows are detected to prevent firing in the wrong game'],
+  },
+  {
     version: '0.9.1f',
     notes: ['Fixed hotkeys getting stuck and right side keys in hotkey issues, you know, maybe'],
   },

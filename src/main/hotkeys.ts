@@ -76,7 +76,7 @@ export function startHotkeyListener(handler: () => void): void {
 
   // Stash tab scrolling: Ctrl+scroll outside stash grid -> arrow key taps
   uIOhook.on('wheel', (e) => {
-    if (!stashScrollEnabled || !e.ctrlKey) return
+    if (!stashScrollEnabled || !e.ctrlKey || !OverlayController.targetHasFocus) return
     const tb = OverlayController.targetBounds
     if (!tb || !tb.width) return
     // Only act when cursor is inside the PoE window but outside the stash grid area

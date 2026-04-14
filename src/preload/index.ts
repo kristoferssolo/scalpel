@@ -166,6 +166,11 @@ export const api = {
     ipcRenderer.on('skip-animation', handler)
     return () => ipcRenderer.removeListener('skip-animation', handler)
   },
+  onPoeVersion: (cb: (version: 1 | 2) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, version: 1 | 2): void => cb(version)
+    ipcRenderer.on('poe-version', handler)
+    return () => ipcRenderer.removeListener('poe-version', handler)
+  },
   onOverlayDetach: (cb: () => void): (() => void) => {
     const handler = (): void => cb()
     ipcRenderer.on('overlay-detach', handler)

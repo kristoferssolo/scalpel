@@ -84,12 +84,14 @@ const store = new Store<AppSettings>({
     priceCheckDefaultPercent: 90,
     chatCommands: [],
     stashScrollEnabled: false,
+    poeVersion: 2,
   },
 })
 
 // Backfill defaults for keys added after initial release
 if (store.get('reloadOnSave') === undefined) store.set('reloadOnSave', true)
 if (store.get('stashScrollEnabled') === undefined) store.set('stashScrollEnabled', false)
+if (store.get('poeVersion') === undefined) store.set('poeVersion', 2)
 
 // Auto-detect overlay scale on first run (deferred until app ready since screen API requires it)
 app.whenReady().then(() => {
@@ -166,7 +168,7 @@ if (!gotLock) {
 const installDir = applyPendingUpdate()
 
 app.whenReady().then(() => {
-  createOverlayWindow()
+  createOverlayWindow(store.get('poeVersion') ?? 2)
   createAppWindow()
   createTray()
 
@@ -219,6 +221,10 @@ app.whenReady().then(() => {
     () => resumeHotkeys(),
     () => suspendHotkeys(),
   )
+
+  // Start with hotkeys suspended until PoE actually gains focus.
+  // Without this, hotkeys fire globally (e.g. in other games) before PoE opens.
+  suspendHotkeys()
 
   // Fetch prices in background, refresh every 10 minutes
   refreshPrices(store.get('league'))
