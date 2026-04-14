@@ -14,7 +14,22 @@ function getDefaultFilterDir(): string {
     case 'win32':
       return join(app.getPath('home'), 'Documents', 'My Games', 'Path of Exile')
     case 'linux':
-      return join(app.getPath('home'), '.local', 'share', 'Steam', 'steamapps', 'common', 'Path of Exile')
+      return join(
+        app.getPath('home'),
+        '.local',
+        'share',
+        'Steam',
+        'steamapps',
+        'compatdata',
+        '238960',
+        'pfx',
+        'drive_c',
+        'users',
+        'steamuser',
+        'Documents',
+        'My Games',
+        'Path of Exile',
+      )
     case 'darwin':
       return join(app.getPath('home'), 'Library', 'Application Support', 'Path of Exile', 'Preferences', 'ItemFilters')
     default:
