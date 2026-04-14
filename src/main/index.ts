@@ -20,7 +20,6 @@ import {
   showOverlay,
   getOverlayWindow,
   setCloseOnClickOutside,
-  setOverlayScale,
   setGameFocusHandlers,
 } from './overlay'
 import { createAppWindow, showAppWindow, getAppWindow } from './app-window'
@@ -83,13 +82,17 @@ const store = new Store<AppSettings>({
     tradePriceOption: 'chaos_divine',
     priceCheckDefaultPercent: 90,
     chatCommands: [],
+    appMacros: [],
     stashScrollEnabled: false,
+    poeVersion: 1,
   },
 })
 
 // Backfill defaults for keys added after initial release
 if (store.get('reloadOnSave') === undefined) store.set('reloadOnSave', true)
 if (store.get('stashScrollEnabled') === undefined) store.set('stashScrollEnabled', false)
+// Force poeVersion to 1 -- previous test builds defaulted to 2
+store.set('poeVersion', 1)
 
 // Auto-detect overlay scale on first run (deferred until app ready since screen API requires it)
 app.whenReady().then(() => {
@@ -166,7 +169,7 @@ if (!gotLock) {
 const installDir = applyPendingUpdate()
 
 app.whenReady().then(() => {
-  createOverlayWindow()
+  createOverlayWindow(store.get('poeVersion') ?? 2)
   createAppWindow()
   createTray()
 
@@ -230,11 +233,14 @@ app.whenReady().then(() => {
 
   // Apply close-on-click-outside setting
   setCloseOnClickOutside(store.get('closeOnClickOutside'))
-  setOverlayScale(store.get('overlayScale'))
   setGameFocusHandlers(
     () => resumeHotkeys(),
     () => suspendHotkeys(),
   )
+
+  // Start with hotkeys suspended until PoE actually gains focus.
+  // Without this, hotkeys fire globally (e.g. in other games) before PoE opens.
+  suspendHotkeys()
 
   // Fetch prices in background, refresh every 10 minutes
   refreshPrices(store.get('league'))

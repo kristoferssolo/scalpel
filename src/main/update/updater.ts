@@ -91,16 +91,31 @@ function computeSha512(filePath: string): string {
 /** Cached release asset URLs from the latest GitHub Release */
 let cachedAssetUrls: Record<string, string> = {}
 
-async function checkForUpdates(_channel: string): Promise<void> {
+async function checkForUpdates(channel: string): Promise<void> {
   if (checking) return
   checking = true
 
   try {
-    // Fetch latest release from GitHub API
-    const release = await fetchJson<{
-      tag_name: string
-      assets: Array<{ name: string; browser_download_url: string }>
-    }>(GITHUB_RELEASES_API)
+    // Fetch release from GitHub API.
+    // Beta channel: fetch all releases (including pre-releases), pick the newest.
+    // Stable channel: fetch only the latest non-pre-release.
+    let release: { tag_name: string; assets: Array<{ name: string; browser_download_url: string }> }
+    if (channel === 'beta') {
+      const releases = await fetchJson<
+        Array<{ tag_name: string; prerelease: boolean; assets: Array<{ name: string; browser_download_url: string }> }>
+      >(GITHUB_RELEASES_API.replace('/latest', ''))
+      const candidate = releases.find((r) => r.assets.some((a) => a.name === 'manifest.json'))
+      if (!candidate) {
+        checking = false
+        return
+      }
+      release = candidate
+    } else {
+      release = await fetchJson<{
+        tag_name: string
+        assets: Array<{ name: string; browser_download_url: string }>
+      }>(GITHUB_RELEASES_API)
+    }
 
     // Find manifest.json asset
     const manifestAsset = release.assets.find((a) => a.name === 'manifest.json')
@@ -114,12 +129,13 @@ async function checkForUpdates(_channel: string): Promise<void> {
 
     const remote = await fetchJson<InstallManifest>(manifestAsset.browser_download_url)
     const local = readLocalManifest()
+    const pkg = require('../../package.json')
+    const runningVersion = pkg.version as string
 
     // If no local manifest, write one from current running versions
     if (!local) {
-      const pkg = require('../../package.json')
       const baseline: InstallManifest = {
-        version: pkg.version,
+        version: runningVersion,
         electronVersion: process.versions.electron,
         asarUrl: '',
         asarSha512: '',
@@ -127,10 +143,15 @@ async function checkForUpdates(_channel: string): Promise<void> {
         nativeModules: remote.nativeModules,
       }
       writeLocalManifest(baseline)
-      if (pkg.version === remote.version) {
-        return
-      }
-    } else if (local.version === remote.version) {
+    } else if (local.version !== runningVersion) {
+      // Manifest is stale (e.g. user manually reinstalled a newer version).
+      // Sync it to the running version so we don't re-download what we already have.
+      local.version = runningVersion
+      local.electronVersion = process.versions.electron
+      writeLocalManifest(local)
+    }
+
+    if (runningVersion === remote.version) {
       return
     }
 
@@ -140,9 +161,9 @@ async function checkForUpdates(_channel: string): Promise<void> {
     )
 
     if (electronChanged || nativeModulesChanged) {
-      await handleFullUpgrade(remote, _channel)
+      await handleFullUpgrade(remote, channel)
     } else {
-      await handleAsarUpdate(remote, _channel)
+      await handleAsarUpdate(remote, channel)
     }
   } catch (err) {
     console.error('[Updater] Check failed:', (err as Error).message)
@@ -151,12 +172,12 @@ async function checkForUpdates(_channel: string): Promise<void> {
   }
 }
 
-async function handleAsarUpdate(remote: InstallManifest, _channel: string): Promise<void> {
+async function handleAsarUpdate(remote: InstallManifest, channel: string): Promise<void> {
   mainWindow?.webContents.send('update-available', remote.version)
   pendingRemote = remote
 }
 
-async function handleFullUpgrade(remote: InstallManifest, _channel: string): Promise<void> {
+async function handleFullUpgrade(remote: InstallManifest, channel: string): Promise<void> {
   mainWindow?.webContents.send('update-available', remote.version)
   pendingRemote = remote
 }
@@ -245,7 +266,7 @@ async function downloadFullUpgrade(): Promise<void> {
       mainWindow?.webContents.send('update-download-progress', Math.round((totalReceived / totalSize) * 100))
     })
 
-    const asarPath = join(stagingDir, 'app.asar')
+    const asarPath = join(stagingDir, 'app.asar.staged')
     await downloadFile(asarUrl, asarPath, remote.asarSize, (percent) => {
       const asarReceived = (percent / 100) * remote.asarSize
       mainWindow?.webContents.send(
@@ -338,62 +359,78 @@ ipcMain.on('save-overlay-state', (_event, state: Record<string, unknown>) => {
 ipcMain.handle('install-update', () => {
   const stagingDir = getStagingDir()
   const asarNew = join(stagingDir, 'app.asar.new')
+  const electronZip = join(stagingDir, 'electron.zip')
+  const fullUpgradeAsar = join(stagingDir, 'app.asar.staged')
   const pendingManifest = join(stagingDir, 'manifest.pending.json')
   const resourcesDir = process.resourcesPath || join(dirname(process.execPath), 'resources')
+  const installDir = dirname(resourcesDir)
   const asarPath = join(resourcesDir, 'app.asar')
   const asarUnpackedSrc = join(stagingDir, 'app.asar.unpacked')
   const asarUnpackedDest = join(resourcesDir, 'app.asar.unpacked')
   const exePath = process.execPath
   const userDataDir = app.getPath('userData')
 
-  if (existsSync(asarNew)) {
-    // Save the version we're updating to so we can show a banner after restart
-    try {
-      const pending = JSON.parse(readFileSync(pendingManifest, 'utf8'))
-      writeFileSync(join(userDataDir, 'just-updated.json'), JSON.stringify({ version: pending.version }))
-    } catch {
-      /* non-critical */
-    }
+  const isFullUpgrade = existsSync(electronZip) && existsSync(join(stagingDir, '.complete'))
+  const isAsarUpdate = existsSync(asarNew)
 
-    // Write a batch script that swaps the ASAR after the app exits
-    const batPath = join(userDataDir, 'apply-update.bat')
-    const batContent = [
-      '@echo off',
-      // Wait for the app to fully exit
-      `timeout /t 2 /nobreak > nul`,
-      // Copy new ASAR over the old one (file is unlocked now)
-      `copy /y "${asarNew}" "${asarPath}"`,
-      // Copy unpacked native modules if present
-      existsSync(asarUnpackedSrc) ? `xcopy /y /e /i "${asarUnpackedSrc}" "${asarUnpackedDest}"` : '',
-      // Update manifest
-      existsSync(pendingManifest) ? `copy /y "${pendingManifest}" "${join(userDataDir, 'install-manifest.json')}"` : '',
-      // Clean up staging
-      `rmdir /s /q "${stagingDir}"`,
-      // Relaunch the app
-      `start "" "${exePath}"`,
-      // Delete this batch file
-      `del "%~f0"`,
-    ]
-      .filter(Boolean)
-      .join('\r\n')
-
-    writeFileSync(batPath, batContent)
-
-    // Use a VBScript wrapper to run the batch file invisibly
-    const vbsPath = join(userDataDir, 'apply-update.vbs')
-    writeFileSync(vbsPath, `CreateObject("WScript.Shell").Run """${batPath}""", 0, False\r\n`)
-
-    // Run the VBS (truly invisible -- no window at all)
-    const { spawn } = require('child_process')
-    spawn('wscript.exe', [vbsPath], {
-      detached: true,
-      stdio: 'ignore',
-    }).unref()
-
-    app.exit(0)
-  } else {
+  if (!isFullUpgrade && !isAsarUpdate) {
     // No pending update, just relaunch
     app.relaunch()
     app.exit(0)
+    return
   }
+
+  // Save the version we're updating to so we can show a banner after restart
+  try {
+    const pending = JSON.parse(readFileSync(pendingManifest, 'utf8'))
+    writeFileSync(join(userDataDir, 'just-updated.json'), JSON.stringify({ version: pending.version }))
+  } catch {
+    /* non-critical */
+  }
+
+  const batPath = join(userDataDir, 'apply-update.bat')
+  const batLines = ['@echo off', 'timeout /t 2 /nobreak > nul']
+
+  if (isFullUpgrade) {
+    // Full Electron upgrade: extract the zip over the install directory, then copy asar.
+    // The zip contains electron.exe which needs to be renamed to match the installed exe name.
+    const electronExe = join(installDir, 'electron.exe')
+    batLines.push(
+      `powershell -NoProfile -Command "Expand-Archive -Path '${electronZip}' -DestinationPath '${installDir}' -Force"`,
+      `if exist "${electronExe}" (move /y "${electronExe}" "${exePath}")`,
+      `copy /y "${fullUpgradeAsar}" "${asarPath}"`,
+    )
+  } else {
+    // Asar-only update
+    batLines.push(`copy /y "${asarNew}" "${asarPath}"`)
+  }
+
+  // Copy unpacked native modules if present
+  if (existsSync(asarUnpackedSrc)) {
+    batLines.push(`xcopy /y /e /i "${asarUnpackedSrc}" "${asarUnpackedDest}"`)
+  }
+  // Update manifest
+  if (existsSync(pendingManifest)) {
+    batLines.push(`copy /y "${pendingManifest}" "${join(userDataDir, 'install-manifest.json')}"`)
+  }
+  // Clean up staging, relaunch, self-delete
+  batLines.push(
+    `rmdir /s /q "${stagingDir}"`,
+    `start "" "${isFullUpgrade ? join(installDir, 'Scalpel.exe') : exePath}"`,
+    `del "%~f0"`,
+  )
+
+  writeFileSync(batPath, batLines.join('\r\n'))
+
+  // Use a VBScript wrapper to run the batch file invisibly
+  const vbsPath = join(userDataDir, 'apply-update.vbs')
+  writeFileSync(vbsPath, `CreateObject("WScript.Shell").Run """${batPath}""", 0, False\r\n`)
+
+  const { spawn } = require('child_process')
+  spawn('wscript.exe', [vbsPath], {
+    detached: true,
+    stdio: 'ignore',
+  }).unref()
+
+  app.exit(0)
 })

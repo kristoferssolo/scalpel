@@ -1,5 +1,31 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.3',
+    notes: [
+      "Changed update process to allow electron updates so we aren't stuck on an old version",
+      'Added beta update channel for the brave & patient',
+    ],
+  },
+  {
+    version: '0.9.1h',
+    notes: ['Fixed awful bug with poe2 compatibility causing interface to become completely nonfunctional in poe1'],
+  },
+  {
+    version: '0.9.1g',
+    notes: [
+      'Updated the way PoE windows are detected to prevent firing in the wrong game',
+      'Fixed another z-index issue if the windowed settings was open',
+    ],
+  },
+  {
+    version: '0.9.1f',
+    notes: ['Fixed hotkeys getting stuck and right side keys in hotkey issues, you know, maybe'],
+  },
+  {
+    version: '0.9.1e',
+    notes: ['Fixed issue with right modifiers not releasing'],
+  },
+  {
     version: '0.9.1d',
     notes: [
       'Fixed issue with certain hotkey combos breaking macros',

@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import Store from 'electron-store'
 import { loadFilter, getColorFrequencies } from '../filter-state'
-import { getOverlayWindow, setCloseOnClickOutside, setOverlayScale } from '../overlay'
+import { getOverlayWindow, setCloseOnClickOutside } from '../overlay'
 import { getAppWindow } from '../app-window'
 import { setHotkey, setPriceCheckHotkey, setChatCommands, setAppMacros, setStashScrollEnabled } from '../hotkeys'
 import { refreshPrices } from '../trade/prices'
@@ -24,7 +24,6 @@ export function register(store: Store<AppSettings>): void {
     if (key === 'priceCheckHotkey') setPriceCheckHotkey(value as string)
     if (key === 'closeOnClickOutside') setCloseOnClickOutside(value as boolean)
     if (key === 'league') refreshPrices(value as string)
-    if (key === 'overlayScale') setOverlayScale(value as number)
     if (key === 'chatCommands') setChatCommands(value as Array<{ hotkey: string; command: string }>)
     if (key === 'appMacros') setAppMacros(value as Array<{ action: string; hotkey: string }>)
     if (key === 'stashScrollEnabled') setStashScrollEnabled(value as boolean)

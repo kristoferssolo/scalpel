@@ -39,6 +39,27 @@ export function GeneralTab({ settings, update }: Props): JSX.Element {
         </div>
       </section>
 
+      {/* PoE version switcher in case we can't automate */}
+      {import.meta.env.DEV && (
+        <section>
+          <label>Game version: Debug</label>
+          <p className="text-[10px] text-text-dim mt-0.5 mb-1.5">Restart required after changing</p>
+          <div className="flex gap-1.5">
+            {([1, 2] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => update('poeVersion', v)}
+                className={`text-[11px] px-3 py-1.5 ${
+                  settings.poeVersion === v ? 'bg-accent text-bg-solid' : 'text-text-dim'
+                }`}
+              >
+                Path of Exile{v === 2 ? ' 2' : ''}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Overlay scale */}
       <section>
         <label>Overlay scale</label>
@@ -66,6 +87,45 @@ export function GeneralTab({ settings, update }: Props): JSX.Element {
           <Toggle checked={settings.closeOnClickOutside} onChange={(val) => update('closeOnClickOutside', val)} />
           <span className="text-xs text-text">Close overlay when clicking outside</span>
         </div>
+      </section>
+
+      {/* Update channel */}
+      <section>
+        <label>Update channel</label>
+        <div className="flex gap-1.5 mt-[6px]">
+          {(['stable', 'beta'] as const).map((ch) => (
+            <button
+              key={ch}
+              onClick={() => update('updateChannel', ch)}
+              className={`text-[11px] px-3 py-1.5 ${
+                settings.updateChannel === ch ? 'bg-accent text-bg-solid' : 'text-text-dim'
+              }`}
+            >
+              {ch === 'stable' ? 'Stable' : 'Beta'}
+            </button>
+          ))}
+        </div>
+        {settings.updateChannel === 'beta' && (
+          <div className="mt-2 flex flex-col gap-1.5">
+            <p className="text-[10px] text-text-dim">
+              Warning: expect beta releases to break stuff and be generally annoying. Please join discord to tell me
+              what to fix and watch me squirm
+            </p>
+            <a
+              href="https://discord.com/invite/nUNcrmEAP5"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                e.preventDefault()
+                window.api.openExternal('https://discord.com/invite/nUNcrmEAP5')
+              }}
+              className="flex items-center justify-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded no-underline"
+              style={{ background: '#5865F2', color: '#fff' }}
+            >
+              Join Discord
+            </a>
+          </div>
+        )}
       </section>
     </>
   )

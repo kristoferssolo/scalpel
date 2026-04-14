@@ -23,6 +23,7 @@ type View =
 interface TitleBarProps {
   view: View
   overlayData: OverlayData | null
+  poeVersion: 1 | 2 | null
   onSetView: (view: View | ((prev: View) => View)) => void
   onClose: () => void
   onSetAuditBlockIndex: (v: number | null) => void
@@ -32,6 +33,7 @@ interface TitleBarProps {
 export function TitleBar({
   view,
   overlayData,
+  poeVersion,
   onSetView,
   onClose,
   onSetAuditBlockIndex,
@@ -47,6 +49,7 @@ export function TitleBar({
         Scalpel
         <span className="text-[9px] text-accent font-medium opacity-60 self-end mb-px -ml-0.5">
           Beta {__APP_VERSION__}
+          {poeVersion ? ` / PoE${poeVersion}` : ''}
         </span>
       </span>
       <div className="flex gap-1.5 items-center">

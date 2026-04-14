@@ -3,75 +3,72 @@ import { join } from 'path'
 import { OverlayController, OVERLAY_WINDOW_OPTS } from 'electron-overlay-window'
 import { uIOhook } from 'uiohook-napi'
 
+export let poeVersion: 1 | 2 = 1
+
 let overlayWindow: BrowserWindow | null = null
 let overlayVisible = false
 let mouseOverPanel = false
 let closeOnClickOutside = false
 let interactiveLocked = false
-let overlayScale = 1
-let panelSide: 'left' | 'right' = 'right'
 let lastShowTime = 0
 let onGameFocus: (() => void) | null = null
 let onGameBlur: (() => void) | null = null
-
-export function setPanelSide(side: 'left' | 'right'): void {
-  panelSide = side
-  updatePanelRect()
-}
 
 export function setCloseOnClickOutside(enabled: boolean): void {
   closeOnClickOutside = enabled
 }
 
-/** PoE sidebar is 370px at 800x600 — ratio ≈ 0.6167 of window height */
+/** PoE sidebar is 370px at 800x600 -- ratio used for gameBounds calculation */
 const POE_SIDEBAR_RATIO = 370 / 600
-const PANEL_WIDTH = 540
-const PANEL_TOP = 8
 
-// Panel bounds in screen coordinates (updated when game moves/resizes or renderer reports height)
+// Panel bounds in physical screen coordinates (for uiohook mouse hit testing).
+// Updated by the renderer reporting its actual CSS bounding rect, which we convert
+// to physical pixels. Single source of truth -- no duplicate position math.
 let panelRect = { left: 0, top: 0, right: 0, bottom: 0 }
-let reportedPanelHeight = 0
-let dragOffsetX = 0
-let dragOffsetY = 0
 
 function getScaleFactor(): number {
+  // Use the display the game is actually on, not the primary display.
+  // Multi-monitor setups with different DPIs need the correct scale factor.
+  const tb = OverlayController.targetBounds
+  if (tb && tb.width) {
+    return screen.getDisplayNearestPoint({ x: tb.x + tb.width / 2, y: tb.y + tb.height / 2 }).scaleFactor
+  }
   return screen.getPrimaryDisplay().scaleFactor
 }
 
-function updatePanelRect(): void {
+function updatePanelRectFromCss(cssRect: { left: number; top: number; width: number; height: number }): void {
   const tb = OverlayController.targetBounds
   if (!tb || !tb.width) return
   const sf = getScaleFactor()
-  const sidebarWidth = Math.round(tb.height * POE_SIDEBAR_RATIO)
-  // panelRect is in physical pixels (for uiohook mouse hit testing)
-  const physPanelWidth = PANEL_WIDTH * sf * overlayScale
-  const physPanelHeight = reportedPanelHeight * sf * overlayScale
-  const panelLeft =
-    (panelSide === 'left' ? tb.x + sidebarWidth - 1 : tb.x + tb.width - sidebarWidth - physPanelWidth + 1) +
-    dragOffsetX * sf * overlayScale
-  const top = tb.y + (PANEL_TOP + dragOffsetY) * sf * overlayScale
+  const physLeft = tb.x + cssRect.left * sf
+  const physTop = tb.y + cssRect.top * sf
   panelRect = {
-    left: panelLeft,
-    top,
-    right: panelLeft + physPanelWidth,
-    bottom: physPanelHeight > 0 ? top + physPanelHeight : top,
+    left: physLeft,
+    top: physTop,
+    right: physLeft + cssRect.width * sf,
+    bottom: cssRect.height > 0 ? physTop + cssRect.height * sf : physTop,
   }
 }
 
-ipcMain.on('report-panel-height', (_event, height: number) => {
-  reportedPanelHeight = height
-  updatePanelRect()
+ipcMain.on('report-panel-rect', (_event, rect: { left: number; top: number; width: number; height: number }) => {
+  updatePanelRectFromCss(rect)
 })
 
-ipcMain.on('report-drag-offset', (_event, x: number, y: number) => {
-  dragOffsetX = x
-  dragOffsetY = y
-  updatePanelRect()
-})
-
-ipcMain.on('report-panel-side', (_event, side: 'left' | 'right') => {
-  panelSide = side
-  updatePanelRect()
+// Allow renderer to pull initial state on mount (attach events may fire before renderer loads)
+ipcMain.handle('get-overlay-state', () => {
+  const tb = OverlayController.targetBounds
+  const sf = getScaleFactor()
+  return {
+    poeVersion,
+    gameBounds:
+      tb && tb.width
+        ? {
+            gameWidth: Math.round(tb.width / sf),
+            gameHeight: Math.round(tb.height / sf),
+            sidebarWidth: Math.round((tb.height / sf) * POE_SIDEBAR_RATIO),
+          }
+        : null,
+  }
 })
 
 // Lock interactive mode while native select dropdowns are open
@@ -105,6 +102,8 @@ let exitTimer: ReturnType<typeof setTimeout> | null = null
 
 uIOhook.on('mousemove', (e) => {
   if (!overlayVisible) return
+  // If panelRect has no area, renderer hasn't reported yet -- skip hit testing
+  if (panelRect.right <= panelRect.left || panelRect.bottom <= panelRect.top) return
   const inside = isInsidePanel(e.x, e.y)
   if (inside) {
     if (exitTimer) {
@@ -141,7 +140,13 @@ uIOhook.on('mousedown', (e) => {
   }
 })
 
-export function createOverlayWindow(): BrowserWindow {
+const POE_WINDOW_TITLES: Record<1 | 2, string> = {
+  1: 'Path of Exile',
+  2: 'Path of Exile 2',
+}
+
+export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
+  poeVersion = version
   overlayWindow = new BrowserWindow({
     ...OVERLAY_WINDOW_OPTS,
     show: false,
@@ -190,7 +195,12 @@ export function createOverlayWindow(): BrowserWindow {
       origShowInactive()
       windowShown = true
     }
+    // Toggle alwaysOnTop off/on to force Windows to re-stack the window.
+    // Going from one topmost level to another ('floating' -> 'screen-saver')
+    // doesn't always trigger a re-stack, especially with sibling Electron windows.
+    overlayWindow!.setAlwaysOnTop(false)
     overlayWindow!.setAlwaysOnTop(true, 'screen-saver')
+    overlayWindow!.moveTop()
     overlayWindow!.setOpacity(1)
     opacityHidden = false
     if (onGameFocus) setImmediate(onGameFocus)
@@ -203,12 +213,14 @@ export function createOverlayWindow(): BrowserWindow {
   }
 
   // Attach to the PoE game window — syncs overlay bounds automatically
-  OverlayController.attachByTitle(overlayWindow, 'Path of Exile')
+  OverlayController.attachByTitle(overlayWindow, POE_WINDOW_TITLES[poeVersion])
 
   OverlayController.events.on('attach', (ev) => {
     try {
+      if (overlayWindow && !overlayWindow.isDestroyed()) {
+        overlayWindow.webContents.send('poe-version', poeVersion)
+      }
       sendGameBounds(ev.width, ev.height)
-      updatePanelRect()
       mouseOverPanel = false
       if (overlayVisible && overlayWindow && !overlayWindow.isDestroyed()) {
         overlayWindow.setIgnoreMouseEvents(true)
@@ -219,7 +231,16 @@ export function createOverlayWindow(): BrowserWindow {
     }
   })
   OverlayController.events.on('focus', () => {
-    if (overlayVisible && overlayWindow && !overlayWindow.isDestroyed()) {
+    if (!overlayWindow || overlayWindow.isDestroyed()) return
+    // Always restore z-level when PoE regains focus, even if overlay is hidden.
+    // Without this, returning from another app (e.g. alt-tab to Spotify and back)
+    // leaves the overlay at 'floating' level, stuck behind the game.
+    overlayWindow.setAlwaysOnTop(true, 'screen-saver')
+    overlayWindow.moveTop()
+    // Resync game bounds so panelRect is accurate for click-through hit testing
+    const tb = OverlayController.targetBounds
+    if (tb && tb.width) sendGameBounds(tb.width, tb.height)
+    if (overlayVisible) {
       overlayWindow.showInactive()
       mouseOverPanel = false
       overlayWindow.setIgnoreMouseEvents(true)
@@ -228,7 +249,6 @@ export function createOverlayWindow(): BrowserWindow {
   OverlayController.events.on('moveresize', (ev) => {
     try {
       sendGameBounds(ev.width, ev.height)
-      updatePanelRect()
     } catch (err) {
       console.error('[overlay] Error in moveresize handler:', err)
     }
@@ -263,6 +283,7 @@ export function showOverlay(): void {
   try {
     const tb = OverlayController.targetBounds
     if (tb && tb.width) sendGameBounds(tb.width, tb.height)
+    overlayWindow.webContents.send('poe-version', poeVersion)
   } catch (err) {
     console.error('[overlay] Error in showOverlay:', err)
   }
@@ -315,11 +336,6 @@ export function toggleOverlay(): void {
 
 export function getOverlayWindow(): BrowserWindow | null {
   return overlayWindow
-}
-
-export function setOverlayScale(scale: number): void {
-  overlayScale = scale
-  updatePanelRect()
 }
 
 /** Make PoE the OS foreground window so SendInput reaches it, not the overlay. */

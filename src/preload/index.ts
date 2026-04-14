@@ -111,9 +111,12 @@ export const api = {
 
   // Overlay control
   closeOverlay: (): void => ipcRenderer.send('close-overlay'),
-  reportPanelHeight: (height: number): void => ipcRenderer.send('report-panel-height', height),
-  reportDragOffset: (x: number, y: number): void => ipcRenderer.send('report-drag-offset', x, y),
-  reportPanelSide: (side: 'left' | 'right'): void => ipcRenderer.send('report-panel-side', side),
+  getOverlayState: (): Promise<{
+    poeVersion: 1 | 2
+    gameBounds: { gameWidth: number; gameHeight: number; sidebarWidth: number } | null
+  }> => ipcRenderer.invoke('get-overlay-state'),
+  reportPanelRect: (rect: { left: number; top: number; width: number; height: number }): void =>
+    ipcRenderer.send('report-panel-rect', rect),
   lockInteractive: (): void => ipcRenderer.send('lock-interactive'),
   unlockInteractive: (): void => ipcRenderer.send('unlock-interactive'),
   suspendHotkeys: (): void => ipcRenderer.send('suspend-hotkeys'),
@@ -173,6 +176,11 @@ export const api = {
     const handler = (): void => cb()
     ipcRenderer.on('skip-animation', handler)
     return () => ipcRenderer.removeListener('skip-animation', handler)
+  },
+  onPoeVersion: (cb: (version: 1 | 2) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, version: 1 | 2): void => cb(version)
+    ipcRenderer.on('poe-version', handler)
+    return () => ipcRenderer.removeListener('poe-version', handler)
   },
   onOverlayDetach: (cb: () => void): (() => void) => {
     const handler = (): void => cb()

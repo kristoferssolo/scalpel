@@ -260,6 +260,7 @@ export interface AppSettings {
   chatCommands: Array<{ hotkey: string; command: string; autoSubmit?: boolean }>
   appMacros: Array<{ action: string; hotkey: string }>
   stashScrollEnabled: boolean
+  poeVersion: 1 | 2
   regexPresets: RegexPreset[]
 }
 

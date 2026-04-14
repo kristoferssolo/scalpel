@@ -9,7 +9,7 @@ import {
   findStrandBreakpoints,
   evaluateBlock,
 } from './filter/matcher'
-import { getOverlayWindow, showOverlay, setPanelSide } from './overlay'
+import { getOverlayWindow, showOverlay } from './overlay'
 import { sendCtrlCToPoE } from './hotkeys'
 import { focusGameWindow } from './overlay'
 import { refreshPrices, lookupPrice, lookupBestUniquePrice, getUniquesByBase } from './trade/prices'
@@ -318,7 +318,6 @@ export function createHotkeyHandler(store: Store<AppSettings>, isElevated: () =>
 
       const side =
         lastCursorX != null && lastCursorX < screen.getPrimaryDisplay().workAreaSize.width / 2 ? 'left' : 'right'
-      setPanelSide(side)
 
       evaluateAndSend(item)
       preloadPriceCheck(item, store)
@@ -339,7 +338,6 @@ export function createPriceCheckHandler(store: Store<AppSettings>, isElevated: (
     try {
       lastCursorX = screen.getCursorScreenPoint().x
       const side = lastCursorX < screen.getPrimaryDisplay().workAreaSize.width / 2 ? 'left' : 'right'
-      setPanelSide(side)
 
       const item = await captureItemFromClipboard(isElevated)
       if (!item) return
