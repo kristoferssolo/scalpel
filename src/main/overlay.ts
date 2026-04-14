@@ -11,6 +11,8 @@ let interactiveLocked = false
 let overlayScale = 1
 let panelSide: 'left' | 'right' = 'right'
 let lastShowTime = 0
+let onGameFocus: (() => void) | null = null
+let onGameBlur: (() => void) | null = null
 
 export function setPanelSide(side: 'left' | 'right'): void {
   panelSide = side
@@ -176,10 +178,11 @@ export function createOverlayWindow(): BrowserWindow {
       if (Date.now() - lastShowTime < 500) return
       overlayWindow!.setOpacity(0)
       overlayWindow!.setIgnoreMouseEvents(true)
-      // Keep alwaysOnTop -- don't surrender z-position. The window is invisible
-      // (opacity 0) and click-through, so it doesn't interfere with anything.
-      // This prevents borderless PoE from grabbing the z-slot when we try to re-show.
+      // Drop to a lower z-level so the taskbar can appear above us when alt-tabbing.
+      // We restore to screen-saver level in showInactive when PoE regains focus.
+      overlayWindow!.setAlwaysOnTop(true, 'floating')
       opacityHidden = true
+      if (onGameBlur) setImmediate(onGameBlur)
     }
   }
   overlayWindow.showInactive = () => {
@@ -190,6 +193,7 @@ export function createOverlayWindow(): BrowserWindow {
     overlayWindow!.setAlwaysOnTop(true, 'screen-saver')
     overlayWindow!.setOpacity(1)
     opacityHidden = false
+    if (onGameFocus) setImmediate(onGameFocus)
   }
 
   const origIsVisible = overlayWindow.isVisible.bind(overlayWindow)
@@ -319,6 +323,11 @@ export function setOverlayScale(scale: number): void {
 }
 
 /** Make PoE the OS foreground window so SendInput reaches it, not the overlay. */
+export function setGameFocusHandlers(onFocus: () => void, onBlur: () => void): void {
+  onGameFocus = onFocus
+  onGameBlur = onBlur
+}
+
 export function focusGameWindow(): void {
   OverlayController.focusTarget()
 }

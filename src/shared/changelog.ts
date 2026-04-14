@@ -1,5 +1,28 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.1f',
+    notes: ['Fixed hotkeys getting stuck and right side keys in hotkey issues, you know, maybe'],
+  },
+  {
+    version: '0.9.1e',
+    notes: ['Fixed issue with right modifiers not releasing'],
+  },
+  {
+    version: '0.9.1d',
+    notes: [
+      'Fixed issue with certain hotkey combos breaking macros',
+      'Fixed issue with held keys not being restored after hotkeys',
+      "Fixed issue with windows toolbar hiding in borderless fullscreen no you aren't crazy",
+    ],
+  },
+  {
+    version: '0.9.1c',
+    notes: [
+      "Fixed issue price checking items that don't have tiers on mods",
+      'Fixed hotkeys now not working outside of the game, always something, amazing',
+    ],
+  },
+  {
     version: '0.9.1',
     notes: [
       'Added tiers and advanced mods to price check results',
