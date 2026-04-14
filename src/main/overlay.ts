@@ -3,6 +3,8 @@ import { join } from 'path'
 import { OverlayController, OVERLAY_WINDOW_OPTS } from 'electron-overlay-window'
 import { uIOhook } from 'uiohook-napi'
 
+export let poeVersion: 1 | 2 = 2
+
 let overlayWindow: BrowserWindow | null = null
 let overlayVisible = false
 let mouseOverPanel = false
@@ -141,7 +143,13 @@ uIOhook.on('mousedown', (e) => {
   }
 })
 
-export function createOverlayWindow(): BrowserWindow {
+const POE_WINDOW_TITLES: Record<1 | 2, string> = {
+  1: 'Path of Exile',
+  2: 'Path of Exile 2',
+}
+
+export function createOverlayWindow(version: 1 | 2 = 2): BrowserWindow {
+  poeVersion = version
   overlayWindow = new BrowserWindow({
     ...OVERLAY_WINDOW_OPTS,
     show: false,
@@ -203,10 +211,13 @@ export function createOverlayWindow(): BrowserWindow {
   }
 
   // Attach to the PoE game window — syncs overlay bounds automatically
-  OverlayController.attachByTitle(overlayWindow, 'Path of Exile')
+  OverlayController.attachByTitle(overlayWindow, POE_WINDOW_TITLES[poeVersion])
 
   OverlayController.events.on('attach', (ev) => {
     try {
+      if (overlayWindow && !overlayWindow.isDestroyed()) {
+        overlayWindow.webContents.send('poe-version', poeVersion)
+      }
       sendGameBounds(ev.width, ev.height)
       updatePanelRect()
       mouseOverPanel = false

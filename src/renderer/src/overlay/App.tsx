@@ -58,6 +58,9 @@ export default function App(): JSX.Element {
   const [auditBlockIndex, setAuditBlockIndex] = useState<number | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
+  // PoE version detection
+  const [poeVersion, setPoeVersion] = useState<1 | 2 | null>(null)
+
   // Auto-update state
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   const [updateProgress, setUpdateProgress] = useState<number | null>(null)
@@ -96,6 +99,7 @@ export default function App(): JSX.Element {
     const unsubElevation = window.api.onElevationHint(() => setNeedsElevation(true))
 
     const unsubs = [
+      window.api.onPoeVersion((v) => setPoeVersion(v)),
       window.api.onUpdateAvailable((version) => setUpdateVersion(version)),
       window.api.onUpdateDownloadProgress((percent) => setUpdateProgress(percent)),
       window.api.onUpdateDownloaded(() => {
@@ -422,6 +426,7 @@ export default function App(): JSX.Element {
             <TitleBar
               view={view}
               overlayData={overlayData}
+              poeVersion={poeVersion}
               onSetView={setView}
               onClose={close}
               onSetAuditBlockIndex={setAuditBlockIndex}

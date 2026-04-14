@@ -39,6 +39,27 @@ export function GeneralTab({ settings, update }: Props): JSX.Element {
         </div>
       </section>
 
+      {/* PoE version switcher in case we can't automate */}
+      {import.meta.env.DEV && (
+        <section>
+          <label>Game version: Debug</label>
+          <p className="text-[10px] text-text-dim mt-0.5 mb-1.5">Restart required after changing</p>
+          <div className="flex gap-1.5">
+            {([1, 2] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => update('poeVersion', v)}
+                className={`text-[11px] px-3 py-1.5 ${
+                  settings.poeVersion === v ? 'bg-accent text-bg-solid' : 'text-text-dim'
+                }`}
+              >
+                Path of Exile{v === 2 ? ' 2' : ''}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Overlay scale */}
       <section>
         <label>Overlay scale</label>
