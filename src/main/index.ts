@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Tray, Menu, screen } from 'electron'
+import { app, type BrowserWindow, ipcMain, Menu, screen, Tray } from 'electron'
 
 // Prevent unhandled JS exceptions from crashing the native overlay thread
 // electron-overlay-window's tsfn_to_js_proxy calls napi_fatal_error if napi_call_function
@@ -12,46 +12,46 @@ process.on('unhandledRejection', (err) => {
 
 import { execSync } from 'child_process'
 import Store from 'electron-store'
-import { getAppIcon } from './platform'
-import {
-  createOverlayWindow,
-  hideOverlay,
-  showOverlay,
-  getOverlayWindow,
-  setCloseOnClickOutside,
-  setOverlayScale,
-  setGameFocusHandlers,
-} from './overlay'
-import { createAppWindow, showAppWindow, getAppWindow } from './app-window'
-import {
-  startHotkeyListener,
-  setHotkey,
-  setPriceCheckHotkey,
-  setPriceCheckHandler,
-  setEscapeHandler,
-  stopHotkeyListener,
-  setChatCommands,
-  setAppMacros,
-  setAppMacroHandler,
-  suspendHotkeys,
-  resumeHotkeys,
-  setStashScrollEnabled,
-} from './hotkeys'
-import { refreshPrices } from './trade/prices'
-import { onRateLimitUpdate } from './trade/trade'
-import { startOnlineSync, stopOnlineSync } from './online-sync'
-import { initUpdater } from './update/updater'
-import { applyPendingUpdate } from './update/update-swap'
-import { loadFilter } from './filter-state'
+import type { AppSettings } from '../shared/types'
+import { createAppWindow, getAppWindow, showAppWindow } from './app-window'
 import { createHotkeyHandler, createPriceCheckHandler } from './evaluation'
-import * as tradeHandlers from './handlers/trade'
-import * as settingsHandlers from './handlers/settings'
-import * as filesHandlers from './handlers/files'
+import { loadFilter } from './filter-state'
 import * as editingHandlers from './handlers/editing'
-import * as versionsHandlers from './handlers/versions'
+import * as filesHandlers from './handlers/files'
 import * as onlineSyncHandlers from './handlers/online-sync'
 import * as pricesHandlers from './handlers/prices'
-import type { AppSettings } from '../shared/types'
+import * as settingsHandlers from './handlers/settings'
+import * as tradeHandlers from './handlers/trade'
+import * as versionsHandlers from './handlers/versions'
+import {
+  resumeHotkeys,
+  setAppMacroHandler,
+  setAppMacros,
+  setChatCommands,
+  setEscapeHandler,
+  setHotkey,
+  setPriceCheckHandler,
+  setPriceCheckHotkey,
+  setStashScrollEnabled,
+  startHotkeyListener,
+  stopHotkeyListener,
+  suspendHotkeys,
+} from './hotkeys'
+import { startOnlineSync, stopOnlineSync } from './online-sync'
+import {
+  createOverlayWindow,
+  getOverlayWindow,
+  hideOverlay,
+  setCloseOnClickOutside,
+  setGameFocusHandlers,
+  setOverlayScale,
+  showOverlay,
+} from './overlay'
+import { getAppIcon } from './platform'
+import { refreshPrices } from './trade/prices'
+import { onRateLimitUpdate } from './trade/trade'
+import { applyPendingUpdate } from './update/update-swap'
+import { initUpdater } from './update/updater'
 
 // ---- Elevation detection ---------------------------------------------------
 
@@ -63,6 +63,14 @@ function isElevated(): boolean {
   } catch {
     return false
   }
+}
+
+function isWaylandSession(): boolean {
+  return process.platform === 'linux' && process.env['XDG_SESSION_TYPE'] === 'wayland'
+}
+
+function isOverlaySupported(): boolean {
+  return !isWaylandSession() || process.env['ELECTRON_OZONE_PLATFORM_HINT'] === 'x11'
 }
 
 // ---- Persistent settings ---------------------------------------------------
@@ -157,10 +165,11 @@ if (!gotLock) {
 }
 
 const installDir = applyPendingUpdate()
+const overlaySupported = isOverlaySupported()
 
 app.whenReady().then(() => {
-  createOverlayWindow()
   createAppWindow()
+  if (overlaySupported) createOverlayWindow()
   createTray()
 
   // Broadcast rate limit state to overlay
@@ -171,39 +180,41 @@ app.whenReady().then(() => {
   const filterPath = store.get('filterPath')
   if (filterPath) loadFilter(filterPath, 'App Launch')
 
-  // Start low-level keyboard hook
-  const onHotkeyFired = createHotkeyHandler(store, isElevated)
-  const onPriceCheckFired = createPriceCheckHandler(store, isElevated)
-  const hotkey = store.get('hotkey')
-  startHotkeyListener(onHotkeyFired)
-  setHotkey(hotkey)
-  setPriceCheckHandler(onPriceCheckFired)
-  setPriceCheckHotkey(store.get('priceCheckHotkey'))
-  setEscapeHandler(() => hideOverlay())
-  setChatCommands(store.get('chatCommands') ?? [])
-  const APP_MACRO_VIEWS: Record<string, string> = {
-    openSettings: 'setup',
-    openDust: 'dust',
-    openDivCards: 'divcards',
-  }
-  setAppMacroHandler((action) => {
-    const overlayWin = getOverlayWindow()
-    if (!overlayWin || overlayWin.isDestroyed()) return
-    if (action === 'openAudit') {
-      onHotkeyFired()
-      overlayWin.webContents.send('open-view', 'audit')
-    } else {
-      const view = APP_MACRO_VIEWS[action] ?? 'setup'
-      overlayWin.webContents.send('open-view', view)
-      showOverlay()
+  if (overlaySupported) {
+    // Start low-level keyboard hook
+    const onHotkeyFired = createHotkeyHandler(store, isElevated)
+    const onPriceCheckFired = createPriceCheckHandler(store, isElevated)
+    const hotkey = store.get('hotkey')
+    startHotkeyListener(onHotkeyFired)
+    setHotkey(hotkey)
+    setPriceCheckHandler(onPriceCheckFired)
+    setPriceCheckHotkey(store.get('priceCheckHotkey'))
+    setEscapeHandler(() => hideOverlay())
+    setChatCommands(store.get('chatCommands') ?? [])
+    const APP_MACRO_VIEWS: Record<string, string> = {
+      openSettings: 'setup',
+      openDust: 'dust',
+      openDivCards: 'divcards',
     }
-  })
-  setAppMacros(store.get('appMacros') ?? [])
-  setStashScrollEnabled(store.get('stashScrollEnabled') ?? false)
+    setAppMacroHandler((action) => {
+      const overlayWin = getOverlayWindow()
+      if (!overlayWin || overlayWin.isDestroyed()) return
+      if (action === 'openAudit') {
+        onHotkeyFired()
+        overlayWin.webContents.send('open-view', 'audit')
+      } else {
+        const view = APP_MACRO_VIEWS[action] ?? 'setup'
+        overlayWin.webContents.send('open-view', view)
+        showOverlay()
+      }
+    })
+    setAppMacros(store.get('appMacros') ?? [])
+    setStashScrollEnabled(store.get('stashScrollEnabled') ?? false)
 
-  // Suspend/resume hotkeys while the hotkey recorder is active
-  ipcMain.on('suspend-hotkeys', () => suspendHotkeys())
-  ipcMain.on('resume-hotkeys', () => resumeHotkeys())
+    // Suspend/resume hotkeys while the hotkey recorder is active
+    ipcMain.on('suspend-hotkeys', () => suspendHotkeys())
+    ipcMain.on('resume-hotkeys', () => resumeHotkeys())
+  }
 
   // Apply close-on-click-outside setting
   setCloseOnClickOutside(store.get('closeOnClickOutside'))
@@ -243,8 +254,8 @@ app.whenReady().then(() => {
     })
   }
 
-  // Show onboarding on first launch, otherwise stay in tray
-  if (!filterPath) {
+  if (!filterPath || !overlaySupported) {
+    // Show onboarding on first launch or when running on Wayland, otherwise stay in tray
     showAppWindow()
   }
 })
