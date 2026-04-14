@@ -233,6 +233,16 @@ export interface InstallManifest {
   nativeModules: Record<string, string>
 }
 
+export interface RegexPreset {
+  id: string
+  name: string
+  avoid: number[]
+  want: number[]
+  wantMode: 'any' | 'all'
+  qualifiers: Record<string, number>
+  nightmare: boolean
+}
+
 export interface AppSettings {
   filterPath: string
   filterDir: string
@@ -250,6 +260,7 @@ export interface AppSettings {
   chatCommands: Array<{ hotkey: string; command: string; autoSubmit?: boolean }>
   appMacros: Array<{ action: string; hotkey: string }>
   stashScrollEnabled: boolean
+  regexPresets: RegexPreset[]
 }
 
 export interface FilterListEntry {
