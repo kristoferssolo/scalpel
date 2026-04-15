@@ -4,7 +4,7 @@ import { PriceChip, InfoChip } from '../shared/PriceChip'
 import { INFLUENCE_ICONS_BY_NAME } from './price-check/constants'
 import { iconMap, divCardArtMap, RARITY_COLORS } from '../shared/constants'
 import { getItemIcon } from '../shared/utils'
-import dustValues from '../../../shared/data/economy/dust-values.json'
+import { getDustInfo } from '../shared/dust'
 import dustIcon from '../assets/currency/thaumaturgic-dust.png'
 import socketRed from '../assets/sockets/socket-red.png'
 import socketGreen from '../assets/sockets/socket-green.png'
@@ -39,18 +39,9 @@ function getUniqueItemClass(uniqueName: string): string {
   return classMap[base] ?? ''
 }
 import socketLink from '../assets/sockets/socket-link.png'
-const dustMap = dustValues as Record<string, number>
 const classSizes: Record<string, [number, number]> = Object.fromEntries(
   Object.entries(itemClasses).map(([k, v]) => [k, v.size]),
 )
-
-// Build dust-by-base map: max dust value per base type
-const dustBaseMap: Record<string, number> = {}
-for (const [name, val] of Object.entries(dustMap)) {
-  const base = uniqueToBase[name]
-  if (!base) continue
-  if (!dustBaseMap[base] || val > dustBaseMap[base]) dustBaseMap[base] = val
-}
 
 // Build dimensions map from item-classes
 function getDims(baseType: string, itemClass: string): { w: number; h: number } | undefined {
@@ -63,26 +54,6 @@ function getDims(baseType: string, itemClass: string): { w: number; h: number } 
     if (s) return { w: s[0], h: s[1] }
   }
   return undefined
-}
-
-function calcDust(baseDust: number, item: PoeItem): number {
-  const ilvl = Math.min(Math.max(item.itemLevel, 65), 84)
-  let bonus = item.quality * 2
-  bonus += item.influence.length * 50
-  const multiplier = (bonus + 100) / 100
-  return Math.round(baseDust * 125 * (20 - (84 - ilvl)) * multiplier)
-}
-
-function getDustInfo(item: PoeItem): { value: number; upTo?: boolean } | null {
-  if (item.rarity !== 'Unique') return null
-  const baseDust = dustMap[item.name] ?? dustMap[item.name.replace(/^(Foulborn|Imbued) /, '')]
-  if (baseDust) return { value: calcDust(baseDust, item) }
-  // Unidentified unique: show max possible dust for this base type
-  if (!item.identified) {
-    const maxBaseDust = dustBaseMap[item.baseType]
-    if (maxBaseDust) return { value: calcDust(maxBaseDust, item), upTo: true }
-  }
-  return null
 }
 
 function RewardText({ reward }: { reward: string }): JSX.Element {

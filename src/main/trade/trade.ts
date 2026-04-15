@@ -351,13 +351,9 @@ export async function searchTrade(
   if (heistFilters.length > 0) {
     const heistQuery: Record<string, { min?: number; max?: number }> = {}
     for (const f of heistFilters) {
-      if (f.id === 'heist.wings_revealed')
-        heistQuery.heist_wings = { ...(f.min != null ? { min: f.min } : {}), ...(f.max != null ? { max: f.max } : {}) }
-      if (f.id === 'heist.max_wings')
-        heistQuery.heist_max_wings = {
-          ...(f.min != null ? { min: f.min } : {}),
-          ...(f.max != null ? { max: f.max } : {}),
-        }
+      // Map filter IDs like "heist.heist_engineering" -> trade query key "heist_engineering"
+      const key = f.id.replace('heist.', '')
+      heistQuery[key] = { ...(f.min != null ? { min: f.min } : {}), ...(f.max != null ? { max: f.max } : {}) }
     }
     const existing = (query.filters as Record<string, unknown>) ?? {}
     query.filters = { ...existing, heist_filters: { disabled: false, filters: heistQuery } }
@@ -648,6 +644,7 @@ export async function searchTrade(
             ...(r.item.mutatedMods ?? []),
           ],
           implicitMods: r.item.implicitMods,
+          enchantMods: r.item.enchantMods,
           fracturedMods: r.item.fracturedMods,
           craftedMods: r.item.craftedMods,
           foulbornMods: r.item.mutatedMods,
@@ -662,6 +659,14 @@ export async function searchTrade(
           storedExperience: r.item.properties?.find((p) => p.name.startsWith('Stored Experience'))?.values?.[0]?.[0]
             ? parseInt(r.item.properties.find((p) => p.name.startsWith('Stored Experience'))!.values[0][0])
             : undefined,
+          areaLevel: r.item.properties?.find((p) => p.name === 'Area Level')?.values?.[0]?.[0]
+            ? parseInt(r.item.properties.find((p) => p.name === 'Area Level')!.values[0][0])
+            : undefined,
+          heistJob: (() => {
+            const prop = r.item!.properties?.find((p) => p.type === 46)
+            if (!prop?.values?.[0]?.[0] && !prop?.values?.[1]?.[0]) return undefined
+            return { skill: prop!.values[1]?.[0] as string, level: parseInt(prop!.values[0]?.[0] as string) }
+          })(),
           corrupted: r.item.corrupted,
           mirrored: r.item.duplicated,
           identified: r.item.identified,
@@ -786,6 +791,8 @@ export function isBulkExchangeItem(itemClass: string, name: string, baseType: st
   if (regularTradeClasses.has(itemClass)) return false
   // Specific items with variable properties that need regular trade
   if (baseType === "Facetor's Lens") return false
+  // Beasts are "Stackable Currency" but have rarity Rare/Unique and need regular trade
+  if (itemClass === 'Stackable Currency' && (_rarity === 'Rare' || _rarity === 'Unique')) return false
 
   const bulkClasses = new Set([
     'Currency',

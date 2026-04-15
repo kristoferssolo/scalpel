@@ -141,6 +141,22 @@ export function ExpandedListing({ listing: l, itemClass, itemName, itemRarity }:
           </div>
         )}
 
+        {/* Heist contract info */}
+        {(d.areaLevel || d.heistJob) && (
+          <div className="text-[10px] text-text-dim flex gap-2">
+            {d.areaLevel && (
+              <span>
+                Area Level: <span className="text-text font-semibold">{d.areaLevel}</span>
+              </span>
+            )}
+            {d.heistJob && (
+              <span>
+                {d.heistJob.skill}: <span className="text-text font-semibold">Lv{d.heistJob.level}</span>
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Gem / quality */}
         {(d.gemLevel || d.quality) && (
           <div className="text-[10px] text-text-dim flex gap-2">
@@ -196,6 +212,15 @@ export function ExpandedListing({ listing: l, itemClass, itemName, itemRarity }:
                 DPS: <span className="text-[#88ccff] font-semibold">{Math.round(d.dps)}</span>
               </span>
             ) : null}
+          </div>
+        )}
+
+        {/* Enchant mods */}
+        {d.enchantMods && d.enchantMods.length > 0 && (
+          <div className="mt-1 pt-1 w-full" style={MOD_SEPARATOR}>
+            {d.enchantMods.map((mod, mi) => (
+              <ModLine key={mi} text={mod} color={MOD_COLORS.enchant} />
+            ))}
           </div>
         )}
 

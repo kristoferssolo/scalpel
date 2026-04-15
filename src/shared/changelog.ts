@@ -1,5 +1,12 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.4',
+    notes: [
+      'Fixed every reported price checking issue (contracts, beasts, 2 line fractures, map implicits, foulborn mods, more)',
+      'Added dust value to price checker for uniques',
+    ],
+  },
+  {
     version: '0.9.3',
     notes: [
       "Changed update process to allow electron updates so we aren't stuck on an old version",

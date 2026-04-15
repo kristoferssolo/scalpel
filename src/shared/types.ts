@@ -133,6 +133,7 @@ export interface PoeItem {
   attacksPerSecond?: number
   width?: number
   height?: number
+  heistJob?: { skill: string; level: number }
   monsterLevel?: number
   wingsRevealed?: number
   wingsTotal?: number

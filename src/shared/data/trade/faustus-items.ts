@@ -104,7 +104,11 @@ export const FAUSTUS_BASE_TYPES = new Set([
   'Djinn Barya',
 ])
 
-export function isFaustusItem(itemClass: string, baseType: string): boolean {
+export function isFaustusItem(itemClass: string, baseType: string, rarity?: string): boolean {
   if (FAUSTUS_EXCEPTIONS.has(baseType) || FAUSTUS_EXCEPTIONS.has(itemClass)) return false
+  // Beasts are "Stackable Currency" but Rare/Unique -- not on Faustus
+  if (rarity === 'Rare' || rarity === 'Unique') {
+    if (itemClass === 'Stackable Currency') return false
+  }
   return FAUSTUS_CLASSES.has(itemClass) || FAUSTUS_BASE_TYPES.has(baseType)
 }

@@ -1,7 +1,8 @@
 import type { PriceInfo } from '../../../../shared/types'
 import { chaosIcon, divineIcon, formatPrice } from './constants'
 import { IconGlow } from '../../shared/IconGlow'
-import { PriceChip } from '../../shared/PriceChip'
+import { PriceChip, InfoChip } from '../../shared/PriceChip'
+import dustIcon from '../../assets/currency/thaumaturgic-dust.png'
 
 export function ItemHeader({
   heroIcon,
@@ -13,6 +14,9 @@ export function ItemHeader({
   chaosPerDivine,
   stackSize,
   maxStackSize,
+  dustInfo,
+  areaLevel,
+  heistJob,
 }: {
   heroIcon: string | null
   heroName: string
@@ -23,6 +27,9 @@ export function ItemHeader({
   chaosPerDivine?: number
   stackSize?: number
   maxStackSize?: number
+  dustInfo?: { value: number; upTo?: boolean } | null
+  areaLevel?: number
+  heistJob?: { skill: string; level: number }
 }): JSX.Element {
   return (
     <div className="bg-bg-card border-b border-border px-[14px] py-[10px] flex gap-[10px] items-center">
@@ -40,13 +47,36 @@ export function ItemHeader({
           {heroName}
         </div>
         {heroName !== baseType && <div className="text-text-dim text-[11px]">{baseType}</div>}
+        {(areaLevel || heistJob) && (
+          <div className="text-text-dim text-[10px] flex gap-2 mt-[2px]">
+            {areaLevel && (
+              <span>
+                Area Level: <span className="text-text font-semibold">{areaLevel}</span>
+              </span>
+            )}
+            {heistJob && (
+              <span>
+                {heistJob.skill}: <span className="text-text font-semibold">Lv{heistJob.level}</span>
+              </span>
+            )}
+          </div>
+        )}
       </div>
       <div className="flex flex-col gap-1 items-end shrink-0">
-        {/* Ninja price + stack pricing chips */}
-        {priceInfo && priceInfo.chaosValue > 0 && (
+        {/* Dust + Ninja price + stack pricing chips */}
+        {((priceInfo && priceInfo.chaosValue > 0) || dustInfo) && (
           <div className="flex items-center gap-1 flex-wrap justify-end">
-            <PriceChip chaosValue={priceInfo.chaosValue} divineValue={priceInfo.divineValue} showNinja />
-            {stackSize != null && stackSize > 1 && (
+            {dustInfo && (
+              <InfoChip icon={dustIcon}>
+                <span className="text-white font-semibold">
+                  {dustInfo.upTo ? `~${dustInfo.value.toLocaleString()}` : dustInfo.value.toLocaleString()}
+                </span>
+              </InfoChip>
+            )}
+            {priceInfo && priceInfo.chaosValue > 0 && (
+              <PriceChip chaosValue={priceInfo.chaosValue} divineValue={priceInfo.divineValue} showNinja />
+            )}
+            {priceInfo && stackSize != null && stackSize > 1 && (
               <PriceChip
                 chaosValue={priceInfo.chaosValue * stackSize}
                 chaosPerDivine={chaosPerDivine}
@@ -54,7 +84,7 @@ export function ItemHeader({
                 size="sm"
               />
             )}
-            {maxStackSize != null && maxStackSize > 1 && maxStackSize !== stackSize && (
+            {priceInfo && maxStackSize != null && maxStackSize > 1 && maxStackSize !== stackSize && (
               <PriceChip
                 chaosValue={priceInfo.chaosValue * maxStackSize}
                 chaosPerDivine={chaosPerDivine}

@@ -14,6 +14,7 @@ import { isFaustusItem } from '../../../../shared/data/trade/faustus-items'
 import { FilterChip } from './FilterChip'
 import { PriceChip } from '../../shared/PriceChip'
 import { ItemHeader } from './ItemHeader'
+import { getDustInfo } from '../../shared/dust'
 import { StatFilterRow } from './StatFilterRow'
 import { TradeListings } from './TradeListings'
 import { BulkListings } from './BulkListings'
@@ -223,6 +224,9 @@ export function PriceCheck({
         chaosPerDivine={chaosPerDivine}
         stackSize={item.stackSize > 1 ? item.stackSize : undefined}
         maxStackSize={item.maxStackSize}
+        dustInfo={getDustInfo(item)}
+        areaLevel={item.monsterLevel}
+        heistJob={item.heistJob}
       />
 
       <div className="flex-1 overflow-y-auto px-[14px] py-[10px] flex flex-col gap-[10px]">
@@ -357,6 +361,8 @@ export function PriceCheck({
                       f.type !== 'timeless' &&
                       f.type !== 'fractured' &&
                       f.type !== 'currency' &&
+                      f.type !== 'implicit' &&
+                      f.type !== 'enchant' &&
                       f.enabled,
                   ).length === 0
 
@@ -364,10 +370,11 @@ export function PriceCheck({
                   <FilterChip
                     label="Base"
                     active={isBaseMode}
-                    onClick={() =>
+                    onClick={() => {
                       setFilters((prev) =>
                         prev.map((f) => {
                           if (f.id === 'misc.basetype' || f.id === 'misc.ilvl') return { ...f, enabled: true }
+                          if (f.type === 'implicit' || f.type === 'enchant') return { ...f, enabled: true }
                           if (
                             f.type === 'socket' ||
                             f.type === 'misc' ||
@@ -379,7 +386,15 @@ export function PriceCheck({
                           return { ...f, enabled: false }
                         }),
                       )
-                    }
+                      // Promote implicit/enchant filters into the visible set
+                      if (collapsedVisibleIndices) {
+                        const promoted = new Set(collapsedVisibleIndices)
+                        filters.forEach((f, i) => {
+                          if (f.type === 'implicit' || f.type === 'enchant') promoted.add(i)
+                        })
+                        setCollapsedVisibleIndices(promoted)
+                      }
+                    }}
                   />
                 )
               })()}
@@ -506,7 +521,7 @@ export function PriceCheck({
         </div>
 
         {/* Faustus exchange warning */}
-        {isFaustusItem(item.itemClass, item.baseType) && (
+        {isFaustusItem(item.itemClass, item.baseType, item.rarity) && (
           <div className="flex items-center gap-2 px-3 py-2 mx-[-14px] bg-[rgba(255,200,60,0.08)]">
             <div className="flex-1">
               <div className="text-[11px] text-[#ffc83c] font-semibold">
@@ -517,7 +532,17 @@ export function PriceCheck({
               </div>
             </div>
             {priceInfo && priceInfo.chaosValue > 0 && (
-              <PriceChip chaosValue={priceInfo.chaosValue} divineValue={priceInfo.divineValue} showNinja />
+              <div className="flex flex-col gap-1 items-end shrink-0">
+                <PriceChip chaosValue={priceInfo.chaosValue} divineValue={priceInfo.divineValue} showNinja />
+                {item.stackSize > 1 && (
+                  <PriceChip
+                    chaosValue={priceInfo.chaosValue * item.stackSize}
+                    chaosPerDivine={chaosPerDivine}
+                    label={`${item.stackSize}x =`}
+                    size="sm"
+                  />
+                )}
+              </div>
             )}
           </div>
         )}

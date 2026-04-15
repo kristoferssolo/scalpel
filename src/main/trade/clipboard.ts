@@ -138,6 +138,11 @@ export function parseItemText(text: string): PoeItem | null {
 
   // Extract map/waystone tier from header line like "Map (Tier 12)" or "Waystone (Tier 5)"
   const tierMatch = name.match(/\(Tier (\d+)\)/) ?? baseType.match(/\(Tier (\d+)\)/)
+  // Heist job skill requirement: "Requires Engineering (Level 3)"
+  const heistJobLine = allLines.find((l) => /^Requires \w+.*\(Level \d+\)/.test(l))
+  const heistJobMatch = heistJobLine?.match(/^Requires (\w[\w ]*?)\s*\(Level (\d+)\)/)
+  const heistJob = heistJobMatch ? { skill: heistJobMatch[1].trim(), level: parseInt(heistJobMatch[2]) } : undefined
+
   // Monster level (maps) or Area Level (heist contracts/blueprints)
   const monsterLevel = extractNum(allLines, 'Monster Level:') ?? extractNum(allLines, 'Area Level:')
   const mapTier = tierMatch ? parseInt(tierMatch[1]) : monsterLevel && monsterLevel >= 68 ? monsterLevel - 67 : 0
@@ -175,8 +180,8 @@ export function parseItemText(text: string): PoeItem | null {
   const gemLevel = extractNum(allLines, 'Level:') ?? 0
   const stackSizeLine = allLines.find((l) => l.startsWith('Stack Size:'))
   const stackParts = stackSizeLine?.split(':')[1]?.trim().split('/') ?? []
-  const stackSize = stackParts[0] ? parseInt(stackParts[0]) : 1
-  const maxStackSize = stackParts[1] ? parseInt(stackParts[1]) : undefined
+  const stackSize = stackParts[0] ? parseInt(stackParts[0].replace(/,/g, '')) : 1
+  const maxStackSize = stackParts[1] ? parseInt(stackParts[1].replace(/,/g, '')) : undefined
 
   // Requirements
   // Defenses (total computed values from the item header)
@@ -360,7 +365,7 @@ export function parseItemText(text: string): PoeItem | null {
         .filter((l) => !l.startsWith('(')) // Skip parenthetical descriptions
         .map((l) =>
           l
-            .replace(/(-?\d+(?:\.\d+)?)\(-?\d+(?:\.\d+)?--?\d+(?:\.\d+)?\)/g, '$1') // Strip roll ranges (handles negatives)
+            .replace(/(-?\d+(?:\.\d+)?)\(-?\d+(?:\.\d+)?(?:--?\d+(?:\.\d+)?)?\)/g, '$1') // Strip roll ranges: 18(15-20) and fixed 18(15)
             .replace(/([a-zA-Z]\w*)\s*\([^)]*\)/g, '$1') // Strip variant alternatives e.g. Bladefall(Fireball-Divine Blast) -> Bladefall, Ghost Reaver() -> Ghost Reaver
             .replace(/\s*[\u2014\u2013\-]+\s*Unscalable Value$/i, '') // Strip "— Unscalable Value" suffix
             .trim(),
@@ -432,6 +437,7 @@ export function parseItemText(text: string): PoeItem | null {
     ...(chaosDamageAvg != null ? { chaosDamageAvg } : {}),
     ...(attacksPerSecond != null ? { attacksPerSecond } : {}),
     ...(ITEM_SIZES[itemClass] ? { width: ITEM_SIZES[itemClass][0], height: ITEM_SIZES[itemClass][1] } : {}),
+    ...(heistJob ? { heistJob } : {}),
     ...(monsterLevel != null ? { monsterLevel } : {}),
     ...(wingsRevealed != null ? { wingsRevealed, wingsTotal } : {}),
     ...(storedExperience != null ? { storedExperience } : {}),

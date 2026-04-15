@@ -51,9 +51,30 @@ let statEntries: StatEntry[] = []
 let statsFetched = false
 
 // Build regex patterns from stat text: "+# to maximum Life" -> /^\+(\d+(?:\.\d+)?) to maximum Life$/
+/** Direct text-to-stat mappings for mods where clipboard text is completely different
+ *  from the trade API stat text (e.g. corruption implicits with different wording) */
+const DIRECT_MOD_MAPPINGS: Record<string, { statId: string; value: number | null }> = {
+  'contains a vaal side area': { statId: 'implicit.stat_2156201537', value: null },
+}
+
+/** Stat IDs to skip entirely (duplicates where only one works for searching) */
+const BLOCKED_STAT_IDS = new Set([
+  'explicit.stat_3664950032', // "#% increased Quantity of Gold Dropped by Slain Enemies" (duplicate, broken)
+])
+
 function statTextToPattern(text: string): RegExp {
   // Escape regex special chars except #
   const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/#/g, '(.+?)')
+  return new RegExp('^' + escaped + '$', 'i')
+}
+
+/** Relaxed pattern: also treat hardcoded numbers in stat text as wildcards.
+ *  Used as fallback when exact matching fails -- handles cases where
+ *  trade API has a fixed number but the item text has a different value. */
+function statTextToRelaxedPattern(text: string): RegExp {
+  let escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/#/g, '(.+?)')
+  // Replace hardcoded numbers (e.g. "50%", "20") with capture groups
+  escaped = escaped.replace(/\d+(?:\\\.\d+)?/g, '(.+?)')
   return new RegExp('^' + escaped + '$', 'i')
 }
 
@@ -90,9 +111,45 @@ async function fetchStats(): Promise<void> {
 
 export { fetchStats as ensureStatsLoaded }
 
-// Mod patterns that are LOCAL when on weapons/armour
-const LOCAL_MOD_PATTERNS = [
+/** Strip range annotations and parenthetical text from advanced mod lines */
+function stripAdvModLines(lines: string[]): string[] {
+  return lines
+    .filter((l) => !l.startsWith('('))
+    .map((l) =>
+      l
+        .replace(/(-?\d+(?:\.\d+)?)\(-?\d+(?:\.\d+)?(?:--?\d+(?:\.\d+)?)?\)/g, '$1')
+        .replace(/([a-zA-Z]\w*)\s*\([^)]*\)/g, '$1')
+        .replace(/\s*[\u2014\u2013\-]+\s*Unscalable Value$/i, '')
+        .trim(),
+    )
+    .filter(Boolean)
+}
+
+/** Find the advanced mod that matches a cleaned mod text (joined or individual line) */
+function findAdvMod(
+  advancedMods: AdvancedMod[],
+  cleaned: string,
+  typeFilter: 'implicit' | 'explicit',
+  altCleaned?: string,
+): AdvancedMod | undefined {
+  return advancedMods.find((am) => {
+    if (typeFilter === 'implicit' ? am.type !== 'implicit' : am.type === 'implicit') return false
+    const stripped = stripAdvModLines(am.lines)
+    return (
+      stripped.join('\n') === cleaned ||
+      stripped.some((l) => l === cleaned) ||
+      (altCleaned && (stripped.join('\n') === altCleaned || stripped.some((l) => l === altCleaned)))
+    )
+  })
+}
+
+// Defence mod patterns -- local on both armour and weapons
+const LOCAL_DEFENCE_PATTERNS = [
   /^\+?\d+(?:\.\d+)?%? (?:increased |to )(?:Armour|Evasion Rating|Energy Shield|Armour and Evasion|Armour and Energy Shield|Evasion and Energy Shield|Armour, Evasion and Energy Shield|maximum Energy Shield|Ward)/i,
+]
+
+// Offensive mod patterns -- only local on weapons, NOT on armour (gloves, boots, etc.)
+const LOCAL_WEAPON_PATTERNS = [
   /^Adds \d+ to \d+ (?:Physical|Fire|Cold|Lightning|Chaos) Damage$/i,
   /^\d+(?:\.\d+)?% increased Attack Speed$/i,
   /^\+\d+ to Accuracy Rating$/i,
@@ -100,8 +157,10 @@ const LOCAL_MOD_PATTERNS = [
   /^\d+(?:\.\d+)?% chance to Poison on Hit$/i,
 ]
 
-function isLocalMod(modText: string): boolean {
-  return LOCAL_MOD_PATTERNS.some((p) => p.test(modText))
+function isLocalMod(modText: string, isWeapon: boolean): boolean {
+  if (!isWeapon && LOCAL_DEFENCE_PATTERNS.some((p) => p.test(modText))) return true
+  if (isWeapon && LOCAL_WEAPON_PATTERNS.some((p) => p.test(modText))) return true
+  return false
 }
 
 // Item classes that have local defense mods
@@ -131,36 +190,58 @@ const WEAPON_CLASSES = new Set([
  */
 function generateTextVariants(text: string): string[] {
   const variants = [text]
-  // Negative mods: "-50% to Lightning Resistance" needs to match stat pattern "+#% to Lightning Resistance"
-  // Generate a variant with + prefix so the pattern matches, but preserve negative value for extraction
-  if (/^-\d/.test(text)) {
-    variants.push(text.replace(/^-/, '+'))
+  // Negative mods: "-50% to Lightning Resistance" or "have -9 to Total Mana Cost"
+  // needs to match stat pattern "+#%" or "+# to". Replace all -N with +N.
+  if (/-\d/.test(text)) {
+    variants.push(text.replace(/-(\d)/g, '+$1'))
   }
-  // "reduced" is stored as negative "increased" in trade API
+  // "reduced" <-> "increased" and "less" <-> "more" -- trade API may use either form
   if (/\breduced\b/i.test(text)) {
     variants.push(text.replace(/\breduced\b/i, 'increased'))
   }
-  // "less" is stored as negative "more" in trade API
+  if (/\bincreased\b/i.test(text)) {
+    variants.push(text.replace(/\bincreased\b/i, 'reduced'))
+  }
   if (/\bless\b/i.test(text)) {
     variants.push(text.replace(/\bless\b/i, 'more'))
   }
+  if (/\bmore\b/i.test(text)) {
+    variants.push(text.replace(/\bmore\b/i, 'less'))
+  }
   // Common PoE plural -> singular transformations
+  // "X% per Y% Overcapped Z" -> "N% of Overcapped Z" (trade API uses a different wording)
+  const perOvercapMatch = text.match(/^(.+?) \d+% per \d+% Overcapped (.+)$/)
+  if (perOvercapMatch) {
+    variants.push(`${perOvercapMatch[1]} 0% of Overcapped ${perOvercapMatch[2]}`)
+  }
+
+  // "N additional" -> "an additional" (trade API uses "an" where clipboard has the number)
+  if (/\b\d+ additional\b/i.test(text)) {
+    variants.push(text.replace(/\b\d+ additional\b/i, 'an additional'))
+  }
+
   const replacements: Array<[RegExp, string]> = [
     [/Flasks constantly apply their Flask Effects/g, 'Flask constantly applies its Flask Effect'],
     [/Flasks constantly apply their/g, 'Flask constantly applies its'],
     [/Skills are Jewel Sockets/g, 'Skill is a Jewel Socket'],
-    [/Flasks/g, 'Flask'],
-    [/Charges/g, 'Charge'],
-    [/Effects/g, 'Effect'],
-    [/Sockets/g, 'Socket'],
-    [/Skills are/g, 'Skill is'],
-    [/apply their/g, 'applies its'],
-    [/have /g, 'has '],
+    [/Flasks/gi, 'Flask'],
+    [/Charges/gi, 'Charge'],
+    [/Effects/gi, 'Effect'],
+    [/Sockets/gi, 'Socket'],
+    [/Skills are/gi, 'Skill is'],
+    [/apply their/gi, 'applies its'],
+    [/have /gi, 'has '],
     [/the matching modifier/g, 'matching modifier'],
   ]
+  // Apply replacements to ALL existing variants (not just original text)
+  // so that multiple transforms can stack (e.g. "N additional" + "effects"->"effect")
+  const baseVariants = [...variants]
   for (const [pattern, replacement] of replacements) {
-    if (pattern.test(text)) {
-      variants.push(text.replace(pattern, replacement))
+    for (const v of baseVariants) {
+      if (pattern.test(v)) {
+        const replaced = v.replace(pattern, replacement)
+        if (!variants.includes(replaced)) variants.push(replaced)
+      }
     }
   }
   return variants
@@ -171,19 +252,34 @@ export function matchModToStat(
   preferLocal = false,
   modType: 'explicit' | 'crafted' | 'implicit' | 'enchant' | 'imbued' = 'explicit',
 ): { statId: string; value: number | null; option?: number } | null {
+  // Check direct mappings first (for mods with completely different trade API wording)
+  const directKey = modText.toLowerCase().trim()
+  if (DIRECT_MOD_MAPPINGS[directKey]) return DIRECT_MOD_MAPPINGS[directKey]
+
+  return _matchModToStat(modText, preferLocal, modType)
+}
+
+function _matchModToStat(
+  modText: string,
+  preferLocal = false,
+  modType: 'explicit' | 'crafted' | 'implicit' | 'enchant' | 'imbued' = 'explicit',
+): { statId: string; value: number | null; option?: number } | null {
   const typePrefix = modType + '.'
   const textVariants = generateTextVariants(modText)
-
-  const isNegativeMod = /^-\d/.test(modText)
+  const isNegativeMod = /-\d/.test(modText)
   const isReducedMod = /\breduced\b/i.test(modText)
   const isLessMod = /\bless\b/i.test(modText)
+  // Detect if we flipped increased->reduced or more->less (value needs negation)
+  const isFlippedToNegative = /\bincreased\b/i.test(modText) || /\bmore\b/i.test(modText)
 
   for (const variant of textVariants) {
+    const variantFlipped = isFlippedToNegative && (/\breduced\b/i.test(variant) || /\bless\b/i.test(variant))
     let nonLocalMatch: { statId: string; value: number | null; option?: number; _textLen: number } | null = null
     let localMatch: { statId: string; value: number | null; option?: number; _textLen: number } | null = null
 
     for (const entry of statEntries) {
       if (!entry.id.startsWith(typePrefix)) continue
+      if (BLOCKED_STAT_IDS.has(entry.id)) continue
       const isLocal = entry.text.includes('(Local)')
       const textForPattern = isLocal ? entry.text.replace(/\s*\(Local\)/, '') : entry.text
       const pattern = statTextToPattern(textForPattern)
@@ -204,6 +300,8 @@ export function matchModToStat(
         if (isNegativeMod && value != null && value > 0) value = -value
         // "reduced" / "less" mods are negative "increased" / "more" in trade API
         if ((isReducedMod || isLessMod) && value != null && value > 0) value = -value
+        // "increased" matched as "reduced" (or "more" as "less") -- negate
+        if (variantFlipped && value != null && value > 0) value = -value
         // For option-based stats (like "Map contains #'s Citadel"), resolve the option ID
         let option: number | undefined
         if (entry.option && rawValue && !value) {
@@ -222,6 +320,48 @@ export function matchModToStat(
     const result =
       preferLocal && localMatch ? localMatch : !preferLocal && nonLocalMatch ? nonLocalMatch : nonLocalMatch
     if (result) return result
+  }
+
+  // Fallback: try relaxed patterns where hardcoded numbers in stat text become wildcards.
+  // Handles cases like trade API having "increased by 50% of Overcapped" but item text has a different value.
+  for (const variant of textVariants) {
+    let bestMatch: { statId: string; value: number | null; option?: number; _textLen: number } | null = null
+    for (const entry of statEntries) {
+      if (!entry.id.startsWith(typePrefix)) continue
+      if (BLOCKED_STAT_IDS.has(entry.id)) continue
+      if (entry.text.includes('(Local)')) continue // skip local in relaxed mode
+      const relaxedPattern = statTextToRelaxedPattern(entry.text)
+      const match = variant.match(relaxedPattern)
+      if (match) {
+        const numericCaptures = Array.from(match)
+          .slice(1)
+          .filter((v) => v && /^-?\d+(?:\.\d+)?$/.test(v))
+        const value = numericCaptures.length > 0 ? parseFloat(numericCaptures[0]) : null
+        const result = { statId: entry.id, value, _textLen: entry.text.length }
+        if (!bestMatch || entry.text.length > bestMatch._textLen) bestMatch = result
+      }
+    }
+    if (bestMatch) return bestMatch
+  }
+
+  // Fallback: prefix match for Unscalable Value mods where the clipboard text is
+  // a prefix of the trade API stat text (e.g. missing "by #% of their value" suffix)
+  for (const variant of textVariants) {
+    let bestMatch: { statId: string; value: number | null; _textLen: number } | null = null
+    for (const entry of statEntries) {
+      if (!entry.id.startsWith(typePrefix)) continue
+      if (BLOCKED_STAT_IDS.has(entry.id)) continue
+      if (entry.text.includes('(Local)')) continue
+      // Check if the stat text starts with our variant text
+      const statPlain = entry.text.replace(/#/g, '').replace(/\s+/g, ' ').trim().toLowerCase()
+      const variantPlain = variant.replace(/\d+/g, '').replace(/\s+/g, ' ').trim().toLowerCase()
+      if (variantPlain.length > 10 && statPlain.startsWith(variantPlain)) {
+        if (!bestMatch || entry.text.length > bestMatch._textLen) {
+          bestMatch = { statId: entry.id, value: null, _textLen: entry.text.length }
+        }
+      }
+    }
+    if (bestMatch) return bestMatch
   }
 
   return null
@@ -382,20 +522,7 @@ export function matchItemMods(
       // Check if this implicit is from eldritch (Searing Exarch / Eater of Worlds)
       let isEldritch = false
       if (advancedMods) {
-        const advMod = advancedMods.find((am) => {
-          if (am.type !== 'implicit') return false
-          const joinedLines = am.lines
-            .filter((l) => !l.startsWith('('))
-            .map((l) =>
-              l
-                .replace(/(-?\d+(?:\.\d+)?)\(-?\d+(?:\.\d+)?--?\d+(?:\.\d+)?\)/g, '$1')
-                .replace(/([a-zA-Z]\w*)\s*\([^)]*\)/g, '$1')
-                .trim(),
-            )
-            .filter(Boolean)
-            .join('\n')
-          return joinedLines === cleaned
-        })
+        const advMod = findAdvMod(advancedMods, cleaned, 'implicit')
         if (advMod?.eldritch) isEldritch = true
       }
       filters.push({
@@ -416,6 +543,7 @@ export function matchItemMods(
   }
 
   const hasLocalMods = itemInfo && (ARMOUR_CLASSES.has(itemInfo.itemClass) || WEAPON_CLASSES.has(itemInfo.itemClass))
+  const isWeapon = itemInfo ? WEAPON_CLASSES.has(itemInfo.itemClass) : false
   const isGemItem =
     itemInfo &&
     ['Gems', 'Support Gems', 'Skill Gems', 'Active Skill Gems', 'Support Skill Gems'].includes(itemInfo.itemClass)
@@ -432,7 +560,7 @@ export function matchItemMods(
         /Commanded|Commissioned|Carved|Bathed|Denoted|Remembrancing/i.test(cleaned))
     )
       continue
-    const useLocal = hasLocalMods && isLocalMod(cleaned)
+    const useLocal = hasLocalMods && isLocalMod(cleaned, isWeapon)
     const matched = matchModToStat(cleaned, useLocal, isCrafted ? 'crafted' : 'explicit')
     if (matched) {
       const lowPriority = isLowPriority(cleaned)
@@ -441,21 +569,7 @@ export function matchItemMods(
       let isFractured = false
       let isFoulborn = false
       if (advancedMods) {
-        const advMod = advancedMods.find((am) => {
-          if (am.type === 'implicit') return false
-          const joinedLines = am.lines
-            .filter((l) => !l.startsWith('('))
-            .map((l) =>
-              l
-                .replace(/(-?\d+(?:\.\d+)?)\(-?\d+(?:\.\d+)?--?\d+(?:\.\d+)?\)/g, '$1')
-                .replace(/([a-zA-Z]\w*)\s*\([^)]*\)/g, '$1')
-                .replace(/\s*[\u2014\u2013\-]+\s*Unscalable Value$/i, '')
-                .trim(),
-            )
-            .filter(Boolean)
-            .join('\n')
-          return joinedLines === cleaned
-        })
+        const advMod = findAdvMod(advancedMods, cleaned, 'explicit')
         if (advMod?.fractured) isFractured = true
         if (advMod?.foulborn) isFoulborn = true
         if (advMod?.crafted) isCrafted = true
@@ -488,20 +602,8 @@ export function matchItemMods(
       // Rolled values use percentage-based min
       let isFixedValue = false
       if (advancedMods && matched.value != null) {
-        const advMod = advancedMods.find((am) => {
-          if (am.type === 'implicit') return false
-          const joinedLines = am.lines
-            .filter((l) => !l.startsWith('('))
-            .map((l) =>
-              l
-                .replace(/(-?\d+(?:\.\d+)?)\(-?\d+(?:\.\d+)?--?\d+(?:\.\d+)?\)/g, '$1')
-                .replace(/([a-zA-Z]\w*)\s*\([^)]*\)/g, '$1')
-                .trim(),
-            )
-            .filter(Boolean)
-            .join('\n')
-          return joinedLines === cleaned || joinedLines === mod.replace(/\s*\(crafted\)\s*$/i, '').trim()
-        })
+        const rawCleaned = mod.replace(/\s*\(crafted\)\s*$/i, '').trim()
+        const advMod = findAdvMod(advancedMods, cleaned, 'explicit', rawCleaned)
         if (advMod) {
           const range = advMod.ranges.find((r) => r.value === matched.value || r.value === -(matched.value ?? 0))
           if (range && range.min === range.max) isFixedValue = true
@@ -516,9 +618,11 @@ export function matchItemMods(
       const isBeneficialNegative = isNegative && BENEFICIAL_NEGATIVE_KEYWORDS.some((p) => p.test(mod))
       const minValue =
         matched.value != null && (!isNegative || !isBeneficialNegative)
-          ? isFixedValue || isNegative
+          ? isFixedValue
             ? matched.value
-            : Math.floor(matched.value * pct)
+            : isNegative
+              ? Math.ceil(matched.value * (2 - pct)) // -30 at 90% -> -33 (more negative = wider search)
+              : Math.floor(matched.value * pct)
           : null
       const maxValue = isBeneficialNegative && matched.value != null ? matched.value : null
 
@@ -641,7 +745,7 @@ export function matchItemMods(
     id,
     text: data.pseudoLabel,
     value: data.total,
-    min: Math.floor(data.total * pct),
+    min: data.total < 0 ? Math.ceil(data.total * (2 - pct)) : Math.floor(data.total * pct),
     max: null,
     enabled: true,
     type: 'pseudo',
@@ -1056,6 +1160,20 @@ export function matchItemMods(
         })
       }
     }
+  }
+
+  // Heist job skill requirement (always min 1, actual level doesn't matter for searching)
+  if (itemInfo?.heistJob) {
+    const skillKey = itemInfo.heistJob.skill.toLowerCase().replace(/\s+/g, '_')
+    miscFilters.push({
+      id: `heist.heist_${skillKey}`,
+      text: `Requires ${itemInfo.heistJob.skill} (Level ${itemInfo.heistJob.level})`,
+      value: itemInfo.heistJob.level,
+      min: 1,
+      max: null,
+      enabled: true,
+      type: 'heist',
+    })
   }
 
   // Area level chip (for heist contracts/blueprints)

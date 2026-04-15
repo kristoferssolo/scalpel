@@ -25,6 +25,7 @@ export interface Listing {
     baseType?: string
     explicitMods?: string[]
     implicitMods?: string[]
+    enchantMods?: string[]
     fracturedMods?: string[]
     foulbornMods?: string[]
     craftedMods?: string[]
@@ -32,6 +33,8 @@ export interface Listing {
     sockets?: Array<{ group: number; sColour: string }>
     gemLevel?: number
     quality?: number
+    areaLevel?: number
+    heistJob?: { skill: string; level: number }
     corrupted?: boolean
     mirrored?: boolean
     identified?: boolean
