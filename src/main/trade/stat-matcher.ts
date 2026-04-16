@@ -3,6 +3,7 @@ import type { AdvancedMod } from '../../shared/types'
 import { POE_TRADE_API } from '../../shared/endpoints'
 import { ATZOATL_ROOMS, ATZOATL_KEY_ROOMS } from '../../shared/data/trade/atzoatl'
 import { BENEFICIAL_NEGATIVE_KEYWORDS } from '../../shared/data/trade/beneficial-negatives'
+import { STAT_ID_REMAPS } from './stat-exceptions'
 import type { StatFilter } from './trade'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -49,6 +50,7 @@ export const ITEM_CLASS_TO_CATEGORY: Record<string, string> = {
 
 let statEntries: StatEntry[] = []
 let statsFetched = false
+let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 // Build regex patterns from stat text: "+# to maximum Life" -> /^\+(\d+(?:\.\d+)?) to maximum Life$/
 /** Direct text-to-stat mappings for mods where clipboard text is completely different
@@ -80,7 +82,19 @@ function statTextToRelaxedPattern(text: string): RegExp {
 
 /** Fetch stat entries from the PoE trade API (simple GET, no rate limiting needed) */
 async function fetchStats(): Promise<void> {
-  if (statsFetched) return
+  if (statsFetched) {
+    // Refresh in the background every 6 hours for league changes
+    if (!refreshTimer) {
+      refreshTimer = setInterval(
+        () => {
+          statsFetched = false
+          fetchStats()
+        },
+        6 * 60 * 60 * 1000,
+      )
+    }
+    return
+  }
   try {
     const data = await new Promise<string>((resolve, reject) => {
       const request = net.request({
@@ -256,7 +270,11 @@ export function matchModToStat(
   const directKey = modText.toLowerCase().trim()
   if (DIRECT_MOD_MAPPINGS[directKey]) return DIRECT_MOD_MAPPINGS[directKey]
 
-  return _matchModToStat(modText, preferLocal, modType)
+  const result = _matchModToStat(modText, preferLocal, modType)
+  if (result && STAT_ID_REMAPS[result.statId]) {
+    result.statId = STAT_ID_REMAPS[result.statId]
+  }
+  return result
 }
 
 function _matchModToStat(
@@ -298,8 +316,10 @@ function _matchModToStat(
         }
         // Restore negative sign when matching via sign-flipped variant
         if (isNegativeMod && value != null && value > 0) value = -value
-        // "reduced" / "less" mods are negative "increased" / "more" in trade API
-        if ((isReducedMod || isLessMod) && value != null && value > 0) value = -value
+        // "reduced"/"less" mods are usually negative "increased"/"more" in trade API,
+        // but only negate if the matched stat text doesn't already contain "reduced"/"less"
+        const statHasReduced = /\breduced\b/i.test(entry.text) || /\bless\b/i.test(entry.text)
+        if ((isReducedMod || isLessMod) && !statHasReduced && value != null && value > 0) value = -value
         // "increased" matched as "reduced" (or "more" as "less") -- negate
         if (variantFlipped && value != null && value > 0) value = -value
         // For option-based stats (like "Map contains #'s Citadel"), resolve the option ID
