@@ -1,5 +1,16 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.5',
+    notes: [
+      'Added regex tab powered by poe.re',
+      'Added ability to configure map regex',
+      'Added ability to save custom regex',
+      'Added macro in settings to hotkey most recent regex',
+      'Added ability to save and load regexes per type',
+      'Added ability to pull up trade based on map regex',
+    ],
+  },
+  {
     version: '0.9.4',
     notes: [
       'Fixed every reported price checking issue (contracts, beasts, 2 line fractures, map implicits, foulborn mods, more)',
