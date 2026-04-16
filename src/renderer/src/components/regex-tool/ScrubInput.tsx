@@ -8,6 +8,8 @@ interface ScrubInputProps {
   min?: number
   max?: number
   step?: number
+  /** Value to prefill when clicking into an empty input */
+  defaultValue?: number | null
 }
 
 export function ScrubInput({
@@ -17,6 +19,7 @@ export function ScrubInput({
   min = 0,
   max = 99999,
   step = 1,
+  defaultValue,
 }: ScrubInputProps): JSX.Element {
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState('')
@@ -72,9 +75,13 @@ export function ScrubInput({
   }
 
   const handleClick = (e: React.MouseEvent) => {
-    // Only enter edit mode if we didn't drag
     if (!scrubRef.current) {
-      setEditText(value != null ? String(value) : '')
+      if (value == null && defaultValue != null) {
+        onChange(defaultValue)
+        setEditText(String(defaultValue))
+      } else {
+        setEditText(value != null ? String(value) : '')
+      }
       setEditing(true)
     }
   }

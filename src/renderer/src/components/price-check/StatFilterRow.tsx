@@ -53,12 +53,14 @@ export function StatFilterRow({
         value={f.min}
         placeholder="min"
         min={-99999}
+        defaultValue={f.max != null ? Math.floor(f.max * 0.8) || f.max : f.value}
         onChange={(val) => updateFilterMin(i, val == null ? '' : String(val))}
       />
       <ScrubInput
         value={f.max}
         placeholder="max"
         min={-99999}
+        defaultValue={f.min != null ? Math.ceil(f.min * 1.2) || f.min : f.value}
         onChange={(val) => updateFilterMax(i, val == null ? '' : String(val))}
       />
     </div>
