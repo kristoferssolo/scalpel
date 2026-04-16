@@ -217,6 +217,11 @@ app.whenReady().then(() => {
         const { clipboard } = require('electron') as typeof import('electron')
         clipboard.writeText(currentRegex)
         const { uIOhook, UiohookKey } = require('uiohook-napi') as typeof import('uiohook-napi')
+        // Open search box first (Ctrl+F)
+        uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
+        uIOhook.keyTap(UiohookKey.F)
+        uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
+        // Paste the regex
         uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
         uIOhook.keyTap(UiohookKey.V)
         uIOhook.keyToggle(UiohookKey.Ctrl, 'up')

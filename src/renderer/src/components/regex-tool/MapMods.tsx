@@ -172,7 +172,9 @@ function useMomentumScroll(ignoreSelectors: string[] = []) {
 }
 
 export function MapMods(): JSX.Element {
-  const [generator, _setGenerator] = useState<'maps' | 'custom'>('maps')
+  const [generator, _setGenerator] = useState<'maps' | 'custom'>(() =>
+    loadStorage('scalpel:regex:generator', 'maps' as 'maps' | 'custom', (s) => (s === 'custom' ? 'custom' : 'maps')),
+  )
   const savedTagsByGenerator = useRef<Record<string, (RegexPresetTag & { id: number })[]>>({})
   const setGenerator = (g: 'maps' | 'custom') => {
     // Stash current tags, restore target's tags
@@ -181,6 +183,7 @@ export function MapMods(): JSX.Element {
     setCustomTagInput('')
     setShowTradeResults(false)
     setShowTierPicker(false)
+    localStorage.setItem('scalpel:regex:generator', g)
     _setGenerator(g)
   }
   const [tab, setTab] = useState<Tab>('qualifiers')
@@ -201,7 +204,10 @@ export function MapMods(): JSX.Element {
   const [presetsOpen, setPresetsOpen] = useState(false)
   const [presetTags, setPresetTags] = useState<(RegexPresetTag & { id: number })[]>([])
   const [customTagInput, setCustomTagInput] = useState('')
-  const [customRegexInput, setCustomRegexInput] = useState('')
+  const [customRegexInput, setCustomRegexInput] = useState(() => loadStorage('scalpel:regex:custom', '', (s) => s))
+  useEffect(() => {
+    localStorage.setItem('scalpel:regex:custom', customRegexInput)
+  }, [customRegexInput])
   const [showTierPicker, setShowTierPicker] = useState(false)
   const [showAllTiers, setShowAllTiers] = useState(false)
   const [tradeSearching, setTradeSearching] = useState(false)
