@@ -27,6 +27,7 @@ import poereIconTight from '../../assets/other/poere-logo-tight.svg'
 import itemIcons from '../../../../shared/data/items/item-icons.json'
 import { FilterChip } from '../price-check/FilterChip'
 import { TradeListings } from '../price-check/TradeListings'
+import { RateLimitBar } from '../price-check/RateLimitBar'
 import type { Listing } from '../price-check/types'
 import { InfoChip } from '../../shared/PriceChip'
 import { ScrubInput } from './ScrubInput'
@@ -209,10 +210,15 @@ export function MapMods(): JSX.Element {
   const [tradeQueryId, setTradeQueryId] = useState<string | null>(null)
   const [tradeLeague, setTradeLeague] = useState<string>('')
   const [tradeError, setTradeError] = useState<string | null>(null)
+  const [tradeRemainingIds, setTradeRemainingIds] = useState<string[]>([])
+  const [loadingMore, setLoadingMore] = useState(false)
   const [expandedListing, setExpandedListing] = useState<string | null>(null)
   const [actionStatus, setActionStatus] = useState<Record<string, 'pending' | 'success' | 'failed'>>({})
   const [loggedIn, setLoggedIn] = useState(false)
   const [showTradeResults, setShowTradeResults] = useState(false)
+  const [rateLimitTiers, setRateLimitTiers] = useState<
+    Array<{ used: number; max: number; window: number; penalty: number }>
+  >([])
   const priceChipMinWidth = useMemo(() => {
     const maxDigits = tradeListings.reduce((max, l) => Math.max(max, l.price ? String(l.price.amount).length : 0), 0)
     return 38 + maxDigits * 9
@@ -220,6 +226,8 @@ export function MapMods(): JSX.Element {
 
   useEffect(() => {
     window.api.poeCheckAuth().then((r) => setLoggedIn(r.loggedIn))
+    const unsub = window.api.onRateLimit((state) => setRateLimitTiers(state.tiers))
+    return unsub
   }, [])
 
   const [tradeOriginator, setTradeOriginator] = useState(false)
@@ -246,11 +254,12 @@ export function MapMods(): JSX.Element {
         nightmare,
         originator: tradeOriginator,
         corrupted8mod: tradeCorrupted8mod,
-      })) as { total: number; listings: Listing[]; queryId: string; league: string }
+      })) as { total: number; listings: Listing[]; queryId: string; league: string; remainingIds: string[] }
       setTradeListings(result.listings)
       setTradeTotal(result.total)
       setTradeQueryId(result.queryId)
       setTradeLeague(result.league)
+      setTradeRemainingIds(result.remainingIds)
       setShowTradeResults(true)
     } catch (e) {
       console.error('[regex] Trade search failed:', e)
@@ -261,6 +270,20 @@ export function MapMods(): JSX.Element {
       setShowTierPicker(false)
     }
   }
+
+  const tradeLoadMore = async (): Promise<void> => {
+    if (!tradeQueryId || tradeRemainingIds.length === 0 || loadingMore) return
+    setLoadingMore(true)
+    try {
+      const result = await window.api.fetchMoreListings(tradeQueryId, tradeRemainingIds)
+      setTradeListings((prev) => [...prev, ...result.listings])
+      setTradeRemainingIds(result.remainingIds)
+    } catch {
+      // silently fail
+    }
+    setLoadingMore(false)
+  }
+
   const [presets, setPresets] = useState<RegexPreset[]>([])
   const [copied, setCopied] = useState(false)
   const [avoidCollapsed, setAvoidCollapsed] = useState<Set<string>>(
@@ -1092,9 +1115,12 @@ export function MapMods(): JSX.Element {
                     setActionStatus={setActionStatus}
                     queryId={tradeQueryId}
                     league={tradeLeague}
+                    onLoadMore={tradeRemainingIds.length > 0 ? tradeLoadMore : undefined}
+                    loadingMore={loadingMore}
                   />
                 </div>
               )}
+              <RateLimitBar rateLimitTiers={rateLimitTiers} />
             </div>
           )}
 

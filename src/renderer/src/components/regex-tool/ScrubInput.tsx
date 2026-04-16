@@ -15,7 +15,7 @@ export function ScrubInput({
   onChange,
   placeholder = '0',
   min = 0,
-  max = 999,
+  max = 99999,
   step = 1,
 }: ScrubInputProps): JSX.Element {
   const [editing, setEditing] = useState(false)
@@ -33,7 +33,7 @@ export function ScrubInput({
   const commitEdit = () => {
     setEditing(false)
     const parsed = parseInt(editText)
-    if (isNaN(parsed) || parsed <= 0) onChange(null)
+    if (isNaN(parsed) || parsed === 0) onChange(null)
     else onChange(Math.min(max, Math.max(min, parsed)))
   }
 
@@ -44,12 +44,19 @@ export function ScrubInput({
     document.body.style.cursor = 'ew-resize'
     document.body.classList.add('scrubbing')
 
+    let lastX = e.clientX
+    let accumulator = value ?? 0
+
     const onMove = (me: MouseEvent) => {
       if (!scrubRef.current) return
-      const dx = me.clientX - scrubRef.current.startX
-      const delta = Math.round(dx / 3) * step
-      const newVal = Math.min(max, Math.max(min, scrubRef.current.startVal + delta))
-      onChange(newVal > 0 ? newVal : null)
+      const dx = me.clientX - lastX
+      lastX = me.clientX
+      const magnitude = Math.abs(accumulator)
+      const speed = magnitude >= 1000 ? 5 : magnitude >= 100 ? 2 : magnitude >= 10 ? 1 : 0.5
+      accumulator += (dx * speed * step) / 3
+      const clamped = Math.min(max, Math.max(min, accumulator))
+      const snapped = Math.round(clamped / step) * step
+      onChange(snapped !== 0 ? snapped : null)
     }
 
     const onUp = () => {
@@ -80,7 +87,7 @@ export function ScrubInput({
       style={{
         background: 'rgba(0,0,0,0.3)',
         cursor: editing ? 'text' : 'ew-resize',
-        color: value != null && value > 0 ? 'var(--text)' : 'var(--text-dim)',
+        color: value != null ? 'var(--text)' : 'var(--text-dim)',
         border: editing ? '1px solid rgba(0,0,0,0.2)' : '1px solid transparent',
       }}
     >
@@ -101,7 +108,7 @@ export function ScrubInput({
           max={max}
         />
       ) : (
-        <span>{value ?? 0}</span>
+        <span style={value == null ? { opacity: 0.4 } : undefined}>{value ?? placeholder}</span>
       )}
       <SortFour size={11} theme="outline" fill="currentColor" style={{ transform: 'rotate(90deg)', opacity: 0.35 }} />
     </div>

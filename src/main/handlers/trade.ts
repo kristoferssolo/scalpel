@@ -2,6 +2,7 @@ import { BrowserWindow, ipcMain, session } from 'electron'
 import Store from 'electron-store'
 import {
   searchTrade,
+  fetchMoreListings,
   isBulkExchangeItem,
   getBulkExchangeId,
   searchBulkExchange,
@@ -246,4 +247,9 @@ export function register(store: Store<AppSettings>): void {
       return { ...result, league }
     },
   )
+
+  ipcMain.handle('fetch-more-listings', async (_event, queryId: string, ids: string[]) => {
+    const tradeStatus = store.get('tradeStatus') ?? 'available'
+    return fetchMoreListings(queryId, ids, tradeStatus)
+  })
 }

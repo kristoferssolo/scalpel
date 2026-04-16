@@ -259,6 +259,7 @@ export const api = {
       itemData?: { name?: string; baseType?: string; explicitMods?: string[]; implicitMods?: string[]; ilvl?: number }
     }>
     queryId: string
+    remainingIds: string[]
   }> => ipcRenderer.invoke('trade-search', item, statFilters),
   bulkExchange: (
     itemName: string,
@@ -313,7 +314,33 @@ export const api = {
     }>
     queryId: string
     league: string
+    remainingIds: string[]
   }> => ipcRenderer.invoke('map-regex-trade', params),
+  fetchMoreListings: (
+    queryId: string,
+    ids: string[],
+  ): Promise<{
+    listings: Array<{
+      id: string
+      price: { amount: number; currency: string } | null
+      account: string
+      characterName?: string
+      online: boolean
+      instantBuyout: boolean
+      icon?: string
+      indexed?: string
+      itemData?: {
+        name?: string
+        baseType?: string
+        rarity?: string
+        explicitMods?: string[]
+        implicitMods?: string[]
+        ilvl?: number
+        mapProperties?: Array<{ name: string; value: string }>
+      }
+    }>
+    remainingIds: string[]
+  }> => ipcRenderer.invoke('fetch-more-listings', queryId, ids),
   visitHideout: (queryId: string, listingId: string, league: string): Promise<void> =>
     ipcRenderer.invoke('visit-hideout', queryId, listingId, league),
   whisperSeller: (queryId: string, listingId: string, league: string): Promise<void> =>

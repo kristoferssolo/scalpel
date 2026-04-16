@@ -18,6 +18,7 @@ import { getDustInfo } from '../../shared/dust'
 import { StatFilterRow } from './StatFilterRow'
 import { TradeListings } from './TradeListings'
 import { BulkListings } from './BulkListings'
+import { RateLimitBar } from './RateLimitBar'
 
 export function PriceCheck({
   item,
@@ -103,6 +104,8 @@ export function PriceCheck({
   const [searching, setSearching] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searched, setSearched] = useState(false)
+  const [remainingIds, setRemainingIds] = useState<string[]>([])
+  const [loadingMore, setLoadingMore] = useState(false)
   const autoSearched = useRef(false)
   const [isBulk, setIsBulk] = useState<boolean | null>(null)
   const [bulkListings, setBulkListings] = useState<BulkListing[]>([])
@@ -156,10 +159,24 @@ export function PriceCheck({
       setListings(result.listings)
       setTotal(result.total)
       setQueryId(result.queryId)
+      setRemainingIds(result.remainingIds ?? [])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Search failed')
     }
     setSearching(false)
+  }
+
+  const loadMore = async (): Promise<void> => {
+    if (!queryId || remainingIds.length === 0 || loadingMore) return
+    setLoadingMore(true)
+    try {
+      const result = await window.api.fetchMoreListings(queryId, remainingIds)
+      setListings((prev) => [...prev, ...result.listings])
+      setRemainingIds(result.remainingIds)
+    } catch {
+      // silently fail
+    }
+    setLoadingMore(false)
   }
 
   // Auto-search on first mount (wait for bulk check to complete first)
@@ -575,6 +592,8 @@ export function PriceCheck({
             setActionStatus={setActionStatus}
             queryId={queryId}
             league={league}
+            onLoadMore={remainingIds.length > 0 ? loadMore : undefined}
+            loadingMore={loadingMore}
           />
         )}
 
@@ -582,66 +601,7 @@ export function PriceCheck({
           <div className="text-[11px] text-text-dim text-center p-2">No listings found</div>
         )}
       </div>
-      {/* Rate limit bar */}
-      {searched &&
-        !searching &&
-        (() => {
-          const first = rateLimitTiers[0]
-          const pct = first ? first.used / first.max : 0
-          const hasPenalty = rateLimitTiers.some((t) => t.penalty > 0)
-          const barColor = hasPenalty
-            ? '#c44'
-            : pct > 0.8
-              ? '#c44'
-              : pct > 0.5
-                ? '#b8943a'
-                : pct > 0
-                  ? '#3a7a3a'
-                  : 'rgba(255,255,255,0.06)'
-          return (
-            <div
-              className="rate-limit-bar px-[14px] py-1 flex items-center gap-2 border-t border-border relative"
-              onMouseMove={(e) => {
-                const tip = e.currentTarget.querySelector('.rate-limit-tooltip') as HTMLElement
-                if (tip) {
-                  const rect = e.currentTarget.getBoundingClientRect()
-                  const tipWidth = tip.offsetWidth
-                  const x = e.clientX - rect.left
-                  const minX = tipWidth / 2
-                  const maxX = rect.width - tipWidth / 2
-                  tip.style.left = `${Math.max(minX, Math.min(x, maxX))}px`
-                }
-              }}
-            >
-              <div className="flex-1 h-[3px] rounded-sm bg-white/[0.08] overflow-hidden">
-                <div
-                  className="h-full rounded-sm transition-[width] duration-[400ms] ease-[ease]"
-                  style={{
-                    width: `${Math.min(100, pct * 100)}%`,
-                    background: barColor,
-                    ...(hasPenalty ? { animation: 'pulse-red 1s ease-in-out infinite' } : {}),
-                  }}
-                />
-              </div>
-              {hasPenalty && (
-                <span className="text-[9px] text-[#ef5350] font-semibold">
-                  {rateLimitTiers.find((t) => t.penalty > 0)!.penalty}s
-                </span>
-              )}
-              <div className="rate-limit-tooltip absolute bottom-full mb-[6px] -translate-x-1/2 px-[10px] py-[6px] bg-bg-card border border-border rounded text-[10px] text-text-dim whitespace-nowrap pointer-events-none opacity-0 transition-opacity duration-150 flex flex-col gap-[2px]">
-                <div className="font-semibold text-text mb-[2px]">Trade API Rate Limit</div>
-                {rateLimitTiers.map((t, i) => (
-                  <div key={i} className="flex justify-between gap-3">
-                    <span>
-                      {t.used}/{t.max}
-                    </span>
-                    <span className="text-text-dim">per {t.window}s</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        })()}
+      {searched && !searching && <RateLimitBar rateLimitTiers={rateLimitTiers} />}
     </div>
   )
 }

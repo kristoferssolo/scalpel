@@ -51,6 +51,7 @@ export interface TradeResult {
   total: number
   listings: TradeListing[]
   queryId: string
+  remainingIds: string[]
 }
 
 export interface BulkExchangeListing {
@@ -564,7 +565,7 @@ export async function searchTrade(
   })) as TradeSearchResult
 
   if (!searchResult.result || searchResult.result.length === 0) {
-    return { total: searchResult.total ?? 0, listings: [], queryId: searchResult.id ?? '' }
+    return { total: searchResult.total ?? 0, listings: [], queryId: searchResult.id ?? '', remainingIds: [] }
   }
 
   // Fetch first 10 results
@@ -757,7 +758,7 @@ export async function searchTrade(
       : undefined,
   }))
 
-  return { total: searchResult.total, listings, queryId: searchResult.id }
+  return { total: searchResult.total, listings, queryId: searchResult.id, remainingIds: searchResult.result.slice(10) }
 }
 
 // ─── Bulk Exchange ──────────────────────────────────────────────────────────
@@ -881,6 +882,60 @@ export async function searchBulkExchange(
   }
 
   return { total: result.total ?? 0, listings, queryId: result.id ?? '' }
+}
+
+// ─── Shared listing fetch helper ─────────────────────────────────────────────
+
+async function fetchAndMapListings(ids: string[], queryId: string, tradeStatus: string): Promise<TradeListing[]> {
+  await throttle()
+  const fetchResult = (await fetchJson(`${POE_TRADE_API}/fetch/${ids.join(',')}?query=${queryId}`)) as {
+    result: Array<{
+      id: string
+      listing: {
+        price?: { amount: number; currency: string }
+        account: { name: string; lastCharacterName?: string; online?: { status?: string } }
+        indexed?: string
+        whisper?: string
+        method?: string
+      }
+      item?: {
+        name?: string
+        baseType?: string
+        typeLine?: string
+        frameType?: number
+        icon?: string
+        ilvl?: number
+        implicitMods?: string[]
+        explicitMods?: string[]
+        properties?: Array<{ name: string; values: Array<[string, number]> }>
+      }
+    }>
+  }
+
+  return (fetchResult.result ?? []).map((r) => ({
+    id: r.id,
+    price: r.listing.price ? { amount: r.listing.price.amount, currency: r.listing.price.currency } : null,
+    account: r.listing.account.name,
+    characterName: r.listing.account.lastCharacterName,
+    online: !!r.listing.account.online,
+    instantBuyout:
+      tradeStatus === 'securable' || !!(r.listing.method === 'instant' || (!r.listing.whisper && r.listing.price)),
+    icon: r.item?.icon,
+    indexed: r.listing.indexed,
+    itemData: r.item
+      ? {
+          name: r.item.name,
+          baseType: r.item.baseType ?? r.item.typeLine,
+          rarity: ['Normal', 'Magic', 'Rare', 'Unique'][r.item.frameType ?? 0] ?? 'Normal',
+          explicitMods: r.item.explicitMods ?? [],
+          implicitMods: r.item.implicitMods,
+          ilvl: r.item.ilvl,
+          mapProperties: r.item.properties
+            ?.filter((p) => p.values?.[0]?.[0] != null)
+            .map((p) => ({ name: p.name, value: p.values[0][0] })),
+        }
+      : undefined,
+  }))
 }
 
 // ─── Map Regex Trade Search ─────────────────────────────────────────────────
@@ -1025,56 +1080,23 @@ export async function searchMapsByRegex(
     return { total: searchResult.total ?? 0, listings: [], queryId: searchResult.id ?? '' }
   }
 
-  await throttle()
-  const ids = searchResult.result.slice(0, 10).join(',')
-  const fetchResult = (await fetchJson(`${POE_TRADE_API}/fetch/${ids}?query=${searchResult.id}`)) as {
-    result: Array<{
-      id: string
-      listing: {
-        price?: { amount: number; currency: string }
-        account: { name: string; lastCharacterName?: string; online?: { status?: string } }
-        indexed?: string
-        whisper?: string
-        method?: string
-      }
-      item?: {
-        name?: string
-        baseType?: string
-        typeLine?: string
-        frameType?: number
-        icon?: string
-        ilvl?: number
-        implicitMods?: string[]
-        explicitMods?: string[]
-        properties?: Array<{ name: string; values: Array<[string, number]> }>
-      }
-    }>
+  const listings = await fetchAndMapListings(searchResult.result.slice(0, 10), searchResult.id, tradeStatus)
+
+  return {
+    total: searchResult.total ?? 0,
+    listings,
+    queryId: searchResult.id ?? '',
+    remainingIds: searchResult.result.slice(10),
   }
+}
 
-  const listings: TradeListing[] = (fetchResult.result ?? []).map((r) => ({
-    id: r.id,
-    price: r.listing.price ? { amount: r.listing.price.amount, currency: r.listing.price.currency } : null,
-    account: r.listing.account.name,
-    characterName: r.listing.account.lastCharacterName,
-    online: !!r.listing.account.online,
-    instantBuyout:
-      tradeStatus === 'securable' || !!(r.listing.method === 'instant' || (!r.listing.whisper && r.listing.price)),
-    icon: r.item?.icon,
-    indexed: r.listing.indexed,
-    itemData: r.item
-      ? {
-          name: r.item.name,
-          baseType: r.item.baseType ?? r.item.typeLine,
-          rarity: ['Normal', 'Magic', 'Rare', 'Unique'][r.item.frameType ?? 0] ?? 'Normal',
-          explicitMods: r.item.explicitMods ?? [],
-          implicitMods: r.item.implicitMods,
-          ilvl: r.item.ilvl,
-          mapProperties: r.item.properties
-            ?.filter((p) => p.values?.[0]?.[0] != null)
-            .map((p) => ({ name: p.name, value: p.values[0][0] })),
-        }
-      : undefined,
-  }))
-
-  return { total: searchResult.total ?? 0, listings, queryId: searchResult.id ?? '' }
+export async function fetchMoreListings(
+  queryId: string,
+  ids: string[],
+  tradeStatus: string,
+): Promise<{ listings: TradeListing[]; remainingIds: string[] }> {
+  await throttle()
+  const batch = ids.slice(0, 10)
+  const listings = await fetchAndMapListings(batch, queryId, tradeStatus)
+  return { listings, remainingIds: ids.slice(10) }
 }

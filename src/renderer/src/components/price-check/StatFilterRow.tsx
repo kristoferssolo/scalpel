@@ -1,5 +1,5 @@
 import { Star } from '@icon-park/react'
-import { StepInput } from './StepInput'
+import { ScrubInput } from '../regex-tool/ScrubInput'
 import { getModColor, MOD_BOLD_TYPES } from './constants'
 import type { StatFilter } from './types'
 
@@ -49,9 +49,18 @@ export function StatFilterRow({
         {f.type === 'temple-key' && <Star size={12} theme="filled" fill="#ffd700" />}
         {f.text}
       </span>
-      <StepInput value={f.min} placeholder="min" onChange={(val) => updateFilterMin(i, val)} />
-      <span className="text-text-dim text-[10px]">-</span>
-      <StepInput value={f.max} placeholder="max" onChange={(val) => updateFilterMax(i, val)} />
+      <ScrubInput
+        value={f.min}
+        placeholder="min"
+        min={-99999}
+        onChange={(val) => updateFilterMin(i, val == null ? '' : String(val))}
+      />
+      <ScrubInput
+        value={f.max}
+        placeholder="max"
+        min={-99999}
+        onChange={(val) => updateFilterMax(i, val == null ? '' : String(val))}
+      />
     </div>
   )
 }

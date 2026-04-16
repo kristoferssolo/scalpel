@@ -17,6 +17,8 @@ export function TradeListings({
   setActionStatus,
   queryId,
   league,
+  onLoadMore,
+  loadingMore,
 }: {
   listings: Listing[]
   total: number | null
@@ -31,6 +33,8 @@ export function TradeListings({
   setActionStatus: React.Dispatch<React.SetStateAction<Record<string, 'pending' | 'success' | 'failed'>>>
   queryId: string | null
   league: string
+  onLoadMore?: () => void
+  loadingMore?: boolean
 }): JSX.Element {
   return (
     <div className="bg-black/20 overflow-hidden flex-1 min-h-0 overflow-y-auto rounded-none mx-[-14px] mt-0 -mb-[10px]">
@@ -335,6 +339,22 @@ export function TradeListings({
       {total != null && total > listings.length && (
         <div className="px-[10px] py-1 text-[9px] text-text-dim text-center">
           Showing {listings.length} of {total} results
+          {onLoadMore && (
+            <button
+              style={{ marginLeft: 6 }}
+              onClick={onLoadMore}
+              disabled={loadingMore}
+              className="text-[9px] px-[6px] py-[1px] border-none cursor-pointer font-semibold bg-white/[0.06] text-text-dim rounded-[2px] disabled:opacity-40"
+              onMouseEnter={(e) => {
+                if (!loadingMore) e.currentTarget.style.background = 'rgba(255,255,255,0.12)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+              }}
+            >
+              {loadingMore ? 'Loading...' : 'Load more'}
+            </button>
+          )}
         </div>
       )}
     </div>
