@@ -784,11 +784,11 @@ describe('matchItemMods', () => {
 
     it('generates wings revealed/total chips for heist blueprints', () => {
       const filters = matchItemMods([], [], undefined, makeItemInfo({ sockets: '', wingsRevealed: 3, wingsTotal: 4 }))
-      const wingsRevealed = filters.find((f) => f.id === 'heist.wings_revealed')
+      const wingsRevealed = filters.find((f) => f.id === 'heist.heist_wings')
       expect(wingsRevealed).toBeDefined()
       expect(wingsRevealed!.value).toBe(3)
 
-      const wingsTotal = filters.find((f) => f.id === 'heist.max_wings')
+      const wingsTotal = filters.find((f) => f.id === 'heist.heist_max_wings')
       expect(wingsTotal).toBeDefined()
       expect(wingsTotal!.value).toBe(4)
     })

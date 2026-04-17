@@ -1212,7 +1212,7 @@ export function matchItemMods(
   // Heist blueprint wings revealed
   if (itemInfo?.wingsRevealed != null) {
     miscFilters.push({
-      id: 'heist.wings_revealed',
+      id: 'heist.heist_wings',
       text: `Wings Revealed: ${itemInfo.wingsRevealed}`,
       value: itemInfo.wingsRevealed,
       min: itemInfo.wingsRevealed,
@@ -1222,7 +1222,7 @@ export function matchItemMods(
     })
     if (itemInfo.wingsTotal) {
       miscFilters.push({
-        id: 'heist.max_wings',
+        id: 'heist.heist_max_wings',
         text: `Total Wings: ${itemInfo.wingsTotal}`,
         value: itemInfo.wingsTotal,
         min: itemInfo.wingsTotal,
