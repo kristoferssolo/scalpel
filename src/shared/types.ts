@@ -271,6 +271,7 @@ export interface AppSettings {
   priceCheckDefaultPercent: number
   tradeDefaultToBase: boolean
   tradeKeepUncheckedVisible?: boolean
+  tradeNeverAutoSearch?: boolean
   chatCommands: Array<{ hotkey: string; command: string; autoSubmit?: boolean }>
   appMacros: Array<{ action: string; hotkey: string; tag?: string }>
   stashScrollEnabled: boolean

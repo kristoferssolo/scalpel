@@ -22,6 +22,8 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
       'Added error banner for hotkey collisions',
       'Added warning banner for poe hotkeys',
       'Added hotkey to close scalpel',
+      'Added search to empty filter page',
+      "Added never auto-search and don't hide mods setting to trade settings",
       'Fixed regression with heist garbage',
       'Fixed so many stupid item lines',
     ],

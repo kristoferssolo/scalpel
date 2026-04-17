@@ -128,11 +128,15 @@ export function PriceCheck({
   const baseModeApplied = useRef(false)
   const baseModeExpandedIndices = useRef<Set<number> | null>(null)
   const keepUncheckedVisible = useRef(false)
+  const neverAutoSearch = useRef(false)
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
   useEffect(() => {
     if (baseModeApplied.current) return
     window.api.getSettings().then((s) => {
       if (baseModeApplied.current) return
       keepUncheckedVisible.current = !!s.tradeKeepUncheckedVisible
+      neverAutoSearch.current = !!s.tradeNeverAutoSearch
+      setSettingsLoaded(true)
       const isClassDefault = BASE_DEFAULT_ITEM_CLASSES.has(item.itemClass)
       const isUnique = item.rarity === 'Unique'
       const keepRowsVisible = isUnique || !!s.tradeDefaultToBase
@@ -221,9 +225,12 @@ export function PriceCheck({
     setLoadingMore(false)
   }
 
-  // Auto-search on first mount (wait for bulk check to complete first)
+  // Auto-search on first mount (wait for bulk check AND settings load first).
+  // Gated by the "Never auto-search" setting -- user must click Search manually in that case.
   useEffect(() => {
     if (isBulk === null) return // still checking
+    if (!settingsLoaded) return
+    if (neverAutoSearch.current) return
     if (!autoSearched.current && (!unidCandidates || selectedUnique)) {
       autoSearched.current = true
       if (isBulk) {
@@ -232,7 +239,7 @@ export function PriceCheck({
         doSearch()
       }
     }
-  }, [selectedUnique, isBulk])
+  }, [selectedUnique, isBulk, settingsLoaded])
 
   const toggleFilter = (idx: number): void => {
     setFilters((prev) => {

@@ -142,6 +142,16 @@ export function PriceCheckTab({ settings, update, tryHotkey }: Props): JSX.Eleme
         </div>
       </section>
 
+      {/* Trade site login */}
+      <section>
+        <label>Trade site login</label>
+        <div className="mt-[6px]">
+          <PoeLoginButton />
+        </div>
+      </section>
+
+      <div className="text-[10px] text-accent tracking-[1.5px] uppercase mt-3 font-bold">Additional Settings</div>
+
       <section>
         <div
           onClick={() => update('tradeDefaultToBase', !settings.tradeDefaultToBase)}
@@ -170,11 +180,16 @@ export function PriceCheckTab({ settings, update, tryHotkey }: Props): JSX.Eleme
         </div>
       </section>
 
-      {/* Trade site login */}
       <section>
-        <label>Trade site login</label>
-        <div className="mt-[6px]">
-          <PoeLoginButton />
+        <div
+          onClick={() => update('tradeNeverAutoSearch', !settings.tradeNeverAutoSearch)}
+          className="flex items-center gap-[10px] cursor-pointer select-none"
+        >
+          <Toggle
+            checked={settings.tradeNeverAutoSearch ?? false}
+            onChange={(val) => update('tradeNeverAutoSearch', val)}
+          />
+          <span className="text-xs text-text">Never auto-search</span>
         </div>
       </section>
     </>
