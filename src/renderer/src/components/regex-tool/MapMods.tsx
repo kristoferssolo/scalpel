@@ -175,10 +175,27 @@ export function MapMods(): JSX.Element {
   const [generator, _setGenerator] = useState<'maps' | 'custom'>(() =>
     loadStorage('scalpel:regex:generator', 'maps' as 'maps' | 'custom', (s) => (s === 'custom' ? 'custom' : 'maps')),
   )
-  const savedTagsByGenerator = useRef<Record<string, (RegexPresetTag & { id: number })[]>>({})
+  const savedTagsByGenerator = useRef<Record<string, (RegexPresetTag & { id: number })[]>>(
+    (() => {
+      const byGen = loadStorage(
+        'scalpel:regex:presetTagsByGenerator',
+        {} as Record<string, (RegexPresetTag & { id: number })[]>,
+      )
+      // Migrate from the old flat-array storage key if per-generator storage is empty
+      if (Object.keys(byGen).length === 0) {
+        const legacy = loadStorage<(RegexPresetTag & { id: number })[]>('scalpel:regex:presetTags', [])
+        if (legacy.length > 0) {
+          const currentGen = loadStorage('scalpel:regex:generator', 'maps', (s) => (s === 'custom' ? 'custom' : 'maps'))
+          byGen[currentGen] = legacy
+        }
+      }
+      return byGen
+    })(),
+  )
   const setGenerator = (g: 'maps' | 'custom') => {
     // Stash current tags, restore target's tags
     savedTagsByGenerator.current[generator] = presetTags
+    localStorage.setItem('scalpel:regex:presetTagsByGenerator', JSON.stringify(savedTagsByGenerator.current))
     setPresetTags(savedTagsByGenerator.current[g] ?? [])
     setCustomTagInput('')
     setShowTradeResults(false)
@@ -201,13 +218,15 @@ export function MapMods(): JSX.Element {
   )
   const [search, setSearch] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
-  const [presetsOpen, setPresetsOpen] = useState(false)
-  const [presetTags, setPresetTags] = useState<(RegexPresetTag & { id: number })[]>(() =>
-    loadStorage<(RegexPresetTag & { id: number })[]>('scalpel:regex:presetTags', []),
+  const [saveOpen, setSaveOpen] = useState(false)
+  const [loadOpen, setLoadOpen] = useState(false)
+  const [presetTags, setPresetTags] = useState<(RegexPresetTag & { id: number })[]>(
+    () => savedTagsByGenerator.current[generator] ?? [],
   )
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:presetTags', JSON.stringify(presetTags))
-  }, [presetTags])
+    savedTagsByGenerator.current[generator] = presetTags
+    localStorage.setItem('scalpel:regex:presetTagsByGenerator', JSON.stringify(savedTagsByGenerator.current))
+  }, [presetTags, generator])
   const [customTagInput, setCustomTagInput] = useState('')
   const [customRegexInput, setCustomRegexInput] = useState(() => loadStorage('scalpel:regex:custom', '', (s) => s))
   useEffect(() => {
@@ -334,9 +353,17 @@ export function MapMods(): JSX.Element {
           : { ...p, tags: [{ text: (p as unknown as { name: string }).name || 'preset', color: CUSTOM_TAG_COLOR }] },
       )
       setPresets(migrated)
-      // Auto-open presets panel if there are any for the current generator
+      // Auto-open load panel if there are any saved presets for the current generator
       if (migrated.some((p) => (p.generator ?? 'maps') === generator)) {
-        setPresetsOpen(true)
+        setLoadOpen(true)
+      }
+      // If we have tags in the save bar but the regex state is empty, restore from matching preset
+      if (generator === 'custom' && presetTags.length > 0 && !customRegexInput) {
+        const tagKey = [...presetTags.map((t) => t.text)].sort().join('|')
+        const match = migrated.find(
+          (p) => (p.generator ?? 'maps') === 'custom' && [...p.tags.map((t) => t.text)].sort().join('|') === tagKey,
+        )
+        if (match?.customRegex) setCustomRegexInput(match.customRegex)
       }
     })
   }, [])
@@ -432,11 +459,21 @@ export function MapMods(): JSX.Element {
     return null
   }
 
+  // On mount, if no tags are stored yet for this generator, seed from auto-generated tags
+  useEffect(() => {
+    if (presetTags.length === 0) {
+      const auto = getAutoTags()
+      if (auto && auto.length > 0) {
+        setPresetTags(auto.map((t, i) => ({ ...t, id: i })))
+      }
+    }
+  }, [])
+
   // Keep auto-generated tags in sync with live state while panel is open.
   // Custom tags and tag order are preserved.
   useEffect(() => {
     const fresh = getAutoTags()
-    if (!presetsOpen || !fresh) return
+    if (!fresh) return
     setPresetTags((prev) => {
       // Build a set of fresh sourceIds
       const freshBySourceId = new Map<string | number, (typeof fresh)[0]>()
@@ -470,7 +507,7 @@ export function MapMods(): JSX.Element {
 
       return updated
     })
-  }, [presetsOpen, avoid, want, qualifiers])
+  }, [avoid, want, qualifiers])
 
   const removePresetTag = (index: number) => {
     setPresetTags((prev) => prev.filter((_, i) => i !== index))
@@ -478,26 +515,29 @@ export function MapMods(): JSX.Element {
 
   const [macroTagError, setMacroTagError] = useState<string | null>(null)
 
+  // Identify the preset (if any) that matches the current auto-tag set in the active generator.
+  // For 'custom' uses the regex string; for 'maps' uses sorted auto-tag text (ignoring custom tags).
+  const findMatchingPreset = (): RegexPreset | undefined => {
+    if (generator === 'custom') {
+      return presets.find((p) => (p.generator ?? 'maps') === 'custom' && p.customRegex === customRegexInput)
+    }
+    const isAuto = (t: RegexPresetTag) => !!t.source && t.source !== 'custom'
+    const autoKey = (tags: RegexPresetTag[]) =>
+      tags
+        .filter(isAuto)
+        .map((t) => t.text)
+        .sort()
+        .join('|')
+    const currentKey = autoKey(presetTags)
+    return presets.find((p) => (p.generator ?? 'maps') === generator && autoKey(p.tags) === currentKey)
+  }
+
   const addCustomTag = () => {
     const text = customTagInput.trim()
     if (!text) return
     // Macro tags (text containing "macro") must be unique across all other presets
     if (/macro/i.test(text)) {
-      const isAuto = (t: RegexPresetTag) => !!t.source && t.source !== 'custom'
-      const currentAutoKey = presetTags
-        .filter(isAuto)
-        .map((t) => t.text)
-        .sort()
-        .join('|')
-      const ownPreset = presets.find(
-        (p) =>
-          (p.generator ?? 'maps') === generator &&
-          p.tags
-            .filter(isAuto)
-            .map((t) => t.text)
-            .sort()
-            .join('|') === currentAutoKey,
-      )
+      const ownPreset = findMatchingPreset()
       const inUseByOther = presets.some(
         (p) => p.id !== ownPreset?.id && p.tags?.some((t) => t.text === text && (!t.source || t.source === 'custom')),
       )
@@ -513,22 +553,7 @@ export function MapMods(): JSX.Element {
 
   const savePreset = async () => {
     if (presetTags.length === 0) return
-    // Detect dupes by sorted auto-tag text (ignore custom tags so they can be edited)
-    const isAuto = (t: RegexPresetTag) => !!t.source && t.source !== 'custom'
-    const tagKey = presetTags
-      .filter(isAuto)
-      .map((t) => t.text)
-      .sort()
-      .join('|')
-    const existingDupe = presets.find(
-      (p) =>
-        (p.generator ?? 'maps') === generator &&
-        p.tags
-          .filter(isAuto)
-          .map((t) => t.text)
-          .sort()
-          .join('|') === tagKey,
-    )
+    const existingDupe = findMatchingPreset()
     const preset: RegexPreset = {
       id: existingDupe?.id ?? crypto.randomUUID(),
       generator,
@@ -643,6 +668,8 @@ export function MapMods(): JSX.Element {
                       setWant(new Set())
                       setQualifiers({})
                     }
+                    setPresetTags([])
+                    setCustomTagInput('')
                   }}
                   disabled={
                     generator === 'custom'
@@ -703,9 +730,10 @@ export function MapMods(): JSX.Element {
                 setSearchOpen((v) => !v)
                 if (searchOpen) setSearch('')
                 if (!searchOpen) {
-                  setPresetsOpen(false)
                   setShowTierPicker(false)
                   setShowTradeResults(false)
+                  setSaveOpen(false)
+                  setLoadOpen(false)
                 }
               }}
             />
@@ -713,13 +741,30 @@ export function MapMods(): JSX.Element {
           <FilterChip
             label={
               <>
-                <Save size={12} theme="outline" fill="currentColor" /> Save / Load
+                <Save size={12} theme="outline" fill="currentColor" /> Save
               </>
             }
-            active={presetsOpen}
+            active={saveOpen}
             onClick={() => {
-              setPresetsOpen((v) => !v)
-              if (!presetsOpen) {
+              setSaveOpen((v) => !v)
+              if (!saveOpen) {
+                setSearchOpen(false)
+                setSearch('')
+                setShowTierPicker(false)
+                setShowTradeResults(false)
+              }
+            }}
+          />
+          <FilterChip
+            label={
+              <>
+                <Save size={12} theme="outline" fill="currentColor" /> Load
+              </>
+            }
+            active={loadOpen}
+            onClick={() => {
+              setLoadOpen((v) => !v)
+              if (!loadOpen) {
                 setSearchOpen(false)
                 setSearch('')
                 setShowTierPicker(false)
@@ -746,13 +791,15 @@ export function MapMods(): JSX.Element {
                   setShowTierPicker(false)
                   setSearchOpen(false)
                   setSearch('')
-                  setPresetsOpen(false)
+                  setSaveOpen(false)
+                  setLoadOpen(false)
                 } else {
                   setShowTierPicker((v) => !v)
                   if (!showTierPicker) {
                     setSearchOpen(false)
                     setSearch('')
-                    setPresetsOpen(false)
+                    setSaveOpen(false)
+                    setLoadOpen(false)
                   }
                 }
               }}
@@ -784,9 +831,9 @@ export function MapMods(): JSX.Element {
         <div
           className="overflow-hidden transition-all duration-150"
           style={{
-            maxHeight: presetsOpen ? 300 : 0,
-            marginTop: presetsOpen ? 8 : 0,
-            opacity: presetsOpen ? 1 : 0,
+            maxHeight: saveOpen ? 300 : 0,
+            marginTop: saveOpen ? 8 : 0,
+            opacity: saveOpen ? 1 : 0,
           }}
         >
           <div className="flex flex-col gap-2">
@@ -974,7 +1021,7 @@ export function MapMods(): JSX.Element {
         const filtered = presets.filter((p) => (p.generator ?? 'maps') === generator)
         return (
           filtered.length > 0 &&
-          presetsOpen && (
+          loadOpen && (
             <div className="border-b border-border bg-bg-card py-2">
               <span className="text-[9px] text-text-dim font-semibold uppercase tracking-wider ml-3 mb-1 block">
                 Saved Regex

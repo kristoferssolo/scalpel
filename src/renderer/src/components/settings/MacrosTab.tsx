@@ -103,60 +103,68 @@ export function MacrosTab({ settings, update }: Props): JSX.Element {
               (d) => d.id === 'useSavedRegex' || d.id === macro.action || !usedActions.has(d.id),
             )
             const hasTagDropdown = macro.action === 'useSavedRegex'
+            const showNoTagsHint = hasTagDropdown && macroTags.length === 0
             return (
-              <div key={i} className="flex gap-[6px] items-center bg-black/15 rounded p-[5px] min-w-0">
-                <HotkeyRecorder
-                  value={macro.hotkey}
-                  onChange={(hotkey) => {
-                    const macros = [...(settings.appMacros ?? [])]
-                    macros[i] = { ...macros[i], hotkey }
-                    update('appMacros', macros)
-                  }}
-                  className={hasTagDropdown ? 'flex-1 min-w-0' : 'w-[200px] shrink-0'}
-                />
-                <select
-                  value={macro.action}
-                  onChange={(e) => {
-                    const macros = [...(settings.appMacros ?? [])]
-                    macros[i] = { ...macros[i], action: e.target.value }
-                    update('appMacros', macros)
-                  }}
-                  className="text-[11px] flex-1 min-w-0 rounded h-[34px] box-border"
-                  style={{ padding: '4px 24px 4px 8px' }}
-                >
-                  {availableActions.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
-                {hasTagDropdown && (
+              <div key={i} className="flex flex-col gap-[4px] bg-black/15 rounded p-[5px] min-w-0">
+                <div className="flex gap-[6px] items-center min-w-0">
+                  <HotkeyRecorder
+                    value={macro.hotkey}
+                    onChange={(hotkey) => {
+                      const macros = [...(settings.appMacros ?? [])]
+                      macros[i] = { ...macros[i], hotkey }
+                      update('appMacros', macros)
+                    }}
+                    className={hasTagDropdown ? 'flex-1 min-w-0' : 'w-[200px] shrink-0'}
+                  />
                   <select
-                    value={macro.tag ?? ''}
+                    value={macro.action}
                     onChange={(e) => {
                       const macros = [...(settings.appMacros ?? [])]
-                      macros[i] = { ...macros[i], tag: e.target.value }
+                      macros[i] = { ...macros[i], action: e.target.value }
                       update('appMacros', macros)
                     }}
                     className="text-[11px] flex-1 min-w-0 rounded h-[34px] box-border"
                     style={{ padding: '4px 24px 4px 8px' }}
                   >
-                    <option value="">{macroTags.length === 0 ? 'No macro tags found' : 'Select a macro tag'}</option>
-                    {macroTags.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
+                    {availableActions.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.label}
                       </option>
                     ))}
                   </select>
+                  {hasTagDropdown && (
+                    <select
+                      value={macro.tag ?? ''}
+                      onChange={(e) => {
+                        const macros = [...(settings.appMacros ?? [])]
+                        macros[i] = { ...macros[i], tag: e.target.value }
+                        update('appMacros', macros)
+                      }}
+                      className="text-[11px] flex-1 min-w-0 rounded h-[34px] box-border"
+                      style={{ padding: '4px 24px 4px 8px' }}
+                    >
+                      <option value="">{macroTags.length === 0 ? 'No macro tags found' : 'Select a macro tag'}</option>
+                      {macroTags.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <RemoveButton
+                    onClick={() =>
+                      update(
+                        'appMacros',
+                        (settings.appMacros ?? []).filter((_, j) => j !== i),
+                      )
+                    }
+                  />
+                </div>
+                {showNoTagsHint && (
+                  <div className="text-[10px] text-accent px-[2px]">
+                    Add &quot;macro&quot; to a custom tag when saving a regex and it will be available to hotkey
+                  </div>
                 )}
-                <RemoveButton
-                  onClick={() =>
-                    update(
-                      'appMacros',
-                      (settings.appMacros ?? []).filter((_, j) => j !== i),
-                    )
-                  }
-                />
               </div>
             )
           })}
