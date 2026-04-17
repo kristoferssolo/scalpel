@@ -127,10 +127,12 @@ export function PriceCheck({
   //   - Setting "Default all items to Base": same as uniques behavior for all items
   const baseModeApplied = useRef(false)
   const baseModeExpandedIndices = useRef<Set<number> | null>(null)
+  const keepUncheckedVisible = useRef(false)
   useEffect(() => {
     if (baseModeApplied.current) return
     window.api.getSettings().then((s) => {
       if (baseModeApplied.current) return
+      keepUncheckedVisible.current = !!s.tradeKeepUncheckedVisible
       const isClassDefault = BASE_DEFAULT_ITEM_CLASSES.has(item.itemClass)
       const isUnique = item.rarity === 'Unique'
       const keepRowsVisible = isUnique || !!s.tradeDefaultToBase
@@ -166,16 +168,21 @@ export function PriceCheck({
   const doSearch = async (): Promise<void> => {
     setSearching(true)
     setError(null)
+    // With "don't hide unchecked" on, still collapse on the first search; skip re-collapse
+    // on any subsequent search since that's when the user is actively unchecking rows.
+    const skipCollapse = keepUncheckedVisible.current && searched
     setSearched(true)
-    setFiltersCollapsed(true)
-    // Snapshot which filters are currently enabled -- these stay visible when collapsed.
-    // Also keep rows that were originally on before auto-Base disabled them, so the user
-    // can still see the "turned off" rows above the fold rather than hidden behind "more filters".
-    const enabledIndices = new Set(filters.map((f, i) => (f.enabled ? i : -1)).filter((i) => i >= 0))
-    if (baseModeExpandedIndices.current) {
-      for (const i of baseModeExpandedIndices.current) enabledIndices.add(i)
+    if (!skipCollapse) {
+      setFiltersCollapsed(true)
+      // Snapshot which filters are currently enabled -- these stay visible when collapsed.
+      // Also keep rows that were originally on before auto-Base disabled them, so the user
+      // can still see the "turned off" rows above the fold rather than hidden behind "more filters".
+      const enabledIndices = new Set(filters.map((f, i) => (f.enabled ? i : -1)).filter((i) => i >= 0))
+      if (baseModeExpandedIndices.current) {
+        for (const i of baseModeExpandedIndices.current) enabledIndices.add(i)
+      }
+      setCollapsedVisibleIndices(enabledIndices)
     }
-    setCollapsedVisibleIndices(enabledIndices)
     try {
       const result = await window.api.tradeSearch(
         {

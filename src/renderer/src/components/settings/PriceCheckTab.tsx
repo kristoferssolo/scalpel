@@ -157,6 +157,19 @@ export function PriceCheckTab({ settings, update, tryHotkey }: Props): JSX.Eleme
         </div>
       </section>
 
+      <section>
+        <div
+          onClick={() => update('tradeKeepUncheckedVisible', !settings.tradeKeepUncheckedVisible)}
+          className="flex items-center gap-[10px] cursor-pointer select-none"
+        >
+          <Toggle
+            checked={settings.tradeKeepUncheckedVisible ?? false}
+            onChange={(val) => update('tradeKeepUncheckedVisible', val)}
+          />
+          <span className="text-xs text-text">Don&apos;t hide mods I uncheck</span>
+        </div>
+      </section>
+
       {/* Trade site login */}
       <section>
         <label>Trade site login</label>
