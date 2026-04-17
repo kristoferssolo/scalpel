@@ -86,13 +86,16 @@ export default function App(): JSX.Element {
     unidCandidates?: Array<{ name: string; chaosValue: number }>
   } | null>(null)
 
-  // Transient settings error banner (e.g. hotkey collisions)
+  // Transient settings banner (hotkey collisions -> red, protected PoE hotkeys -> orange)
   const [settingsError, setSettingsError] = useState<string | null>(null)
+  const [settingsErrorTone, setSettingsErrorTone] = useState<'error' | 'warn'>('error')
   const settingsErrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const showSettingsError = (msg: string): void => {
+  const showSettingsError = (msg: string, tone: 'error' | 'warn' = 'error'): void => {
     setSettingsError(msg)
+    setSettingsErrorTone(tone)
     if (settingsErrorTimer.current) clearTimeout(settingsErrorTimer.current)
-    settingsErrorTimer.current = setTimeout(() => setSettingsError(null), 3000)
+    const ms = tone === 'warn' ? 5000 : 3000
+    settingsErrorTimer.current = setTimeout(() => setSettingsError(null), ms)
   }
 
   // Elevation warning
@@ -503,7 +506,7 @@ export default function App(): JSX.Element {
               }
             >
               {/* Settings error banner (hotkey collisions etc) */}
-              <ErrorBanner message={settingsError} />
+              <ErrorBanner message={settingsError} tone={settingsErrorTone} />
               {view === 'setup' && settings && (
                 <SettingsPanel
                   settings={settings}

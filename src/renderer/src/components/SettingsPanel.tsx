@@ -15,9 +15,12 @@ interface Props {
   onShowOnboarding?: () => void
   /** Item currently loaded in the overlay, used to preserve context when undoing/restoring */
   currentItem?: PoeItem
-  /** Optional callback to show a short error banner at the top of the overlay */
-  onError?: (message: string) => void
+  /** Optional callback to show a short banner at the top of the overlay */
+  onError?: (message: string, tone?: 'error' | 'warn') => void
 }
+
+/** Hotkeys PoE itself uses - warn (don't block) when the user binds one of these. */
+const POE_PROTECTED_HOTKEYS = new Set(['CommandOrControl+F', 'CommandOrControl+Alt+C'])
 
 export function SettingsPanel({
   settings,
@@ -32,27 +35,33 @@ export function SettingsPanel({
 }: Props): JSX.Element {
   const [tab, setTab] = useState<'general' | 'macros' | 'filter' | 'pricecheck' | 'history' | 'faq'>('general')
   const [localError, setLocalError] = useState<string | null>(null)
+  const [localErrorTone, setLocalErrorTone] = useState<'error' | 'warn'>('error')
 
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]): void => {
     window.api.setSetting(key, value)
     onSettingsChange({ ...settings, [key]: value })
   }
 
-  const showError = (msg: string): void => {
+  const showError = (msg: string, tone: 'error' | 'warn' = 'error'): void => {
     if (onError) {
-      onError(msg)
+      onError(msg, tone)
     } else {
       setLocalError(msg)
-      setTimeout(() => setLocalError(null), 3000)
+      setLocalErrorTone(tone)
+      setTimeout(() => setLocalError(null), tone === 'warn' ? 5000 : 3000)
     }
   }
 
-  /** Check if a hotkey collides with another slot; if so, show the banner and return false. */
+  /** Check if a hotkey collides or is a PoE-reserved combo. Collisions block; warnings pass. */
   const tryHotkey = (hotkey: string, slot: HotkeySlot): boolean => {
     const collisionLabel = findHotkeyCollision(settings, hotkey, slot)
     if (collisionLabel) {
       showError(`Hotkey already in use for ${collisionLabel}`)
       return false
+    }
+    if (POE_PROTECTED_HOTKEYS.has(hotkey)) {
+      const pretty = hotkey.replace('CommandOrControl', 'Ctrl')
+      showError(`PoE uses ${pretty} so using it isn't recommended but I'm not your dad`, 'warn')
     }
     return true
   }
@@ -62,7 +71,7 @@ export function SettingsPanel({
   return (
     <div className={`flex flex-col ${isOverlay ? 'gap-5 bg-bg-card rounded p-4 pb-5' : 'gap-6 pb-[18px]'} relative`}>
       {/* Local error banner (only shown when no onError handler lifts it out) */}
-      {!onError && <ErrorBanner message={localError} />}
+      {!onError && <ErrorBanner message={localError} tone={localErrorTone} />}
       <div className="flex flex-col gap-2">
         <div className="flex items-baseline gap-2">
           <h2

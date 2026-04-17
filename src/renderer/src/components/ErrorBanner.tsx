@@ -1,8 +1,16 @@
 /**
- * Red slide-down error banner, absolutely positioned at the top of its
- * first positioned ancestor. Parent must be `position: relative`.
+ * Slide-down banner, absolutely positioned at the top of its first positioned
+ * ancestor. Parent must be `position: relative`. `tone` defaults to 'error' (red);
+ * 'warn' renders orange for advisory messages.
  */
-export function ErrorBanner({ message }: { message: string | null }): JSX.Element {
+export function ErrorBanner({
+  message,
+  tone = 'error',
+}: {
+  message: string | null
+  tone?: 'error' | 'warn'
+}): JSX.Element {
+  const bg = tone === 'warn' ? 'bg-[#e67e22]' : 'bg-[#b71c1c]'
   return (
     <div
       className="overflow-hidden transition-all duration-200 absolute left-0 right-0 top-0 z-10"
@@ -11,7 +19,7 @@ export function ErrorBanner({ message }: { message: string | null }): JSX.Elemen
         opacity: message ? 1 : 0,
       }}
     >
-      <div className="bg-[#b71c1c] text-white text-[11px] font-semibold px-3 py-[7px] text-center">{message}</div>
+      <div className={`${bg} text-white text-[11px] font-semibold px-3 py-[7px] text-center`}>{message}</div>
     </div>
   )
 }
