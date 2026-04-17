@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { AppSettings, OverlayData, PoeItem } from '../../../shared/types'
 import { FilterPanel } from '../components/FilterPanel'
-import { HistoryPanel } from '../components/HistoryPanel'
 import { SettingsPanel } from '../components/SettingsPanel'
 import { SocketRecolor } from '../components/SocketRecolor'
 import { DustExplorer } from '../components/dust-explorer'
@@ -21,7 +20,6 @@ type View =
   | 'no-filter'
   | 'no-item'
   | 'setup'
-  | 'history'
   | 'audit'
   | 'tools'
   | 'dust'
@@ -435,6 +433,7 @@ export default function App(): JSX.Element {
               view={view}
               overlayData={overlayData}
               poeVersion={poeVersion}
+              hasPriceCheckData={!!priceCheckData}
               onSetView={setView}
               onClose={close}
               onSetAuditBlockIndex={setAuditBlockIndex}
@@ -491,15 +490,13 @@ export default function App(): JSX.Element {
               ref={contentRef}
               className={isFullHeightView ? 'flex flex-col flex-1 overflow-hidden' : 'flex-1 overflow-y-auto p-3'}
             >
-              {view === 'history' && (
-                <HistoryPanel item={overlayData?.item} onDone={() => setView(overlayData ? 'item' : 'idle')} />
-              )}
               {view === 'setup' && settings && (
                 <SettingsPanel
                   settings={settings}
                   onSettingsChange={(s) => setSettings(s)}
                   mode="overlay"
                   onDone={() => setView('idle')}
+                  currentItem={overlayData?.item}
                   onOnlineFilterUpdated={(name) =>
                     setUpdatedOnlineFilters((prev) => {
                       const next = new Set(prev)
