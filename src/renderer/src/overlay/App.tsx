@@ -14,6 +14,10 @@ import { UpdateBanner } from './UpdateBanner'
 import { FilterInfoBanner } from './FilterInfoBanner'
 import { AuditView } from './AuditView'
 import { Notice } from './Notice'
+import { ItemSearchCombobox } from '../components/ItemSearchCombobox'
+import { Clipboard } from '@icon-park/react'
+import { IP } from '../shared/constants'
+import { prettyHotkey } from '../components/settings'
 
 type View =
   | 'idle'
@@ -528,11 +532,16 @@ export default function App(): JSX.Element {
                 <Notice icon="⚠" title="No filter loaded" body="Click ⚙ to select your .filter file." />
               )}
               {view === 'no-item' && (
-                <Notice
-                  icon="📋"
-                  title="No item in clipboard"
-                  body={`Hover an item in PoE and press ${settings?.hotkey ?? 'Ctrl+Shift+F'}.`}
-                />
+                <>
+                  <Notice
+                    icon={<Clipboard size={32} {...IP} />}
+                    title="No item in clipboard"
+                    body={`Hover an item in PoE and press ${prettyHotkey(settings?.hotkey) || 'Ctrl+Shift+F'}.`}
+                  />
+                  <div className="px-6 pb-6">
+                    <ItemSearchCombobox />
+                  </div>
+                </>
               )}
               {view === 'item' && overlayData && (
                 <FilterPanel

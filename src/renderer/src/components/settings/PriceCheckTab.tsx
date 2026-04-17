@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '../../../../shared/types'
 import { PoeLoginButton } from './PoeLoginButton'
 import { Toggle } from '../Toggle'
-import { keyEventToAccelerator } from './utils'
+import { keyEventToAccelerator, prettyHotkey } from './utils'
 
 interface Props {
   settings: AppSettings
@@ -49,7 +49,7 @@ export function PriceCheckTab({ settings, update, tryHotkey }: Props): JSX.Eleme
         <div ref={recRef} className="mt-[6px]">
           <div className="setting-box" onClick={() => setRecording(true)}>
             <span className={`value ${recording ? 'recording' : ''}`}>
-              {recording ? 'Press your desired key combo...' : settings.priceCheckHotkey || '(none set)'}
+              {recording ? 'Press your desired key combo...' : prettyHotkey(settings.priceCheckHotkey) || '(none set)'}
             </span>
             {!recording && (
               <button

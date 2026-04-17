@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import Store from 'electron-store'
 import { getCurrentFilter } from '../filter-state'
 import { evaluateAndSend } from '../evaluation'
+import { findMatchingBlocks } from '../filter/matcher'
 import {
   refreshPrices,
   lookupPrice,
@@ -9,7 +10,98 @@ import {
   lookupDivCardPrice,
   getUniquesByBase,
 } from '../trade/prices'
-import type { AppSettings, PoeItem } from '../../shared/types'
+import type { AppSettings, FilterBlock, PoeItem } from '../../shared/types'
+import uniqueInfoData from '../../shared/data/items/unique-info.json'
+import itemClassesData from '../../shared/data/items/item-classes.json'
+import divCardsData from '../../shared/data/economy/div-cards.json'
+
+export interface SearchableItem {
+  name: string
+  baseType: string
+  itemClass: string
+  rarity: 'Unique' | 'Currency'
+  /** Minimal filter block info the renderer needs to reuse <LootLabel /> styling. */
+  block: { visibility: 'Show' | 'Hide'; actions: FilterBlock['actions'] } | null
+  /** Div-card reward text — searchable and shown inline when the match came via reward. */
+  reward?: string
+}
+
+/** Build a synthetic PoeItem with sensible defaults for evaluation/lookup flows. */
+function defaultPoeItem(overrides: Partial<PoeItem> = {}): PoeItem {
+  return {
+    itemClass: '',
+    rarity: 'Normal',
+    name: '',
+    baseType: '',
+    mapTier: 0,
+    itemLevel: 100,
+    quality: 0,
+    sockets: '',
+    linkedSockets: 0,
+    armour: 0,
+    evasion: 0,
+    energyShield: 0,
+    ward: 0,
+    block: 0,
+    reqStr: 0,
+    reqDex: 0,
+    reqInt: 0,
+    corrupted: false,
+    identified: true,
+    mirrored: false,
+    synthesised: false,
+    fractured: false,
+    blighted: false,
+    scourged: false,
+    zanaMemory: false,
+    implicitCount: 0,
+    gemLevel: 0,
+    stackSize: 1,
+    influence: [],
+    explicits: [],
+    implicits: [],
+    areaLevel: 83,
+    ...overrides,
+  } as PoeItem
+}
+
+/** Classes whose BaseTypes should surface in the item search combobox. */
+const STACKABLE_CLASSES = new Set([
+  'Currency',
+  'Stackable Currency',
+  'Divination Cards',
+  'Essences',
+  'Map Fragments',
+  'Scarabs',
+  'Incubators',
+  'Delve Socketable Currency',
+  'Delve Stackable Socketable Currency',
+  'Expedition Logbook',
+  'Heist Brooches',
+  'Heist Cloaks',
+  'Heist Tools',
+  'Sentinel',
+  'Misc Map Items',
+])
+
+/** Reverse map: base type -> item class, built once from static item-classes data. */
+const BASE_TO_CLASS: Record<string, string> = (() => {
+  const map: Record<string, string> = {}
+  const classes = itemClassesData as unknown as Record<string, { bases: string[] }>
+  for (const [cls, { bases }] of Object.entries(classes)) {
+    for (const b of bases) map[b] = cls
+  }
+  return map
+})()
+
+/** Div card name -> reward text, built once from static economy data. */
+const DIV_CARD_REWARDS: Record<string, string> = (() => {
+  const map: Record<string, string> = {}
+  for (const card of divCardsData as Array<{ name: string; reward?: string }>) {
+    if (card.reward) map[card.name] = card.reward
+  }
+  return map
+})()
 
 export function register(_store: Store<AppSettings>): void {
   ipcMain.handle(
@@ -44,41 +136,14 @@ export function register(_store: Store<AppSettings>): void {
         }
       }
 
-      const syntheticItem: PoeItem = {
-        itemClass,
-        rarity: (rarity as PoeItem['rarity']) || 'Normal',
-        name: uniqueName || baseType,
-        baseType,
-        mapTier: 0,
-        itemLevel: 100,
-        quality: 0,
-        sockets: '',
-        linkedSockets: 0,
-        armour: 0,
-        evasion: 0,
-        energyShield: 0,
-        ward: 0,
-        block: 0,
-        reqStr: 0,
-        reqDex: 0,
-        reqInt: 0,
-        corrupted: false,
-        identified: true,
-        mirrored: false,
-        synthesised: false,
-        fractured: false,
-        blighted: false,
-        scourged: false,
-        zanaMemory: false,
-        implicitCount: 0,
-        gemLevel: 0,
-        stackSize: 1,
-        influence: [],
-        explicits: [],
-        implicits: [],
-        areaLevel: 83,
-      }
-      evaluateAndSend(syntheticItem)
+      evaluateAndSend(
+        defaultPoeItem({
+          itemClass,
+          rarity: (rarity as PoeItem['rarity']) || 'Normal',
+          name: uniqueName || baseType,
+          baseType,
+        }),
+      )
     },
   )
 
@@ -114,6 +179,58 @@ export function register(_store: Store<AppSettings>): void {
       return result
     },
   )
+
+  ipcMain.handle('get-searchable-items', (): SearchableItem[] => {
+    const currentFilter = getCurrentFilter()
+    if (!currentFilter) return []
+
+    const toLabel = (block: FilterBlock): SearchableItem['block'] => ({
+      visibility: block.visibility,
+      actions: block.actions,
+    })
+
+    // ---- Stackables (currency, div cards, fragments, etc.) from the filter ----
+    const seenBase = new Map<string, { itemClass: string; block: FilterBlock }>()
+    for (const block of currentFilter.blocks) {
+      const classCond = block.conditions.find((c) => c.type === 'Class')
+      const itemClass = classCond?.values[0] ?? ''
+      if (itemClass && !STACKABLE_CLASSES.has(itemClass)) continue
+      for (const cond of block.conditions) {
+        if (cond.type !== 'BaseType') continue
+        for (const v of cond.values) {
+          if (!seenBase.has(v)) seenBase.set(v, { itemClass, block })
+        }
+      }
+    }
+    const stackables: SearchableItem[] = [...seenBase.entries()].map(([baseType, { itemClass, block }]) => ({
+      name: baseType,
+      baseType,
+      itemClass,
+      rarity: 'Currency',
+      block: toLabel(block),
+      reward: itemClass === 'Divination Cards' ? DIV_CARD_REWARDS[baseType] : undefined,
+    }))
+
+    // ---- Uniques from unique-info.json, evaluated against the filter ----
+    const uniques: SearchableItem[] = []
+    for (const [baseType, names] of Object.entries(uniqueInfoData as Record<string, string[]>)) {
+      const itemClass = BASE_TO_CLASS[baseType] ?? ''
+      for (const name of names) {
+        const synthetic = defaultPoeItem({ itemClass, rarity: 'Unique', name, baseType, itemLevel: 84 })
+        const matches = findMatchingBlocks(currentFilter, synthetic)
+        const realMatch = matches.find((m) => m.isFirstMatch) ?? matches[matches.length - 1]
+        uniques.push({
+          name,
+          baseType,
+          itemClass,
+          rarity: 'Unique',
+          block: realMatch ? toLabel(realMatch.block) : null,
+        })
+      }
+    }
+
+    return [...stackables, ...uniques]
+  })
 
   ipcMain.handle(
     'get-div-card-tiers',

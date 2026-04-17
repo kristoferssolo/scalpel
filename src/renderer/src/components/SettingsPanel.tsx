@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { AppSettings, PoeItem } from '../../../shared/types'
-import { GeneralTab, MacrosTab, FilterTab, PriceCheckTab, FaqTab } from './settings'
+import { GeneralTab, MacrosTab, FilterTab, PriceCheckTab, FaqTab, prettyHotkey } from './settings'
 import { HistoryPanel } from './HistoryPanel'
 import { ErrorBanner } from './ErrorBanner'
 import { findHotkeyCollision, type HotkeySlot } from './settings/hotkey-collisions'
@@ -60,8 +60,7 @@ export function SettingsPanel({
       return false
     }
     if (POE_PROTECTED_HOTKEYS.has(hotkey)) {
-      const pretty = hotkey.replace('CommandOrControl', 'Ctrl')
-      showError(`PoE uses ${pretty} so using it isn't recommended but I'm not your dad`, 'warn')
+      showError(`PoE uses ${prettyHotkey(hotkey)} so using it isn't recommended but I'm not your dad`, 'warn')
     }
     return true
   }

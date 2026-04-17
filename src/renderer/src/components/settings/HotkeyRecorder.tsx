@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { keyEventToAccelerator } from './utils'
+import { keyEventToAccelerator, prettyHotkey } from './utils'
 
 export function HotkeyRecorder({
   value,
@@ -43,7 +43,7 @@ export function HotkeyRecorder({
       onClick={() => setListening(true)}
     >
       <span className={`value ${listening ? 'recording' : ''}`}>
-        {listening ? 'Press your key combo...' : value || '(none set)'}
+        {listening ? 'Press your key combo...' : prettyHotkey(value) || '(none set)'}
       </span>
     </div>
   )
