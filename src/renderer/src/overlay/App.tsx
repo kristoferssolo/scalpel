@@ -9,6 +9,7 @@ import { RegexTool } from '../components/regex-tool'
 import { PriceCheck } from '../components/price-check'
 import { SnapGhosts } from './SnapGhosts'
 import { TitleBar } from './TitleBar'
+import { ErrorBanner } from '../components/ErrorBanner'
 import { UpdateBanner } from './UpdateBanner'
 import { FilterInfoBanner } from './FilterInfoBanner'
 import { AuditView } from './AuditView'
@@ -84,6 +85,15 @@ export default function App(): JSX.Element {
     chaosPerDivine?: number
     unidCandidates?: Array<{ name: string; chaosValue: number }>
   } | null>(null)
+
+  // Transient settings error banner (e.g. hotkey collisions)
+  const [settingsError, setSettingsError] = useState<string | null>(null)
+  const settingsErrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const showSettingsError = (msg: string): void => {
+    setSettingsError(msg)
+    if (settingsErrorTimer.current) clearTimeout(settingsErrorTimer.current)
+    settingsErrorTimer.current = setTimeout(() => setSettingsError(null), 3000)
+  }
 
   // Elevation warning
   const [needsElevation, setNeedsElevation] = useState(false)
@@ -488,8 +498,12 @@ export default function App(): JSX.Element {
             {/* Content */}
             <div
               ref={contentRef}
-              className={isFullHeightView ? 'flex flex-col flex-1 overflow-hidden' : 'flex-1 overflow-y-auto p-3'}
+              className={
+                (isFullHeightView ? 'flex flex-col flex-1 overflow-hidden' : 'flex-1 overflow-y-auto p-3') + ' relative'
+              }
             >
+              {/* Settings error banner (hotkey collisions etc) */}
+              <ErrorBanner message={settingsError} />
               {view === 'setup' && settings && (
                 <SettingsPanel
                   settings={settings}
@@ -497,6 +511,7 @@ export default function App(): JSX.Element {
                   mode="overlay"
                   onDone={() => setView('idle')}
                   currentItem={overlayData?.item}
+                  onError={showSettingsError}
                   onOnlineFilterUpdated={(name) =>
                     setUpdatedOnlineFilters((prev) => {
                       const next = new Set(prev)

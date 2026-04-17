@@ -26,6 +26,7 @@ import {
 import poereIconTight from '../../assets/other/poere-logo-tight.svg'
 import itemIcons from '../../../../shared/data/items/item-icons.json'
 import { FilterChip } from '../price-check/FilterChip'
+import { ErrorBanner } from '../ErrorBanner'
 import { TradeListings } from '../price-check/TradeListings'
 import { RateLimitBar } from '../price-check/RateLimitBar'
 import type { Listing } from '../price-check/types'
@@ -594,17 +595,7 @@ export function MapMods(): JSX.Element {
   return (
     <div className="flex flex-col flex-1 min-h-0 relative">
       {/* Macro tag duplicate error bar */}
-      <div
-        className="overflow-hidden transition-all duration-200 absolute left-0 right-0 top-0 z-10"
-        style={{
-          maxHeight: macroTagError ? 32 : 0,
-          opacity: macroTagError ? 1 : 0,
-        }}
-      >
-        <div className="bg-[#b71c1c] text-white text-[11px] font-semibold px-3 py-[7px] text-center">
-          {macroTagError}
-        </div>
-      </div>
+      <ErrorBanner message={macroTagError} />
       {/* Regex output */}
       <div className="px-3 py-2 bg-bg-card border-b border-border">
         <div className="setting-box">

@@ -7,9 +7,10 @@ import { keyEventToAccelerator } from './utils'
 interface Props {
   settings: AppSettings
   update: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void
+  tryHotkey: (hotkey: string, slot: { kind: 'pricecheck' }) => boolean
 }
 
-export function PriceCheckTab({ settings, update }: Props): JSX.Element {
+export function PriceCheckTab({ settings, update, tryHotkey }: Props): JSX.Element {
   const [recording, setRecording] = useState(false)
   const recRef = useRef<HTMLDivElement>(null)
 
@@ -21,6 +22,10 @@ export function PriceCheckTab({ settings, update }: Props): JSX.Element {
       e.stopPropagation()
       const acc = keyEventToAccelerator(e)
       if (!acc) return
+      if (!tryHotkey(acc, { kind: 'pricecheck' })) {
+        setRecording(false)
+        return
+      }
       update('priceCheckHotkey', acc)
       setRecording(false)
     }
@@ -34,7 +39,7 @@ export function PriceCheckTab({ settings, update }: Props): JSX.Element {
       window.removeEventListener('mousedown', onClick)
       window.api.resumeHotkeys()
     }
-  }, [recording, update])
+  }, [recording, update, tryHotkey])
 
   return (
     <>

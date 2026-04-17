@@ -11,6 +11,7 @@ interface Props {
   onOnlineFilterUpdated?: (name: string) => void
   onOnlineImport?: (name: string) => void
   onSettingsChange: (s: AppSettings) => void
+  tryHotkey: (hotkey: string, slot: { kind: 'filter' }) => boolean
 }
 
 export function FilterTab({
@@ -20,6 +21,7 @@ export function FilterTab({
   onOnlineFilterUpdated,
   onOnlineImport,
   onSettingsChange,
+  tryHotkey,
 }: Props): JSX.Element {
   const [recording, setRecording] = useState(false)
   const recRef = useRef<HTMLDivElement>(null)
@@ -32,6 +34,10 @@ export function FilterTab({
       e.stopPropagation()
       const acc = keyEventToAccelerator(e)
       if (!acc) return
+      if (!tryHotkey(acc, { kind: 'filter' })) {
+        setRecording(false)
+        return
+      }
       update('hotkey', acc)
       setRecording(false)
     }
@@ -45,7 +51,7 @@ export function FilterTab({
       window.removeEventListener('mousedown', onClick)
       window.api.resumeHotkeys()
     }
-  }, [recording, update])
+  }, [recording, update, tryHotkey])
 
   return (
     <>

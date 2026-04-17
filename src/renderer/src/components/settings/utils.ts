@@ -38,4 +38,5 @@ export const APP_MACRO_DEFS = [
   { id: 'openRegex', label: 'Open Regex Tool' },
   { id: 'pasteRegex', label: 'Paste Current Regex' },
   { id: 'useSavedRegex', label: 'Use Saved Regex' },
+  { id: 'closeOverlay', label: 'Close Overlay' },
 ] as const

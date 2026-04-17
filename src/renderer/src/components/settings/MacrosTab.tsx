@@ -21,9 +21,10 @@ function getMacroTags(presets: RegexPreset[]): string[] {
 interface Props {
   settings: AppSettings
   update: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void
+  tryHotkey: (hotkey: string, slot: { kind: 'chat'; index: number } | { kind: 'appmacro'; index: number }) => boolean
 }
 
-export function MacrosTab({ settings, update }: Props): JSX.Element {
+export function MacrosTab({ settings, update, tryHotkey }: Props): JSX.Element {
   const [presets, setPresets] = useState<RegexPreset[]>([])
   useEffect(() => {
     window.api.getRegexPresets().then(setPresets)
@@ -45,7 +46,13 @@ export function MacrosTab({ settings, update }: Props): JSX.Element {
             return (
               <div key={i} className="flex flex-col gap-1.5 bg-black/15 rounded p-[5px]">
                 <div className="flex gap-[6px] items-center">
-                  <HotkeyRecorder value={cmd.hotkey} onChange={(hotkey) => updateCmd({ hotkey })} />
+                  <HotkeyRecorder
+                    value={cmd.hotkey}
+                    onChange={(hotkey) => {
+                      if (!tryHotkey(hotkey, { kind: 'chat', index: i })) return
+                      updateCmd({ hotkey })
+                    }}
+                  />
                   <CommandInput value={cmd.command} onChange={(command) => updateCmd({ command })} />
                   <RemoveButton
                     onClick={() =>
@@ -110,6 +117,7 @@ export function MacrosTab({ settings, update }: Props): JSX.Element {
                   <HotkeyRecorder
                     value={macro.hotkey}
                     onChange={(hotkey) => {
+                      if (!tryHotkey(hotkey, { kind: 'appmacro', index: i })) return
                       const macros = [...(settings.appMacros ?? [])]
                       macros[i] = { ...macros[i], hotkey }
                       update('appMacros', macros)

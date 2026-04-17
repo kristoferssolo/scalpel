@@ -238,6 +238,10 @@ app.whenReady().then(() => {
       if (preset?.regex) pasteRegexToSearch(preset.regex)
       return
     }
+    if (action === 'closeOverlay') {
+      hideOverlay()
+      return
+    }
     const overlayWin = getOverlayWindow()
     if (!overlayWin || overlayWin.isDestroyed()) return
     if (action === 'openAudit') {
