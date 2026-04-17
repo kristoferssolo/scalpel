@@ -211,21 +211,30 @@ app.whenReady().then(() => {
     openDivCards: 'divcards',
     openRegex: 'regex',
   }
-  setAppMacroHandler((action) => {
+  const pasteRegexToSearch = (regex: string): void => {
+    const { clipboard } = require('electron') as typeof import('electron')
+    clipboard.writeText(regex)
+    const { uIOhook, UiohookKey } = require('uiohook-napi') as typeof import('uiohook-napi')
+    // Open search box first (Ctrl+F)
+    uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
+    uIOhook.keyTap(UiohookKey.F)
+    uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
+    // Paste the regex
+    uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
+    uIOhook.keyTap(UiohookKey.V)
+    uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
+  }
+
+  setAppMacroHandler((action, tag) => {
     if (action === 'pasteRegex') {
-      if (currentRegex) {
-        const { clipboard } = require('electron') as typeof import('electron')
-        clipboard.writeText(currentRegex)
-        const { uIOhook, UiohookKey } = require('uiohook-napi') as typeof import('uiohook-napi')
-        // Open search box first (Ctrl+F)
-        uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
-        uIOhook.keyTap(UiohookKey.F)
-        uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
-        // Paste the regex
-        uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
-        uIOhook.keyTap(UiohookKey.V)
-        uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
-      }
+      if (currentRegex) pasteRegexToSearch(currentRegex)
+      return
+    }
+    if (action === 'useSavedRegex') {
+      if (!tag) return
+      const presets = (store.get('regexPresets') as import('../shared/types').RegexPreset[] | undefined) ?? []
+      const preset = presets.find((p) => p.tags?.some((t) => t.text === tag && (!t.source || t.source === 'custom')))
+      if (preset?.regex) pasteRegexToSearch(preset.regex)
       return
     }
     const overlayWin = getOverlayWindow()

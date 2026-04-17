@@ -202,7 +202,12 @@ export function MapMods(): JSX.Element {
   const [search, setSearch] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [presetsOpen, setPresetsOpen] = useState(false)
-  const [presetTags, setPresetTags] = useState<(RegexPresetTag & { id: number })[]>([])
+  const [presetTags, setPresetTags] = useState<(RegexPresetTag & { id: number })[]>(() =>
+    loadStorage<(RegexPresetTag & { id: number })[]>('scalpel:regex:presetTags', []),
+  )
+  useEffect(() => {
+    localStorage.setItem('scalpel:regex:presetTags', JSON.stringify(presetTags))
+  }, [presetTags])
   const [customTagInput, setCustomTagInput] = useState('')
   const [customRegexInput, setCustomRegexInput] = useState(() => loadStorage('scalpel:regex:custom', '', (s) => s))
   useEffect(() => {
@@ -323,13 +328,16 @@ export function MapMods(): JSX.Element {
   useEffect(() => {
     window.api.getRegexPresets().then((loaded) => {
       // Migrate old presets that used 'name' instead of 'tags'
-      setPresets(
-        loaded.map((p) =>
-          p.tags
-            ? p
-            : { ...p, tags: [{ text: (p as unknown as { name: string }).name || 'preset', color: CUSTOM_TAG_COLOR }] },
-        ),
+      const migrated = loaded.map((p) =>
+        p.tags
+          ? p
+          : { ...p, tags: [{ text: (p as unknown as { name: string }).name || 'preset', color: CUSTOM_TAG_COLOR }] },
       )
+      setPresets(migrated)
+      // Auto-open presets panel if there are any for the current generator
+      if (migrated.some((p) => (p.generator ?? 'maps') === generator)) {
+        setPresetsOpen(true)
+      }
     })
   }, [])
 
@@ -424,17 +432,6 @@ export function MapMods(): JSX.Element {
     return null
   }
 
-  // Seed tags when presets panel first opens
-  useEffect(() => {
-    if (presetsOpen && presetTags.length === 0) {
-      const auto = getAutoTags()
-      if (auto) {
-        setPresetTags(auto.map((t, i) => ({ ...t, id: i })))
-        setCustomTagInput('')
-      }
-    }
-  }, [presetsOpen])
-
   // Keep auto-generated tags in sync with live state while panel is open.
   // Custom tags and tag order are preserved.
   useEffect(() => {
@@ -479,27 +476,61 @@ export function MapMods(): JSX.Element {
     setPresetTags((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const [macroTagError, setMacroTagError] = useState<string | null>(null)
+
   const addCustomTag = () => {
     const text = customTagInput.trim()
     if (!text) return
+    // Macro tags (text containing "macro") must be unique across all other presets
+    if (/macro/i.test(text)) {
+      const isAuto = (t: RegexPresetTag) => !!t.source && t.source !== 'custom'
+      const currentAutoKey = presetTags
+        .filter(isAuto)
+        .map((t) => t.text)
+        .sort()
+        .join('|')
+      const ownPreset = presets.find(
+        (p) =>
+          (p.generator ?? 'maps') === generator &&
+          p.tags
+            .filter(isAuto)
+            .map((t) => t.text)
+            .sort()
+            .join('|') === currentAutoKey,
+      )
+      const inUseByOther = presets.some(
+        (p) => p.id !== ownPreset?.id && p.tags?.some((t) => t.text === text && (!t.source || t.source === 'custom')),
+      )
+      if (inUseByOther) {
+        setMacroTagError('Macro tag is in use')
+        setTimeout(() => setMacroTagError(null), 3000)
+        return
+      }
+    }
     setPresetTags((prev) => [...prev, { text, color: CUSTOM_TAG_COLOR, id: Date.now() }])
     setCustomTagInput('')
   }
 
   const savePreset = async () => {
     if (presetTags.length === 0) return
-    // Detect dupes by sorted tag text (order-independent)
-    const tagKey = [...presetTags.map((t) => t.text)].sort().join('|')
+    // Detect dupes by sorted auto-tag text (ignore custom tags so they can be edited)
+    const isAuto = (t: RegexPresetTag) => !!t.source && t.source !== 'custom'
+    const tagKey = presetTags
+      .filter(isAuto)
+      .map((t) => t.text)
+      .sort()
+      .join('|')
     const existingDupe = presets.find(
-      (p) => (p.generator ?? 'maps') === generator && [...p.tags.map((t) => t.text)].sort().join('|') === tagKey,
+      (p) =>
+        (p.generator ?? 'maps') === generator &&
+        p.tags
+          .filter(isAuto)
+          .map((t) => t.text)
+          .sort()
+          .join('|') === tagKey,
     )
-    if (existingDupe) {
-      // Same tags, different order -- update the existing preset with new order
-      const updated = await window.api.deleteRegexPreset(existingDupe.id)
-      setPresets(updated)
-    }
     const preset: RegexPreset = {
-      id: crypto.randomUUID(),
+      id: existingDupe?.id ?? crypto.randomUUID(),
       generator,
       tags: presetTags,
       avoid: [...avoid],
@@ -508,6 +539,7 @@ export function MapMods(): JSX.Element {
       qualifiers: Object.fromEntries(Object.entries(qualifiers).filter(([, v]) => v != null)) as Record<string, number>,
       nightmare: showNightmare,
       ...(generator === 'custom' ? { customRegex: customRegexInput } : {}),
+      regex,
     }
     const updated = await window.api.saveRegexPreset(preset)
     setPresets(updated)
@@ -535,7 +567,19 @@ export function MapMods(): JSX.Element {
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="flex flex-col flex-1 min-h-0 relative">
+      {/* Macro tag duplicate error bar */}
+      <div
+        className="overflow-hidden transition-all duration-200 absolute left-0 right-0 top-0 z-10"
+        style={{
+          maxHeight: macroTagError ? 32 : 0,
+          opacity: macroTagError ? 1 : 0,
+        }}
+      >
+        <div className="bg-[#b71c1c] text-white text-[11px] font-semibold px-3 py-[7px] text-center">
+          {macroTagError}
+        </div>
+      </div>
       {/* Regex output */}
       <div className="px-3 py-2 bg-bg-card border-b border-border">
         <div className="setting-box">

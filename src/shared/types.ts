@@ -251,6 +251,8 @@ export interface RegexPreset {
   qualifiers: Record<string, number>
   nightmare: boolean
   customRegex?: string
+  /** Computed regex string (stored so main process can paste without rebuilding) */
+  regex?: string
 }
 
 export interface AppSettings {
@@ -268,7 +270,7 @@ export interface AppSettings {
   tradePriceOption: 'chaos_divine' | 'chaos_equivalent'
   priceCheckDefaultPercent: number
   chatCommands: Array<{ hotkey: string; command: string; autoSubmit?: boolean }>
-  appMacros: Array<{ action: string; hotkey: string }>
+  appMacros: Array<{ action: string; hotkey: string; tag?: string }>
   stashScrollEnabled: boolean
   poeVersion: 1 | 2
   regexPresets: RegexPreset[]

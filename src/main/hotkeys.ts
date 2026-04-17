@@ -50,8 +50,8 @@ let currentAccelerator: string | null = null
 let priceCheckAccelerator: string | null = null
 let chatCommandHotkeys: Array<{ accelerator: string; command: string; autoSubmit: boolean }> = []
 let appMacroAccelerators: string[] = []
-let lastAppMacros: Array<{ action: string; hotkey: string }> = []
-let onAppMacro: ((action: string) => void) | null = null
+let lastAppMacros: Array<{ action: string; hotkey: string; tag?: string }> = []
+let onAppMacro: ((action: string, tag?: string) => void) | null = null
 let onTrigger: (() => void) | null = null
 let onPriceCheck: (() => void) | null = null
 let onEscape: (() => void) | null = null
@@ -173,11 +173,11 @@ export function setChatCommands(commands: Array<{ hotkey: string; command: strin
   }
 }
 
-export function setAppMacroHandler(handler: (action: string) => void): void {
+export function setAppMacroHandler(handler: (action: string, tag?: string) => void): void {
   onAppMacro = handler
 }
 
-export function setAppMacros(macros: Array<{ action: string; hotkey: string }>): void {
+export function setAppMacros(macros: Array<{ action: string; hotkey: string; tag?: string }>): void {
   lastAppMacros = macros
   for (const acc of appMacroAccelerators) {
     try {
@@ -186,11 +186,11 @@ export function setAppMacros(macros: Array<{ action: string; hotkey: string }>):
   }
   appMacroAccelerators = []
 
-  for (const { action, hotkey } of macros) {
+  for (const { action, hotkey, tag } of macros) {
     if (!hotkey || !action) continue
     try {
       globalShortcut.register(hotkey, () => {
-        if (!injecting && onAppMacro) onAppMacro(action)
+        if (!injecting && onAppMacro) onAppMacro(action, tag)
       })
       appMacroAccelerators.push(hotkey)
     } catch (e) {

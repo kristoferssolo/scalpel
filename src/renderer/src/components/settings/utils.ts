@@ -37,4 +37,5 @@ export const APP_MACRO_DEFS = [
   { id: 'openDivCards', label: 'Open Div Card Explorer' },
   { id: 'openRegex', label: 'Open Regex Tool' },
   { id: 'pasteRegex', label: 'Paste Current Regex' },
+  { id: 'useSavedRegex', label: 'Use Saved Regex' },
 ] as const

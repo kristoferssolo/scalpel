@@ -25,7 +25,7 @@ export function register(store: Store<AppSettings>): void {
     if (key === 'closeOnClickOutside') setCloseOnClickOutside(value as boolean)
     if (key === 'league') refreshPrices(value as string)
     if (key === 'chatCommands') setChatCommands(value as Array<{ hotkey: string; command: string }>)
-    if (key === 'appMacros') setAppMacros(value as Array<{ action: string; hotkey: string }>)
+    if (key === 'appMacros') setAppMacros(value as Array<{ action: string; hotkey: string; tag?: string }>)
     if (key === 'stashScrollEnabled') setStashScrollEnabled(value as boolean)
 
     // Broadcast setting change to all windows except the sender
@@ -43,7 +43,12 @@ export function register(store: Store<AppSettings>): void {
 
   ipcMain.handle('save-regex-preset', (_event, preset: RegexPreset) => {
     const presets = (store.get('regexPresets') as RegexPreset[] | undefined) ?? []
-    presets.push(preset)
+    const existingIdx = presets.findIndex((p) => p.id === preset.id)
+    if (existingIdx >= 0) {
+      presets[existingIdx] = preset
+    } else {
+      presets.push(preset)
+    }
     store.set('regexPresets', presets)
     return presets
   })
