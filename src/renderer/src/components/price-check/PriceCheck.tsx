@@ -19,6 +19,7 @@ import { StatFilterRow } from './StatFilterRow'
 import { TradeListings } from './TradeListings'
 import { BulkListings } from './BulkListings'
 import { RateLimitBar } from './RateLimitBar'
+import { BASE_DEFAULT_ITEM_CLASSES, applyBaseModeToFilters, shouldIncludeImplicitsInBase } from './base-mode'
 
 export function PriceCheck({
   item,
@@ -110,10 +111,39 @@ export function PriceCheck({
   const [isBulk, setIsBulk] = useState<boolean | null>(null)
   const [bulkListings, setBulkListings] = useState<BulkListing[]>([])
 
+  const includeImplicits = shouldIncludeImplicitsInBase(item.rarity, item.corrupted)
+  const applyBaseMode = (): void => {
+    setFilters((prev) => applyBaseModeToFilters(prev, item.rarity, item.corrupted))
+  }
+
   // Check if this is a bulk exchange item on mount
   useEffect(() => {
     window.api.checkBulkItem(item.name, item.baseType, item.itemClass, item.rarity).then(setIsBulk)
   }, [item.name, item.baseType, item.itemClass])
+
+  // Auto-apply Base mode:
+  //   - Item classes in BASE_DEFAULT_ITEM_CLASSES: always (e.g. Blueprints, Contracts)
+  //   - Uniques (for everyone): apply Base but keep the disabled rows visible above the fold
+  //   - Setting "Default all items to Base": same as uniques behavior for all items
+  const baseModeApplied = useRef(false)
+  const baseModeExpandedIndices = useRef<Set<number> | null>(null)
+  useEffect(() => {
+    if (baseModeApplied.current) return
+    window.api.getSettings().then((s) => {
+      if (baseModeApplied.current) return
+      const isClassDefault = BASE_DEFAULT_ITEM_CLASSES.has(item.itemClass)
+      const isUnique = item.rarity === 'Unique'
+      const keepRowsVisible = isUnique || !!s.tradeDefaultToBase
+      if (isClassDefault || keepRowsVisible) {
+        if (keepRowsVisible) {
+          // Snapshot indices of filters that were enabled pre-Base so they stay visible after a search
+          baseModeExpandedIndices.current = new Set(filters.map((f, i) => (f.enabled ? i : -1)).filter((i) => i >= 0))
+        }
+        applyBaseMode()
+      }
+      baseModeApplied.current = true
+    })
+  }, [])
 
   const searchName = selectedUnique ?? item.name
 
@@ -138,8 +168,13 @@ export function PriceCheck({
     setError(null)
     setSearched(true)
     setFiltersCollapsed(true)
-    // Snapshot which filters are currently enabled -- these stay visible when collapsed
+    // Snapshot which filters are currently enabled -- these stay visible when collapsed.
+    // Also keep rows that were originally on before auto-Base disabled them, so the user
+    // can still see the "turned off" rows above the fold rather than hidden behind "more filters".
     const enabledIndices = new Set(filters.map((f, i) => (f.enabled ? i : -1)).filter((i) => i >= 0))
+    if (baseModeExpandedIndices.current) {
+      for (const i of baseModeExpandedIndices.current) enabledIndices.add(i)
+    }
     setCollapsedVisibleIndices(enabledIndices)
     try {
       const result = await window.api.tradeSearch(
@@ -366,9 +401,6 @@ export function PriceCheck({
               {(() => {
                 if (filters.some((f) => f.id === 'misc.mirrored' && f.enabled)) return null
 
-                // For uniques, implicits only count as part of "base mode" if the item is corrupted
-                const includeImplicits = item.rarity !== 'Unique' || item.corrupted
-
                 const isBaseMode =
                   filters.some((f) => f.id === 'misc.basetype' && f.enabled) &&
                   filters.some((f) => f.id === 'misc.ilvl' && f.enabled) &&
@@ -393,23 +425,7 @@ export function PriceCheck({
                     label="Base"
                     active={isBaseMode}
                     onClick={() => {
-                      setFilters((prev) =>
-                        prev.map((f) => {
-                          if (f.id === 'misc.basetype' || f.id === 'misc.ilvl') return { ...f, enabled: true }
-                          if (f.type === 'implicit' || f.type === 'enchant') return { ...f, enabled: includeImplicits }
-                          if (item.rarity === 'Unique' && f.foulborn) return { ...f, enabled: true }
-                          if (
-                            f.type === 'socket' ||
-                            f.type === 'misc' ||
-                            f.type === 'timeless' ||
-                            f.type === 'fractured' ||
-                            f.type === 'currency' ||
-                            f.type === 'heist'
-                          )
-                            return f
-                          return { ...f, enabled: false }
-                        }),
-                      )
+                      applyBaseMode()
                       // Promote implicit/enchant filters into the visible set when we're enabling them
                       if (includeImplicits && collapsedVisibleIndices) {
                         const promoted = new Set(collapsedVisibleIndices)

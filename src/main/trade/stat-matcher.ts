@@ -177,13 +177,6 @@ function isLocalMod(modText: string, isWeapon: boolean): boolean {
   return false
 }
 
-/**
- * Item classes that default to "Base" search mode: basetype and ilvl enabled,
- * explicit mods disabled. Useful for items where the rolls don't define value
- * (blueprints, contracts - priced by their base/level/room count, not mods).
- */
-const BASE_DEFAULT_ITEM_CLASSES = new Set(['Blueprints', 'Contracts'])
-
 // Item classes that have local defense mods
 const ARMOUR_CLASSES = new Set(['Helmets', 'Body Armours', 'Gloves', 'Boots', 'Shields'])
 // Item classes that have local weapon mods
@@ -702,8 +695,7 @@ export function matchItemMods(
             !isHybridCompanion &&
             !(hasDefenses && isDefenseMod(cleaned)) &&
             !useLocal &&
-            !(itemInfo?.itemClass === 'Maps') &&
-            !(itemInfo?.itemClass && BASE_DEFAULT_ITEM_CLASSES.has(itemInfo.itemClass))),
+            !(itemInfo?.itemClass === 'Maps')),
         type: isFractured ? 'fractured' : isCrafted ? 'crafted' : 'explicit',
         option: matched.option,
         foulborn: isFoulborn || undefined,
@@ -960,8 +952,7 @@ export function matchItemMods(
         .replace(/\s*\(Tier \d+\)/, '')
         .trim()
       const isSpecialMap = itemInfo.itemClass === 'Maps' && specialMapTypes.has(baseTypeCleaned)
-      const isBaseDefault = BASE_DEFAULT_ITEM_CLASSES.has(itemInfo.itemClass)
-      const baseTypeEnabled = isSpecialMap || isBaseDefault || (isBaseItem && isOverqualitied)
+      const baseTypeEnabled = isSpecialMap || (isBaseItem && isOverqualitied)
       miscFilters.push({
         id: 'misc.basetype',
         text: itemInfo.baseType
@@ -1032,7 +1023,7 @@ export function matchItemMods(
         value: itemInfo.itemLevel,
         min: itemInfo.itemLevel,
         max: null,
-        enabled: BASE_DEFAULT_ITEM_CLASSES.has(itemInfo.itemClass),
+        enabled: false,
         type: 'misc',
       })
     }

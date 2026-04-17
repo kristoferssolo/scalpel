@@ -269,6 +269,7 @@ export interface AppSettings {
   tradeStatus: 'available' | 'securable'
   tradePriceOption: 'chaos_divine' | 'chaos_equivalent'
   priceCheckDefaultPercent: number
+  tradeDefaultToBase: boolean
   chatCommands: Array<{ hotkey: string; command: string; autoSubmit?: boolean }>
   appMacros: Array<{ action: string; hotkey: string; tag?: string }>
   stashScrollEnabled: boolean

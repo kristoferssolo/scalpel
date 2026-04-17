@@ -81,6 +81,7 @@ const store = new Store<AppSettings>({
     tradeStatus: 'available',
     tradePriceOption: 'chaos_divine',
     priceCheckDefaultPercent: 90,
+    tradeDefaultToBase: false,
     chatCommands: [],
     appMacros: [],
     stashScrollEnabled: false,

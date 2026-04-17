@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '../../../../shared/types'
 import { PoeLoginButton } from './PoeLoginButton'
+import { Toggle } from '../Toggle'
 import { keyEventToAccelerator } from './utils'
 
 interface Props {
@@ -132,6 +133,21 @@ export function PriceCheckTab({ settings, update }: Props): JSX.Element {
           />
           <span className="text-[13px] font-semibold text-text min-w-[36px] text-right">
             {settings.priceCheckDefaultPercent ?? 90}%
+          </span>
+        </div>
+      </section>
+
+      <section>
+        <div
+          onClick={() => update('tradeDefaultToBase', !settings.tradeDefaultToBase)}
+          className="flex items-center gap-[10px] cursor-pointer select-none"
+        >
+          <Toggle
+            checked={settings.tradeDefaultToBase ?? false}
+            onChange={(val) => update('tradeDefaultToBase', val)}
+          />
+          <span className="text-xs text-text">
+            Default all items to &quot;Base&quot; - can simplify unchecking unwanted mods
           </span>
         </div>
       </section>

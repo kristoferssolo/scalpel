@@ -52,7 +52,7 @@ export function SettingsPanel({
                   : t === 'filter'
                     ? 'Filter'
                     : t === 'pricecheck'
-                      ? 'Price Check'
+                      ? 'Trade'
                       : 'FAQ'
             return (
               <button
