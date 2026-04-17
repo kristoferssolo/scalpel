@@ -381,6 +381,7 @@ export function PriceCheck({
                       f.type !== 'timeless' &&
                       f.type !== 'fractured' &&
                       f.type !== 'currency' &&
+                      f.type !== 'heist' &&
                       f.type !== 'implicit' &&
                       f.type !== 'enchant' &&
                       !f.foulborn &&
@@ -402,7 +403,8 @@ export function PriceCheck({
                             f.type === 'misc' ||
                             f.type === 'timeless' ||
                             f.type === 'fractured' ||
-                            f.type === 'currency'
+                            f.type === 'currency' ||
+                            f.type === 'heist'
                           )
                             return f
                           return { ...f, enabled: false }

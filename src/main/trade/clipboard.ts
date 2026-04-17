@@ -138,9 +138,9 @@ export function parseItemText(text: string): PoeItem | null {
 
   // Extract map/waystone tier from header line like "Map (Tier 12)" or "Waystone (Tier 5)"
   const tierMatch = name.match(/\(Tier (\d+)\)/) ?? baseType.match(/\(Tier (\d+)\)/)
-  // Heist job skill requirement: "Requires Engineering (Level 3)"
-  const heistJobLine = allLines.find((l) => /^Requires \w+.*\(Level \d+\)/.test(l))
-  const heistJobMatch = heistJobLine?.match(/^Requires (\w[\w ]*?)\s*\(Level (\d+)\)/)
+  // Heist job skill requirement: "Requires Engineering (Level 3)" or "(Level 3 (unmet))"
+  const heistJobLine = allLines.find((l) => /^Requires \w+.*\(Level \d+/.test(l))
+  const heistJobMatch = heistJobLine?.match(/^Requires (\w[\w -]*?)\s*\(Level (\d+)/)
   const heistJob = heistJobMatch ? { skill: heistJobMatch[1].trim(), level: parseInt(heistJobMatch[2]) } : undefined
 
   // Monster level (maps) or Area Level (heist contracts/blueprints)

@@ -820,4 +820,50 @@ describe('parseItemText', () => {
       expect(item.explicits).toContain('+31% to Fire Resistance')
     })
   })
+
+  describe('heist parsing', () => {
+    it('parses heist job requirement from a contract (no unmet suffix)', () => {
+      const text = [
+        'Item Class: Contracts',
+        'Rarity: Normal',
+        'Contract: Bunker',
+        '--------',
+        'Requires Engineering (Level 3)',
+        '--------',
+        'Item Level: 83',
+      ].join('\n')
+      const item = parseItemText(text)!
+      expect(item.heistJob).toEqual({ skill: 'Engineering', level: 3 })
+    })
+
+    it('parses heist job requirement from a contract with "(unmet)" suffix', () => {
+      const text = [
+        'Item Class: Contracts',
+        'Rarity: Normal',
+        'Contract: Bunker',
+        '--------',
+        'Requires Engineering (Level 3 (unmet))',
+        '--------',
+        'Item Level: 83',
+      ].join('\n')
+      const item = parseItemText(text)!
+      expect(item.heistJob).toEqual({ skill: 'Engineering', level: 3 })
+    })
+
+    it('parses wings revealed and total from a blueprint', () => {
+      const text = [
+        'Item Class: Blueprints',
+        'Rarity: Magic',
+        'Shocking Blueprint: Bunker of Drought',
+        '--------',
+        'Area Level: 83',
+        'Wings Revealed: 1/3',
+        '--------',
+        'Item Level: 84',
+      ].join('\n')
+      const item = parseItemText(text)!
+      expect(item.wingsRevealed).toBe(1)
+      expect(item.wingsTotal).toBe(3)
+    })
+  })
 })

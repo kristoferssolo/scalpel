@@ -1182,8 +1182,8 @@ export function matchItemMods(
     }
   }
 
-  // Heist job skill requirement (always min 1, actual level doesn't matter for searching)
-  if (itemInfo?.heistJob) {
+  // Heist job skill requirement (contracts only; blueprints have multiple jobs that don't filter search)
+  if (itemInfo?.heistJob && itemInfo.itemClass === 'Contracts') {
     const skillKey = itemInfo.heistJob.skill.toLowerCase().replace(/\s+/g, '_')
     miscFilters.push({
       id: `heist.heist_${skillKey}`,
