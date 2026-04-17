@@ -362,15 +362,18 @@ export function PriceCheck({
                   />
                 )
               })()}
-              {/* Base chip -- non-corrupted, non-mirrored, non-unique only */}
+              {/* Base chip -- non-mirrored */}
               {(() => {
-                if (item.rarity === 'Unique') return null
-                if (filters.some((f) => f.id === 'misc.corrupted' && f.enabled)) return null
                 if (filters.some((f) => f.id === 'misc.mirrored' && f.enabled)) return null
+
+                // For uniques, implicits only count as part of "base mode" if the item is corrupted
+                const includeImplicits = item.rarity !== 'Unique' || item.corrupted
 
                 const isBaseMode =
                   filters.some((f) => f.id === 'misc.basetype' && f.enabled) &&
                   filters.some((f) => f.id === 'misc.ilvl' && f.enabled) &&
+                  (includeImplicits ||
+                    !filters.some((f) => (f.type === 'implicit' || f.type === 'enchant') && f.enabled)) &&
                   filters.filter(
                     (f) =>
                       f.type !== 'socket' &&
@@ -380,6 +383,7 @@ export function PriceCheck({
                       f.type !== 'currency' &&
                       f.type !== 'implicit' &&
                       f.type !== 'enchant' &&
+                      !f.foulborn &&
                       f.enabled,
                   ).length === 0
 
@@ -391,7 +395,8 @@ export function PriceCheck({
                       setFilters((prev) =>
                         prev.map((f) => {
                           if (f.id === 'misc.basetype' || f.id === 'misc.ilvl') return { ...f, enabled: true }
-                          if (f.type === 'implicit' || f.type === 'enchant') return { ...f, enabled: true }
+                          if (f.type === 'implicit' || f.type === 'enchant') return { ...f, enabled: includeImplicits }
+                          if (item.rarity === 'Unique' && f.foulborn) return { ...f, enabled: true }
                           if (
                             f.type === 'socket' ||
                             f.type === 'misc' ||
@@ -403,8 +408,8 @@ export function PriceCheck({
                           return { ...f, enabled: false }
                         }),
                       )
-                      // Promote implicit/enchant filters into the visible set
-                      if (collapsedVisibleIndices) {
+                      // Promote implicit/enchant filters into the visible set when we're enabling them
+                      if (includeImplicits && collapsedVisibleIndices) {
                         const promoted = new Set(collapsedVisibleIndices)
                         filters.forEach((f, i) => {
                           if (f.type === 'implicit' || f.type === 'enchant') promoted.add(i)
