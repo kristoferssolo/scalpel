@@ -9,6 +9,34 @@ function formatRange(range: { min: number; max: number }): string {
   return `${fmt(range.min)}-${fmt(range.max)}`
 }
 
+/**
+ * Determine the text tint when the search criteria (min/max scrubber values)
+ * exceed what a unique mod can legitimately roll.
+ *   - Outside roll range → orange (possibly findable via Volatile Vaal Orb)
+ *   - Outside [round(0.78*min), round(1.22*max)] → red (impossible even with vaal)
+ */
+function getSearchTint(
+  searchMin: number | null,
+  searchMax: number | null,
+  range: { min: number; max: number } | undefined,
+  itemRarity: string,
+  type: string,
+): string | null {
+  if (!range) return null
+  if (itemRarity !== 'Unique') return null
+  if (type !== 'explicit' && type !== 'fractured' && type !== 'crafted') return null
+  const exceeds = (v: number | null): boolean => v != null && (v > range.max || v < range.min)
+  const exceedsVaal = (v: number | null): boolean => {
+    if (v == null) return false
+    const vaalMin = Math.round(range.min * 0.78)
+    const vaalMax = Math.round(range.max * 1.22)
+    return v > vaalMax || v < vaalMin
+  }
+  if (!exceeds(searchMin) && !exceeds(searchMax)) return null
+  if (exceedsVaal(searchMin) || exceedsVaal(searchMax)) return '#ef5350'
+  return '#ff9800'
+}
+
 export function StatFilterRow({
   f,
   i,
@@ -16,6 +44,7 @@ export function StatFilterRow({
   toggleFilter,
   updateFilterMin,
   updateFilterMax,
+  itemRarity,
 }: {
   f: StatFilter
   i: number
@@ -23,7 +52,10 @@ export function StatFilterRow({
   toggleFilter: (i: number) => void
   updateFilterMin: (i: number, val: string) => void
   updateFilterMax: (i: number, val: string) => void
+  itemRarity: string
 }): JSX.Element {
+  const minTint = getSearchTint(f.min, null, f.modRange, itemRarity, f.type)
+  const maxTint = getSearchTint(null, f.max, f.modRange, itemRarity, f.type)
   const [hovered, setHovered] = useState(false)
   const hasTier = f.modTier != null && f.modTier > 0
   const hasRange = !!f.modRange
@@ -84,6 +116,7 @@ export function StatFilterRow({
         min={-99999}
         defaultValue={f.max != null ? Math.floor(f.max * 0.8) || f.max : f.value}
         onChange={(val) => updateFilterMin(i, val == null ? '' : String(val))}
+        color={minTint ?? undefined}
       />
       <ScrubInput
         value={f.max}
@@ -91,6 +124,7 @@ export function StatFilterRow({
         min={-99999}
         defaultValue={f.min != null ? Math.ceil(f.min * 1.2) || f.min : f.value}
         onChange={(val) => updateFilterMax(i, val == null ? '' : String(val))}
+        color={maxTint ?? undefined}
       />
     </div>
   )

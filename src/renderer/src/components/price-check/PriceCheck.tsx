@@ -492,6 +492,7 @@ export function PriceCheck({
                     toggleFilter={toggleFilter}
                     updateFilterMin={updateFilterMin}
                     updateFilterMax={updateFilterMax}
+                    itemRarity={item.rarity}
                   />
                 ))}
 

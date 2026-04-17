@@ -10,6 +10,8 @@ interface ScrubInputProps {
   step?: number
   /** Value to prefill when clicking into an empty input */
   defaultValue?: number | null
+  /** Override text color (e.g. to tint when the value is invalid) */
+  color?: string
 }
 
 export function ScrubInput({
@@ -20,6 +22,7 @@ export function ScrubInput({
   max = 99999,
   step = 1,
   defaultValue,
+  color,
 }: ScrubInputProps): JSX.Element {
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState('')
@@ -94,7 +97,7 @@ export function ScrubInput({
       style={{
         background: 'rgba(0,0,0,0.3)',
         cursor: editing ? 'text' : 'ew-resize',
-        color: value != null ? 'var(--text)' : 'var(--text-dim)',
+        color: color ?? (value != null ? 'var(--text)' : 'var(--text-dim)'),
         border: editing ? '1px solid rgba(0,0,0,0.2)' : '1px solid transparent',
       }}
     >

@@ -640,7 +640,7 @@ export function matchItemMods(
       // Negative mods: default to "bad" (less negative = better, use min).
       // Some keywords indicate the negative is beneficial (more negative = better, use max).
       const isBeneficialNegative = isNegative && BENEFICIAL_NEGATIVE_KEYWORDS.some((p) => p.test(mod))
-      const minValue =
+      let minValue =
         matched.value != null && (!isNegative || !isBeneficialNegative)
           ? isFixedValue
             ? matched.value
@@ -648,6 +648,18 @@ export function matchItemMods(
               ? Math.ceil(matched.value * (2 - pct)) // -30 at 90% -> -33 (more negative = wider search)
               : Math.floor(matched.value * pct)
           : null
+      // For uniques, don't default below the mod's minimum possible roll unless the item's actual
+      // value is already below it (e.g. from Volatile Vaal Orb)
+      if (
+        minValue != null &&
+        itemInfo?.rarity === 'Unique' &&
+        matchedRange &&
+        matched.value != null &&
+        matched.value >= matchedRange.min &&
+        minValue < matchedRange.min
+      ) {
+        minValue = matchedRange.min
+      }
       const maxValue = isBeneficialNegative && matched.value != null ? matched.value : null
 
       // Check if this contributes to a pseudo stat
