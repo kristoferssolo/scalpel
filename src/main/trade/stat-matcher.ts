@@ -617,10 +617,12 @@ export function matchItemMods(
         matched.statId = 'crafted.' + matched.statId.split('.').slice(1).join('.')
       }
 
-      // Determine if this value is fixed or rolled
+      // Determine if this value is fixed or rolled, and capture tier/range for display
       // Fixed values (min === max in tier range, or no range) use exact match
       // Rolled values use percentage-based min
       let isFixedValue = false
+      let matchedTier: number | undefined
+      let matchedRange: { min: number; max: number } | undefined
       if (advancedMods && matched.value != null) {
         const rawCleaned = mod.replace(/\s*\(crafted\)\s*$/i, '').trim()
         const advMod = findAdvMod(advancedMods, cleaned, 'explicit', rawCleaned)
@@ -628,6 +630,8 @@ export function matchItemMods(
           const range = advMod.ranges.find((r) => r.value === matched.value || r.value === -(matched.value ?? 0))
           if (range && range.min === range.max) isFixedValue = true
           if (!range && advMod.ranges.length === 0) isFixedValue = true
+          if (advMod.tier > 0) matchedTier = advMod.tier
+          if (range && range.min !== range.max) matchedRange = { min: range.min, max: range.max }
         }
       }
       // For negative values: "reduced" mods use min (trade API expects min for beneficial reduction),
@@ -699,6 +703,8 @@ export function matchItemMods(
         type: isFractured ? 'fractured' : isCrafted ? 'crafted' : 'explicit',
         option: matched.option,
         foulborn: isFoulborn || undefined,
+        modTier: matchedTier,
+        modRange: matchedRange,
       })
       // For fractured mods, also add the unfractured (explicit) version, disabled by default
       if (isFractured) {
@@ -711,6 +717,8 @@ export function matchItemMods(
           max: null,
           enabled: false,
           type: 'explicit',
+          modTier: matchedTier,
+          modRange: matchedRange,
         })
       }
     }

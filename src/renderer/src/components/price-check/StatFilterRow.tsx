@@ -1,7 +1,13 @@
+import { useState } from 'react'
 import { Star } from '@icon-park/react'
 import { ScrubInput } from '../regex-tool/ScrubInput'
 import { getModColor, MOD_BOLD_TYPES } from './constants'
 import type { StatFilter } from './types'
+
+function formatRange(range: { min: number; max: number }): string {
+  const fmt = (n: number): string => (Number.isInteger(n) ? String(n) : n.toFixed(1))
+  return `${fmt(range.min)}-${fmt(range.max)}`
+}
 
 export function StatFilterRow({
   f,
@@ -18,6 +24,19 @@ export function StatFilterRow({
   updateFilterMin: (i: number, val: string) => void
   updateFilterMax: (i: number, val: string) => void
 }): JSX.Element {
+  const [hovered, setHovered] = useState(false)
+  const hasTier = f.modTier != null && f.modTier > 0
+  const hasRange = !!f.modRange
+  const showChip = hovered && (hasTier || hasRange)
+  const chipText =
+    hasTier && hasRange
+      ? `T${f.modTier}: (${formatRange(f.modRange!)})`
+      : hasRange
+        ? `(${formatRange(f.modRange!)})`
+        : hasTier
+          ? `T${f.modTier}`
+          : ''
+
   return (
     <div
       className="flex items-center gap-2 px-3 py-[2px] text-xs"
@@ -25,6 +44,8 @@ export function StatFilterRow({
         opacity: f.enabled ? 1 : 0.4,
         background: rowIdx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
       }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <div
         onClick={(e) => {
@@ -48,6 +69,14 @@ export function StatFilterRow({
       >
         {f.type === 'temple-key' && <Star size={12} theme="filled" fill="#ffd700" />}
         {f.text}
+        {showChip && (
+          <span
+            className="inline-flex items-center px-[5px] py-[1px] rounded text-[9px] font-semibold bg-black/35 text-text-dim whitespace-nowrap shrink-0 ml-[2px]"
+            style={{ lineHeight: 1.2 }}
+          >
+            {chipText}
+          </span>
+        )}
       </span>
       <ScrubInput
         value={f.min}

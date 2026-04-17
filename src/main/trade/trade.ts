@@ -83,6 +83,8 @@ export interface StatFilter {
   option?: number | string // for option-based stats like "Map contains #'s Citadel" or reward names
   timelessLeaders?: string[] // all leader stat IDs for timeless count group
   foulborn?: boolean
+  modTier?: number // mod tier if known (from advanced mod data)
+  modRange?: { min: number; max: number } // possible roll range for this mod
 }
 
 // ─── Rate Limiter ─────────────────────────────────────────────────────────────
