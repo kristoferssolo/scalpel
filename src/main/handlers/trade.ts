@@ -176,15 +176,24 @@ export function register(store: Store<AppSettings>): void {
   })
 
   ipcMain.handle('poe-login', () => {
+    const LOGIN_TITLE = 'Login'
     const loginWindow = new BrowserWindow({
       width: 800,
       height: 700,
-      title: 'Login to pathofexile.com',
+      title: LOGIN_TITLE,
       autoHideMenuBar: true,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
       },
+    })
+    // The PoE login page sets document.title to "Path of Exile", which our overlay
+    // matches by-title and would incorrectly attach to this login popup. Suppress the
+    // OS title update and re-assert our own title in case preventDefault alone isn't
+    // enough on some Windows setups.
+    loginWindow.webContents.on('page-title-updated', (event) => {
+      event.preventDefault()
+      loginWindow.setTitle(LOGIN_TITLE)
     })
     loginWindow.loadURL(`${POE_WEBSITE}/login`)
 
