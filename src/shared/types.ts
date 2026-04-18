@@ -232,6 +232,15 @@ export interface InstallManifest {
   unpackedSha512?: string
   unpackedSize?: number
   nativeModules: Record<string, string>
+  /**
+   * Version rules that are known-bricked (stuck, unable to auto-update, etc.). Each entry
+   * is either a bare version (exact match) or comparator-prefixed (`<`, `<=`, `>`, `>=`,
+   * `=`). When the running version matches, the app surfaces a banner asking the user to
+   * reinstall manually. Parsed by `versionMatches` in `shared/version-match.ts`.
+   */
+  brickedReleases?: string[]
+  /** Optional message shown on the bricked-release banner. Falls back to a generic one. */
+  brickedMessage?: string
 }
 
 export interface RegexPresetTag {

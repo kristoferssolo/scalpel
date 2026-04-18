@@ -71,6 +71,7 @@ export default function App(): JSX.Element {
   const [updateProgress, setUpdateProgress] = useState<number | null>(null)
   const [updateReady, setUpdateReady] = useState(false)
   const [justUpdated, setJustUpdated] = useState<string | null>(null)
+  const [brickedRelease, setBrickedRelease] = useState<{ version: string; message: string | null } | null>(null)
 
   // Price check state
   const [priceCheckData, setPriceCheckData] = useState<{
@@ -118,11 +119,18 @@ export default function App(): JSX.Element {
       if (state.poeVersion) setPoeVersion(state.poeVersion)
       if (state.gameBounds) setGameBounds(state.gameBounds)
     })
+    // Pull cached updater state so a late-mount overlay sees anything that already fired.
+    window.api.getUpdateState().then((s) => {
+      if (s.updateVersion) setUpdateVersion(s.updateVersion)
+      if (s.updateReady) setUpdateReady(true)
+      if (s.brickedRelease) setBrickedRelease(s.brickedRelease)
+    })
     const unsubElevation = window.api.onElevationHint(() => setNeedsElevation(true))
 
     const unsubs = [
       window.api.onPoeVersion((v) => setPoeVersion(v)),
       window.api.onUpdateAvailable((version) => setUpdateVersion(version)),
+      window.api.onBrickedRelease((info) => setBrickedRelease(info)),
       window.api.onUpdateDownloadProgress((percent) => setUpdateProgress(percent)),
       window.api.onUpdateDownloaded(() => {
         setUpdateProgress(null)
@@ -463,6 +471,7 @@ export default function App(): JSX.Element {
               updateReady={updateReady}
               justUpdated={justUpdated}
               needsElevation={needsElevation}
+              brickedRelease={brickedRelease}
               view={view}
               overlayData={overlayData}
               priceCheckData={priceCheckData}

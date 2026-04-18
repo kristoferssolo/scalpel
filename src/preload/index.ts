@@ -428,6 +428,11 @@ export const api = {
   // Auto-update
   downloadUpdate: (): Promise<void> => ipcRenderer.invoke('download-update'),
   installUpdate: (): Promise<void> => ipcRenderer.invoke('install-update'),
+  getUpdateState: (): Promise<{
+    updateVersion: string | null
+    updateReady: boolean
+    brickedRelease: { version: string; message: string | null } | null
+  }> => ipcRenderer.invoke('get-update-state'),
   saveOverlayState: (state: Record<string, unknown>): void => ipcRenderer.send('save-overlay-state', state),
   onUpdateAvailable: (cb: (version: string) => void): (() => void) => {
     const handler = (_: Electron.IpcRendererEvent, version: string): void => cb(version)
@@ -449,6 +454,11 @@ export const api = {
       cb(version, state)
     ipcRenderer.on('update-applied', handler)
     return () => ipcRenderer.removeListener('update-applied', handler)
+  },
+  onBrickedRelease: (cb: (info: { version: string; message: string | null }) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, info: { version: string; message: string | null }): void => cb(info)
+    ipcRenderer.on('bricked-release', handler)
+    return () => ipcRenderer.removeListener('bricked-release', handler)
   },
 }
 

@@ -282,7 +282,7 @@ app.whenReady().then(() => {
   // Auto-update check (skip in dev mode to avoid overwriting source with packaged ASAR)
   const overlayWin = getOverlayWindow()
   if (overlayWin && !process.env['ELECTRON_RENDERER_URL'])
-    initUpdater(overlayWin, installDir, store.get('updateChannel'), () => showOverlay())
+    initUpdater([getOverlayWindow, getAppWindow], installDir, store.get('updateChannel'), () => showOverlay())
 
   if (process.env.NODE_ENV === 'development') {
     const ow = getOverlayWindow()
