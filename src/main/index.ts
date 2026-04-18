@@ -44,6 +44,7 @@ import { initUpdater } from './update/updater'
 import { applyPendingUpdate } from './update/update-swap'
 import { loadFilter } from './filter-state'
 import { createHotkeyHandler, createPriceCheckHandler } from './evaluation'
+import { snapshotClipboard } from './clipboard-preserve'
 import * as tradeHandlers from './handlers/trade'
 import * as settingsHandlers from './handlers/settings'
 import * as filesHandlers from './handlers/files'
@@ -214,6 +215,7 @@ app.whenReady().then(() => {
   }
   const pasteRegexToSearch = (regex: string): void => {
     const { clipboard } = require('electron') as typeof import('electron')
+    const restoreClip = snapshotClipboard()
     clipboard.writeText(regex)
     const { uIOhook, UiohookKey } = require('uiohook-napi') as typeof import('uiohook-napi')
     // Open search box first (Ctrl+F)
@@ -224,6 +226,8 @@ app.whenReady().then(() => {
     uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
     uIOhook.keyTap(UiohookKey.V)
     uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
+    // Restore the user's previous clipboard after PoE consumes the paste
+    setTimeout(restoreClip, 100)
   }
 
   setAppMacroHandler((action, tag) => {

@@ -1,5 +1,6 @@
 import { uIOhook, UiohookKey } from 'uiohook-napi'
 import { clipboard, globalShortcut } from 'electron'
+import { snapshotClipboard } from './clipboard-preserve'
 import { OverlayController } from 'electron-overlay-window'
 import { focusGameWindow } from './overlay'
 
@@ -208,7 +209,7 @@ function pasteToPoEChat(text: string, submit: boolean): Promise<void> {
   if (chatLocked) return Promise.resolve()
   chatLocked = true
 
-  const prevClip = clipboard.readText()
+  const restoreClip = snapshotClipboard()
   clipboard.writeText(text)
   injecting = true
 
@@ -229,7 +230,7 @@ function pasteToPoEChat(text: string, submit: boolean): Promise<void> {
   // Restore clipboard and re-register hotkeys after paste completes
   return new Promise((resolve) =>
     setTimeout(() => {
-      clipboard.writeText(prevClip)
+      restoreClip()
       chatLocked = false
       injecting = false
       resolve()

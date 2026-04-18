@@ -12,6 +12,7 @@ import {
 import { getOverlayWindow, showOverlay } from './overlay'
 import { sendCtrlCToPoE } from './hotkeys'
 import { focusGameWindow } from './overlay'
+import { snapshotClipboard } from './clipboard-preserve'
 import { refreshPrices, lookupPrice, lookupBestUniquePrice, getUniquesByBase } from './trade/prices'
 import { ensureStatsLoaded, matchItemMods } from './trade/trade'
 import type {
@@ -259,8 +260,14 @@ let consecutiveClipboardFailures = 0
 /**
  * Capture an item from PoE's clipboard. Sends Ctrl+Alt+C, polls for content,
  * falls back to windowed mode if needed. Returns the parsed item or null.
+ *
+ * The user's prior clipboard contents are stashed on entry and restored on exit
+ * so price-checking an item doesn't stomp whatever they had copied. Explicit
+ * "Copy to clipboard" actions (trade whispers, regex copy buttons) bypass this.
  */
 async function captureItemFromClipboard(isElevated: () => boolean): Promise<PoeItem | null> {
+  const restoreClip = snapshotClipboard()
+
   clipboard.clear()
   await sendCtrlCToPoE()
 
@@ -284,6 +291,8 @@ async function captureItemFromClipboard(isElevated: () => boolean): Promise<PoeI
       await new Promise((r) => setTimeout(r, 50))
     }
   }
+
+  restoreClip()
 
   if (!item) {
     consecutiveClipboardFailures++
