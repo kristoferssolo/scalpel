@@ -95,6 +95,9 @@ export interface RateLimitTier {
   max: number
   window: number
   penalty: number
+  /** Epoch ms when this tier was last refreshed from a response header. Used by the
+   *  renderer to decay the `used` value over time between responses. */
+  lastUpdate?: number
 }
 export interface RateLimitState {
   tiers: RateLimitTier[]
@@ -105,25 +108,34 @@ export function onRateLimitUpdate(cb: (state: RateLimitState) => void): void {
   rateLimitCallback = cb
 }
 
+// Cumulative rate-limit state across every policy we've seen. PoE returns different tiers
+// per endpoint (search vs fetch etc); if we just broadcast the latest response's tiers
+// the meter flickers between policies. Keyed by window size since each tier has a unique
+// window within a policy, and windows don't collide across policies we care about.
+const knownTiers = new Map<number, RateLimitTier & { lastUpdate: number }>()
+
 function parseAndBroadcastRateLimit(state: string, rules: string): void {
   // Format: "used:window:penalty,used:window:penalty,..."
   // Rules:  "max:window:timeout,max:window:timeout,..."
   const stateParts = state.split(',')
   const ruleParts = rules.split(',')
-  const tiers: RateLimitTier[] = []
+  const now = Date.now()
   for (let i = 0; i < Math.min(stateParts.length, ruleParts.length); i++) {
     const s = stateParts[i].split(':')
     const r = ruleParts[i].split(':')
-    if (s.length >= 3 && r.length >= 2) {
-      tiers.push({
-        used: parseInt(s[0]),
-        max: parseInt(r[0]),
-        window: parseInt(r[1]),
-        penalty: parseInt(s[2]),
-      })
-    }
+    if (s.length < 3 || r.length < 2) continue
+    const window = parseInt(r[1])
+    knownTiers.set(window, {
+      used: parseInt(s[0]),
+      max: parseInt(r[0]),
+      window,
+      penalty: parseInt(s[2]),
+      lastUpdate: now,
+    })
   }
-  if (tiers.length > 0 && rateLimitCallback) rateLimitCallback({ tiers })
+  if (knownTiers.size > 0 && rateLimitCallback) {
+    rateLimitCallback({ tiers: [...knownTiers.values()].sort((a, b) => a.window - b.window) })
+  }
 }
 
 let lastRequestTime = 0

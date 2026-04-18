@@ -39,58 +39,16 @@ export function PriceCheck({
   const heroIcon = selectedUnique ? (iconMap[selectedUnique] ?? getItemIcon(item)) : getItemIcon(item)
   const heroName = selectedUnique ?? item.name
   const [loggedIn, setLoggedIn] = useState(false)
+  // Rate-limit state comes from main already merged across all policies we've seen. The
+  // RateLimitBar handles decay + blending; we just store the latest snapshot here.
   const [rateLimitTiers, setRateLimitTiers] = useState<
-    Array<{ used: number; max: number; window: number; penalty: number }>
+    Array<{ used: number; max: number; window: number; penalty: number; lastUpdate?: number }>
   >([])
-  const rateLimitDecay = useRef<{
-    peak: number
-    max: number
-    windowMs: number
-    startTime: number
-    timer: ReturnType<typeof setTimeout> | null
-  }>({ peak: 0, max: 12, windowMs: 10000, startTime: 0, timer: null })
 
   useEffect(() => {
     window.api.poeCheckAuth().then((r) => setLoggedIn(r.loggedIn))
-    const unsub = window.api.onRateLimit((state) => {
-      const first = state.tiers[0]
-      if (!first) return
-      const d = rateLimitDecay.current
-
-      if (first.used >= d.peak) {
-        d.peak = first.used
-        d.max = first.max
-        d.windowMs = first.window * 1000
-        d.startTime = Date.now()
-      }
-
-      // Update tiers with current values
-      setRateLimitTiers(state.tiers)
-
-      // Schedule step-down ticks
-      if (d.timer) clearTimeout(d.timer)
-      const scheduleStep = (): void => {
-        const elapsed = Date.now() - d.startTime
-        const stepsRemaining = Math.max(0, Math.ceil(d.peak * (1 - elapsed / d.windowMs)))
-        const stepInterval = d.windowMs / d.peak
-
-        setRateLimitTiers((prev) => prev.map((t, i) => (i === 0 ? { ...t, used: stepsRemaining } : t)))
-
-        if (stepsRemaining > 0) {
-          const nextStepIn = stepInterval - (elapsed % stepInterval)
-          d.timer = setTimeout(scheduleStep, nextStepIn)
-        } else {
-          d.peak = 0
-          d.timer = null
-        }
-      }
-      const firstStepIn = d.windowMs / d.peak
-      d.timer = setTimeout(scheduleStep, firstStepIn)
-    })
-    return () => {
-      unsub()
-      if (rateLimitDecay.current.timer) clearTimeout(rateLimitDecay.current.timer)
-    }
+    const unsub = window.api.onRateLimit((state) => setRateLimitTiers(state.tiers))
+    return () => unsub()
   }, [])
 
   const [filters, setFilters] = useState<StatFilter[]>(initialFilters)
