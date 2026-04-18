@@ -172,9 +172,11 @@ export function PriceCheck({
   const doSearch = async (): Promise<void> => {
     setSearching(true)
     setError(null)
-    // With "don't hide unchecked" on, still collapse on the first search; skip re-collapse
-    // on any subsequent search since that's when the user is actively unchecking rows.
-    const skipCollapse = keepUncheckedVisible.current && searched
+    // With "don't hide unchecked" on, still collapse on the first auto-search, then skip
+    // re-collapse on subsequent manual searches. If "never auto-search" is also on, there
+    // is no auto-search -- the user is actively unchecking from the start, so skip even the
+    // first manual search.
+    const skipCollapse = keepUncheckedVisible.current && (searched || neverAutoSearch.current)
     setSearched(true)
     if (!skipCollapse) {
       setFiltersCollapsed(true)

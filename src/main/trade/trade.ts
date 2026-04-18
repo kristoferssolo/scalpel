@@ -363,10 +363,16 @@ export async function searchTrade(
     query.filters = { ...existing, heist_filters: { disabled: false, filters: heistQuery } }
   }
 
-  // Add base type filter if enabled
+  // Add base type filter if enabled. For maps, the generic "Map" base isn't valid as a
+  // plain string on the trade API -- it needs the discriminator form. Specific map names
+  // (e.g. "Strand Map", "Nightmare Map") work as plain strings.
   const baseTypeFilter = statFilters.find((f) => f.id === 'misc.basetype' && f.enabled)
   if (baseTypeFilter) {
-    query.type = baseTypeFilter.text
+    if (item.itemClass === 'Maps' && baseTypeFilter.text === 'Map') {
+      query.type = { option: 'Map', discriminator: 'map' }
+    } else {
+      query.type = baseTypeFilter.text
+    }
   }
 
   // Add misc filters (quality, ilvl, corrupted, mirrored)
