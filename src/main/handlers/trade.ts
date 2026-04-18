@@ -138,15 +138,14 @@ export function register(store: Store<AppSettings>): void {
         block?: number
       },
       statFilters: StatFilter[],
+      searchOptions?: { listedTime?: string; priceOption?: string; statusOption?: string },
     ): Promise<TradeResult> => {
       const league = store.get('league')
-      return searchTrade(
-        league,
-        item,
-        statFilters,
-        store.get('tradeStatus') ?? 'available',
-        store.get('tradePriceOption') ?? 'chaos_divine',
-      )
+      // Per-search overrides from the price-check Settings chip take priority over the
+      // persisted global settings.
+      const status = searchOptions?.statusOption ?? store.get('tradeStatus') ?? 'any'
+      const price = searchOptions?.priceOption ?? store.get('tradePriceOption') ?? 'chaos_divine'
+      return searchTrade(league, item, statFilters, status, price, searchOptions?.listedTime)
     },
   )
 
@@ -238,7 +237,7 @@ export function register(store: Store<AppSettings>): void {
       },
     ) => {
       const league = store.get('league')
-      const tradeStatus = store.get('tradeStatus') ?? 'available'
+      const tradeStatus = store.get('tradeStatus') ?? 'any'
       const tradePriceOption = store.get('tradePriceOption') ?? 'chaos_divine'
       const result = await searchMapsByRegex(
         league,
@@ -258,7 +257,6 @@ export function register(store: Store<AppSettings>): void {
   )
 
   ipcMain.handle('fetch-more-listings', async (_event, queryId: string, ids: string[]) => {
-    const tradeStatus = store.get('tradeStatus') ?? 'available'
-    return fetchMoreListings(queryId, ids, tradeStatus)
+    return fetchMoreListings(queryId, ids)
   })
 }

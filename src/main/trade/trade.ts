@@ -203,8 +203,6 @@ async function fetchJson(url: string, options?: { method?: string; body?: string
 import { ITEM_CLASS_TO_CATEGORY as _ITEM_CLASS_TO_CATEGORY } from './stat-matcher'
 import { ensureStatsLoaded as _ensureStatsLoaded, matchModToStat } from './stat-matcher'
 
-let lastTradeStatus: 'available' | 'securable' = 'available'
-
 export async function searchTrade(
   league: string,
   item: {
@@ -219,10 +217,10 @@ export async function searchTrade(
     block?: number
   },
   statFilters: StatFilter[],
-  tradeStatus: 'available' | 'securable' = 'available',
-  tradePriceOption: 'chaos_divine' | 'chaos_equivalent' = 'chaos_divine',
+  tradeStatus: string = 'any',
+  tradePriceOption: string = 'chaos_divine',
+  listedTime?: string,
 ): Promise<TradeResult> {
-  lastTradeStatus = tradeStatus
   await _ensureStatsLoaded()
   await throttle()
 
@@ -549,17 +547,16 @@ export async function searchTrade(
 
   query.stats = statGroups.length > 0 ? statGroups : [{ type: 'and', filters: [] }]
 
-  // Add trade filters: collapse by account, price in chaos/divine
+  // Add trade filters: collapse by account, price currency option, optional listed-time
   const existing = (query.filters as Record<string, unknown>) ?? {}
+  const tradeFiltersInner: Record<string, unknown> = {
+    collapse: { option: 'true' },
+    price: { min: null, max: null, option: tradePriceOption },
+  }
+  if (listedTime) tradeFiltersInner.indexed = { option: listedTime }
   query.filters = {
     ...existing,
-    trade_filters: {
-      disabled: false,
-      filters: {
-        collapse: { option: 'true' },
-        ...(tradePriceOption === 'chaos_divine' ? { price: { min: null, max: null, option: tradePriceOption } } : {}),
-      },
-    },
+    trade_filters: { disabled: false, filters: tradeFiltersInner },
   }
 
   const body = JSON.stringify({
@@ -588,6 +585,7 @@ export async function searchTrade(
         indexed?: string
         whisper?: string
         method?: string
+        fee?: number
         offers?: unknown[]
       }
       item?: {
@@ -637,9 +635,10 @@ export async function searchTrade(
     characterName: r.listing.account.lastCharacterName,
     online: r.listing.account.online?.status === 'online',
     whisper: r.listing.whisper,
-    instantBuyout:
-      lastTradeStatus === 'securable' ||
-      !!(r.listing.offers || r.listing.method === 'instant' || (!r.listing.whisper && r.listing.price)),
+    // `fee` is the PoE market fee charged on instant-buy-eligible listings. Present =
+    // supports Travel to Hideout; absent = whisper-only. More reliable than `method` (always
+    // 'psapi') or `whisper` (can be present as fallback on instant listings).
+    instantBuyout: !!r.listing.fee,
     icon: r.item?.icon,
     indexed: r.listing.indexed,
     itemData: r.item
@@ -894,7 +893,7 @@ export async function searchBulkExchange(
 
 // ─── Shared listing fetch helper ─────────────────────────────────────────────
 
-async function fetchAndMapListings(ids: string[], queryId: string, tradeStatus: string): Promise<TradeListing[]> {
+async function fetchAndMapListings(ids: string[], queryId: string): Promise<TradeListing[]> {
   await throttle()
   const fetchResult = (await fetchJson(`${POE_TRADE_API}/fetch/${ids.join(',')}?query=${queryId}`)) as {
     result: Array<{
@@ -905,6 +904,8 @@ async function fetchAndMapListings(ids: string[], queryId: string, tradeStatus: 
         indexed?: string
         whisper?: string
         method?: string
+        fee?: number
+        offers?: unknown[]
       }
       item?: {
         name?: string
@@ -926,8 +927,7 @@ async function fetchAndMapListings(ids: string[], queryId: string, tradeStatus: 
     account: r.listing.account.name,
     characterName: r.listing.account.lastCharacterName,
     online: !!r.listing.account.online,
-    instantBuyout:
-      tradeStatus === 'securable' || !!(r.listing.method === 'instant' || (!r.listing.whisper && r.listing.price)),
+    instantBuyout: !!r.listing.fee,
     icon: r.item?.icon,
     indexed: r.listing.indexed,
     itemData: r.item
@@ -1088,7 +1088,7 @@ export async function searchMapsByRegex(
     return { total: searchResult.total ?? 0, listings: [], queryId: searchResult.id ?? '' }
   }
 
-  const listings = await fetchAndMapListings(searchResult.result.slice(0, 10), searchResult.id, tradeStatus)
+  const listings = await fetchAndMapListings(searchResult.result.slice(0, 10), searchResult.id)
 
   return {
     total: searchResult.total ?? 0,
@@ -1101,10 +1101,9 @@ export async function searchMapsByRegex(
 export async function fetchMoreListings(
   queryId: string,
   ids: string[],
-  tradeStatus: string,
 ): Promise<{ listings: TradeListing[]; remainingIds: string[] }> {
   await throttle()
   const batch = ids.slice(0, 10)
-  const listings = await fetchAndMapListings(batch, queryId, tradeStatus)
+  const listings = await fetchAndMapListings(batch, queryId)
   return { listings, remainingIds: ids.slice(10) }
 }

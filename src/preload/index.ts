@@ -255,6 +255,7 @@ export const api = {
       enabled: boolean
       type: string
     }>,
+    searchOptions?: { listedTime?: string; priceOption?: string; statusOption?: string },
   ): Promise<{
     total: number
     listings: Array<{
@@ -270,7 +271,7 @@ export const api = {
     }>
     queryId: string
     remainingIds: string[]
-  }> => ipcRenderer.invoke('trade-search', item, statFilters),
+  }> => ipcRenderer.invoke('trade-search', item, statFilters, searchOptions),
   bulkExchange: (
     itemName: string,
     baseType: string,

@@ -20,6 +20,9 @@ import { TradeListings } from './TradeListings'
 import { BulkListings } from './BulkListings'
 import { RateLimitBar } from './RateLimitBar'
 import { BASE_DEFAULT_ITEM_CLASSES, applyBaseModeToFilters, shouldIncludeImplicitsInBase } from './base-mode'
+import type { ListedTime, PriceOption, StatusOption } from './search-settings'
+import { LISTED_TIME_OPTIONS, PRICE_OPTIONS, STATUS_OPTIONS } from './search-settings'
+import { SearchSettingDropdown } from './SearchSettingDropdown'
 
 export function PriceCheck({
   item,
@@ -111,6 +114,13 @@ export function PriceCheck({
   const [isBulk, setIsBulk] = useState<boolean | null>(null)
   const [bulkListings, setBulkListings] = useState<BulkListing[]>([])
 
+  // Per-search settings overrides (exposed via the Settings chip). Defaults come from the
+  // user's global settings once they load; left blank for "listed" ("any time").
+  const [showSettings, setShowSettings] = useState(false)
+  const [listedTime, setListedTime] = useState<ListedTime>('')
+  const [priceOption, setPriceOption] = useState<PriceOption>('chaos_divine')
+  const [statusOption, setStatusOption] = useState<StatusOption>('any')
+
   const includeImplicits = shouldIncludeImplicitsInBase(item.rarity, item.corrupted)
   const applyBaseMode = (): void => {
     setFilters((prev) => applyBaseModeToFilters(prev, item.rarity, item.corrupted))
@@ -136,6 +146,10 @@ export function PriceCheck({
       if (baseModeApplied.current) return
       keepUncheckedVisible.current = !!s.tradeKeepUncheckedVisible
       neverAutoSearch.current = !!s.tradeNeverAutoSearch
+      // Seed the per-search dropdowns from the user's global preferences.
+      if (s.tradePriceOption) setPriceOption(s.tradePriceOption as PriceOption)
+      if (s.tradeStatus) setStatusOption(s.tradeStatus as StatusOption)
+      if (s.tradeDefaultListedTime !== undefined) setListedTime(s.tradeDefaultListedTime as ListedTime)
       setSettingsLoaded(true)
       const isClassDefault = BASE_DEFAULT_ITEM_CLASSES.has(item.itemClass)
       const isUnique = item.rarity === 'Unique'
@@ -203,6 +217,7 @@ export function PriceCheck({
           block: item.block,
         },
         filters,
+        { listedTime, priceOption, statusOption },
       )
       setListings(result.listings)
       setTotal(result.total)
@@ -473,6 +488,10 @@ export function PriceCheck({
                 if (f.type !== 'timeless') return null
                 return <FilterChip key={i} label={f.text} active={f.enabled} onClick={() => toggleFilter(i)} />
               })}
+              {/* Per-search Settings chip -- toggles a dropdown row above the search button */}
+              {!isBulk && (
+                <FilterChip label="Settings" active={showSettings} onClick={() => setShowSettings((v) => !v)} />
+              )}
             </div>
           )}
 
@@ -546,6 +565,15 @@ export function PriceCheck({
               </div>
             )
           })()}
+
+        {/* Per-search settings row (Listed / Buyout currency / Trade listings) */}
+        {showSettings && !isBulk && (
+          <div className="grid grid-cols-3 gap-[6px]">
+            <SearchSettingDropdown value={listedTime} options={LISTED_TIME_OPTIONS} onChange={setListedTime} />
+            <SearchSettingDropdown value={priceOption} options={PRICE_OPTIONS} onChange={setPriceOption} />
+            <SearchSettingDropdown value={statusOption} options={STATUS_OPTIONS} onChange={setStatusOption} />
+          </div>
+        )}
 
         {/* Search buttons */}
         <div className="flex gap-[6px]">

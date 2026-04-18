@@ -275,8 +275,22 @@ export interface AppSettings {
   league: string
   reloadOnSave: boolean
   updateChannel: 'stable' | 'beta'
-  tradeStatus: 'available' | 'securable'
-  tradePriceOption: 'chaos_divine' | 'chaos_equivalent'
+  tradeStatus: 'securable' | 'online' | 'any'
+  // NOTE: 'available' was a legacy value from earlier releases; it's migrated to 'any' on
+  // launch (see main/index.ts). Typed here as its current set, not the legacy union.
+  tradePriceOption: 'chaos_divine' | 'chaos_equivalent' | 'chaos' | 'divine'
+  /** Default "Listed" time for price-check searches. Empty string = any time. */
+  tradeDefaultListedTime?:
+    | ''
+    | '1hour'
+    | '3hours'
+    | '12hours'
+    | '1day'
+    | '3days'
+    | '1week'
+    | '2weeks'
+    | '1month'
+    | '2months'
   priceCheckDefaultPercent: number
   tradeDefaultToBase: boolean
   tradeKeepUncheckedVisible?: boolean

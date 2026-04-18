@@ -79,7 +79,7 @@ const store = new Store<AppSettings>({
     league: 'Mirage',
     reloadOnSave: true,
     updateChannel: 'stable',
-    tradeStatus: 'available',
+    tradeStatus: 'any',
     tradePriceOption: 'chaos_divine',
     priceCheckDefaultPercent: 90,
     tradeDefaultToBase: false,
@@ -94,6 +94,8 @@ const store = new Store<AppSettings>({
 // Backfill defaults for keys added after initial release
 if (store.get('reloadOnSave') === undefined) store.set('reloadOnSave', true)
 if (store.get('stashScrollEnabled') === undefined) store.set('stashScrollEnabled', false)
+// Migrate legacy tradeStatus 'available' -> 'any' (renamed to match chip-row options)
+if ((store.get('tradeStatus') as string) === 'available') store.set('tradeStatus', 'any')
 // Force poeVersion to 1 -- previous test builds defaulted to 2
 store.set('poeVersion', 1)
 

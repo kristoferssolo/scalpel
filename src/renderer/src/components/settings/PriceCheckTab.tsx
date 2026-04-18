@@ -3,6 +3,8 @@ import type { AppSettings } from '../../../../shared/types'
 import { PoeLoginButton } from './PoeLoginButton'
 import { Toggle } from '../Toggle'
 import { keyEventToAccelerator, prettyHotkey } from './utils'
+import { LISTED_TIME_OPTIONS, PRICE_OPTIONS, STATUS_OPTIONS } from '../price-check/search-settings'
+import { SettingSelectBox } from './SettingSelectBox'
 
 interface Props {
   settings: AppSettings
@@ -66,63 +68,36 @@ export function PriceCheckTab({ settings, update, tryHotkey }: Props): JSX.Eleme
         </div>
       </section>
 
-      {/* Trade listing type */}
+      {/* Trade site login */}
       <section>
-        <label>Trade listings</label>
-        <div className="setting-box mt-[6px] relative">
-          <span className="value">{settings.tradeStatus === 'securable' ? 'Instant buyout only' : 'All listings'}</span>
-          <button
-            className="primary"
-            onClick={() => {
-              const sel = document.getElementById('trade-status-select') as HTMLSelectElement | null
-              sel?.showPicker?.()
-              sel?.focus()
-            }}
-          >
-            Change
-          </button>
-          <select
-            id="trade-status-select"
-            value={settings.tradeStatus}
-            onChange={(e) => update('tradeStatus', e.target.value as 'available' | 'securable')}
-            className="absolute inset-0 opacity-0 cursor-pointer"
-          >
-            <option value="available">All listings</option>
-            <option value="securable">Instant buyout only</option>
-          </select>
+        <label>Trade site login</label>
+        <div className="mt-[6px]">
+          <PoeLoginButton />
         </div>
       </section>
 
-      {/* Price display */}
-      <section>
-        <label>Buyout price currency</label>
-        <div className="setting-box mt-[6px] relative">
-          <span className="value">
-            {(settings.tradePriceOption ?? 'chaos_divine') === 'chaos_divine'
-              ? 'Chaos or Divine Orbs'
-              : 'Chaos Orb equivalent'}
-          </span>
-          <button
-            className="primary"
-            onClick={() => {
-              const sel = document.getElementById('trade-price-select') as HTMLSelectElement | null
-              sel?.showPicker?.()
-              sel?.focus()
-            }}
-          >
-            Change
-          </button>
-          <select
-            id="trade-price-select"
-            value={settings.tradePriceOption ?? 'chaos_divine'}
-            onChange={(e) => update('tradePriceOption', e.target.value as 'chaos_divine' | 'chaos_equivalent')}
-            className="absolute inset-0 opacity-0 cursor-pointer"
-          >
-            <option value="chaos_divine">Chaos or Divine Orbs</option>
-            <option value="chaos_equivalent">Chaos Orb equivalent</option>
-          </select>
-        </div>
-      </section>
+      <div className="text-[10px] text-accent tracking-[1.5px] uppercase mt-3 font-bold">Defaults</div>
+
+      <SettingSelectBox
+        label="Trade listings"
+        value={settings.tradeStatus ?? 'any'}
+        options={STATUS_OPTIONS}
+        onChange={(v) => update('tradeStatus', v)}
+      />
+
+      <SettingSelectBox
+        label="Buyout currency"
+        value={settings.tradePriceOption ?? 'chaos_divine'}
+        options={PRICE_OPTIONS}
+        onChange={(v) => update('tradePriceOption', v)}
+      />
+
+      <SettingSelectBox
+        label="Listing time"
+        value={settings.tradeDefaultListedTime ?? ''}
+        options={LISTED_TIME_OPTIONS}
+        onChange={(v) => update('tradeDefaultListedTime', v)}
+      />
 
       <section>
         <label>Default search percentage</label>
@@ -139,14 +114,6 @@ export function PriceCheckTab({ settings, update, tryHotkey }: Props): JSX.Eleme
           <span className="text-[13px] font-semibold text-text min-w-[36px] text-right">
             {settings.priceCheckDefaultPercent ?? 90}%
           </span>
-        </div>
-      </section>
-
-      {/* Trade site login */}
-      <section>
-        <label>Trade site login</label>
-        <div className="mt-[6px]">
-          <PoeLoginButton />
         </div>
       </section>
 
