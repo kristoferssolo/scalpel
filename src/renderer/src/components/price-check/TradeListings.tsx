@@ -2,6 +2,7 @@ import { Down, Up } from '@icon-park/react'
 import type { Listing } from './types'
 import { ExpandedListing } from './ExpandedListing'
 import { CURRENCY_ICONS, SOCKET_IMGS, formatTimeAgo, socketLink, socketWhite } from './constants'
+import type { ResultsView } from './search-settings'
 
 export function TradeListings({
   listings,
@@ -19,6 +20,7 @@ export function TradeListings({
   league,
   onLoadMore,
   loadingMore,
+  resultsView = 'default',
 }: {
   listings: Listing[]
   total: number | null
@@ -35,19 +37,26 @@ export function TradeListings({
   league: string
   onLoadMore?: () => void
   loadingMore?: boolean
+  resultsView?: ResultsView
 }): JSX.Element {
+  const openAll = resultsView === 'open-all'
+  const compact = resultsView === 'shrinkydink'
   return (
     <div className="bg-black/20 overflow-hidden flex-1 min-h-0 overflow-y-auto rounded-none mx-[-14px] mt-0 -mb-[10px]">
       {listings.map((l, i) => {
-        const isExpanded = expandedListing === l.id
+        const isExpanded = openAll || expandedListing === l.id
         return (
           <div key={l.id}>
             <div
-              onClick={() => setExpandedListing(isExpanded ? null : l.id)}
-              className="flex items-center gap-2 px-[10px] py-[6px] text-xs cursor-pointer relative transition-[background] duration-100"
+              onClick={() => {
+                if (openAll) return
+                setExpandedListing(isExpanded ? null : l.id)
+              }}
+              className="flex items-center gap-2 px-[10px] py-[6px] text-xs relative transition-[background] duration-100"
               style={{
                 background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
                 borderLeft: isExpanded ? '3px solid var(--accent)' : '3px solid transparent',
+                cursor: openAll ? 'default' : 'pointer',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
@@ -60,8 +69,8 @@ export function TradeListings({
                 if (chev) chev.style.opacity = isExpanded ? '0.5' : '0'
               }}
             >
-              {/* Item icon with sockets overlay */}
-              {l.icon && (
+              {/* Item icon with sockets overlay (hidden in Shrinkydink mode) */}
+              {!compact && l.icon && (
                 <div className="relative w-[42px] h-[44px] shrink-0">
                   <img
                     src={l.icon}
@@ -231,17 +240,17 @@ export function TradeListings({
                 </span>
               )}
 
-              {/* Seller + time */}
-              <div className="flex-1 flex flex-col min-w-0">
+              {/* Seller + time: stacked by default, inline in Shrinkydink to save vertical space */}
+              <div className={`flex-1 min-w-0 flex ${compact ? 'items-center gap-2' : 'flex-col'}`}>
                 <span
                   className="text-[10px] truncate"
-                  style={{
-                    color: l.online ? 'var(--accent)' : 'var(--text-dim)',
-                  }}
+                  style={{ color: l.online ? 'var(--accent)' : 'var(--text-dim)' }}
                 >
                   {l.account}
                 </span>
-                {l.indexed && <span className="text-[9px] text-text-dim">{formatTimeAgo(l.indexed)}</span>}
+                {l.indexed && (
+                  <span className="text-[9px] text-text-dim whitespace-nowrap">{formatTimeAgo(l.indexed)}</span>
+                )}
               </div>
 
               {/* Trade actions - only show when logged in */}
@@ -314,11 +323,11 @@ export function TradeListings({
                   )
                 })()}
 
-              {/* Expand/collapse chevron */}
+              {/* Expand/collapse chevron (hidden when Open All forces everything expanded) */}
               <span
                 className="absolute bottom-0 left-1/2 -translate-x-1/2 text-text-dim pointer-events-none flex transition-opacity duration-150 row-chevron"
                 style={{
-                  opacity: isExpanded ? 0.5 : 0,
+                  opacity: openAll ? 0 : isExpanded ? 0.5 : 0,
                 }}
               >
                 {isExpanded ? (
@@ -329,8 +338,8 @@ export function TradeListings({
               </span>
             </div>
 
-            {/* Expanded item details */}
-            {expandedListing === l.id && l.itemData && (
+            {/* Expanded item details (also shown for every row in Open All mode) */}
+            {isExpanded && l.itemData && (
               <ExpandedListing listing={l} itemClass={itemClass} itemName={itemName} itemRarity={itemRarity} />
             )}
           </div>

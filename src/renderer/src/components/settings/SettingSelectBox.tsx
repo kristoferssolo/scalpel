@@ -21,7 +21,7 @@ export function SettingSelectBox<T extends string>({
   return (
     <section>
       <label>{label}</label>
-      <div className="setting-box mt-[6px] relative">
+      <div className="setting-box mt-[2px] relative">
         <span className="value">{current?.label ?? ''}</span>
         <button
           className="primary"

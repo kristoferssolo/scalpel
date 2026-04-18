@@ -52,3 +52,12 @@ export const STATUS_OPTIONS: Array<{ value: StatusOption; label: string }> = [
   { value: 'online', label: 'In-person' },
   { value: 'any', label: 'Both' },
 ]
+
+/** How trade-result rows render. */
+export type ResultsView = 'default' | 'open-all' | 'shrinkydink'
+
+export const RESULTS_VIEW_OPTIONS: Array<{ value: ResultsView; label: string }> = [
+  { value: 'default', label: 'Default' },
+  { value: 'open-all', label: 'Open All' },
+  { value: 'shrinkydink', label: 'Shrinkydink' },
+]

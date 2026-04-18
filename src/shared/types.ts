@@ -291,6 +291,9 @@ export interface AppSettings {
     | '2weeks'
     | '1month'
     | '2months'
+  /** How price-check trade results render. Default = one-at-a-time expandable rows;
+   *  Open All = every row pre-expanded; Shrinkydink = compact rows (no icon, inline meta). */
+  tradeResultsView?: 'default' | 'open-all' | 'shrinkydink'
   priceCheckDefaultPercent: number
   tradeDefaultToBase: boolean
   tradeKeepUncheckedVisible?: boolean

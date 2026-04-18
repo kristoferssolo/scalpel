@@ -20,7 +20,7 @@ import { TradeListings } from './TradeListings'
 import { BulkListings } from './BulkListings'
 import { RateLimitBar } from './RateLimitBar'
 import { BASE_DEFAULT_ITEM_CLASSES, applyBaseModeToFilters, shouldIncludeImplicitsInBase } from './base-mode'
-import type { ListedTime, PriceOption, StatusOption } from './search-settings'
+import type { ListedTime, PriceOption, ResultsView, StatusOption } from './search-settings'
 import { LISTED_TIME_OPTIONS, PRICE_OPTIONS, STATUS_OPTIONS } from './search-settings'
 import { SearchSettingDropdown } from './SearchSettingDropdown'
 
@@ -78,6 +78,7 @@ export function PriceCheck({
   const [listedTime, setListedTime] = useState<ListedTime>('')
   const [priceOption, setPriceOption] = useState<PriceOption>('chaos_divine')
   const [statusOption, setStatusOption] = useState<StatusOption>('any')
+  const [resultsView, setResultsView] = useState<ResultsView>('default')
 
   const includeImplicits = shouldIncludeImplicitsInBase(item.rarity, item.corrupted)
   const applyBaseMode = (): void => {
@@ -108,6 +109,7 @@ export function PriceCheck({
       if (s.tradePriceOption) setPriceOption(s.tradePriceOption as PriceOption)
       if (s.tradeStatus) setStatusOption(s.tradeStatus as StatusOption)
       if (s.tradeDefaultListedTime !== undefined) setListedTime(s.tradeDefaultListedTime as ListedTime)
+      if (s.tradeResultsView) setResultsView(s.tradeResultsView)
       setSettingsLoaded(true)
       const isClassDefault = BASE_DEFAULT_ITEM_CLASSES.has(item.itemClass)
       const isUnique = item.rarity === 'Unique'
@@ -620,6 +622,7 @@ export function PriceCheck({
             league={league}
             onLoadMore={remainingIds.length > 0 ? loadMore : undefined}
             loadingMore={loadingMore}
+            resultsView={resultsView}
           />
         )}
 
