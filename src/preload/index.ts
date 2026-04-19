@@ -41,18 +41,15 @@ export const api = {
     itemJson?: string,
   ): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke('save-block-edit', blockIndex, block, itemJson),
   reloadFilter: (): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke('reload-filter'),
-  lookupBaseType: (baseType: string, itemClass: string, rarity?: string, uniqueName?: string): Promise<void> =>
-    ipcRenderer.invoke('lookup-base-type', baseType, itemClass, rarity, uniqueName),
-  getSearchableItems: (): Promise<
-    Array<{
-      name: string
-      baseType: string
-      itemClass: string
-      rarity: 'Unique' | 'Currency'
-      block: { visibility: 'Show' | 'Hide'; actions: import('../shared/types').FilterAction[] } | null
-      reward?: string
-    }>
-  > => ipcRenderer.invoke('get-searchable-items'),
+  lookupBaseType: (
+    baseType: string,
+    itemClass: string,
+    rarity?: string,
+    uniqueName?: string,
+    flags?: { zanaMemory?: boolean },
+  ): Promise<void> => ipcRenderer.invoke('lookup-base-type', baseType, itemClass, rarity, uniqueName, flags),
+  getSearchableItems: (): Promise<import('../shared/types').SearchableItem[]> =>
+    ipcRenderer.invoke('get-searchable-items'),
   getDivCardTiers: (): Promise<{
     tierStyles: Record<string, { border: string; bg: string; text: string }>
     cardTiers: Record<string, string>

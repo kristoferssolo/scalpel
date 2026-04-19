@@ -85,6 +85,11 @@ function fetchJson(url: string): Promise<unknown> {
 // Separate price map for div cards to avoid name collisions with other item types
 let divCardPriceMap = new Map<string, PriceInfo>()
 
+// Gem names seen in the most recent poe.ninja response. Used by the item-search
+// handler to populate the gem section of the combobox -- static gem data would quickly
+// rot as GGG adds/renames gems, so we rely on the live overview instead.
+let gemNames: Set<string> = new Set()
+
 // Known jewel base types for variant parsing
 const JEWEL_BASES = [
   'Prismatic Jewel',
@@ -160,10 +165,13 @@ function processDenseResponse(resp: DenseResponse): void {
 
   for (const overview of allOverviews) {
     const isDivCards = overview.type === 'DivinationCard'
+    const isSkillGem = overview.type === 'SkillGem'
     for (const line of overview.lines ?? []) {
       const name = line.name
       const chaos = line.chaos
-      if (!name || !chaos || chaos <= 0) continue
+      if (!name) continue
+      if (isSkillGem) gemNames.add(name)
+      if (!chaos || chaos <= 0) continue
 
       if (name === 'Divine Orb') divineRate = chaos
 
@@ -199,6 +207,7 @@ export async function refreshPrices(league: string): Promise<void> {
     cachedLeague = league
     priceMap = new Map()
     divCardPriceMap = new Map()
+    gemNames = new Set()
     lastFetchTime = now
     processDenseResponse(resp)
     buildUniquesByBaseFromDense(resp)
@@ -222,6 +231,12 @@ export function lookupPrice(itemName: string, baseType: string): PriceInfo | und
 /** Look up a divination card price specifically (avoids name collisions with other item types) */
 export function lookupDivCardPrice(cardName: string): PriceInfo | undefined {
   return divCardPriceMap.get(cardName.toLowerCase())
+}
+
+/** Gem names from the most recent poe.ninja SkillGem overview. Empty until the first
+ *  successful refreshPrices() call. */
+export function getGemNames(): Set<string> {
+  return gemNames
 }
 
 /** Find the highest-priced unique item that uses a given base type */

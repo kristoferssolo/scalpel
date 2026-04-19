@@ -1,27 +1,33 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import itemIcons from '../../../shared/data/items/item-icons.json'
-import type { FilterAction } from '../../../shared/types'
+import type { SearchableItem } from '../../../shared/types'
 import { IconGlow } from '../shared/IconGlow'
 import { LootLabel, HiddenLootLabel } from '../shared/LootLabel'
 import { InfoChip } from '../shared/PriceChip'
 import { goldIcon } from '../shared/icons'
 
-interface SearchItem {
-  name: string
-  baseType: string
-  itemClass: string
-  rarity: 'Unique' | 'Currency'
-  block: { visibility: 'Show' | 'Hide'; actions: FilterAction[] } | null
-  reward?: string
-  iconUrl: string | null
-}
+/** Row payload the combobox holds onto -- base shape from main + the resolved icon URL. */
+type SearchItem = SearchableItem & { iconUrl: string | null }
 
 const iconMap = itemIcons as Record<string, string>
 
 /** Embedded icons for items the PoE CDN doesn't have. */
 const LOCAL_ICONS: Record<string, string> = {
   Gold: goldIcon,
+}
+
+/** Resolve the art URL for a search row. Priority: embedded local icon (for items the
+ *  PoE CDN doesn't serve, like Gold) -> explicit iconKey (for rows whose display name
+ *  differs from the icon asset, like Originator Maps) -> display name -> baseType. */
+function resolveIconUrl(e: { name: string; baseType: string; iconKey?: string }): string | null {
+  return (
+    LOCAL_ICONS[e.name] ??
+    (e.iconKey ? iconMap[e.iconKey] : undefined) ??
+    iconMap[e.name] ??
+    iconMap[e.baseType] ??
+    null
+  )
 }
 
 const STACKABLE_MATERIAL_CLASSES = new Set([
@@ -40,7 +46,8 @@ function priority(item: SearchItem): number {
   if (STACKABLE_MATERIAL_CLASSES.has(item.itemClass)) return 2
   if (item.itemClass === 'Divination Cards') return 3
   if (item.rarity === 'Unique') return 4
-  return 5
+  if (item.rarity === 'Gem') return 5
+  return 6
 }
 
 export function ItemSearchCombobox({ onPicked }: { onPicked?: () => void }): JSX.Element {
@@ -54,12 +61,7 @@ export function ItemSearchCombobox({ onPicked }: { onPicked?: () => void }): JSX
 
   useEffect(() => {
     window.api.getSearchableItems().then((entries) => {
-      setItems(
-        entries.map((e) => ({
-          ...e,
-          iconUrl: LOCAL_ICONS[e.name] ?? iconMap[e.name] ?? iconMap[e.baseType] ?? null,
-        })),
-      )
+      setItems(entries.map((e) => ({ ...e, iconUrl: resolveIconUrl(e) })))
     })
   }, [])
 
@@ -111,16 +113,20 @@ export function ItemSearchCombobox({ onPicked }: { onPicked?: () => void }): JSX
       .slice(0, 40)
   }, [query, items])
 
+  // Lock interactive mode the moment the combobox opens (input focus or first keystroke),
+  // not only when results have populated. The portal-rendered menu lives outside the main
+  // panel's reported bounding rect, so without the lock the uiohook hit-test still treats
+  // those pixels as click-through for the brief window between "input focused" and "lock
+  // IPC acknowledged by main" -- meaning fast clicks fall through to PoE.
   useEffect(() => {
-    const showingMenu = open && results.length > 0
-    if (!showingMenu) return
+    if (!open) return
     window.api.lockInteractive()
     return () => window.api.unlockInteractive()
-  }, [open, results.length])
+  }, [open])
 
   const pick = (item: SearchItem): void => {
     const uniqueName = item.rarity === 'Unique' ? item.name : undefined
-    window.api.lookupBaseType(item.baseType, item.itemClass, item.rarity, uniqueName)
+    window.api.lookupBaseType(item.baseType, item.itemClass, item.rarity, uniqueName, item.flags)
     setQuery('')
     setOpen(false)
     onPicked?.()

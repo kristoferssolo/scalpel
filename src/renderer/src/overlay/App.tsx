@@ -176,8 +176,10 @@ export default function App(): JSX.Element {
           // New item from hotkey: always go to item view
           setView('item')
         } else {
-          // Same item re-shown (e.g. after zone transition): re-show if hidden, keep current view otherwise
-          setView((prev) => (prev === 'idle' ? 'item' : prev))
+          // Same item re-shown (e.g. after zone transition, or re-picking the same row
+          // from the search combobox): re-show if hidden, and also leave the notice views
+          // ('no-item', 'no-filter') since the user explicitly surfaced an item.
+          setView((prev) => (prev === 'idle' || prev === 'no-item' || prev === 'no-filter' ? 'item' : prev))
         }
       }),
       window.api.onPriceCheck((data) => {
@@ -294,7 +296,6 @@ export default function App(): JSX.Element {
   // Report the panel's actual visual bounding rect to the main process for click-through
   // hit testing. Using getBoundingClientRect on the wrapper (which has the CSS transform)
   // gives us the true visual position, accounting for scale, drag offset, and side.
-  // Single source of truth -- main process just converts CSS coords to physical pixels.
   //
   // Polled on a short interval rather than one-shot useEffect because:
   // - CSS animations (slide-in) change the rect over time

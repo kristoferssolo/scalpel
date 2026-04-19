@@ -320,6 +320,28 @@ export interface PriceInfo {
   dustValue?: number
 }
 
+// ─── Item Search ────────────────────────────────────────────────────────────
+
+/** A row surfaced in the item-search combobox. The main process assembles these from
+ *  the active filter + live price data; the renderer decorates each row with an
+ *  `iconUrl` after fetching. */
+export interface SearchableItem {
+  name: string
+  baseType: string
+  itemClass: string
+  rarity: 'Unique' | 'Currency' | 'Gem'
+  /** Minimal filter-block info the renderer reuses for `<LootLabel />` styling. */
+  block: { visibility: 'Show' | 'Hide'; actions: FilterAction[] } | null
+  /** Div-card reward text -- searchable and shown inline when the match came via reward. */
+  reward?: string
+  /** Explicit icon-map key when the display name doesn't match the iconMap key (e.g.
+   *  Originator Map rows share the Map display name but render with a Zana Map icon). */
+  iconKey?: string
+  /** Extra flags that vary between rows sharing the same baseType (e.g. Originator
+   *  Map rows set zanaMemory=true; regular Map rows at the same tier leave it unset). */
+  flags?: { zanaMemory?: boolean }
+}
+
 // ─── Edit History ────────────────────────────────────────────────────────────
 
 export interface HistoryEntry {
