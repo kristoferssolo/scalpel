@@ -2,7 +2,7 @@ import { uIOhook, UiohookKey } from 'uiohook-napi'
 import { clipboard, globalShortcut } from 'electron'
 import { snapshotClipboard } from './clipboard-preserve'
 import { OverlayController } from 'electron-overlay-window'
-import { focusGameWindow } from './overlay'
+import { focusGameWindow, getOverlayWindow } from './overlay'
 
 // ─── Accelerator → uiohook keycode mapping ────────────────────────────────────
 
@@ -70,8 +70,13 @@ export function startHotkeyListener(handler: () => void): void {
   initModifierTracking()
   uIOhook.on('keydown', (e) => {
     if (injecting) return
+    // Only respond to Escape when PoE or the overlay itself has focus -- otherwise
+    // pressing Esc in another app (browser, Discord, etc.) would silently hide the
+    // overlay here in the background.
     if (e.keycode === UiohookKey.Escape && onEscape) {
-      onEscape()
+      const overlayWin = getOverlayWindow()
+      const overlayFocused = !!overlayWin && !overlayWin.isDestroyed() && overlayWin.isFocused()
+      if (OverlayController.targetHasFocus || overlayFocused) onEscape()
     }
   })
 
