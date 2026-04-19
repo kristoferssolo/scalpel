@@ -22,9 +22,16 @@ export function setCloseOnClickOutside(enabled: boolean): void {
 const POE_SIDEBAR_RATIO = 370 / 600
 
 // Panel bounds in physical screen coordinates (for uiohook mouse hit testing).
-// Updated by the renderer reporting its actual CSS bounding rect, which we convert
-// to physical pixels. Single source of truth -- no duplicate position math.
-let panelRect = { left: 0, top: 0, right: 0, bottom: 0 }
+// Updated by the renderer reporting its actual CSS bounding rects, which we convert
+// to physical pixels. A list (not a union) so the empty space under a shorter adjacent
+// panel -- e.g. the related-items sister overlay -- stays click-through to PoE.
+interface PhysRect {
+  left: number
+  top: number
+  right: number
+  bottom: number
+}
+let panelRects: PhysRect[] = []
 
 function getScaleFactor(): number {
   // Use the display the game is actually on, not the primary display.
@@ -36,22 +43,26 @@ function getScaleFactor(): number {
   return screen.getPrimaryDisplay().scaleFactor
 }
 
-function updatePanelRectFromCss(cssRect: { left: number; top: number; width: number; height: number }): void {
+function updatePanelRectsFromCss(cssRects: Array<{ left: number; top: number; width: number; height: number }>): void {
   const tb = OverlayController.targetBounds
   if (!tb || !tb.width) return
   const sf = getScaleFactor()
-  const physLeft = tb.x + cssRect.left * sf
-  const physTop = tb.y + cssRect.top * sf
-  panelRect = {
-    left: physLeft,
-    top: physTop,
-    right: physLeft + cssRect.width * sf,
-    bottom: cssRect.height > 0 ? physTop + cssRect.height * sf : physTop,
-  }
+  panelRects = cssRects
+    .filter((r) => r.width > 0 && r.height > 0)
+    .map((r) => ({
+      left: tb.x + r.left * sf,
+      top: tb.y + r.top * sf,
+      right: tb.x + (r.left + r.width) * sf,
+      bottom: tb.y + (r.top + r.height) * sf,
+    }))
 }
 
-ipcMain.on('report-panel-rect', (_event, rect: { left: number; top: number; width: number; height: number }) => {
-  updatePanelRectFromCss(rect)
+ipcMain.on('report-panel-rect', (_event, payload: unknown) => {
+  // Accept either a single rect (legacy) or an array of rects (main + sister etc.).
+  const rects = Array.isArray(payload)
+    ? (payload as Array<{ left: number; top: number; width: number; height: number }>)
+    : [payload as { left: number; top: number; width: number; height: number }]
+  updatePanelRectsFromCss(rects)
 })
 
 // Allow renderer to pull initial state on mount (attach events may fire before renderer loads)
@@ -84,7 +95,10 @@ ipcMain.on('unlock-interactive', () => {
 })
 
 function isInsidePanel(x: number, y: number): boolean {
-  return x >= panelRect.left && x <= panelRect.right && y >= panelRect.top && y <= panelRect.bottom
+  for (const r of panelRects) {
+    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return true
+  }
+  return false
 }
 
 function setInteractive(interactive: boolean): void {
@@ -102,8 +116,8 @@ let exitTimer: ReturnType<typeof setTimeout> | null = null
 
 uIOhook.on('mousemove', (e) => {
   if (!overlayVisible) return
-  // If panelRect has no area, renderer hasn't reported yet -- skip hit testing
-  if (panelRect.right <= panelRect.left || panelRect.bottom <= panelRect.top) return
+  // If no rects reported yet, renderer hasn't mounted -- skip hit testing
+  if (panelRects.length === 0) return
   const inside = isInsidePanel(e.x, e.y)
   if (inside) {
     if (exitTimer) {

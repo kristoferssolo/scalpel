@@ -329,6 +329,29 @@ input[type='number']::-webkit-outer-spin-button {
   }
 }
 
+/* Sister overlay slides out from behind the main panel on mount. Directional based on
+ * which side of the main panel the sister sits on. */
+@keyframes sister-slide-out-right {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes sister-slide-out-left {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 /* ─── Third-party overrides ──────────────────────────────────────────────────── */
 
 .react-colorful {
@@ -371,6 +394,14 @@ body.dragging * {
   user-select: none;
 }
 .preset-slider::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 

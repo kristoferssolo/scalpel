@@ -69,6 +69,16 @@ export const api = {
     uniqueTier?: boolean,
   ): Promise<Record<string, { chaosValue: number; divineValue?: number } | null>> =>
     ipcRenderer.invoke('batch-lookup-prices', baseTypes, league, uniqueTier),
+  batchLookupRefPrices: (
+    refs: Array<{ name: string; baseType?: string }>,
+    league: string,
+  ): Promise<Record<string, { chaosValue: number; divineValue?: number } | null>> =>
+    ipcRenderer.invoke('batch-lookup-ref-prices', refs, league),
+  sisterOpenPriceCheck: (ref: {
+    name: string
+    baseType?: string
+    category: 'base' | 'unique' | 'divination' | 'gem' | 'beast'
+  }): Promise<void> => ipcRenderer.invoke('sister-open-price-check', ref),
   moveItemTier: (
     baseType: string,
     fromBlockIndex: number,
@@ -128,8 +138,11 @@ export const api = {
     poeVersion: 1 | 2
     gameBounds: { gameWidth: number; gameHeight: number; sidebarWidth: number } | null
   }> => ipcRenderer.invoke('get-overlay-state'),
-  reportPanelRect: (rect: { left: number; top: number; width: number; height: number }): void =>
-    ipcRenderer.send('report-panel-rect', rect),
+  reportPanelRect: (
+    rects:
+      | { left: number; top: number; width: number; height: number }
+      | Array<{ left: number; top: number; width: number; height: number }>,
+  ): void => ipcRenderer.send('report-panel-rect', rects),
   lockInteractive: (): void => ipcRenderer.send('lock-interactive'),
   unlockInteractive: (): void => ipcRenderer.send('unlock-interactive'),
   suspendHotkeys: (): void => ipcRenderer.send('suspend-hotkeys'),

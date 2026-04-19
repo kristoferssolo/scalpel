@@ -191,18 +191,27 @@ export async function refreshPrices(league: string): Promise<void> {
   const now = Date.now()
   if (league === cachedLeague && now - lastFetchTime < CACHE_TTL) return
 
-  cachedLeague = league
-  priceMap = new Map()
-  divCardPriceMap = new Map()
-  lastFetchTime = now
-
   try {
     const resp = (await fetchJson(`${DENSE_URL}?league=${encodeURIComponent(league)}&language=en`)) as DenseResponse
+    // Only swap in the new cache on success -- otherwise a failed fetch (sleep/resume,
+    // net::ERR_NETWORK_IO_SUSPENDED, offline) would leave us with an empty priceMap
+    // until the next scheduled interval fires, 10 minutes later.
+    cachedLeague = league
+    priceMap = new Map()
+    divCardPriceMap = new Map()
+    lastFetchTime = now
     processDenseResponse(resp)
     buildUniquesByBaseFromDense(resp)
   } catch (e) {
     console.error('[FilterScalpel] Failed to fetch prices:', e)
+    // Don't update lastFetchTime on failure so the next call retries instead of being
+    // short-circuited by the cache TTL check.
   }
+}
+
+/** Forget the last-fetch timestamp so the next refreshPrices() call bypasses the TTL. */
+export function invalidatePriceCache(): void {
+  lastFetchTime = 0
 }
 
 export function lookupPrice(itemName: string, baseType: string): PriceInfo | undefined {

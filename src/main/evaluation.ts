@@ -340,6 +340,15 @@ export function createHotkeyHandler(store: Store<AppSettings>, isElevated: () =>
   }
 }
 
+/** Switch the overlay into price-check view and populate it with `item`. Shared by the
+ *  clipboard hotkey path and UI-triggered lookups (e.g. clicking a sister overlay row). */
+export async function runPriceCheck(item: PoeItem, store: Store<AppSettings>): Promise<void> {
+  getOverlayWindow()?.webContents.send('price-check-open')
+  await preloadPriceCheck(item, store)
+  showOverlay()
+  if (getCurrentFilter()) evaluateAndSend(item)
+}
+
 export function createPriceCheckHandler(store: Store<AppSettings>, isElevated: () => boolean): () => Promise<void> {
   return async function onPriceCheckFired(): Promise<void> {
     if (hotkeyProcessing) return
@@ -352,10 +361,7 @@ export function createPriceCheckHandler(store: Store<AppSettings>, isElevated: (
       const item = await captureItemFromClipboard(isElevated)
       if (!item) return
 
-      getOverlayWindow()?.webContents.send('price-check-open')
-      await preloadPriceCheck(item, store)
-      showOverlay()
-      if (getCurrentFilter()) evaluateAndSend(item)
+      await runPriceCheck(item, store)
     } catch (err) {
       console.error('[hotkey] Error during price check processing:', err)
     } finally {

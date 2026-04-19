@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen } from 'electron'
+import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, powerMonitor, screen } from 'electron'
 
 // Prevent unhandled JS exceptions from crashing the native overlay thread
 // electron-overlay-window's tsfn_to_js_proxy calls napi_fatal_error if napi_call_function
@@ -37,7 +37,7 @@ import {
   resumeHotkeys,
   setStashScrollEnabled,
 } from './hotkeys'
-import { refreshPrices } from './trade/prices'
+import { refreshPrices, invalidatePriceCache } from './trade/prices'
 import { onRateLimitUpdate } from './trade/trade'
 import { startOnlineSync, stopOnlineSync } from './online-sync'
 import { initUpdater } from './update/updater'
@@ -280,6 +280,14 @@ app.whenReady().then(() => {
   // Fetch prices in background, refresh every 10 minutes
   refreshPrices(store.get('league'))
   setInterval(() => refreshPrices(store.get('league')), 10 * 60 * 1000)
+
+  // After the OS wakes from sleep, Electron's network stack often bails on pending
+  // requests with ERR_NETWORK_IO_SUSPENDED. Invalidate the price cache and re-fetch so
+  // we don't sit on stale/empty prices for up to 10 minutes.
+  powerMonitor.on('resume', () => {
+    invalidatePriceCache()
+    refreshPrices(store.get('league'))
+  })
 
   // Auto-update check (skip in dev mode to avoid overwriting source with packaged ASAR)
   const overlayWin = getOverlayWindow()

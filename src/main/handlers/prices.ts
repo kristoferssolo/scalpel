@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import Store from 'electron-store'
 import { getCurrentFilter } from '../filter-state'
-import { evaluateAndSend } from '../evaluation'
+import { evaluateAndSend, runPriceCheck } from '../evaluation'
 import { findMatchingBlocks } from '../filter/matcher'
 import {
   refreshPrices,
@@ -103,7 +103,29 @@ const DIV_CARD_REWARDS: Record<string, string> = (() => {
   return map
 })()
 
-export function register(_store: Store<AppSettings>): void {
+/** Reverse-lookup a unique name to its base type using the live uniques-by-base map. */
+function resolveUniqueBase(uniqueName: string, fallback = uniqueName): string {
+  for (const [base, names] of Object.entries(getUniquesByBase())) {
+    if (names.includes(uniqueName)) return base
+  }
+  return fallback
+}
+
+/** Scan the current filter for the first block whose BaseType condition contains
+ *  `baseType` and return its Class condition value (empty string if not found). */
+function findItemClassInFilter(baseType: string): string {
+  const currentFilter = getCurrentFilter()
+  if (!currentFilter) return ''
+  for (const block of currentFilter.blocks) {
+    const btCond = block.conditions.find((c) => c.type === 'BaseType' && c.values.includes(baseType))
+    if (!btCond) continue
+    const classCond = block.conditions.find((c) => c.type === 'Class')
+    return classCond?.values[0] ?? ''
+  }
+  return ''
+}
+
+export function register(store: Store<AppSettings>): void {
   ipcMain.handle(
     'lookup-base-type',
     (_event, baseType: string, itemClass: string, rarity?: string, uniqueName?: string) => {
@@ -113,27 +135,9 @@ export function register(_store: Store<AppSettings>): void {
       // If base type or class is missing for a unique, try reverse lookup from uniques-by-base
       // and search the filter for a block containing that base type
       if (currentFilter && uniqueName && (!itemClass || !baseType || baseType === uniqueName)) {
-        // Build reverse map: unique name -> base type
-        const uniqueBase = getUniquesByBase()
-        let foundBase = baseType
-        for (const [base, names] of Object.entries(uniqueBase)) {
-          if (names.includes(uniqueName)) {
-            foundBase = base
-            break
-          }
-        }
+        const foundBase = resolveUniqueBase(uniqueName, baseType)
         if (foundBase && foundBase !== uniqueName) baseType = foundBase
-        // Find class from filter block containing this base type
-        if (!itemClass && currentFilter) {
-          for (const block of currentFilter.blocks) {
-            const btCond = block.conditions.find((c) => c.type === 'BaseType' && c.values.includes(baseType))
-            if (btCond) {
-              const classCond = block.conditions.find((c) => c.type === 'Class')
-              if (classCond && classCond.values.length > 0) itemClass = classCond.values[0]
-              break
-            }
-          }
-        }
+        if (!itemClass) itemClass = findItemClassInFilter(baseType)
       }
 
       evaluateAndSend(
@@ -161,6 +165,47 @@ export function register(_store: Store<AppSettings>): void {
         result[bt] = (uniqueTier ? lookupBestUniquePrice(bt) : undefined) ?? lookupPrice(bt, bt) ?? null
       }
       return result
+    },
+  )
+
+  ipcMain.handle(
+    'batch-lookup-ref-prices',
+    async (
+      _event,
+      refs: Array<{ name: string; baseType?: string }>,
+      league: string,
+    ): Promise<Record<string, { chaosValue: number; divineValue?: number } | null>> => {
+      await refreshPrices(league)
+      const result: Record<string, { chaosValue: number; divineValue?: number } | null> = {}
+      for (const r of refs) {
+        result[r.name] = lookupPrice(r.name, r.baseType ?? r.name) ?? null
+      }
+      return result
+    },
+  )
+
+  ipcMain.handle(
+    'sister-open-price-check',
+    async (
+      _event,
+      ref: { name: string; baseType?: string; category: 'base' | 'unique' | 'divination' | 'gem' | 'beast' },
+    ): Promise<void> => {
+      const isUnique = ref.category === 'unique' || ref.category === 'beast'
+      // For uniques, resolve the base type if the ref didn't carry one. Non-uniques use
+      // name == baseType (currency, fragments, div cards, gems).
+      const baseType = isUnique && !ref.baseType ? resolveUniqueBase(ref.name) : (ref.baseType ?? ref.name)
+      const itemClass = findItemClassInFilter(baseType)
+      const rarity: PoeItem['rarity'] = isUnique ? 'Unique' : ref.category === 'gem' ? 'Gem' : 'Normal'
+      const synthetic = defaultPoeItem({
+        itemClass,
+        rarity,
+        name: isUnique ? ref.name : baseType,
+        baseType,
+        // itemLevel 0 tells the stat-matcher to omit the ilvl chip entirely, so the trade
+        // search isn't constrained by an imaginary ilvl we don't actually know.
+        itemLevel: 0,
+      })
+      await runPriceCheck(synthetic, store)
     },
   )
 

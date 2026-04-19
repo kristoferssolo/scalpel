@@ -14,6 +14,7 @@ import { UpdateBanner } from './UpdateBanner'
 import { FilterInfoBanner } from './FilterInfoBanner'
 import { AuditView } from './AuditView'
 import { Notice } from './Notice'
+import { SisterOverlay } from './SisterOverlay'
 import { ItemSearchCombobox } from '../components/ItemSearchCombobox'
 import { Clipboard } from '@icon-park/react'
 import { IP } from '../shared/constants'
@@ -52,6 +53,7 @@ export default function App(): JSX.Element {
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   const dragging = useRef<{ startX: number; startY: number; origOffsetX: number; origOffsetY: number } | null>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const sisterRef = useRef<HTMLDivElement>(null)
 
   // Lifted breakpoint selection -- persists across tier-move refreshes
   const [selectedBpIndex, setSelectedBpIndex] = useState<number | null>(null)
@@ -183,6 +185,11 @@ export default function App(): JSX.Element {
       }),
       window.api.onPriceCheckOpen(() => {
         priceCheckPending.current = true
+        // Clear stale priceCheckData so the sister overlay (and the price-check view)
+        // don't render the PREVIOUS item's data while the new item's price check is in
+        // flight -- otherwise the sister briefly animates in for the old item then
+        // vanishes when fresh data replaces it.
+        setPriceCheckData(null)
         setView('pricecheck')
       }),
       window.api.onNoFilterLoaded(() => setView('no-filter')),
@@ -295,13 +302,21 @@ export default function App(): JSX.Element {
   // - One-shot after state change would capture the animation start, not end
   useEffect(() => {
     if (isHidden) {
-      window.api.reportPanelRect({ left: 0, top: 0, width: 0, height: 0 })
+      window.api.reportPanelRect([])
       return
     }
     const tick = (): void => {
       if (!wrapperRef.current) return
-      const rect = wrapperRef.current.getBoundingClientRect()
-      window.api.reportPanelRect({ left: rect.left, top: rect.top, width: rect.width, height: rect.height })
+      const rects: Array<{ left: number; top: number; width: number; height: number }> = []
+      const main = wrapperRef.current.getBoundingClientRect()
+      rects.push({ left: main.left, top: main.top, width: main.width, height: main.height })
+      // Report the sister rect separately (not as a union) so the empty space under a
+      // shorter sister stays click-through to PoE.
+      const sister = sisterRef.current?.getBoundingClientRect()
+      if (sister && sister.width > 0 && sister.height > 0) {
+        rects.push({ left: sister.left, top: sister.top, width: sister.width, height: sister.height })
+      }
+      window.api.reportPanelRect(rects)
     }
     tick()
     const interval = setInterval(tick, 100)
@@ -336,9 +351,13 @@ export default function App(): JSX.Element {
       const nx = dragging.current.origOffsetX + ev.clientX - dragging.current.startX
       const ny = dragging.current.origOffsetY + ev.clientY - dragging.current.startY
       dragOffsetRef.current = { x: nx, y: ny }
+      const scaleStr = settings?.overlayScale && settings.overlayScale !== 1 ? ` scale(${settings.overlayScale})` : ''
       if (wrapperRef.current) {
-        const scaleStr = settings?.overlayScale && settings.overlayScale !== 1 ? ` scale(${settings.overlayScale})` : ''
         wrapperRef.current.style.transform = `translate(${nx}px, ${ny}px)${scaleStr}`
+      }
+      // Follow the drag live so the sister overlay stays glued to the main panel.
+      if (sisterRef.current) {
+        sisterRef.current.style.transform = `translate(${nx}px, ${ny}px)${scaleStr}`
       }
       // Check snap proximity to mount points
       const currentLeft = (basePanelLeft ?? 0) + nx
@@ -363,6 +382,12 @@ export default function App(): JSX.Element {
         const el = wrapperRef.current
         el.style.transition = 'transform 0.2s ease-out'
         el.style.transform = `translate(${targetDx}px, 0px)${scaleStr}`
+        // Sister rides the same transition so it stays glued to the main panel during snap.
+        const sEl = sisterRef.current
+        if (sEl) {
+          sEl.style.transition = 'transform 0.2s ease-out'
+          sEl.style.transform = `translate(${targetDx}px, 0px)${scaleStr}`
+        }
         const onEnd = (): void => {
           el.removeEventListener('transitionend', onEnd)
           el.style.transition = ''
@@ -370,6 +395,10 @@ export default function App(): JSX.Element {
           // transform update if the value matches what it last rendered
           el.style.left = `${targetMountX}px`
           el.style.transform = `translate(0px, 0px)${scaleStr}`
+          if (sEl) {
+            sEl.style.transition = ''
+            sEl.style.transform = `translate(0px, 0px)${scaleStr}`
+          }
           dragOffsetRef.current = { x: 0, y: 0 }
           setDragOffset({ x: 0, y: 0 })
           panelRef.current?.classList.remove('panel-unmounted')
@@ -392,8 +421,41 @@ export default function App(): JSX.Element {
   const isFullHeightView =
     view === 'dust' || view === 'divcards' || view === 'pricecheck' || view === 'item' || view === 'regex'
 
+  // Sister overlay pinned immediately adjacent to the main panel on the opposite side
+  // of where the main panel is mounted.
+  const SISTER_WIDTH = 130
+  const SISTER_GAP = 6
+  // Line the sister top with the main panel's content area: 30px nav row + 10px vertical
+  // padding + 1px border ~= 51px below the panel top.
+  const SISTER_NAV_OFFSET = 51
+  const sisterLeft =
+    cursorSide === 'left'
+      ? (basePanelLeft ?? 0) + PANEL_WIDTH + SISTER_GAP
+      : (basePanelLeft ?? 0) - SISTER_WIDTH - SISTER_GAP
+  // Bound the sister to the game window the same way the main panel is, minus the
+  // SISTER_NAV_OFFSET it already sits below. Scale divides out so the post-scale
+  // visual height fits within the game bounds.
+  const sisterMaxHeight = gameBounds
+    ? (gameBounds.gameHeight - PANEL_TOP * 2 - 23 - SISTER_NAV_OFFSET) / (settings?.overlayScale ?? 1)
+    : undefined
+
   return (
     <>
+      {view === 'pricecheck' && priceCheckData && !isHidden && (
+        <SisterOverlay
+          ref={sisterRef}
+          itemName={priceCheckData.item.name}
+          league={priceCheckData.league}
+          chaosPerDivine={priceCheckData.chaosPerDivine}
+          left={sisterLeft}
+          top={PANEL_TOP + SISTER_NAV_OFFSET}
+          width={SISTER_WIDTH}
+          dragOffset={dragOffset}
+          scale={settings?.overlayScale}
+          scaleOrigin={cursorSide === 'left' ? 'top right' : 'top left'}
+          maxHeight={sisterMaxHeight}
+        />
+      )}
       <SnapGhosts
         leftMountX={leftMountX}
         rightMountX={rightMountX}
