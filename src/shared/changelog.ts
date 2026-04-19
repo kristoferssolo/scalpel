@@ -1,5 +1,19 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.6-rc1',
+    notes: [
+      'Added support for showing related items for certain items like fragments etc.',
+      'Added settings chip when price checking to adjust search parameters on the fly',
+      'Added setting to price checker to change default display of results',
+      'Updated meter that displays api timeouts in price checker and made warnings... exist',
+      'Attempted to return clipboard data after item and regex hotkeys',
+      'Added custom scaling button (Thanks KnoT)',
+      'Fixed issue with alt-tabbing for some users (Thanks Pandas)',
+      'Fixed bug where esc key outside poe could cause poe to focus',
+      'Fixed issue where Scalpel would appear on top of login screen',
+    ],
+  },
+  {
     version: '0.9.5',
     notes: [
       'Added regex tab powered by poe.re. Starting with Map & Custom',
