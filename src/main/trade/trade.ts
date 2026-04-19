@@ -559,11 +559,16 @@ export async function searchTrade(
 
   query.stats = statGroups.length > 0 ? statGroups : [{ type: 'and', filters: [] }]
 
-  // Add trade filters: collapse by account, price currency option, optional listed-time
+  // Add trade filters: collapse by account, price currency option, optional listed-time.
+  // "chaos_equivalent" isn't a valid API value for trade_filters.price.option -- sending it
+  // causes the server to drop the whole filter block and return broken results. APT's
+  // working query for the same mode omits the price filter entirely, so we do the same.
   const existing = (query.filters as Record<string, unknown>) ?? {}
   const tradeFiltersInner: Record<string, unknown> = {
     collapse: { option: 'true' },
-    price: { min: null, max: null, option: tradePriceOption },
+  }
+  if (tradePriceOption && tradePriceOption !== 'chaos_equivalent') {
+    tradeFiltersInner.price = { min: null, max: null, option: tradePriceOption }
   }
   if (listedTime) tradeFiltersInner.indexed = { option: listedTime }
   query.filters = {
