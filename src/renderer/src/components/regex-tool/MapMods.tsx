@@ -21,14 +21,15 @@ import {
   Search,
   Save,
   Buy,
-  Drag,
 } from '@icon-park/react'
+import { TAB_COLORS, TagSourceIcon, loadSet, loadStorage, tagChipStyle } from './mapmods-helpers'
 import poereIconTight from '../../assets/other/poere-logo-tight.svg'
-import itemIcons from '../../../../shared/data/items/item-icons.json'
 import { FilterChip } from '../price-check/FilterChip'
 import { ErrorBanner } from '../ErrorBanner'
-import { TradeListings } from '../price-check/TradeListings'
-import { RateLimitBar } from '../price-check/RateLimitBar'
+import { TradeResults } from './TradeResults'
+import { MAP_TIER_ICONS, ORIGINATOR_TIER_ICONS, TierPicker } from './TierPicker'
+import { SavedPresets } from './SavedPresets'
+import { ModList } from './ModList'
 import type { Listing } from '../price-check/types'
 import { InfoChip } from '../../shared/PriceChip'
 import { ScrubInput } from './ScrubInput'
@@ -37,146 +38,8 @@ import type { RegexPreset, RegexPresetTag } from '../../../../shared/types'
 
 const DANGER_ORDER: Danger[] = ['lethal', 'dangerous', 'annoying', 'mild', 'harmless', 'beneficial']
 
-/** Above this result count, the in-Scalpel Travel-to-Hideout action gets unreliable:
- *  the page's live results churn between our API fetch and the click, so the data-id
- *  we cached no longer resolves on the poe.com/trade DOM. We flag the results bar as a
- *  warning past this threshold. */
-const RESULTS_WARNING_THRESHOLD = 1000
-
-const icons = itemIcons as Record<string, string>
-const MAP_TIER_ICONS: Record<number | string, string> = Object.fromEntries([
-  ...Array.from({ length: 16 }, (_, i) => [i + 1, icons[`Map (Tier ${i + 1})`]]),
-  ['nightmare', icons['Nightmare Map']],
-])
-const ORIGINATOR_TIER_ICONS: Record<number, string> = Object.fromEntries(
-  Array.from({ length: 16 }, (_, i) => [i + 1, icons[`Zana Map (Tier ${i + 1})`]]),
-)
-
-const TAB_COLORS = {
-  qualifiers: '#81c784',
-  avoid: '#ef5350',
-  want: '#81c784',
-  nightmare: '#b71c1c',
-} as const
-
-function TierButton({
-  icon,
-  size,
-  title,
-  disabled,
-  onClick,
-}: {
-  icon: string
-  size: number
-  title: string
-  disabled?: boolean
-  onClick: () => void
-}): JSX.Element {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className="flex flex-col items-center border-none cursor-pointer disabled:opacity-30"
-      style={{
-        background: 'rgba(255,255,255,0.05)',
-        borderRadius: 3,
-        padding: size > 30 ? '3px 3px 2px' : '2px 2px 1px',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.12)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
-      }}
-      title={title}
-    >
-      <img src={icon} alt={title} style={{ width: size, height: size, objectFit: 'contain' }} />
-    </button>
-  )
-}
-
-function formatModText(text: string): string {
-  return text.replace(/\d+[-to ]*\d*%/g, '#%').replace(/\d+[-to ]*\d+/g, '#')
-}
-
 type Tab = 'qualifiers' | 'avoid' | 'want'
 type WantMode = 'any' | 'all'
-
-function loadStorage<T>(key: string, fallback: T, parse: (s: string) => T = JSON.parse): T {
-  try {
-    const saved = localStorage.getItem(key)
-    return saved != null ? parse(saved) : fallback
-  } catch {
-    return fallback
-  }
-}
-
-function loadSet(key: string): Set<number> {
-  return new Set(loadStorage<number[]>(key, []))
-}
-
-const CUSTOM_TAG_TEXT = '#E40000'
-
-/** Style for a preset tag chip */
-function tagChipStyle(tag: RegexPresetTag): React.CSSProperties {
-  const isCustom = !tag.source || tag.source === 'custom'
-  return {
-    background: isCustom ? '#fff' : `${tag.color}cc`,
-    color: isCustom ? CUSTOM_TAG_TEXT : '#fff',
-    border: isCustom ? `1px solid ${CUSTOM_TAG_TEXT}` : undefined,
-    borderRadius: 2,
-    textShadow: isCustom ? undefined : '0 1px 2px rgba(0,0,0,0.4)',
-  }
-}
-
-/** Icon for a preset tag source type */
-function TagSourceIcon({ source, size = 12 }: { source?: string; size?: number }): JSX.Element | null {
-  const fill: [string, string] = ['currentColor', 'rgba(255,255,255,0.2)']
-  const style = { marginTop: size > 10 ? 1 : 0, marginLeft: size > 10 ? -2 : -1 }
-  if (source === 'qualifier') return <AddOne size={size} theme="two-tone" fill={fill} style={style} />
-  if (source === 'avoid') return <Forbid size={size} theme="two-tone" fill={fill} style={style} />
-  if (source === 'want') return <CheckOne size={size} theme="two-tone" fill={fill} style={style} />
-  return null
-}
-
-/** Attach momentum-based drag-to-scroll to an element */
-function useMomentumScroll(ignoreSelectors: string[] = []) {
-  return (e: React.MouseEvent<HTMLDivElement>) => {
-    if (ignoreSelectors.some((s) => (e.target as HTMLElement).closest(s))) return
-    const el = e.currentTarget
-    const startX = e.pageX
-    const scrollLeft = el.scrollLeft
-    let moved = false
-    let velocity = 0
-    let lastX = startX
-    let lastTime = Date.now()
-    const onMove = (ev: MouseEvent) => {
-      const dx = ev.pageX - startX
-      if (Math.abs(dx) > 3) moved = true
-      const now = Date.now()
-      const dt = now - lastTime
-      if (dt > 0) velocity = (ev.pageX - lastX) / dt
-      lastX = ev.pageX
-      lastTime = now
-      el.scrollLeft = scrollLeft - dx
-    }
-    const onUp = () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-      if (!moved) return
-      let v = velocity * 15
-      const decay = () => {
-        if (Math.abs(v) < 0.5) return
-        el.scrollLeft -= v
-        v *= 0.92
-        requestAnimationFrame(decay)
-      }
-      requestAnimationFrame(decay)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }
-}
 
 export function MapMods(): JSX.Element {
   const [generator, _setGenerator] = useState<'maps' | 'custom'>(() =>
@@ -598,8 +461,6 @@ export function MapMods(): JSX.Element {
     setPresets(updated)
   }
 
-  const warnHighVolume = (tradeTotal ?? 0) > RESULTS_WARNING_THRESHOLD
-
   return (
     <div className="flex flex-col flex-1 min-h-0 relative">
       {/* Macro tag duplicate error bar */}
@@ -897,213 +758,32 @@ export function MapMods(): JSX.Element {
           {/* close flex-col gap-2 */}
         </div>
         {/* close overflow-hidden */}
-        {/* Tier picker slide-down */}
-        <div
-          className="overflow-hidden transition-all duration-150"
-          style={{
-            maxHeight: showTierPicker || showTradeResults ? 150 : 0,
-            opacity: showTierPicker || showTradeResults ? 1 : 0,
-            margin: showTierPicker || showTradeResults ? '8px -12px 0' : '0',
-            padding: showTierPicker || showTradeResults ? '0 12px' : '0',
-            borderTop: '1px solid var(--border)',
-            paddingTop: showTierPicker || showTradeResults ? 8 : 0,
-          }}
-        >
-          {/* Map type chips */}
-          <div className="flex gap-[4px] mb-[4px]">
-            <FilterChip
-              label="Originator"
-              active={tradeOriginator}
-              onClick={() => setTradeOriginator((v) => !v)}
-              color="#dddddd"
-            />
-            <FilterChip
-              label="8-mod Corrupted"
-              active={tradeCorrupted8mod}
-              onClick={() => setTradeCorrupted8mod((v) => !v)}
-              color="#ef5350"
-            />
-          </div>
-          {hasNightmareMod ? (
-            <div className="flex gap-[4px] items-center">
-              {[14, 15, 16].map((t) => (
-                <TierButton
-                  key={t}
-                  icon={ORIGINATOR_TIER_ICONS[t]}
-                  size={38}
-                  title={`Originator Tier ${t}`}
-                  disabled={tradeSearching || !regex}
-                  onClick={() => searchMapTrade(t, false)}
-                />
-              ))}
-              <TierButton
-                icon={MAP_TIER_ICONS.nightmare}
-                size={38}
-                title="Nightmare"
-                disabled={tradeSearching || !regex}
-                onClick={() => searchMapTrade(16, true)}
-              />
-            </div>
-          ) : (
-            <>
-              {/* T1-T13 expandable */}
-              <div
-                className="overflow-hidden transition-all duration-150"
-                style={{ maxHeight: showAllTiers ? 50 : 0, marginBottom: showAllTiers ? 4 : 0 }}
-              >
-                <div className="flex gap-[3px] flex-wrap">
-                  {Array.from({ length: 13 }, (_, i) => i + 1).map((t) => (
-                    <TierButton
-                      key={t}
-                      icon={tierIcons[t]}
-                      size={26}
-                      title={`Tier ${t}`}
-                      disabled={tradeSearching || !regex}
-                      onClick={() => searchMapTrade(t, false)}
-                    />
-                  ))}
-                </div>
-              </div>
-              {/* All tiers toggle + T14-T16 + Nightmare */}
-              <div className="flex gap-[4px] items-center">
-                <button
-                  onClick={() => setShowAllTiers((v) => !v)}
-                  className="flex items-center justify-center border-none cursor-pointer"
-                  style={{
-                    background: showAllTiers ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)',
-                    borderRadius: 3,
-                    padding: '3px 3px 2px',
-                    width: 44,
-                    height: 44,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.12)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = showAllTiers
-                      ? 'rgba(255,255,255,0.12)'
-                      : 'rgba(255,255,255,0.05)'
-                  }}
-                  title="Show all tiers"
-                >
-                  <span className="text-[9px] font-semibold text-text-dim leading-tight text-center">
-                    All
-                    <br />
-                    tiers
-                  </span>
-                </button>
-                {[14, 15, 16].map((t) => (
-                  <TierButton
-                    key={t}
-                    icon={tierIcons[t]}
-                    size={38}
-                    title={`Tier ${t}`}
-                    disabled={tradeSearching || !regex}
-                    onClick={() => searchMapTrade(t, false)}
-                  />
-                ))}
-                <TierButton
-                  icon={MAP_TIER_ICONS.nightmare}
-                  size={38}
-                  title="Nightmare"
-                  disabled={tradeSearching || !regex}
-                  onClick={() => searchMapTrade(16, true)}
-                />
-              </div>
-            </>
-          )}
-        </div>
+        <TierPicker
+          showTierPicker={showTierPicker}
+          showTradeResults={showTradeResults}
+          showAllTiers={showAllTiers}
+          setShowAllTiers={setShowAllTiers}
+          tradeOriginator={tradeOriginator}
+          setTradeOriginator={setTradeOriginator}
+          tradeCorrupted8mod={tradeCorrupted8mod}
+          setTradeCorrupted8mod={setTradeCorrupted8mod}
+          hasNightmareMod={hasNightmareMod}
+          tradeSearching={tradeSearching}
+          regex={regex}
+          tierIcons={tierIcons}
+          searchMapTrade={searchMapTrade}
+        />
       </div>
       {/* close px-3 chips section */}
-      {/* Saved presets -- horizontal scrolling cards (outside px-3 and overflow-hidden) */}
-      {(() => {
-        const filtered = presets.filter((p) => (p.generator ?? 'maps') === generator)
-        return (
-          filtered.length > 0 &&
-          loadOpen && (
-            <div className="border-b border-border bg-bg-card py-2">
-              <span className="text-[9px] text-text-dim font-semibold uppercase tracking-wider ml-3 mb-1 block">
-                Saved Regex
-              </span>
-              <div
-                className="flex overflow-x-auto pb-1 preset-slider"
-                style={{ paddingLeft: 12 }}
-                onMouseDown={useMomentumScroll(['.preset-grab', '.preset-delete'])}
-              >
-                <ReactSortable
-                  list={filtered}
-                  setList={(newList) => {
-                    // Merge reordered filtered presets back with the rest
-                    const otherPresets = presets.filter((p) => (p.generator ?? 'maps') !== generator)
-                    const merged = [...otherPresets, ...newList]
-                    setPresets(merged)
-                    window.api.reorderRegexPresets(merged.map((p) => p.id))
-                  }}
-                  animation={150}
-                  handle=".preset-grab"
-                  filter=".preset-delete"
-                  preventOnFilter={false}
-                  className="flex gap-2"
-                >
-                  {filtered.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex shrink-0 rounded bg-black/20 hover:bg-black/30 transition-colors cursor-pointer relative group"
-                      style={{ width: 160, minHeight: 60 }}
-                      onClick={() => loadPreset(p)}
-                    >
-                      {/* Left strip: X delete + grab handle */}
-                      <div className="flex flex-col items-center py-1.5 px-[3px] opacity-0 group-hover:opacity-100 transition-opacity preset-controls">
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            deletePreset(p.id)
-                          }}
-                          className="preset-delete cursor-pointer text-text-dim hover:text-[#ef5350] transition-colors"
-                        >
-                          <CloseSmall size={11} theme="outline" fill="currentColor" />
-                        </div>
-                        <div
-                          className="preset-grab cursor-grab text-text-dim hover:text-text transition-colors flex-1 flex items-center justify-center"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Drag size={10} theme="outline" fill="currentColor" />
-                        </div>
-                      </div>
-                      <div className="flex-1 p-2 pl-0 min-w-0">
-                        <div
-                          className="flex flex-wrap gap-[3px]"
-                          style={{ maxHeight: 68, overflow: 'hidden' }}
-                          ref={(el) => {
-                            if (el) {
-                              el.style.webkitMaskImage =
-                                el.scrollHeight > el.clientHeight
-                                  ? 'linear-gradient(to bottom, black 75%, transparent 100%)'
-                                  : 'none'
-                            }
-                          }}
-                        >
-                          {p.tags.map((tag, i) => (
-                            <span
-                              key={i}
-                              className="flex items-center gap-[3px] px-[5px] py-[1px] text-[9px] font-semibold shrink-0"
-                              style={tagChipStyle(tag)}
-                            >
-                              <TagSourceIcon source={tag.source} size={8} />
-                              {tag.text}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </ReactSortable>
-                <div style={{ minWidth: 12, flexShrink: 0 }} />
-              </div>
-            </div>
-          )
-        )
-      })()}
+      {loadOpen && (
+        <SavedPresets
+          presets={presets}
+          setPresets={setPresets}
+          generator={generator}
+          loadPreset={loadPreset}
+          deletePreset={deletePreset}
+        />
+      )}
 
       {/* Maps generator */}
       {generator === 'maps' && (
@@ -1165,76 +845,24 @@ export function MapMods(): JSX.Element {
             })}
           </div>
 
-          {/* Trade results */}
           {showTradeResults && (
-            <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-bg">
-              <div
-                className="flex items-center gap-2 px-[14px] py-[6px]"
-                style={warnHighVolume ? { background: 'var(--warn)' } : undefined}
-              >
-                <span
-                  className="text-[11px] flex-1"
-                  style={{
-                    color: warnHighVolume ? 'var(--bg-solid)' : 'var(--text-dim)',
-                    fontWeight: warnHighVolume ? 600 : undefined,
-                  }}
-                >
-                  {warnHighVolume
-                    ? `${tradeTotal} results: Travel to hideout may be unreliable when there are a lot of results`
-                    : tradeTotal != null
-                      ? `${tradeTotal} result${tradeTotal !== 1 ? 's' : ''}`
-                      : ''}
-                </span>
-                {tradeQueryId && (
-                  <button
-                    onClick={() =>
-                      window.api.openExternal(
-                        `https://www.pathofexile.com/trade/search/${encodeURIComponent(tradeLeague)}/${tradeQueryId}`,
-                      )
-                    }
-                    className={
-                      warnHighVolume
-                        ? 'text-[10px] px-[10px] py-[5px] border-none cursor-pointer font-semibold bg-bg-card text-accent rounded-[3px]'
-                        : 'text-[10px] px-2 py-[3px] border-none cursor-pointer font-semibold bg-white/[0.08] text-text-dim rounded-[3px]'
-                    }
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = warnHighVolume ? 'var(--bg-hover)' : 'rgba(255,255,255,0.15)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = warnHighVolume ? 'var(--bg-card)' : 'rgba(255,255,255,0.08)'
-                    }}
-                  >
-                    Open in Trade
-                  </button>
-                )}
-              </div>
-              {tradeError && <div className="text-[10px] text-[#ef5350] px-3 py-2">{tradeError}</div>}
-              {!tradeError && tradeListings.length === 0 && (
-                <div className="text-[11px] text-text-dim text-center p-4">No listings found</div>
-              )}
-              {tradeListings.length > 0 && (
-                <div className="flex-1 min-h-0 px-[14px] pb-[10px] flex flex-col">
-                  <TradeListings
-                    listings={tradeListings}
-                    total={tradeTotal}
-                    itemClass="Maps"
-                    itemName=""
-                    itemRarity="Normal"
-                    expandedListing={expandedListing}
-                    setExpandedListing={setExpandedListing}
-                    priceChipMinWidth={priceChipMinWidth}
-                    loggedIn={loggedIn}
-                    actionStatus={actionStatus}
-                    setActionStatus={setActionStatus}
-                    queryId={tradeQueryId}
-                    league={tradeLeague}
-                    onLoadMore={tradeRemainingIds.length > 0 ? tradeLoadMore : undefined}
-                    loadingMore={loadingMore}
-                  />
-                </div>
-              )}
-              <RateLimitBar rateLimitTiers={rateLimitTiers} />
-            </div>
+            <TradeResults
+              tradeTotal={tradeTotal}
+              tradeQueryId={tradeQueryId}
+              tradeLeague={tradeLeague}
+              tradeError={tradeError}
+              tradeListings={tradeListings}
+              tradeRemainingIds={tradeRemainingIds}
+              tradeLoadMore={tradeLoadMore}
+              loadingMore={loadingMore}
+              expandedListing={expandedListing}
+              setExpandedListing={setExpandedListing}
+              priceChipMinWidth={priceChipMinWidth}
+              loggedIn={loggedIn}
+              actionStatus={actionStatus}
+              setActionStatus={setActionStatus}
+              rateLimitTiers={rateLimitTiers}
+            />
           )}
 
           {/* Qualifier optimization toggle */}
@@ -1420,94 +1048,15 @@ export function MapMods(): JSX.Element {
             </div>
           )}
 
-          {/* Mod list (avoid/want) */}
           {!showTradeResults && (tab === 'avoid' || tab === 'want') && (
-            <div className="flex-1 overflow-y-auto bg-bg-card">
-              {grouped.map(({ mods, label, color, key }) => {
-                const isCollapsed = collapsed.has(key)
-                const selectedInGroup = mods.filter((m) => selected.has(m.id)).length
-                return (
-                  <div key={key}>
-                    <div
-                      className="flex items-center gap-2 px-3 py-[8px] sticky-group-header cursor-pointer select-none sticky top-0 z-[1]"
-                      style={{ height: 39, boxSizing: 'border-box' }}
-                      onClick={() => toggleCollapse(key)}
-                    >
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
-                      <span className="text-[10px] uppercase tracking-wider font-bold flex-1" style={{ color }}>
-                        {label}
-                      </span>
-                      {selectedInGroup > 0 && (
-                        <InfoChip color={color}>
-                          <span className="font-bold">{selectedInGroup}</span>
-                        </InfoChip>
-                      )}
-                      {isCollapsed ? (
-                        <Right
-                          size={12}
-                          theme="two-tone"
-                          fill={['currentColor', 'currentColor']}
-                          className="text-text-dim"
-                        />
-                      ) : (
-                        <Down
-                          size={12}
-                          theme="two-tone"
-                          fill={['currentColor', 'currentColor']}
-                          className="text-text-dim"
-                        />
-                      )}
-                    </div>
-                    {!isCollapsed &&
-                      mods.map((m, mi) => {
-                        const isSelected = selected.has(m.id)
-                        return (
-                          <div
-                            key={m.id}
-                            onClick={() => toggle(m.id)}
-                            className="flex items-center gap-2 px-3 py-[4px] cursor-pointer select-none transition-colors"
-                            style={{
-                              background: isSelected
-                                ? tab === 'avoid'
-                                  ? 'rgba(239,83,80,0.08)'
-                                  : 'rgba(129,199,132,0.08)'
-                                : mi % 2 === 0
-                                  ? 'rgba(255,255,255,0.02)'
-                                  : 'transparent',
-                            }}
-                          >
-                            <div
-                              className="w-[14px] h-[14px] shrink-0 rounded-[3px] flex items-center justify-center transition-[background] duration-100"
-                              style={{
-                                background: isSelected
-                                  ? tab === 'avoid'
-                                    ? TAB_COLORS.avoid
-                                    : TAB_COLORS.want
-                                  : 'rgba(255,255,255,0.1)',
-                              }}
-                            >
-                              {isSelected && (
-                                <span className="text-[10px] text-[#171821] font-bold leading-none">&#10003;</span>
-                              )}
-                            </div>
-                            <span
-                              className="text-[11px] flex-1"
-                              style={{ color: isSelected ? 'var(--text)' : 'var(--text-dim)' }}
-                            >
-                              {formatModText(m.text)}
-                            </span>
-                            {m.nightmare && (
-                              <span className="text-[8px] font-semibold shrink-0" style={{ color: TAB_COLORS.avoid }}>
-                                NM
-                              </span>
-                            )}
-                          </div>
-                        )
-                      })}
-                  </div>
-                )
-              })}
-            </div>
+            <ModList
+              grouped={grouped}
+              selected={selected}
+              collapsed={collapsed}
+              tab={tab}
+              toggle={toggle}
+              toggleCollapse={toggleCollapse}
+            />
           )}
         </>
       )}
