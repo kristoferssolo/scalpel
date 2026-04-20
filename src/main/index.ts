@@ -43,7 +43,7 @@ import { startOnlineSync, stopOnlineSync } from './online-sync'
 import { initUpdater } from './update/updater'
 import { applyPendingUpdate } from './update/update-swap'
 import { loadFilter } from './filter-state'
-import { createHotkeyHandler, createPriceCheckHandler } from './evaluation'
+import { createHotkeyHandler, createPriceCheckHandler, setOpenSide } from './evaluation'
 import { snapshotClipboard } from './clipboard-preserve'
 import * as tradeHandlers from './handlers/trade'
 import * as settingsHandlers from './handlers/settings'
@@ -75,6 +75,7 @@ const store = new Store<AppSettings>({
     priceCheckHotkey: 'CommandOrControl+Shift+A',
     overlayOpacity: 0.95,
     overlayScale: 1,
+    openSide: 'both',
     closeOnClickOutside: false,
     league: 'Mirage',
     reloadOnSave: true,
@@ -94,6 +95,7 @@ const store = new Store<AppSettings>({
 // Backfill defaults for keys added after initial release
 if (store.get('reloadOnSave') === undefined) store.set('reloadOnSave', true)
 if (store.get('stashScrollEnabled') === undefined) store.set('stashScrollEnabled', false)
+if (store.get('openSide') === undefined) store.set('openSide', 'both')
 // Migrate legacy tradeStatus 'available' -> 'any' (renamed to match chip-row options)
 if ((store.get('tradeStatus') as string) === 'available') store.set('tradeStatus', 'any')
 // Force poeVersion to 1 -- previous test builds defaulted to 2
@@ -261,6 +263,7 @@ app.whenReady().then(() => {
   })
   setAppMacros(store.get('appMacros') ?? [])
   setStashScrollEnabled(store.get('stashScrollEnabled') ?? false)
+  setOpenSide(store.get('openSide') ?? 'both')
 
   // Suspend/resume hotkeys while the hotkey recorder is active
   ipcMain.on('suspend-hotkeys', () => suspendHotkeys())

@@ -109,6 +109,30 @@ export function GeneralTab({ settings, update }: Props): JSX.Element {
         </div>
       </section>
 
+      {/* Open side (mount side at scan time; doesn't affect dragging) */}
+      <section>
+        <label>Open Scalpel on:</label>
+        <div className="flex gap-1.5 mt-[6px]">
+          {(
+            [
+              ['both', 'Both sides'],
+              ['right', 'Only right'],
+              ['left', 'Only left'],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => update('openSide', value)}
+              className={`text-[11px] px-3 py-1.5 ${
+                (settings.openSide ?? 'both') === value ? 'bg-accent text-bg-solid' : 'text-text-dim'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </section>
+
       {/* Close on click outside */}
       <section>
         <div

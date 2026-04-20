@@ -93,6 +93,12 @@ export function getLastCursorX(): number | null {
   return lastCursorX
 }
 
+let openSide: AppSettings['openSide'] = 'both'
+
+export function setOpenSide(side: AppSettings['openSide']): void {
+  openSide = side
+}
+
 export function evaluateAndSend(item: PoeItem): void {
   const currentFilter = getCurrentFilter()
   if (!currentFilter) return
@@ -146,10 +152,15 @@ export function evaluateAndSend(item: PoeItem): void {
   }
   const win = getOverlayWindow()
   if (win) {
-    win.webContents.send(
-      'cursor-side',
-      lastCursorX != null && lastCursorX < screen.getPrimaryDisplay().workAreaSize.width / 2 ? 'left' : 'right',
-    )
+    const side: 'left' | 'right' =
+      openSide === 'left'
+        ? 'left'
+        : openSide === 'right'
+          ? 'right'
+          : lastCursorX != null && lastCursorX < screen.getPrimaryDisplay().workAreaSize.width / 2
+            ? 'left'
+            : 'right'
+    win.webContents.send('cursor-side', side)
     win.webContents.send('overlay-data', payload)
   }
 }
@@ -327,9 +338,10 @@ export function createHotkeyHandler(store: Store<AppSettings>, isElevated: () =>
       const item = await captureItemFromClipboard(isElevated)
       if (!item) return
 
-      const side =
-        lastCursorX != null && lastCursorX < screen.getPrimaryDisplay().workAreaSize.width / 2 ? 'left' : 'right'
-
+      // Flag the next overlay-data as "came from the filter hotkey" so the renderer
+      // forces the item view, even when the user was on pricecheck/audit with the
+      // same item already loaded (cache hit -> no view change without this).
+      getOverlayWindow()?.webContents.send('filter-hotkey-open')
       evaluateAndSend(item)
       preloadPriceCheck(item, store)
       showOverlay()
@@ -357,7 +369,6 @@ export function createPriceCheckHandler(store: Store<AppSettings>, isElevated: (
 
     try {
       lastCursorX = screen.getCursorScreenPoint().x
-      const side = lastCursorX < screen.getPrimaryDisplay().workAreaSize.width / 2 ? 'left' : 'right'
 
       const item = await captureItemFromClipboard(isElevated)
       if (!item) return

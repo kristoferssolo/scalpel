@@ -4,6 +4,7 @@ import { loadFilter, getColorFrequencies } from '../filter-state'
 import { getOverlayWindow, setCloseOnClickOutside } from '../overlay'
 import { getAppWindow } from '../app-window'
 import { setHotkey, setPriceCheckHotkey, setChatCommands, setAppMacros, setStashScrollEnabled } from '../hotkeys'
+import { setOpenSide } from '../evaluation'
 import { refreshPrices } from '../trade/prices'
 import type { AppSettings, RegexPreset } from '../../shared/types'
 
@@ -27,6 +28,7 @@ export function register(store: Store<AppSettings>): void {
     if (key === 'chatCommands') setChatCommands(value as Array<{ hotkey: string; command: string }>)
     if (key === 'appMacros') setAppMacros(value as Array<{ action: string; hotkey: string; tag?: string }>)
     if (key === 'stashScrollEnabled') setStashScrollEnabled(value as boolean)
+    if (key === 'openSide') setOpenSide(value as AppSettings['openSide'])
 
     // Broadcast setting change to all windows except the sender
     const sender = event.sender

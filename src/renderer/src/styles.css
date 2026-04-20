@@ -85,6 +85,11 @@ button {
 button:hover {
   background: rgba(255, 255, 255, 0.14);
 }
+/* Accent-colored buttons (Tailwind bg-accent) need a brighter gold on hover, else the
+ * default gray-overlay hover above washes them out and loses the toggle feedback. */
+button.bg-accent:hover {
+  background: #d4b87a;
+}
 button:focus,
 button:focus-visible {
   outline: none;

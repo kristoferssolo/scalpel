@@ -272,6 +272,10 @@ export interface AppSettings {
   priceCheckHotkey: string
   overlayOpacity: number
   overlayScale: number
+  /** Which side the overlay mounts on when a new item is scanned. 'both' = based on
+   *  cursor X (default); 'right'/'left' = always that side regardless of cursor. Drag
+   *  behavior is unaffected; this only picks the mount side at scan time. */
+  openSide: 'both' | 'right' | 'left'
   closeOnClickOutside: boolean
   league: string
   reloadOnSave: boolean

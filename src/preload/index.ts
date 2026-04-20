@@ -222,6 +222,11 @@ export const api = {
     ipcRenderer.on('price-check-open', handler)
     return () => ipcRenderer.removeListener('price-check-open', handler)
   },
+  onFilterHotkeyOpen: (cb: () => void): (() => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.on('filter-hotkey-open', handler)
+    return () => ipcRenderer.removeListener('filter-hotkey-open', handler)
+  },
   onPriceCheck: (
     cb: (data: {
       item: import('../shared/types').PoeItem

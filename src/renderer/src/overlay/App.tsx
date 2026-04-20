@@ -63,6 +63,7 @@ export default function App(): JSX.Element {
   const prevItemKey = useRef<string>('')
   const priceCheckPending = useRef(false)
   const auditPending = useRef(false)
+  const filterHotkeyPending = useRef(false)
   const [auditBlockIndex, setAuditBlockIndex] = useState<number | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
@@ -152,7 +153,13 @@ export default function App(): JSX.Element {
           }
         }
       }),
-      window.api.onCursorSide((side) => setCursorSide(side)),
+      window.api.onCursorSide((side) => {
+        // While the panel is dragged away from either edge, ignore cursor-side flips
+        // (basePanelLeft follows cursorSide, so flipping would yank the floating panel
+        // between the two mount X positions when hotkeying between stash and inventory).
+        if (dragOffsetRef.current.x !== 0 || dragOffsetRef.current.y !== 0) return
+        setCursorSide(side)
+      }),
       window.api.onOverlayData((data) => {
         setOverlayData(data)
         setSearchId((id) => id + 1)
@@ -173,6 +180,11 @@ export default function App(): JSX.Element {
           setView('audit')
         } else if (priceCheckPending.current) {
           priceCheckPending.current = false
+        } else if (filterHotkeyPending.current) {
+          // User pressed the filter hotkey: always jump to item view, even if the same
+          // item was already loaded on another tab (e.g. pricecheck).
+          filterHotkeyPending.current = false
+          setView('item')
         } else if (isNewItem) {
           // New item from hotkey: always go to item view
           setView('item')
@@ -185,6 +197,9 @@ export default function App(): JSX.Element {
       }),
       window.api.onPriceCheck((data) => {
         setPriceCheckData({ ...data, _key: Date.now() } as typeof data & { _key: number })
+      }),
+      window.api.onFilterHotkeyOpen(() => {
+        filterHotkeyPending.current = true
       }),
       window.api.onPriceCheckOpen(() => {
         priceCheckPending.current = true
@@ -435,10 +450,15 @@ export default function App(): JSX.Element {
   // Line the sister top with the main panel's content area: 30px nav row + 10px vertical
   // padding + 1px border ~= 51px below the panel top.
   const SISTER_NAV_OFFSET = 51
+  // Panel and sister both scale inward (toward each other) from opposite outer edges, so
+  // overlayScale > 1 eats into the gap from both sides. Add (S-1)*(PANEL+SISTER) worth of
+  // CSS px so the post-scale visible gap stays at SISTER_GAP regardless of scale.
+  const overlayScale = settings?.overlayScale ?? 1
+  const sisterScaleOffset = (overlayScale - 1) * (PANEL_WIDTH + SISTER_WIDTH)
   const sisterLeft =
     cursorSide === 'left'
-      ? (basePanelLeft ?? 0) + PANEL_WIDTH + SISTER_GAP
-      : (basePanelLeft ?? 0) - SISTER_WIDTH - SISTER_GAP
+      ? (basePanelLeft ?? 0) + PANEL_WIDTH + SISTER_GAP + sisterScaleOffset
+      : (basePanelLeft ?? 0) - SISTER_WIDTH - SISTER_GAP - sisterScaleOffset
   // Bound the sister to the game window the same way the main panel is, minus the
   // SISTER_NAV_OFFSET it already sits below. Scale divides out so the post-scale
   // visual height fits within the game bounds.
