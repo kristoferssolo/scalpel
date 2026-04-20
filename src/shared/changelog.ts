@@ -1,5 +1,17 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.6-rc2',
+    notes: [
+      'Added gems and maps to search',
+      'Added crit chance and attack speed accumulators to price checker (off by default)',
+      'Added warning to map searching about too many results making travel to hideout button not work well. Just the way it be.',
+      'Made Faustus a jerk',
+      'Made price checker prettier when loading',
+      'Fixed issues with search page taking too long to load',
+      'Fixed chaos orb equivalent regression',
+    ],
+  },
+  {
     version: '0.9.6-rc1',
     notes: [
       'Added support for showing related items for certain items like fragments etc.',
