@@ -145,6 +145,10 @@ uIOhook.on('mousedown', (e) => {
   // Only process clicks if the overlay window is actually visible on screen
   if (!overlayWindow || overlayWindow.isDestroyed() || !overlayWindow.isVisible()) return
   if (!isInsidePanel(e.x, e.y)) {
+    // A native <select> dropdown is open -- its option list lives outside our reported
+    // panel rect, so every click on it looks like a click "outside". Bail so we don't
+    // disable interactivity (click-through to PoE) or close the overlay.
+    if (interactiveLocked) return
     // Ensure click-through is enabled so the click reaches the game
     if (mouseOverPanel) {
       mouseOverPanel = false
