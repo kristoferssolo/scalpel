@@ -421,7 +421,12 @@ export default function App(): JSX.Element {
   }
 
   const isFullHeightView =
-    view === 'dust' || view === 'divcards' || view === 'pricecheck' || view === 'item' || view === 'regex'
+    view === 'dust' ||
+    view === 'divcards' ||
+    view === 'pricecheck' ||
+    view === 'item' ||
+    view === 'regex' ||
+    view === 'audit'
 
   // Sister overlay pinned immediately adjacent to the main panel on the opposite side
   // of where the main panel is mounted.
