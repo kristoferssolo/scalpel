@@ -16,7 +16,7 @@ export function ErrorBanner({
   tone?: 'error' | 'warn'
   inline?: boolean
 }): JSX.Element {
-  const bg = tone === 'warn' ? 'bg-[#e67e22]' : 'bg-[#b71c1c]'
+  const bg = tone === 'warn' ? 'bg-[var(--warn)]' : 'bg-[var(--danger-bg)]'
   const positioning = inline ? '' : 'absolute left-0 right-0 top-0 z-10'
   return (
     <div

@@ -936,6 +936,9 @@ async function fetchAndMapListings(ids: string[], queryId: string): Promise<Trad
         implicitMods?: string[]
         explicitMods?: string[]
         properties?: Array<{ name: string; values: Array<[string, number]> }>
+        corrupted?: boolean
+        duplicated?: boolean
+        identified?: boolean
       }
     }>
   }
@@ -957,6 +960,12 @@ async function fetchAndMapListings(ids: string[], queryId: string): Promise<Trad
           explicitMods: r.item.explicitMods ?? [],
           implicitMods: r.item.implicitMods,
           ilvl: r.item.ilvl,
+          // ExpandedListing surfaces these flags as status chips (Corrupted, Mirrored,
+          // Unidentified); the regular trade path includes them, so map-regex listings
+          // should too or corrupted maps silently appear as if they weren't.
+          corrupted: r.item.corrupted,
+          mirrored: r.item.duplicated,
+          identified: r.item.identified,
           mapProperties: r.item.properties
             ?.filter((p) => p.values?.[0]?.[0] != null)
             .map((p) => ({ name: p.name, value: p.values[0][0] })),

@@ -37,6 +37,12 @@ import type { RegexPreset, RegexPresetTag } from '../../../../shared/types'
 
 const DANGER_ORDER: Danger[] = ['lethal', 'dangerous', 'annoying', 'mild', 'harmless', 'beneficial']
 
+/** Above this result count, the in-Scalpel Travel-to-Hideout action gets unreliable:
+ *  the page's live results churn between our API fetch and the click, so the data-id
+ *  we cached no longer resolves on the poe.com/trade DOM. We flag the results bar as a
+ *  warning past this threshold. */
+const RESULTS_WARNING_THRESHOLD = 1000
+
 const icons = itemIcons as Record<string, string>
 const MAP_TIER_ICONS: Record<number | string, string> = Object.fromEntries([
   ...Array.from({ length: 16 }, (_, i) => [i + 1, icons[`Map (Tier ${i + 1})`]]),
@@ -591,6 +597,8 @@ export function MapMods(): JSX.Element {
     const updated = await window.api.deleteRegexPreset(id)
     setPresets(updated)
   }
+
+  const warnHighVolume = (tradeTotal ?? 0) > RESULTS_WARNING_THRESHOLD
 
   return (
     <div className="flex flex-col flex-1 min-h-0 relative">
@@ -1160,9 +1168,22 @@ export function MapMods(): JSX.Element {
           {/* Trade results */}
           {showTradeResults && (
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-bg">
-              <div className="flex items-center gap-2 px-[14px] py-[6px]">
-                <span className="text-[11px] text-text-dim flex-1">
-                  {tradeTotal != null ? `${tradeTotal} result${tradeTotal !== 1 ? 's' : ''}` : ''}
+              <div
+                className="flex items-center gap-2 px-[14px] py-[6px]"
+                style={warnHighVolume ? { background: 'var(--warn)' } : undefined}
+              >
+                <span
+                  className="text-[11px] flex-1"
+                  style={{
+                    color: warnHighVolume ? 'var(--bg-solid)' : 'var(--text-dim)',
+                    fontWeight: warnHighVolume ? 600 : undefined,
+                  }}
+                >
+                  {warnHighVolume
+                    ? `${tradeTotal} results: Travel to hideout may be unreliable when there are a lot of results`
+                    : tradeTotal != null
+                      ? `${tradeTotal} result${tradeTotal !== 1 ? 's' : ''}`
+                      : ''}
                 </span>
                 {tradeQueryId && (
                   <button
@@ -1171,12 +1192,16 @@ export function MapMods(): JSX.Element {
                         `https://www.pathofexile.com/trade/search/${encodeURIComponent(tradeLeague)}/${tradeQueryId}`,
                       )
                     }
-                    className="text-[10px] px-2 py-[3px] border-none cursor-pointer font-semibold bg-white/[0.08] text-text-dim rounded-[3px]"
+                    className={
+                      warnHighVolume
+                        ? 'text-[10px] px-[10px] py-[5px] border-none cursor-pointer font-semibold bg-bg-card text-accent rounded-[3px]'
+                        : 'text-[10px] px-2 py-[3px] border-none cursor-pointer font-semibold bg-white/[0.08] text-text-dim rounded-[3px]'
+                    }
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.15)'
+                      e.currentTarget.style.background = warnHighVolume ? 'var(--bg-hover)' : 'rgba(255,255,255,0.15)'
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+                      e.currentTarget.style.background = warnHighVolume ? 'var(--bg-card)' : 'rgba(255,255,255,0.08)'
                     }}
                   >
                     Open in Trade
@@ -1188,7 +1213,7 @@ export function MapMods(): JSX.Element {
                 <div className="text-[11px] text-text-dim text-center p-4">No listings found</div>
               )}
               {tradeListings.length > 0 && (
-                <div className="flex-1 overflow-y-auto px-[14px]">
+                <div className="flex-1 min-h-0 px-[14px] pb-[10px] flex flex-col">
                   <TradeListings
                     listings={tradeListings}
                     total={tradeTotal}
