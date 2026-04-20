@@ -7,6 +7,7 @@ import { DustExplorer } from '../components/dust-explorer'
 import { DivCardExplorer } from '../components/div-card-explorer'
 import { RegexTool } from '../components/regex-tool'
 import { PriceCheck } from '../components/price-check'
+import { PriceCheckSkeleton } from '../components/price-check/PriceCheckSkeleton'
 import { SnapGhosts } from './SnapGhosts'
 import { TitleBar } from './TitleBar'
 import { ErrorBanner } from '../components/ErrorBanner'
@@ -638,18 +639,21 @@ export default function App(): JSX.Element {
               {view === 'tools' && overlayData && (
                 <SocketRecolor item={overlayData.item} priceInfo={overlayData.priceInfo} />
               )}
-              {view === 'pricecheck' && priceCheckData && (
-                <PriceCheck
-                  key={(priceCheckData as Record<string, unknown>)._key as number}
-                  item={priceCheckData.item}
-                  priceInfo={priceCheckData.priceInfo}
-                  statFilters={priceCheckData.statFilters}
-                  league={priceCheckData.league}
-                  chaosPerDivine={priceCheckData.chaosPerDivine}
-                  unidCandidates={priceCheckData.unidCandidates}
-                  onClose={close}
-                />
-              )}
+              {view === 'pricecheck' &&
+                (priceCheckData ? (
+                  <PriceCheck
+                    key={(priceCheckData as Record<string, unknown>)._key as number}
+                    item={priceCheckData.item}
+                    priceInfo={priceCheckData.priceInfo}
+                    statFilters={priceCheckData.statFilters}
+                    league={priceCheckData.league}
+                    chaosPerDivine={priceCheckData.chaosPerDivine}
+                    unidCandidates={priceCheckData.unidCandidates}
+                    onClose={close}
+                  />
+                ) : (
+                  <PriceCheckSkeleton />
+                ))}
               <div className="flex-col flex-1 min-h-0" style={{ display: view === 'dust' ? 'flex' : 'none' }}>
                 <DustExplorer onSelectItem={() => setView('item')} />
               </div>

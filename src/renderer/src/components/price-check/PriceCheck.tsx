@@ -18,6 +18,7 @@ import { getDustInfo } from '../../shared/dust'
 import { StatFilterRow } from './StatFilterRow'
 import { TradeListings } from './TradeListings'
 import { BulkListings } from './BulkListings'
+import { ListingRowsSkeleton } from './PriceCheckSkeleton'
 import { RateLimitBar } from './RateLimitBar'
 import { BASE_DEFAULT_ITEM_CLASSES, applyBaseModeToFilters, shouldIncludeImplicitsInBase } from './base-mode'
 import type { ListedTime, PriceOption, ResultsView, StatusOption } from './search-settings'
@@ -569,6 +570,10 @@ export function PriceCheck({
 
         {/* Error */}
         {error && <div className="text-[10px] text-[#ef5350] px-1">{error}</div>}
+
+        {/* Searching placeholder rows so the results area isn't empty while the trade
+            API is in flight (can take several seconds under rate limit). */}
+        {searching && <ListingRowsSkeleton />}
 
         {/* Bulk Exchange Results */}
         {isBulk && searched && !searching && bulkListings.length > 0 && (
