@@ -1,5 +1,13 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.6-rc3',
+    notes: [
+      'Added option in settings to decide where Scalpel mounts by default',
+      'Fixed issue with sister panel at scales other than 100%',
+      'Mounted audit hero so it persists on scroll of long lists',
+    ],
+  },
+  {
     version: '0.9.6-rc2',
     notes: [
       'Added gems and maps to search',
