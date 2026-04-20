@@ -10,9 +10,9 @@ import {
   getItemSize,
   getChipColor,
 } from './constants'
-import { isFaustusItem } from '../../../../shared/data/trade/faustus-items'
 import { FilterChip } from './FilterChip'
 import { PriceChip } from '../../shared/PriceChip'
+import { FaustusBanner } from './FaustusBanner'
 import { ItemHeader } from './ItemHeader'
 import { getDustInfo } from '../../shared/dust'
 import { StatFilterRow } from './StatFilterRow'
@@ -565,32 +565,7 @@ export function PriceCheck({
           )}
         </div>
 
-        {/* Faustus exchange warning */}
-        {isFaustusItem(item.itemClass, item.baseType, item.rarity) && (
-          <div className="flex items-center gap-2 px-3 py-2 mx-[-14px] bg-[rgba(255,200,60,0.08)]">
-            <div className="flex-1">
-              <div className="text-[11px] text-[#ffc83c] font-semibold">
-                You should check Faustus to price this item
-              </div>
-              <div className="text-[10px] text-text-dim">
-                The in-game Currency Exchange will have more accurate pricing than bulk trade
-              </div>
-            </div>
-            {priceInfo && priceInfo.chaosValue > 0 && (
-              <div className="flex flex-col gap-1 items-end shrink-0">
-                <PriceChip chaosValue={priceInfo.chaosValue} divineValue={priceInfo.divineValue} showNinja />
-                {item.stackSize > 1 && (
-                  <PriceChip
-                    chaosValue={priceInfo.chaosValue * item.stackSize}
-                    chaosPerDivine={chaosPerDivine}
-                    label={`${item.stackSize}x =`}
-                    size="sm"
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        <FaustusBanner item={item} priceInfo={priceInfo} chaosPerDivine={chaosPerDivine} />
 
         {/* Error */}
         {error && <div className="text-[10px] text-[#ef5350] px-1">{error}</div>}
