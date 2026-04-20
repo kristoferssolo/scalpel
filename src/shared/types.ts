@@ -131,6 +131,7 @@ export interface PoeItem {
   eleDamageAvg?: number
   chaosDamageAvg?: number
   attacksPerSecond?: number
+  critChance?: number
   width?: number
   height?: number
   heistJob?: { skill: string; level: number }

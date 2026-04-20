@@ -56,6 +56,9 @@ export function StatFilterRow({
 }): JSX.Element {
   const minTint = getSearchTint(f.min, null, f.modRange, itemRarity, f.type)
   const maxTint = getSearchTint(null, f.max, f.modRange, itemRarity, f.type)
+  // Filters whose values are inherently fractional (APS, crit %) need decimal
+  // input; everything else stays integer-only.
+  const decimals = f.id === 'weapon.aps' || f.id === 'weapon.crit' ? 1 : 0
   const [hovered, setHovered] = useState(false)
   const hasTier = f.modTier != null && f.modTier > 0
   const hasRange = !!f.modRange
@@ -117,6 +120,7 @@ export function StatFilterRow({
         defaultValue={f.max != null ? Math.floor(f.max * 0.8) || f.max : f.value}
         onChange={(val) => updateFilterMin(i, val == null ? '' : String(val))}
         color={minTint ?? undefined}
+        decimals={decimals}
       />
       <ScrubInput
         value={f.max}
@@ -125,6 +129,7 @@ export function StatFilterRow({
         defaultValue={f.min != null ? Math.ceil(f.min * 1.2) || f.min : f.value}
         onChange={(val) => updateFilterMax(i, val == null ? '' : String(val))}
         color={maxTint ?? undefined}
+        decimals={decimals}
       />
     </div>
   )

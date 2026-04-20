@@ -221,13 +221,8 @@ export function parseItemText(text: string): PoeItem | null {
     if (m) chaosDamageAvg = (parseInt(m[1]) + parseInt(m[2])) / 2
   }
 
-  // Attacks per second
-  const apsLine = allLines.find((l) => l.startsWith('Attacks per Second:'))
-  let attacksPerSecond: number | undefined
-  if (apsLine) {
-    const m = apsLine.match(/(\d+(?:\.\d+)?)/)
-    if (m) attacksPerSecond = parseFloat(m[1])
-  }
+  const attacksPerSecond = extractFloat(allLines, 'Attacks per Second:')
+  const critChance = extractFloat(allLines, 'Critical Strike Chance:')
 
   const reqStr = extractNum(allLines, 'Str:') ?? 0
   const reqDex = extractNum(allLines, 'Dex:') ?? 0
@@ -436,6 +431,7 @@ export function parseItemText(text: string): PoeItem | null {
     ...(eleDamageAvg != null ? { eleDamageAvg } : {}),
     ...(chaosDamageAvg != null ? { chaosDamageAvg } : {}),
     ...(attacksPerSecond != null ? { attacksPerSecond } : {}),
+    ...(critChance != null ? { critChance } : {}),
     ...(ITEM_SIZES[itemClass] ? { width: ITEM_SIZES[itemClass][0], height: ITEM_SIZES[itemClass][1] } : {}),
     ...(heistJob ? { heistJob } : {}),
     ...(monsterLevel != null ? { monsterLevel } : {}),
@@ -457,6 +453,15 @@ function extractNum(lines: string[], prefix: string): number | null {
   if (!line) return null
   const match = line.replace(prefix, '').match(/\d+/)
   return match ? parseInt(match[0]) : null
+}
+
+/** Like `extractNum` but keeps decimal precision -- for lines like "Attacks per
+ *  Second: 1.45" or "Critical Strike Chance: 6.30%". */
+function extractFloat(lines: string[], prefix: string): number | undefined {
+  const line = lines.find((l) => l.startsWith(prefix))
+  if (!line) return undefined
+  const match = line.match(/(\d+(?:\.\d+)?)/)
+  return match ? parseFloat(match[1]) : undefined
 }
 
 function computeLinkedSockets(sockets: string): number {

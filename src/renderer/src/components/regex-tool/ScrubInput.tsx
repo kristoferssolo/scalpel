@@ -14,6 +14,10 @@ interface ScrubInputProps {
   color?: string
   /** Decorative suffix shown next to the value in display mode (not during edit). */
   suffix?: string
+  /** How many decimal places the input accepts and renders. 0 (default) keeps the
+   *  legacy integer-only behavior; 2 is typical for APS / crit %. When > 0 the
+   *  default step auto-shrinks to that precision unless you also pass `step`. */
+  decimals?: number
 }
 
 export function ScrubInput({
@@ -22,11 +26,22 @@ export function ScrubInput({
   placeholder = '0',
   min = 0,
   max = 99999,
-  step = 1,
+  step,
   defaultValue,
   color,
   suffix,
+  decimals = 0,
 }: ScrubInputProps): JSX.Element {
+  // Default step follows the precision so a decimals=2 input scrubs in 0.01 increments.
+  const effectiveStep = step ?? (decimals > 0 ? 1 / 10 ** decimals : 1)
+  const formatValue = (v: number): string => (decimals > 0 ? v.toFixed(decimals) : String(v))
+  const parseValue = (s: string): number => (decimals > 0 ? parseFloat(s) : parseInt(s))
+  // Snap to the configured precision so floating-point scrub math doesn't emit
+  // 1.4500000001-style junk.
+  const snapToPrecision = (v: number): number => {
+    const factor = 10 ** decimals
+    return Math.round(v * factor) / factor
+  }
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -41,9 +56,9 @@ export function ScrubInput({
 
   const commitEdit = () => {
     setEditing(false)
-    const parsed = parseInt(editText)
+    const parsed = parseValue(editText)
     if (isNaN(parsed) || parsed === 0) onChange(null)
-    else onChange(Math.min(max, Math.max(min, parsed)))
+    else onChange(snapToPrecision(Math.min(max, Math.max(min, parsed))))
   }
 
   const startScrub = (e: React.MouseEvent) => {
@@ -62,9 +77,9 @@ export function ScrubInput({
       lastX = me.clientX
       const magnitude = Math.abs(accumulator)
       const speed = magnitude >= 1000 ? 5 : magnitude >= 100 ? 2 : magnitude >= 10 ? 1 : 0.5
-      accumulator += (dx * speed * step) / 3
+      accumulator += (dx * speed * effectiveStep) / 3
       const clamped = Math.min(max, Math.max(min, accumulator))
-      const snapped = Math.round(clamped / step) * step
+      const snapped = snapToPrecision(Math.round(clamped / effectiveStep) * effectiveStep)
       onChange(snapped !== 0 ? snapped : null)
     }
 
@@ -84,9 +99,9 @@ export function ScrubInput({
     if (!scrubRef.current) {
       if (value == null && defaultValue != null) {
         onChange(defaultValue)
-        setEditText(String(defaultValue))
+        setEditText(formatValue(defaultValue))
       } else {
-        setEditText(value != null ? String(value) : '')
+        setEditText(value != null ? formatValue(value) : '')
       }
       setEditing(true)
     }
@@ -122,7 +137,7 @@ export function ScrubInput({
         />
       ) : (
         <span style={value == null ? { opacity: 0.4 } : undefined}>
-          {value ?? placeholder}
+          {value != null ? formatValue(value) : placeholder}
           {suffix}
         </span>
       )}

@@ -487,6 +487,8 @@ export function matchItemMods(
     eleDamageAvg?: number
     chaosDamageAvg?: number
     attacksPerSecond?: number
+    critChance?: number
+    heistJob?: { skill: string; level: number }
     monsterLevel?: number
     wingsRevealed?: number
     wingsTotal?: number
@@ -910,6 +912,32 @@ export function matchItemMods(
         enabled: false,
         type: 'weapon',
       })
+
+    // APS chip. One decimal is plenty of precision for search purposes.
+    weaponFilters.push({
+      id: 'weapon.aps',
+      text: `Attacks per Second: ${aps.toFixed(1)}`,
+      value: aps,
+      min: Math.floor(aps * pct * 10) / 10,
+      max: null,
+      enabled: false,
+      type: 'weapon',
+    })
+  }
+
+  // Critical strike chance chip (parsed from clipboard, independent of APS so it's
+  // outside the `if (attacksPerSecond)` block).
+  if (itemInfo?.critChance && itemInfo.critChance > 0) {
+    const crit = itemInfo.critChance
+    weaponFilters.push({
+      id: 'weapon.crit',
+      text: `Critical Strike Chance: ${crit.toFixed(1)}%`,
+      value: crit,
+      min: Math.floor(crit * pct * 10) / 10,
+      max: null,
+      enabled: false,
+      type: 'weapon',
+    })
   }
 
   // Add socket/link/quality/ilvl filters
