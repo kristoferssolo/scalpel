@@ -57,6 +57,13 @@ let refreshTimer: ReturnType<typeof setInterval> | null = null
  *  from the trade API stat text (e.g. corruption implicits with different wording) */
 const DIRECT_MOD_MAPPINGS: Record<string, { statId: string; value: number | null }> = {
   'contains a vaal side area': { statId: 'implicit.stat_2156201537', value: null },
+  // "Trigger a Socketed Spell" bench craft. Trade API stores this under the chance-to-
+  // trigger stat (crafted.stat_3079007202), with item-specific "8 second Cooldown" +
+  // "150% more Cost" baked into the text. The bench version drops the chance prefix
+  // and rephrases "on Using a Skill" -> "when you Use a Skill", so text matching can't
+  // reach it. Mapped with value: null since the stat has no user-adjustable roll.
+  'trigger a socketed spell when you use a skill, with a 8 second cooldown\nspells triggered this way have 150% more cost':
+    { statId: 'crafted.stat_3079007202', value: null },
 }
 
 /** Stat IDs to skip entirely (duplicates where only one works for searching) */
@@ -65,8 +72,13 @@ const BLOCKED_STAT_IDS = new Set([
 ])
 
 function statTextToPattern(text: string): RegExp {
-  // Escape regex special chars except #
-  const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/#/g, '(.+?)')
+  // Normalize whitespace (including `\n` between multi-line stat parts) to a single
+  // space before escaping, so a two-line crafted mod like
+  //   "Trigger a Socketed Spell ... Cooldown\nSpells Triggered this way ..."
+  // matches regardless of whether the caller joined its lines with `\n` or ` `.
+  // Callers also normalize their input text to a single space before `.match(pattern)`.
+  const normalized = text.replace(/\s+/g, ' ')
+  const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/#/g, '(.+?)')
   return new RegExp('^' + escaped + '$', 'i')
 }
 
@@ -74,7 +86,9 @@ function statTextToPattern(text: string): RegExp {
  *  Used as fallback when exact matching fails -- handles cases where
  *  trade API has a fixed number but the item text has a different value. */
 function statTextToRelaxedPattern(text: string): RegExp {
-  let escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/#/g, '(.+?)')
+  // Same whitespace normalization as statTextToPattern -- see that function for details.
+  const normalized = text.replace(/\s+/g, ' ')
+  let escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/#/g, '(.+?)')
   // Replace hardcoded numbers (e.g. "50%", "20") with capture groups
   escaped = escaped.replace(/\d+(?:\\\.\d+)?/g, '(.+?)')
   return new RegExp('^' + escaped + '$', 'i')
@@ -292,6 +306,9 @@ function _matchModToStat(
 
   for (const variant of textVariants) {
     const variantFlipped = isFlippedToNegative && (/\breduced\b/i.test(variant) || /\bless\b/i.test(variant))
+    // Match against whitespace-normalized input so multi-line mods joined with "\n"
+    // match stat patterns whose text uses " " (or vice versa).
+    const normalizedVariant = variant.replace(/\s+/g, ' ')
     let nonLocalMatch: { statId: string; value: number | null; option?: number; _textLen: number } | null = null
     let localMatch: { statId: string; value: number | null; option?: number; _textLen: number } | null = null
 
@@ -301,7 +318,7 @@ function _matchModToStat(
       const isLocal = entry.text.includes('(Local)')
       const textForPattern = isLocal ? entry.text.replace(/\s*\(Local\)/, '') : entry.text
       const pattern = statTextToPattern(textForPattern)
-      const match = variant.match(pattern)
+      const match = normalizedVariant.match(pattern)
       if (match) {
         // For stats with two numeric values (e.g. "Adds # to # Damage"), average them
         const numericCaptures = Array.from(match)
@@ -345,13 +362,14 @@ function _matchModToStat(
   // Fallback: try relaxed patterns where hardcoded numbers in stat text become wildcards.
   // Handles cases like trade API having "increased by 50% of Overcapped" but item text has a different value.
   for (const variant of textVariants) {
+    const normalizedVariant = variant.replace(/\s+/g, ' ')
     let bestMatch: { statId: string; value: number | null; option?: number; _textLen: number } | null = null
     for (const entry of statEntries) {
       if (!entry.id.startsWith(typePrefix)) continue
       if (BLOCKED_STAT_IDS.has(entry.id)) continue
       if (entry.text.includes('(Local)')) continue // skip local in relaxed mode
       const relaxedPattern = statTextToRelaxedPattern(entry.text)
-      const match = variant.match(relaxedPattern)
+      const match = normalizedVariant.match(relaxedPattern)
       if (match) {
         const numericCaptures = Array.from(match)
           .slice(1)
@@ -582,19 +600,25 @@ export function matchItemMods(
         /Commanded|Commissioned|Carved|Bathed|Denoted|Remembrancing/i.test(cleaned))
     )
       continue
+    // Detect crafted/fractured/foulborn from advanced mod data BEFORE matching, so
+    // crafted mods (like "Trigger a Socketed Spell when you Use a Skill") are queried
+    // against the crafted.* stat list instead of explicit.* -- matching the wrong list
+    // fails silently and the mod disappears from the price checker.
+    let isFractured = false
+    let isFoulborn = false
+    let advMod: ReturnType<typeof findAdvMod> = undefined
+    if (advancedMods) {
+      advMod = findAdvMod(advancedMods, cleaned, 'explicit')
+      if (advMod?.fractured) isFractured = true
+      if (advMod?.foulborn) isFoulborn = true
+      if (advMod?.crafted) isCrafted = true
+    }
     const useLocal = hasLocalMods && isLocalMod(cleaned, isWeapon)
     const matched = matchModToStat(cleaned, useLocal, isCrafted ? 'crafted' : 'explicit')
     if (matched) {
       const lowPriority = isLowPriority(cleaned)
 
-      // Check if this mod is fractured or foulborn (from advanced mod data)
-      let isFractured = false
-      let isFoulborn = false
-      if (advancedMods) {
-        const advMod = findAdvMod(advancedMods, cleaned, 'explicit')
-        if (advMod?.fractured) isFractured = true
-        if (advMod?.foulborn) isFoulborn = true
-        if (advMod?.crafted) isCrafted = true
+      if (advancedMods && advMod) {
         // Apply magnitude multiplier from implicit (e.g. Cogwork Ring "25% increased Suffix Modifier magnitudes")
         if (advMod?.magnitudeMultiplier && matched.value != null) {
           const oldVal = matched.value
