@@ -16,6 +16,8 @@ import { FilterInfoBanner } from './FilterInfoBanner'
 import { AuditView } from './AuditView'
 import { Notice } from './Notice'
 import { SisterOverlay } from './SisterOverlay'
+import { TierItemsSister } from './TierItemsSister'
+import { getActiveMatch } from '../shared/activeMatch'
 import { ItemSearchCombobox } from '../components/ItemSearchCombobox'
 import { Clipboard } from '@icon-park/react'
 import { IP } from '../shared/constants'
@@ -55,6 +57,8 @@ export default function App(): JSX.Element {
   const dragging = useRef<{ startX: number; startY: number; origOffsetX: number; origOffsetY: number } | null>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const sisterRef = useRef<HTMLDivElement>(null)
+  const tierSisterRef = useRef<HTMLDivElement>(null)
+  const [tierSisterOpen, setTierSisterOpen] = useState(false)
 
   // Lifted breakpoint selection -- persists across tier-move refreshes
   const [selectedBpIndex, setSelectedBpIndex] = useState<number | null>(null)
@@ -333,6 +337,15 @@ export default function App(): JSX.Element {
       if (sister && sister.width > 0 && sister.height > 0) {
         rects.push({ left: sister.left, top: sister.top, width: sister.width, height: sister.height })
       }
+      const tierSister = tierSisterRef.current?.getBoundingClientRect()
+      if (tierSister && tierSister.width > 0 && tierSister.height > 0) {
+        rects.push({
+          left: tierSister.left,
+          top: tierSister.top,
+          width: tierSister.width,
+          height: tierSister.height,
+        })
+      }
       window.api.reportPanelRect(rects)
     }
     tick()
@@ -466,8 +479,46 @@ export default function App(): JSX.Element {
     ? (gameBounds.gameHeight - PANEL_TOP * 2 - 23 - SISTER_NAV_OFFSET) / (settings?.overlayScale ?? 1)
     : undefined
 
+  // Compute baseTypes for the tier sister on the filter page. Uses the shared
+  // getActiveMatch so the sister's items match whatever tier FilterPanel is showing.
+  const tierSisterData = ((): {
+    baseTypes: string[]
+    itemClass: string
+    tier: string
+    uniqueTier: boolean
+  } | null => {
+    if (!overlayData) return null
+    const { match } = getActiveMatch(overlayData, selectedBpIndex, selectedQualityBpIndex, selectedStrandBpIndex)
+    if (!match) return null
+    const baseTypes = match.block.conditions.filter((c) => c.type === 'BaseType').flatMap((c) => c.values)
+    const uniqueTier = match.block.conditions.some((c) => c.type === 'Rarity' && c.values.some((v) => v === 'Unique'))
+    return {
+      baseTypes,
+      itemClass: overlayData.item.itemClass,
+      tier: match.block.tierTag?.tier ?? '',
+      uniqueTier,
+    }
+  })()
+
   return (
     <>
+      {view === 'item' && tierSisterOpen && tierSisterData && tierSisterData.baseTypes.length > 0 && !isHidden && (
+        <TierItemsSister
+          ref={tierSisterRef}
+          baseTypes={tierSisterData.baseTypes}
+          itemClass={tierSisterData.itemClass}
+          league={settings?.league ?? ''}
+          uniqueTier={tierSisterData.uniqueTier}
+          left={sisterLeft}
+          top={PANEL_TOP + SISTER_NAV_OFFSET}
+          width={SISTER_WIDTH}
+          dragOffset={dragOffset}
+          scale={settings?.overlayScale}
+          scaleOrigin={cursorSide === 'left' ? 'top right' : 'top left'}
+          maxHeight={sisterMaxHeight}
+          animKey={tierSisterData.tier}
+        />
+      )}
       {view === 'pricecheck' && priceCheckData && !isHidden && (
         <SisterOverlay
           ref={sisterRef}
@@ -659,6 +710,9 @@ export default function App(): JSX.Element {
                   onOpenTools={() => setView('tools')}
                   onOpenDustExplore={() => setView('dust')}
                   onOpenDivExplore={() => setView('divcards')}
+                  tierSisterOpen={tierSisterOpen}
+                  onToggleTierSister={() => setTierSisterOpen((v) => !v)}
+                  tierSisterSide={cursorSide === 'left' ? 'right' : 'left'}
                 />
               )}
               {view === 'tools' && overlayData && (

@@ -1,6 +1,8 @@
-import type { MatchResult, OverlayData, FilterBlock, TierGroup } from '../../../shared/types'
+import { useMemo } from 'react'
+import type { OverlayData, FilterBlock, TierGroup } from '../../../shared/types'
 import itemIcons from '../../../shared/data/items/item-icons.json'
 import { PriceAudit, AuditTierControls, useAuditState } from '../components/price-audit'
+import { getActiveMatch } from '../shared/activeMatch'
 
 interface AuditViewProps {
   overlayData: OverlayData
@@ -33,30 +35,12 @@ export function AuditView({
   onSetAuditBlockIndex,
   onSelectItem,
 }: AuditViewProps): JSX.Element | null {
-  const { stackBreakpoints, qualityBreakpoints, strandBreakpoints } = overlayData
-
-  let activeMatch: MatchResult | null =
-    overlayData.matches.find((m) => m.isFirstMatch) ?? overlayData.matches[0] ?? null
-  let activeTierGroup = overlayData.tierGroup
-  if (strandBreakpoints && strandBreakpoints.length > 1 && selectedStrandBpIndex !== null) {
-    const bp = strandBreakpoints[selectedStrandBpIndex]
-    if (bp?.activeMatch) {
-      activeMatch = bp.activeMatch
-      activeTierGroup = bp.tierGroup
-    }
-  } else if (qualityBreakpoints && qualityBreakpoints.length > 1 && selectedQualityBpIndex !== null) {
-    const bp = qualityBreakpoints[selectedQualityBpIndex]
-    if (bp?.activeMatch) {
-      activeMatch = bp.activeMatch
-      activeTierGroup = bp.tierGroup
-    }
-  } else if (stackBreakpoints && stackBreakpoints.length > 1 && selectedBpIndex !== null) {
-    const bp = stackBreakpoints[selectedBpIndex]
-    if (bp?.activeMatch) {
-      activeMatch = bp.activeMatch
-      activeTierGroup = bp.tierGroup
-    }
-  }
+  const { match: activeMatch, tierGroup: activeTierGroup } = getActiveMatch(
+    overlayData,
+    selectedBpIndex,
+    selectedQualityBpIndex,
+    selectedStrandBpIndex,
+  )
   if (!activeMatch) return null
 
   const selectedSib =
@@ -107,14 +91,20 @@ function AuditViewInner({
   const classValues = block.conditions.filter((c) => c.type === 'Class').flatMap((c) => c.values)
   const classLabel = classValues.length > 0 ? classValues.join(', ') : itemClass
 
-  const withIcons = state.baseTypes.filter((bt) => !!iconMap[bt])
-  const gridIcons: string[] = []
-  const pool = [...withIcons]
-  for (let i = 0; i < 4 && pool.length > 0; i++) {
-    const idx = Math.floor(Math.random() * pool.length)
-    gridIcons.push(iconMap[pool[idx]])
-    pool.splice(idx, 1)
-  }
+  // Memoize on the baseTypes list so slider-driven re-renders of this component don't
+  // reshuffle the hero icon grid. Only re-rolls when the tier (and therefore the pool
+  // of baseTypes) actually changes.
+  const gridIcons = useMemo(() => {
+    const pool = state.baseTypes.filter((bt) => !!iconMap[bt])
+    const picked: string[] = []
+    const scratch = [...pool]
+    for (let i = 0; i < 4 && scratch.length > 0; i++) {
+      const idx = Math.floor(Math.random() * scratch.length)
+      picked.push(iconMap[scratch[idx]])
+      scratch.splice(idx, 1)
+    }
+    return picked
+  }, [state.baseTypes.join('|')])
 
   const currentIsEx = tierTag ? isExTier(tierTag.tier) : false
   const siblingsWithItems = currentIsEx ? [] : (tierGroup?.siblings.filter((s) => !isExTier(s.tier)) ?? [])
