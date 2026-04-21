@@ -1,5 +1,16 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.6-rc4',
+    notes: [
+      'Major changes to tier section in filter page',
+      'Added crafted mods to empty affix count in price checker chip',
+      'Fixed bug where the same item could not switch to filter page from price checker',
+      'Fixed vaal transfigured gems and the new vaal support',
+      'Fixed issue with dropdowns not being clickable when outside the overlay when close scalpel automatically was checked',
+      'Made onlinefilters a viable folder to pick',
+    ],
+  },
+  {
     version: '0.9.6-rc3',
     notes: [
       'Added option in settings to decide where Scalpel mounts by default',
