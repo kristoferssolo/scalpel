@@ -330,6 +330,57 @@ describe('parseItemText', () => {
       expect(item.name).toBe('Fireball of Conflagration')
     })
 
+    it('sets vaalGem=true when the gem has a Vaal alt skill (Souls Per Use section)', () => {
+      const text = [
+        'Item Class: Skill Gems',
+        'Rarity: Gem',
+        'Spark of Unpredictability',
+        '--------',
+        'Spell, Projectile, Duration, Vaal, Lightning',
+        'Level: 20 (Max)',
+        '--------',
+        'Deals 104 to 1983 Lightning Damage',
+        '--------',
+        'Vaal Spark',
+        '--------',
+        'Souls Per Use: 30',
+        'Can Store 1 Use',
+        'Soul Gain Prevention: 5 sec',
+        '--------',
+        'Corrupted',
+        '--------',
+        'Transfigured',
+      ].join('\n')
+      const item = parseItemText(text)!
+      expect(item.name).toBe('Spark of Unpredictability')
+      expect(item.baseType).toBe('Spark of Unpredictability')
+      expect(item.transfigured).toBe(true)
+      expect(item.vaalGem).toBe(true)
+      expect(item.corrupted).toBe(true)
+    })
+
+    it('does not flag Vaal-related Support gems as vaalGem (regression: Vaal Temptation Support)', () => {
+      // Support gems carry a "Vaal" tag because they *support* Vaal skills, but they are
+      // not themselves Vaal skills -- no "Souls Per Use" mechanic, no Vaal-prefixed name
+      // should be applied.
+      const text = [
+        'Item Class: Support Gems',
+        'Rarity: Gem',
+        'Vaal Temptation Support',
+        '--------',
+        'Exceptional, Support, Vaal',
+        'Level: 1',
+        '--------',
+        'Supports Vaal skills.',
+        '--------',
+        'Using Supported Vaal Skills inflicts Vaal Temptation on you dealing 1500 Physical Damage per Second, instead of applying Soul Gain Prevention',
+      ].join('\n')
+      const item = parseItemText(text)!
+      expect(item.name).toBe('Vaal Temptation Support')
+      expect(item.baseType).toBe('Vaal Temptation Support')
+      expect(item.vaalGem).toBeFalsy()
+    })
+
     it('parses a Map with tier', () => {
       const text = [
         'Item Class: Maps',

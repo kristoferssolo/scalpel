@@ -102,6 +102,7 @@ export interface PoeItem {
   synthesised: boolean
   fractured: boolean
   transfigured: boolean
+  vaalGem?: boolean
   blighted: boolean
   uberBlighted: boolean
   scourged: boolean

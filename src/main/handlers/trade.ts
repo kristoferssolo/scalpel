@@ -136,6 +136,7 @@ export function register(store: Store<AppSettings>): void {
         energyShield?: number
         ward?: number
         block?: number
+        vaalGem?: boolean
       },
       statFilters: StatFilter[],
       searchOptions?: { listedTime?: string; priceOption?: string; statusOption?: string },

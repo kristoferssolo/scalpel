@@ -227,6 +227,7 @@ export async function searchTrade(
     energyShield?: number
     ward?: number
     block?: number
+    vaalGem?: boolean
   },
   statFilters: StatFilter[],
   tradeStatus: string = 'any',
@@ -275,14 +276,7 @@ export async function searchTrade(
     item.itemClass === 'Active Skill Gems' ||
     item.itemClass === 'Support Skill Gems'
   ) {
-    // Transfigured gems: use base gem name + discriminator from data file
-    const disc = TRANSFIGURED_GEM_DISC[item.baseType]
-    if (disc) {
-      const baseGem = item.baseType.slice(0, item.baseType.indexOf(' of '))
-      query.type = { option: baseGem, discriminator: disc }
-    } else {
-      query.type = item.baseType
-    }
+    query.type = buildGemTypeField(item.baseType, item.vaalGem)
   } else {
     // Non-uniques: search by item class, not base type. The implicit covers the base.
     const classCategory = _ITEM_CLASS_TO_CATEGORY[item.itemClass]
@@ -792,6 +786,22 @@ export async function searchTrade(
 import bulkExchangeIds from '../../shared/data/trade/bulk-exchange-ids.json'
 
 const bulkIdMap = bulkExchangeIds as Record<string, string>
+
+/** Build the `type` field of a gem trade query. Returns the discriminator shape for
+ *  transfigured gems (with "Vaal " prepended to the base when the gem has a Vaal alt),
+ *  a plain string for non-transfigured gems. */
+export function buildGemTypeField(
+  baseType: string,
+  vaalGem: boolean | undefined,
+): string | { option: string; discriminator: string } {
+  const disc = TRANSFIGURED_GEM_DISC[baseType]
+  if (disc) {
+    const baseGem = baseType.slice(0, baseType.indexOf(' of '))
+    return { option: vaalGem ? `Vaal ${baseGem}` : baseGem, discriminator: disc }
+  }
+  if (vaalGem && !baseType.startsWith('Vaal ')) return `Vaal ${baseType}`
+  return baseType
+}
 
 /** Look up the bulk exchange ID for an item by its name or base type */
 export function getBulkExchangeId(name: string, baseType: string): string | null {

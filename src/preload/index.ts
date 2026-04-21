@@ -260,6 +260,7 @@ export const api = {
       energyShield?: number
       ward?: number
       block?: number
+      vaalGem?: boolean
     },
     statFilters: Array<{
       id: string

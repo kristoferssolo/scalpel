@@ -176,6 +176,7 @@ export function PriceCheck({
           energyShield: item.energyShield,
           ward: item.ward,
           block: item.block,
+          vaalGem: item.vaalGem,
         },
         filters,
         { listedTime, priceOption, statusOption },

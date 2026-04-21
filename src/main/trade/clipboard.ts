@@ -119,15 +119,14 @@ export function parseItemText(text: string): PoeItem | null {
       itemClass,
     )
 
-  // Detect Vaal gems: the gem tags line contains "Vaal" and a section starts with "Vaal <name>"
   const isGemClass = ['Gems', 'Support Gems', 'Skill Gems', 'Active Skill Gems', 'Support Skill Gems'].includes(
     itemClass,
   )
-  const gemTagsLine = sections[1]?.split('\n')[0]?.trim() ?? ''
   const isVaalGem =
     isGemClass &&
     rarity === 'Gem' &&
-    (gemTagsLine.includes('Vaal') || sections.some((s) => s.trim().startsWith(`Vaal ${name}`)))
+    !name.startsWith('Vaal ') &&
+    sections.some((s) => s.trim().startsWith(`Vaal ${name}`))
 
   // Collect all text across sections for parsing
   const allText = sections.join('\n')
@@ -244,6 +243,7 @@ export function parseItemText(text: string): PoeItem | null {
   const blighted =
     uberBlighted || allLines.some((l) => l.toLowerCase().includes('blighted map')) || /^Blighted /i.test(rawBaseType)
   const transfigured = isGemClass && allLines.some((l) => l === 'Transfigured')
+  const vaalGem = isGemClass && rarity === 'Gem' && allLines.some((l) => l.startsWith('Souls Per Use:'))
   const scourged = allLines.some((l) => l.includes('Scourge'))
   const zanaMemory = allLines.some((l) => l.toLowerCase().includes("originator's memories"))
   const implicitCount = allLines.filter((l) => l.endsWith('(implicit)')).length
@@ -404,6 +404,7 @@ export function parseItemText(text: string): PoeItem | null {
     synthesised,
     fractured,
     transfigured,
+    ...(vaalGem ? { vaalGem: true } : {}),
     blighted,
     uberBlighted,
     scourged,
