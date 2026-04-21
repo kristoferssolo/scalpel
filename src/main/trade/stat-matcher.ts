@@ -1099,10 +1099,12 @@ export function matchItemMods(
         type: 'misc',
       })
     }
-    // Open prefix/suffix chips (from advanced mod data, non-uniques only)
+    // Open prefix/suffix chips (from advanced mod data, non-uniques only).
+    // Crafted affixes count as "empty" since they're replaceable -- a crafted suffix
+    // plus a literally-empty suffix is counted as 2 open suffixes for pricing purposes.
     if (advancedMods && advancedMods.length > 0 && itemInfo.rarity !== 'Unique') {
-      const prefixCount = advancedMods.filter((m) => m.type === 'prefix').length
-      const suffixCount = advancedMods.filter((m) => m.type === 'suffix').length
+      const prefixCount = advancedMods.filter((m) => m.type === 'prefix' && !m.crafted).length
+      const suffixCount = advancedMods.filter((m) => m.type === 'suffix' && !m.crafted).length
       // Max affixes depends on item: normal equipment has 3/3, jewels have 2/2
       const isJewel = itemInfo.itemClass === 'Jewels' || itemInfo.itemClass === 'Abyss Jewels'
       const maxPrefixes = isJewel ? 2 : 3
