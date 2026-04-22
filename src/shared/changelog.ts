@@ -1,47 +1,26 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
-    version: '0.9.6-rc4',
+    version: '0.9.6',
     notes: [
       'Major changes to tier section in filter page',
-      'Added crafted mods to empty affix count in price checker chip',
-      'Fixed bug where the same item could not switch to filter page from price checker',
-      'Fixed vaal transfigured gems and the new vaal support',
-      'Fixed issue with dropdowns not being clickable when outside the overlay when close scalpel automatically was checked',
-      'Made onlinefilters a viable folder to pick',
-    ],
-  },
-  {
-    version: '0.9.6-rc3',
-    notes: [
-      'Added option in settings to decide where Scalpel mounts by default',
-      'Fixed issue with sister panel at scales other than 100%',
-      'Mounted audit hero so it persists on scroll of long lists',
-    ],
-  },
-  {
-    version: '0.9.6-rc2',
-    notes: [
-      'Added gems and maps to search',
-      'Added crit chance and attack speed accumulators to price checker (off by default)',
-      'Added warning to map searching about too many results making travel to hideout button not work well. Just the way it be.',
-      'Made Faustus a jerk',
-      'Made price checker prettier when loading',
-      'Fixed issues with search page taking too long to load',
-      'Fixed chaos orb equivalent regression',
-    ],
-  },
-  {
-    version: '0.9.6-rc1',
-    notes: [
+      'Audit page ux improvements',
       'Added support for showing related items for certain items like fragments etc.',
       'Added settings chip when price checking to adjust search parameters on the fly',
       'Added setting to price checker to change default display of results',
       'Updated meter that displays api timeouts in price checker and made warnings... exist',
       'Attempted to return clipboard data after item and regex hotkeys',
+      'Improved search, more items and much, much faster',
       'Added custom scaling button (Thanks KnoT)',
+      'Added crit chance and attack speed accumulators to price checker (off by default)',
+      'Added warning to map searching about too many results making travel to hideout button not work well. Just the way it be.',
+      'Added option in settings to decide where Scalpel mounts by default',
+      'Made Faustus a jerk',
       'Fixed issue with alt-tabbing for some users (Thanks Pandas)',
+      'Added crafted mods to empty affix count in price checker chip (big brains ailu)',
+      'Fixed more bugs with price checker',
       'Fixed bug where esc key outside poe could cause poe to focus',
       'Fixed issue where Scalpel would appear on top of login screen',
+      'Added bugs',
     ],
   },
   {
