@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useState } from 'react'
+import { forwardRef, useEffect, useMemo, useState } from 'react'
 import { IconGlow } from '../shared/IconGlow'
 import { PriceChip } from '../shared/PriceChip'
 import { iconMap } from '../shared/constants'
@@ -45,6 +45,12 @@ export const TierItemsSister = forwardRef<HTMLDivElement, TierItemsSisterProps>(
     }
   }, [baseTypes.join('|'), league, uniqueTier])
 
+  // Sort by chaos price descending so the most valuable base in the tier is at the top.
+  // Unpriced bases fall to the bottom, original order preserved among them.
+  const sortedNames = useMemo(() => {
+    return [...baseTypes].sort((a, b) => (prices[b]?.chaosValue ?? -1) - (prices[a]?.chaosValue ?? -1))
+  }, [baseTypes.join('|'), prices])
+
   if (baseTypes.length === 0) return null
 
   return (
@@ -60,7 +66,7 @@ export const TierItemsSister = forwardRef<HTMLDivElement, TierItemsSisterProps>(
       animKey={animKey}
     >
       <div className="flex-1 overflow-y-auto no-scrollbar">
-        {baseTypes.map((name, i) => {
+        {sortedNames.map((name, i) => {
           const iconUrl = iconMap[name]
           const price = prices[name]
           return (
