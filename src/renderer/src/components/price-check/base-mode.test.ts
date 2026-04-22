@@ -120,6 +120,18 @@ describe('applyBaseModeToFilters', () => {
     }
   })
 
+  it('preserves gem chips so base search on a transfigured gem still finds transfigured gems', () => {
+    const input = [
+      f({ id: 'misc.gem_level', type: 'gem', enabled: true }),
+      f({ id: 'misc.gem_transfigured', type: 'gem', enabled: true }),
+      f({ id: 'misc.quality', type: 'gem', enabled: false }),
+    ]
+    const result = applyBaseModeToFilters(input, 'Gem', false)
+    for (let i = 0; i < input.length; i++) {
+      expect(result[i].enabled).toBe(input[i].enabled)
+    }
+  })
+
   it('disables weapon DPS and defence filters', () => {
     const input = [
       f({ id: 'weapon.pdps', type: 'weapon', enabled: true }),

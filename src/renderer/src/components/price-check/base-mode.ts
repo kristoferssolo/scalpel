@@ -30,7 +30,11 @@ export function applyBaseModeToFilters(filters: StatFilter[], rarity: string, co
       f.type === 'timeless' ||
       f.type === 'fractured' ||
       f.type === 'currency' ||
-      f.type === 'heist'
+      f.type === 'heist' ||
+      // Gem chips (level/quality/transfigured/vaal) identify *which* gem the user owns --
+      // disabling Transfigured on a transfigured gem turns the base search into a
+      // non-transfigured search and returns nothing.
+      f.type === 'gem'
     )
       return f
     return { ...f, enabled: false }
