@@ -1,5 +1,8 @@
 import { iconMap, divCardArtMap } from '../../shared/constants'
-import itemIcons from '../../../../shared/data/items/item-icons.json'
+// Price audit is a PoE1-only feature (gated via features.dustExplorer). mirrorIcon
+// below is a module-load-time constant, so pull it straight from the PoE1 sheet
+// rather than through iconMap (which isn't initialized yet at import time).
+import itemIcons from '../../../../shared/data/items/item-icons-poe1.json'
 import { formatDust, formatPrice } from '../../shared/utils'
 import dustValues from '../../../../shared/data/economy/dust-values.json'
 import baseToUniques from '../../../../shared/data/items/unique-info.json'

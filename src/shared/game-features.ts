@@ -14,6 +14,10 @@ export interface GameFeatures {
   divCards: boolean
   /** Socket recolor tool + the "Recolor" chip on items with sockets. */
   socketRecolor: boolean
+  /** League options for the settings dropdown, in the order they appear. */
+  leagues: readonly string[]
+  /** Path hint shown under an empty filter picker. */
+  filterFolderHint: string
 }
 
 const FEATURES_BY_VERSION: Record<1 | 2, GameFeatures> = {
@@ -21,11 +25,15 @@ const FEATURES_BY_VERSION: Record<1 | 2, GameFeatures> = {
     dustExplorer: true,
     divCards: true,
     socketRecolor: true,
+    leagues: ['Mirage', 'Hardcore Mirage', 'Standard', 'Hardcore'],
+    filterFolderHint: 'Documents\\My Games\\Path of Exile',
   },
   2: {
     dustExplorer: false,
     divCards: false,
     socketRecolor: false,
+    leagues: ['Fate of the Vaal', 'HC Fate of the Vaal', 'Standard', 'Hardcore'],
+    filterFolderHint: 'Documents\\My Games\\Path of Exile 2',
   },
 }
 

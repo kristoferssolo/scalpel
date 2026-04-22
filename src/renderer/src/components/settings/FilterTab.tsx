@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '../../../../shared/types'
+import { getGameFeatures } from '../../../../shared/game-features'
 import { Toggle } from '../Toggle'
 import { FilterPicker } from '../FilterPicker'
 import { keyEventToAccelerator, prettyHotkey } from './utils'
@@ -25,6 +26,7 @@ export function FilterTab({
 }: Props): JSX.Element {
   const [recording, setRecording] = useState(false)
   const recRef = useRef<HTMLDivElement>(null)
+  const features = getGameFeatures(settings.poeVersion)
 
   useEffect(() => {
     if (!recording) return
@@ -69,7 +71,7 @@ export function FilterTab({
         </div>
         {isOverlay && !settings.filterPath && (
           <p className="text-[11px] text-text-dim mt-1">
-            Typically: <code>Documents\My Games\Path of Exile</code>
+            Typically: <code>{features.filterFolderHint}</code>
           </p>
         )}
       </section>

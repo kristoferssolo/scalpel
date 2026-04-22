@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { OverlayData, FilterBlock, TierGroup } from '../../../shared/types'
-import itemIcons from '../../../shared/data/items/item-icons.json'
+import { iconMap } from '../shared/constants'
 import { PriceAudit, AuditTierControls, useAuditState } from '../components/price-audit'
 import { getActiveMatch } from '../shared/activeMatch'
 
@@ -78,7 +78,6 @@ function AuditViewInner({
   onSelectItem,
 }: AuditViewInnerProps): JSX.Element {
   const itemClass = overlayData.item.itemClass
-  const iconMap = itemIcons as Record<string, string>
 
   const state = useAuditState({ block, blockIndex, tierGroup, item: overlayData.item })
 

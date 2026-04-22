@@ -1,7 +1,10 @@
 import { chaosIcon, divineIcon } from '../../shared/icons'
 import { RARITY_COLORS, iconMap } from '../../shared/constants'
 import { formatPrice, getItemIcon } from '../../shared/utils'
-import itemIcons from '../../../../shared/data/items/item-icons.json'
+// CURRENCY_ICONS below is a module-load-time currency-abbrev -> icon-url map keyed
+// on PoE1 trade-API currency codes. Imported directly from the PoE1 sheet since
+// it's initialized before the renderer learns its version.
+import itemIcons from '../../../../shared/data/items/item-icons-poe1.json'
 import baseToUniques from '../../../../shared/data/items/unique-info.json'
 import itemClassesData from '../../../../shared/data/items/item-classes.json'
 import elderIcon from '../../assets/influences/Elder-item-symbol.png'

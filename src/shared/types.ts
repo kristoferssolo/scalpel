@@ -267,8 +267,19 @@ export interface RegexPreset {
 }
 
 export interface AppSettings {
+  /** Active filter path + dir + league. Mirrored to/from the per-version fields
+   *  (filterPathPoe1, filterPathPoe2, etc.) based on the current poeVersion at
+   *  startup and on every set. Consumers read these flat fields as before --
+   *  the version namespacing is an implementation detail of the store layer. */
   filterPath: string
   filterDir: string
+  league: string
+  filterPathPoe1: string
+  filterPathPoe2: string
+  filterDirPoe1: string
+  filterDirPoe2: string
+  leaguePoe1: string
+  leaguePoe2: string
   hotkey: string
   priceCheckHotkey: string
   overlayOpacity: number
@@ -278,7 +289,6 @@ export interface AppSettings {
    *  behavior is unaffected; this only picks the mount side at scan time. */
   openSide: 'both' | 'right' | 'left'
   closeOnClickOutside: boolean
-  league: string
   reloadOnSave: boolean
   updateChannel: 'stable' | 'beta'
   tradeStatus: 'securable' | 'online' | 'any'

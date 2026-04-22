@@ -21,7 +21,7 @@ import { TierItemsSister } from './TierItemsSister'
 import { getActiveMatch } from '../shared/activeMatch'
 import { ItemSearchCombobox } from '../components/ItemSearchCombobox'
 import { Clipboard } from '@icon-park/react'
-import { IP } from '../shared/constants'
+import { IP, initIconMap } from '../shared/constants'
 import { prettyHotkey } from '../components/settings'
 
 type View =
@@ -76,6 +76,13 @@ export default function App(): JSX.Element {
   // divergence between PoE1 and PoE2 -- prefer it over branching on poeVersion.
   const [poeVersion, setPoeVersion] = useState<1 | 2 | null>(null)
   const features = getGameFeatures(poeVersion)
+
+  // Swap the per-version icon CDN sheet into the shared iconMap whenever the
+  // version changes. In practice this fires once per process (we relaunch on
+  // game switch), but gating on the effect keeps it robust to null -> version.
+  useEffect(() => {
+    if (poeVersion) initIconMap(poeVersion)
+  }, [poeVersion])
 
   // Auto-update state
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)

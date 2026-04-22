@@ -17,9 +17,23 @@ export function register(store: Store<AppSettings>): void {
     await refreshPrices(store.get('league'))
   })
 
+  // Map flat active keys -> their per-version mirror key, filled at write time so
+  // settings UI edits persist to the right PoE1/PoE2 namespace. Consumers keep
+  // reading the flat fields; boot sync in main/index.ts handles the reverse.
+  const MIRROR_KEYS = {
+    league: ['leaguePoe1', 'leaguePoe2'],
+    filterPath: ['filterPathPoe1', 'filterPathPoe2'],
+    filterDir: ['filterDirPoe1', 'filterDirPoe2'],
+  } as const satisfies Partial<Record<keyof AppSettings, readonly [keyof AppSettings, keyof AppSettings]>>
+
   ipcMain.handle('set-setting', (event, key: keyof AppSettings, value: AppSettings[typeof key]) => {
     const prev = store.get(key)
     store.set(key, value)
+    const mirror = MIRROR_KEYS[key as keyof typeof MIRROR_KEYS]
+    if (mirror) {
+      const v = store.get('poeVersion')
+      store.set(mirror[v === 2 ? 1 : 0], value as string)
+    }
     if (key === 'filterPath' && value !== prev) loadFilter(value as string, 'Switched Filters')
     if (key === 'hotkey') setHotkey(value as string)
     if (key === 'priceCheckHotkey') setPriceCheckHotkey(value as string)

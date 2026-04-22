@@ -71,13 +71,19 @@ const store = new Store<AppSettings>({
   defaults: {
     filterPath: '',
     filterDir: '',
+    filterPathPoe1: '',
+    filterPathPoe2: '',
+    filterDirPoe1: '',
+    filterDirPoe2: '',
+    league: 'Mirage',
+    leaguePoe1: 'Mirage',
+    leaguePoe2: 'Fate of the Vaal',
     hotkey: 'CommandOrControl+Shift+D',
     priceCheckHotkey: 'CommandOrControl+Shift+A',
     overlayOpacity: 0.95,
     overlayScale: 1,
     openSide: 'both',
     closeOnClickOutside: false,
-    league: 'Mirage',
     reloadOnSave: true,
     updateChannel: 'stable',
     tradeStatus: 'any',
@@ -117,6 +123,30 @@ if (!store.get('filterDir') && store.get('filterPath')) {
   store.set('filterDir', dirname(store.get('filterPath')))
 } else if (!store.get('filterDir')) {
   store.set('filterDir', '')
+}
+
+// Migrate: seed per-version fields from the pre-existing flat values. Before this
+// change everyone had a single league/filter -- treat that as their PoE1 setup.
+// Guarded by empty-check so we only migrate once.
+if (!store.get('leaguePoe1')) store.set('leaguePoe1', store.get('league'))
+if (!store.get('filterPathPoe1')) store.set('filterPathPoe1', store.get('filterPath'))
+if (!store.get('filterDirPoe1')) store.set('filterDirPoe1', store.get('filterDir'))
+
+// On startup, sync the flat active fields to match whichever version is current.
+// The relaunch-on-game-switch flow (ensureCorrectGameForHotkey) means this runs
+// with the right version after the user confirms a switch in the modal. Writes
+// from the settings UI mirror in the other direction -- see handlers/settings.ts.
+{
+  const v = store.get('poeVersion')
+  if (v === 2) {
+    store.set('league', store.get('leaguePoe2'))
+    store.set('filterPath', store.get('filterPathPoe2'))
+    store.set('filterDir', store.get('filterDirPoe2'))
+  } else {
+    store.set('league', store.get('leaguePoe1'))
+    store.set('filterPath', store.get('filterPathPoe1'))
+    store.set('filterDir', store.get('filterDirPoe1'))
+  }
 }
 
 // ---- Register IPC handlers -------------------------------------------------

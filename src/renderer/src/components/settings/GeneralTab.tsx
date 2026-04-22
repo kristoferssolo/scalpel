@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { AppSettings } from '../../../../shared/types'
+import { getGameFeatures } from '../../../../shared/game-features'
 import { Toggle } from '../Toggle'
 import { ScrubInput } from '../regex-tool/ScrubInput'
 
@@ -16,6 +17,7 @@ export function GeneralTab({ settings, update }: Props): JSX.Element {
   const [customScale, setCustomScale] = useState<boolean>(
     !(SCALE_PRESETS as readonly number[]).includes(settings.overlayScale),
   )
+  const features = getGameFeatures(settings.poeVersion)
 
   return (
     <>
@@ -40,7 +42,7 @@ export function GeneralTab({ settings, update }: Props): JSX.Element {
             onChange={(e) => update('league', e.target.value)}
             className="absolute inset-0 opacity-0 cursor-pointer"
           >
-            {['Mirage', 'Hardcore Mirage', 'Standard', 'Hardcore'].map((l) => (
+            {features.leagues.map((l) => (
               <option key={l} value={l}>
                 {l}
               </option>

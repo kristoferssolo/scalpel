@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import itemIcons from '../../../shared/data/items/item-icons.json'
 import type { SearchableItem } from '../../../shared/types'
+import { iconMap } from '../shared/constants'
 import { IconGlow } from '../shared/IconGlow'
 import { LootLabel, HiddenLootLabel } from '../shared/LootLabel'
 import { InfoChip } from '../shared/PriceChip'
@@ -9,8 +9,6 @@ import { goldIcon } from '../shared/icons'
 
 /** Row payload the combobox holds onto -- base shape from main + the resolved icon URL. */
 type SearchItem = SearchableItem & { iconUrl: string | null }
-
-const iconMap = itemIcons as Record<string, string>
 
 /** Embedded icons for items the PoE CDN doesn't have. */
 const LOCAL_ICONS: Record<string, string> = {

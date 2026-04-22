@@ -3,7 +3,8 @@ import { app } from 'electron'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import type { PriceInfo } from '../../shared/types'
-import { POE_NINJA_API } from '../../shared/endpoints'
+import { POE_NINJA_API, POE_NINJA_POE2_EXCHANGE } from '../../shared/endpoints'
+import { poeVersion } from '../overlay'
 import uniqueInfoData from '../../shared/data/items/unique-info.json'
 const staticUniquesByBase = uniqueInfoData as Record<string, string[]>
 
@@ -38,7 +39,14 @@ function saveCachedUniquesByBase(data: Record<string, string[]>): void {
 let cachedLeague = ''
 let priceMap = new Map<string, PriceInfo>()
 let lastFetchTime = 0
-const CACHE_TTL = 10 * 60 * 1000 // 10 minutes
+// PoE2 fires 13 parallel requests per refresh (one per exchange category) while
+// PoE1 aggregates everything into a single dense endpoint call. Doubling the TTL
+// for PoE2 keeps ninja load roughly in line with PoE1 without impacting UX since
+// prices don't move meaningfully on a 10-minute scale anyway.
+const CACHE_TTL_BY_VERSION: Record<1 | 2, number> = {
+  1: 10 * 60 * 1000,
+  2: 20 * 60 * 1000,
+}
 
 // Dense endpoint — returns ALL item types in one request with current prices
 // (same endpoint Awakened PoE Trade uses)
@@ -194,21 +202,108 @@ function processDenseResponse(resp: DenseResponse): void {
   }
 }
 
+interface Poe2ExchangeLine {
+  id: string
+  primaryValue?: number
+}
+
+interface Poe2ExchangeItem {
+  id: string
+  name: string
+}
+
+interface Poe2ExchangeResponse {
+  core: {
+    primary: string
+    secondary: string
+    rates: Record<string, number>
+    items: Poe2ExchangeItem[]
+  }
+  lines: Poe2ExchangeLine[]
+  items: Poe2ExchangeItem[]
+}
+
+// poe.ninja PoE2 has no dense/overviews endpoint like PoE1. Instead each category
+// is fetched separately from the same exchange endpoint with a different `type`
+// param. These are the categories that currently return populated data --
+// Unique/SkillGem/BaseType etc. respond 200 but with empty lines.
+const POE2_EXCHANGE_TYPES = [
+  'Currency',
+  'Fragments',
+  'Abyss',
+  'UncutGems',
+  'LineageSupportGems',
+  'Essences',
+  'SoulCores',
+  'Idols',
+  'Runes',
+  'Ritual',
+  'Expedition',
+  'Delirium',
+  'Breach',
+] as const
+
+function processPoe2ExchangeResponse(resp: Poe2ExchangeResponse): void {
+  // rates.X is "units of X per 1 primary" (e.g. primary=divine, rates.chaos=22.79
+  // means 1 divine = 22.79 chaos). primaryValue on each line is already denominated
+  // in the primary currency, so divineValue = primaryValue and chaosValue is the
+  // primary->chaos conversion. Keeping chaos as our stored unit lets the existing
+  // UI consumers (which were built against PoE1 chaos-as-base) work unchanged.
+  const chaosPerPrimary = resp.core.rates?.chaos ?? 0
+  const nameById = new Map<string, string>()
+  for (const item of [...(resp.core.items ?? []), ...(resp.items ?? [])]) {
+    if (item.id && item.name) nameById.set(item.id, item.name)
+  }
+
+  // Seed the core currencies (divine is always worth 1 primary by definition).
+  for (const item of resp.core.items ?? []) {
+    const divineValue = item.id === resp.core.primary ? 1 : 1 / (resp.core.rates?.[item.id] ?? 0)
+    const chaosValue = divineValue * chaosPerPrimary
+    if (!isFinite(chaosValue) || chaosValue <= 0) continue
+    priceMap.set(item.name.toLowerCase(), { chaosValue, divineValue })
+  }
+
+  for (const line of resp.lines ?? []) {
+    const name = nameById.get(line.id)
+    const primary = line.primaryValue
+    if (!name || primary == null || primary <= 0) continue
+    priceMap.set(name.toLowerCase(), {
+      chaosValue: primary * chaosPerPrimary,
+      divineValue: primary,
+    })
+  }
+}
+
+/** Reset all price maps + bookkeeping in one shot. Called after a successful fetch
+ *  so a failed request (offline, sleep/resume, net::ERR_NETWORK_IO_SUSPENDED) leaves
+ *  the old cache intact until the next scheduled retry 10-20 min later. */
+function resetCache(league: string, now: number): void {
+  cachedLeague = league
+  priceMap = new Map()
+  divCardPriceMap = new Map()
+  gemNames = new Set()
+  lastFetchTime = now
+}
+
 export async function refreshPrices(league: string): Promise<void> {
   if (!league) return
   const now = Date.now()
-  if (league === cachedLeague && now - lastFetchTime < CACHE_TTL) return
+  if (league === cachedLeague && now - lastFetchTime < CACHE_TTL_BY_VERSION[poeVersion]) return
 
   try {
+    if (poeVersion === 2) {
+      // Parallel fetch all categories; only swap maps after all succeed.
+      const responses = (await Promise.all(
+        POE2_EXCHANGE_TYPES.map((type) =>
+          fetchJson(`${POE_NINJA_POE2_EXCHANGE}?league=${encodeURIComponent(league)}&type=${type}`),
+        ),
+      )) as Poe2ExchangeResponse[]
+      resetCache(league, now)
+      for (const resp of responses) processPoe2ExchangeResponse(resp)
+      return
+    }
     const resp = (await fetchJson(`${DENSE_URL}?league=${encodeURIComponent(league)}&language=en`)) as DenseResponse
-    // Only swap in the new cache on success -- otherwise a failed fetch (sleep/resume,
-    // net::ERR_NETWORK_IO_SUSPENDED, offline) would leave us with an empty priceMap
-    // until the next scheduled interval fires, 10 minutes later.
-    cachedLeague = league
-    priceMap = new Map()
-    divCardPriceMap = new Map()
-    gemNames = new Set()
-    lastFetchTime = now
+    resetCache(league, now)
     processDenseResponse(resp)
     buildUniquesByBaseFromDense(resp)
   } catch (e) {

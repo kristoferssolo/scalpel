@@ -8,7 +8,10 @@ import socketWhite from '../assets/sockets/socket-white.png'
 import socketLink from '../assets/sockets/socket-link.png'
 import itemClassesData from '../../../shared/data/items/item-classes.json'
 import { chaosIcon } from '../shared/icons'
-import itemIcons from '../../../shared/data/items/item-icons.json'
+// Socket recolor is a PoE1-only feature (gated via features.socketRecolor), so we
+// pull its icons directly from the PoE1 sheet rather than going through the shared
+// iconMap -- these are module-load-time constants evaluated before initIconMap runs.
+import itemIcons from '../../../shared/data/items/item-icons-poe1.json'
 
 const icons = itemIcons as Record<string, string>
 const chromIcon = icons['Chromatic Orb']

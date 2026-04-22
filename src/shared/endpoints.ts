@@ -9,8 +9,14 @@ export const POE_WEBSITE = 'https://www.pathofexile.com'
 /** Path of Exile CDN for item artwork */
 export const POE_CDN = 'https://web.poecdn.com'
 
-/** poe.ninja economy API for item prices */
+/** poe.ninja economy API for PoE1 item prices (dense overview, all types in one call) */
 export const POE_NINJA_API = 'https://poe.ninja/poe1/api/economy/current/dense/overviews'
+
+/** poe.ninja economy API for PoE2 currency prices. Different shape from PoE1:
+ *  no dense/overviews endpoint exists, so we hit the currency exchange overview and
+ *  convert primary-currency values (divine-denominated) into chaos-equivalents via
+ *  the returned rates. Non-currency categories aren't covered here. */
+export const POE_NINJA_POE2_EXCHANGE = 'https://poe.ninja/poe2/api/economy/exchange/current/overview'
 
 /** GitHub API for update checks */
 export const GITHUB_RELEASES_API = 'https://api.github.com/repos/scalpelpoe/scalpel/releases/latest'

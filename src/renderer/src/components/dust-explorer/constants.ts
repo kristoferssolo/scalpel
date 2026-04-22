@@ -1,6 +1,9 @@
 import dustValues from '../../../../shared/data/economy/dust-values.json'
 import baseToUniques from '../../../../shared/data/items/unique-info.json'
-import itemIcons from '../../../../shared/data/items/item-icons.json'
+// Dust explorer is PoE1-only (gated via features.dustExplorer). Both mirrorIconUrl
+// and cachedBaseEntries below are module-load-time, so import the PoE1 sheet
+// directly rather than going through the shared iconMap.
+import itemIcons from '../../../../shared/data/items/item-icons-poe1.json'
 import itemClassesData from '../../../../shared/data/items/item-classes.json'
 import { FilterType } from './types'
 
