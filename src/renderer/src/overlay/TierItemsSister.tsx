@@ -3,6 +3,7 @@ import { IconGlow } from '../shared/IconGlow'
 import { PriceChip } from '../shared/PriceChip'
 import { iconMap } from '../shared/constants'
 import { SisterShell } from './SisterShell'
+import { SisterRow } from './SisterRow'
 
 type PriceMap = Record<string, { chaosValue: number; divineValue?: number } | null>
 
@@ -11,6 +12,8 @@ interface TierItemsSisterProps {
   baseTypes: string[]
   /** Item class carried through to lookupBaseType so the new item lookup preserves class. */
   itemClass: string
+  /** The user's current item base. Highlighted and made unclickable in the list. */
+  currentBaseType?: string
   /** League for the poe.ninja price lookup. */
   league: string
   /** True when the tier's Rarity is Unique, so the price backend returns the best-priced
@@ -29,7 +32,21 @@ interface TierItemsSisterProps {
 }
 
 export const TierItemsSister = forwardRef<HTMLDivElement, TierItemsSisterProps>(function TierItemsSister(
-  { baseTypes, itemClass, league, uniqueTier, left, top, width, dragOffset, scale, scaleOrigin, maxHeight, animKey },
+  {
+    baseTypes,
+    itemClass,
+    currentBaseType,
+    league,
+    uniqueTier,
+    left,
+    top,
+    width,
+    dragOffset,
+    scale,
+    scaleOrigin,
+    maxHeight,
+    animKey,
+  },
   ref,
 ): JSX.Element | null {
   const [prices, setPrices] = useState<PriceMap>({})
@@ -69,13 +86,14 @@ export const TierItemsSister = forwardRef<HTMLDivElement, TierItemsSisterProps>(
         {sortedNames.map((name, i) => {
           const iconUrl = iconMap[name]
           const price = prices[name]
+          const isCurrent = name === currentBaseType
           return (
-            <div
+            <SisterRow
               key={`${name}-${i}`}
+              isCurrent={isCurrent}
+              zebraEven={i % 2 === 0}
               onClick={() => window.api.lookupBaseType(name, itemClass)}
-              className="px-2 py-2 first:pt-5 last:pb-5 flex flex-col gap-1 cursor-pointer hover:bg-white/[0.07]"
-              style={{ background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}
-              title={`Switch to ${name}`}
+              title={isCurrent ? name : `Switch to ${name}`}
             >
               <div className="text-[11px] text-center leading-tight text-text">{name}</div>
               <div className="flex items-center justify-center gap-2">
@@ -88,7 +106,7 @@ export const TierItemsSister = forwardRef<HTMLDivElement, TierItemsSisterProps>(
                   <PriceChip chaosValue={price.chaosValue} divineValue={price.divineValue} size="sm" />
                 )}
               </div>
-            </div>
+            </SisterRow>
           )
         })}
       </div>

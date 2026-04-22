@@ -207,11 +207,10 @@ export default function App(): JSX.Element {
       }),
       window.api.onPriceCheckOpen(() => {
         priceCheckPending.current = true
-        // Clear stale priceCheckData so the sister overlay (and the price-check view)
-        // don't render the PREVIOUS item's data while the new item's price check is in
-        // flight -- otherwise the sister briefly animates in for the old item then
-        // vanishes when fresh data replaces it.
-        setPriceCheckData(null)
+        // Keep the previous priceCheckData mounted until the new data arrives -- nulling
+        // here unmounts the sister mid-drill-down, which re-plays its slide animation and
+        // loses its internal entry state. Showing one frame of stale data is cheaper than
+        // losing the "stay open across clicks" behavior users expect.
         setView('pricecheck')
       }),
       window.api.onNoFilterLoaded(() => setView('no-filter')),
@@ -507,6 +506,7 @@ export default function App(): JSX.Element {
           ref={tierSisterRef}
           baseTypes={tierSisterData.baseTypes}
           itemClass={tierSisterData.itemClass}
+          currentBaseType={overlayData?.item.baseType}
           league={settings?.league ?? ''}
           uniqueTier={tierSisterData.uniqueTier}
           left={sisterLeft}
