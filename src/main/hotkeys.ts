@@ -47,8 +47,17 @@ const KEY_MAP = { ...LETTER_KEYS, ...EXTRA_KEYS }
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
+interface KeyCombo {
+  keycode: number
+  ctrl: boolean
+  shift: boolean
+  alt: boolean
+}
+
 let currentAccelerator: string | null = null
 let priceCheckAccelerator: string | null = null
+let triggerCombo: KeyCombo | null = null
+let priceCheckCombo: KeyCombo | null = null
 let chatCommandHotkeys: Array<{ accelerator: string; command: string; autoSubmit: boolean }> = []
 let appMacroAccelerators: string[] = []
 let lastAppMacros: Array<{ action: string; hotkey: string; tag?: string }> = []
@@ -59,6 +68,49 @@ let onEscape: (() => void) | null = null
 let hookStarted = false
 let injecting = false
 let stashScrollEnabled = false
+
+/** globalShortcut is suppressed when the non-attached PoE has focus (Windows blocks
+ *  hotkey delivery from a game that Electron isn't attached to); uIOhook is a
+ *  kernel hook that fires anyway. Registering both means both can deliver for the
+ *  same press. This dedupe swallows the second fire within the window. */
+const DEDUPE_MS = 100
+let lastTriggerFireAt = 0
+let lastPriceCheckFireAt = 0
+
+function parseAccelerator(accelerator: string): KeyCombo | null {
+  let ctrl = false
+  let shift = false
+  let alt = false
+  let keycode = 0
+  for (const part of accelerator.split('+').map((s) => s.trim())) {
+    if (part === 'CommandOrControl' || part === 'Control' || part === 'Ctrl' || part === 'Command') ctrl = true
+    else if (part === 'Shift') shift = true
+    else if (part === 'Alt' || part === 'Option') alt = true
+    else if (KEY_MAP[part]) keycode = KEY_MAP[part]
+  }
+  return keycode ? { keycode, ctrl, shift, alt } : null
+}
+
+function matchesCombo(
+  e: { keycode: number; ctrlKey: boolean; shiftKey: boolean; altKey: boolean },
+  c: KeyCombo,
+): boolean {
+  return e.keycode === c.keycode && e.ctrlKey === c.ctrl && e.shiftKey === c.shift && e.altKey === c.alt
+}
+
+function fireTrigger(): void {
+  const now = Date.now()
+  if (now - lastTriggerFireAt < DEDUPE_MS) return
+  lastTriggerFireAt = now
+  if (!injecting && onTrigger) onTrigger()
+}
+
+function firePriceCheck(): void {
+  const now = Date.now()
+  if (now - lastPriceCheckFireAt < DEDUPE_MS) return
+  lastPriceCheckFireAt = now
+  if (!injecting && onPriceCheck) onPriceCheck()
+}
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
@@ -78,6 +130,12 @@ export function startHotkeyListener(handler: () => void): void {
       const overlayFocused = !!overlayWin && !overlayWin.isDestroyed() && overlayWin.isFocused()
       if (OverlayController.targetHasFocus || overlayFocused) onEscape()
     }
+    // Trigger + price-check via uIOhook so the combo fires in BOTH PoE1 and PoE2,
+    // not just whichever game electron-overlay-window is attached to. The handlers
+    // themselves (ensureCorrectGameForHotkey) gate on the focused window's title,
+    // so presses in non-PoE apps are ignored downstream.
+    if (triggerCombo && matchesCombo(e, triggerCombo)) fireTrigger()
+    if (priceCheckCombo && matchesCombo(e, priceCheckCombo)) firePriceCheck()
   })
 
   // Stash tab scrolling: Ctrl+scroll outside stash grid -> arrow key taps
@@ -115,7 +173,10 @@ export function resumeHotkeys(): void {
   setAppMacros(lastAppMacros)
 }
 
-/** Update the active hotkey using globalShortcut (suppresses key from reaching other apps). */
+/** Update the active hotkey. Registered with both globalShortcut (swallows the key
+ *  from reaching the focused app when possible) and uIOhook (kernel-level fallback
+ *  that still fires when PoE blocks globalShortcut from the non-attached game).
+ *  fireTrigger dedupes the two paths. */
 export function setHotkey(accelerator: string): void {
   if (currentAccelerator) {
     try {
@@ -123,10 +184,9 @@ export function setHotkey(accelerator: string): void {
     } catch {}
   }
   currentAccelerator = accelerator
+  triggerCombo = parseAccelerator(accelerator)
   try {
-    globalShortcut.register(accelerator, () => {
-      if (!injecting && onTrigger) onTrigger()
-    })
+    globalShortcut.register(accelerator, () => fireTrigger())
   } catch (e) {
     console.error(`[hotkeys] Failed to register hotkey "${accelerator}":`, e)
   }
@@ -139,10 +199,9 @@ export function setPriceCheckHotkey(accelerator: string): void {
     } catch {}
   }
   priceCheckAccelerator = accelerator
+  priceCheckCombo = parseAccelerator(accelerator)
   try {
-    globalShortcut.register(accelerator, () => {
-      if (!injecting && onPriceCheck) onPriceCheck()
-    })
+    globalShortcut.register(accelerator, () => firePriceCheck())
   } catch (e) {
     console.error(`[hotkeys] Failed to register price check hotkey "${accelerator}":`, e)
   }

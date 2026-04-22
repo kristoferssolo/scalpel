@@ -25,6 +25,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "active-win": "^9.0.0",
     "electron-overlay-window": "^4.0.2",
     "electron-store": "^8.2.0",
     "react-sortablejs": "^6.1.4",

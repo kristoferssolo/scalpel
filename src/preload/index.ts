@@ -227,6 +227,14 @@ export const api = {
     ipcRenderer.on('filter-hotkey-open', handler)
     return () => ipcRenderer.removeListener('filter-hotkey-open', handler)
   },
+  onGameSwitchPrompt: (cb: (target: 1 | 2) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, target: 1 | 2): void => cb(target)
+    ipcRenderer.on('game-switch-prompt', handler)
+    return () => ipcRenderer.removeListener('game-switch-prompt', handler)
+  },
+  respondGameSwitch: (choice: 'restart' | 'cancel'): void => {
+    ipcRenderer.send('game-switch-response', choice)
+  },
   onPriceCheck: (
     cb: (data: {
       item: import('../shared/types').PoeItem

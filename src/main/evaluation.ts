@@ -1,5 +1,6 @@
 import { clipboard, screen } from 'electron'
 import Store from 'electron-store'
+import { OverlayController } from 'electron-overlay-window'
 import { getCurrentFilter } from './filter-state'
 import { readItemFromClipboard } from './trade/clipboard'
 import {
@@ -9,12 +10,14 @@ import {
   findStrandBreakpoints,
   evaluateBlock,
 } from './filter/matcher'
-import { getOverlayWindow, showOverlay } from './overlay'
+import { getOverlayWindow, showOverlay, poeVersion } from './overlay'
 import { sendCtrlCToPoE } from './hotkeys'
 import { focusGameWindow } from './overlay'
 import { snapshotClipboard } from './clipboard-preserve'
 import { refreshPrices, lookupPrice, lookupBestUniquePrice, getUniquesByBase } from './trade/prices'
 import { ensureStatsLoaded, matchItemMods } from './trade/trade'
+import { detectFocusedPoeVersion } from './game-detector'
+import { requestGameSwitch } from './game-switch'
 import type {
   AppSettings,
   FilterFile,
@@ -320,12 +323,29 @@ async function captureItemFromClipboard(isElevated: () => boolean): Promise<PoeI
   return item
 }
 
+/** Before the hotkey handler does any work, confirm the overlay is attached to the
+ *  PoE version that actually has foreground focus. If the other PoE is focused,
+ *  show the restart-prompt modal -- electron-overlay-window can only attach once
+ *  per process (its native tracker keeps static globals), so switching games
+ *  requires an app relaunch. Fast path hits no OS call when targetHasFocus is true.
+ *  Always returns false when a switch is needed: the current press is swallowed,
+ *  and the user reopens the overlay from the correct game after restart. */
+async function ensureCorrectGameForHotkey(store: Store<AppSettings>): Promise<boolean> {
+  if (OverlayController.targetHasFocus) return true
+  const v = await detectFocusedPoeVersion()
+  if (!v) return false
+  if (v === poeVersion) return true
+  requestGameSwitch(store, v).catch((err) => console.error('[game-switch]', err))
+  return false
+}
+
 export function createHotkeyHandler(store: Store<AppSettings>, isElevated: () => boolean): () => Promise<void> {
   return async function onHotkeyFired(): Promise<void> {
     if (hotkeyProcessing) return
     hotkeyProcessing = true
 
     try {
+      if (!(await ensureCorrectGameForHotkey(store))) return
       lastCursorX = screen.getCursorScreenPoint().x
 
       const currentFilter = getCurrentFilter()
@@ -368,6 +388,7 @@ export function createPriceCheckHandler(store: Store<AppSettings>, isElevated: (
     hotkeyProcessing = true
 
     try {
+      if (!(await ensureCorrectGameForHotkey(store))) return
       lastCursorX = screen.getCursorScreenPoint().x
 
       const item = await captureItemFromClipboard(isElevated)

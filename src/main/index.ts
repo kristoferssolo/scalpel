@@ -98,8 +98,6 @@ if (store.get('stashScrollEnabled') === undefined) store.set('stashScrollEnabled
 if (store.get('openSide') === undefined) store.set('openSide', 'both')
 // Migrate legacy tradeStatus 'available' -> 'any' (renamed to match chip-row options)
 if ((store.get('tradeStatus') as string) === 'available') store.set('tradeStatus', 'any')
-// Force poeVersion to 1 -- previous test builds defaulted to 2
-store.set('poeVersion', 1)
 
 // Auto-detect overlay scale on first run (deferred until app ready since screen API requires it)
 app.whenReady().then(() => {
@@ -185,7 +183,10 @@ if (!gotLock) {
 const installDir = applyPendingUpdate()
 
 app.whenReady().then(() => {
-  createOverlayWindow(store.get('poeVersion') ?? 2)
+  // Seed the overlay with the last-known game version so attachByTitle waits for
+  // that window. The hotkey handler re-detects the focused PoE on every fire and
+  // relaunches to swap versions if needed (ensureCorrectGameForHotkey).
+  createOverlayWindow(store.get('poeVersion') ?? 1)
   createAppWindow()
   createTray()
 

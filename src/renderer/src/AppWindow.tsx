@@ -15,6 +15,7 @@ import {
 } from './app-window/onboarding-steps'
 import { AppSettingsWrapper } from './app-window/AppSettingsWrapper'
 import { AppUpdateBanner } from './app-window/AppUpdateBanner'
+import { GameSwitchModal } from './components/GameSwitchModal'
 
 /** Convert a KeyboardEvent into Electron accelerator format */
 export function AppWindow(): JSX.Element {
@@ -22,6 +23,7 @@ export function AppWindow(): JSX.Element {
   const [step, setStep] = useState<Step>('welcome')
   const [direction, setDirection] = useState<'forward' | 'back'>('forward')
   const [importedOnlineFilter, setImportedOnlineFilter] = useState<string | null>(null)
+  const [gameSwitchTarget, setGameSwitchTarget] = useState<1 | 2 | null>(null)
 
   const goTo = (next: Step): void => {
     const curIdx = STEP_ORDER.indexOf(step)
@@ -47,6 +49,10 @@ export function AppWindow(): JSX.Element {
     return unsub
   }, [])
 
+  useEffect(() => {
+    return window.api.onGameSwitchPrompt((target) => setGameSwitchTarget(target))
+  }, [])
+
   // When window is re-shown after being hidden, reset to settings if onboarding is done
   useEffect(() => {
     const onFocus = (): void => {
@@ -66,6 +72,19 @@ export function AppWindow(): JSX.Element {
 
   return (
     <div className="w-screen h-screen bg-bg-solid flex flex-col overflow-hidden">
+      {gameSwitchTarget !== null && (
+        <GameSwitchModal
+          target={gameSwitchTarget}
+          onRestart={() => {
+            window.api.respondGameSwitch('restart')
+            setGameSwitchTarget(null)
+          }}
+          onCancel={() => {
+            window.api.respondGameSwitch('cancel')
+            setGameSwitchTarget(null)
+          }}
+        />
+      )}
       <AppUpdateBanner />
       {/* Content */}
       <div
