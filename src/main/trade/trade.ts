@@ -1,9 +1,10 @@
-import { net } from 'electron'
+import { app, net } from 'electron'
 import { getTradeUrls } from '../../shared/endpoints'
 import { poeVersion } from '../game-state'
 import { harvestIcons } from './icon-cache'
 import { getOverlayWindow } from '../overlay'
 import { TRANSFIGURED_GEM_DISC } from '../../shared/data/trade/transfigured-gems'
+import { RateLimiter, adjustRateLimits } from './rate-limiter'
 
 /** Forward any newly-harvested name->icon pairs to the overlay so it can merge
  *  them into the in-session iconMap. Without this the renderer would only pick
@@ -12,6 +13,14 @@ function broadcastNewIcons(added: Record<string, string>): void {
   if (Object.keys(added).length === 0) return
   const win = getOverlayWindow()
   if (win && !win.isDestroyed()) win.webContents.send('icon-cache-updated', added)
+}
+
+/** Tell the overlay when the trade API has locked us out for a specific
+ *  duration. Sent as an absolute epoch ms (end-of-penalty) so the renderer's
+ *  countdown isn't sensitive to IPC-delivery jitter or its own clock skew. */
+function broadcastTradePenalty(untilEpochMs: number): void {
+  const win = getOverlayWindow()
+  if (win && !win.isDestroyed()) win.webContents.send('trade-penalty', untilEpochMs)
 }
 
 // Re-export stat-matcher functions so existing importers don't need to change
@@ -198,34 +207,116 @@ function parseAndBroadcastRateLimit(state: string, rules: string): void {
   }
 }
 
-let lastRequestTime = 0
-const MIN_INTERVAL = 500 // ms between requests - PoE trade allows ~3/sec
+// ─── Proactive rate limiting ──────────────────────────────────────────────────
+//
+// GGG advertises per-endpoint bucket policies in every response; Awakened PoE
+// Trade / Exiled Exchange 2 mirror those buckets client-side and wait *before*
+// exceeding them, so 429s effectively never fire. We do the same: one bucket
+// set per endpoint category. Seed each with a tiny 1/5s limiter so the first
+// request still goes through some gating before we've seen the real policy.
 
-async function throttle(): Promise<void> {
-  const now = Date.now()
-  const elapsed = now - lastRequestTime
-  if (elapsed < MIN_INTERVAL) {
-    await new Promise((r) => setTimeout(r, MIN_INTERVAL - elapsed))
+/** Endpoint categories that GGG serves on separate policies. Picked per
+ *  `net.request` so /search doesn't share a bucket with /fetch. */
+export type RateLimitCategory = 'search' | 'fetch' | 'exchange'
+
+const RATE_LIMIT_RULES: Record<RateLimitCategory, Set<RateLimiter>> = {
+  search: new Set<RateLimiter>([new RateLimiter(1, 5)]),
+  fetch: new Set<RateLimiter>([new RateLimiter(1, 5)]),
+  exchange: new Set<RateLimiter>([new RateLimiter(1, 5)]),
+}
+
+/** Test hook: clear every bucket so back-to-back test cases don't inherit
+ *  a "recently used" seed from an earlier call. No-op in production. */
+export function _resetRateLimitsForTests(): void {
+  for (const category of Object.keys(RATE_LIMIT_RULES) as RateLimitCategory[]) {
+    for (const limit of RATE_LIMIT_RULES[category]) limit.destroy()
+    RATE_LIMIT_RULES[category] = new Set<RateLimiter>([new RateLimiter(1, 5)])
   }
-  lastRequestTime = Date.now()
+}
+
+function categoryFor(url: string): RateLimitCategory {
+  if (url.includes('/fetch/')) return 'fetch'
+  if (url.includes('/exchange/')) return 'exchange'
+  return 'search'
 }
 
 // ─── HTTP helpers ─────────────────────────────────────────────────────────────
+//
+// Match the approach APT + EE2 use (verified in their main/src/proxy.ts):
+//   - `net.request` with `useSessionCookies: true` so any POESESSID / cf-
+//     clearance picked up by the app's login window is included.
+//   - No `Origin`, no `Referer`, no `Sec-Fetch-*`, no `Accept-Language`. APT
+//     actively strips these from their proxy -- sending them puts us in a
+//     stricter bucket than the trade website.
+//   - `app.userAgentFallback` is Electron's default Chrome/Electron UA and is
+//     what APT forwards; GGG is fine with it.
+//   - `referrerPolicy: 'no-referrer-when-downgrade'` is the same option APT
+//     uses; it's the default, but setting it explicitly documents intent.
+function commonRequestOpts(url: string, method: string): Electron.ClientRequestConstructorOptions {
+  return {
+    url,
+    method,
+    useSessionCookies: true,
+    referrerPolicy: 'no-referrer-when-downgrade',
+  }
+}
+
+function setTradeHeaders(request: Electron.ClientRequest): void {
+  request.setHeader('Content-Type', 'application/json')
+  request.setHeader('Accept', 'application/json')
+  request.setHeader('User-Agent', app.userAgentFallback)
+}
+
+// Hard ceiling on a single HTTP attempt. electron's `net.request` has no
+// built-in timeout, so a half-open TCP socket / silent upstream drop will
+// hang the renderer's shimmer loader indefinitely. PoE2's /trade2 endpoints
+// are prone to this during busy hours while the /trade2 web UI keeps serving
+// out of cache. Fail fast and let the retry loop try again -- worst case the
+// user sees a short "timed out" after two misses instead of an endless spinner.
+const REQUEST_TIMEOUT_MS = 15000
 
 async function fetchJson(url: string, options?: { method?: string; body?: string }, retries = 2): Promise<unknown> {
+  const category = categoryFor(url)
+  // Proactive wait: block until every bucket the server has advertised for
+  // this endpoint category has a free slot. This is what keeps 429s from
+  // firing under normal use. Seed limiters handle the first request before
+  // we've seen a response's headers.
+  await RateLimiter.waitMulti(RATE_LIMIT_RULES[category])
   for (let attempt = 0; attempt <= retries; attempt++) {
+    const started = Date.now()
     try {
       const result = await new Promise((resolve, reject) => {
-        const request = net.request({
-          url,
-          method: options?.method ?? 'GET',
-        })
-        request.setHeader('Content-Type', 'application/json')
-        request.setHeader('User-Agent', 'FilterScalpel/1.0')
+        const request = net.request(commonRequestOpts(url, options?.method ?? 'GET'))
+        setTradeHeaders(request)
+
+        // Abort+reject on no-response-within-timeout. Single-shot so retries
+        // from the rate-limit path stay in charge of when to try again.
+        let timedOut = false
+        const timer = setTimeout(() => {
+          timedOut = true
+          try {
+            request.abort()
+          } catch {
+            /* already done */
+          }
+          console.error(`[trade] timeout after ${REQUEST_TIMEOUT_MS}ms: ${options?.method ?? 'GET'} ${url}`)
+          reject({ timedOut: true })
+        }, REQUEST_TIMEOUT_MS)
 
         let data = ''
         request.on('response', (response) => {
-          // Parse rate limit headers and broadcast to renderer
+          // Two things happen with rate-limit headers on every response:
+          //   1. Proactive limiters get re-synced against the server's
+          //      advertised buckets so the *next* waitMulti knows the truth.
+          //   2. The UI-facing state (knownTiers + broadcast) continues to
+          //      drive the meter + tooltip.
+          // net.request's headers come as string | string[]; cast down for
+          // adjustRateLimits which expects plain strings.
+          const flatHeaders: Record<string, string> = {}
+          for (const [k, v] of Object.entries(response.headers)) {
+            flatHeaders[k.toLowerCase()] = Array.isArray(v) ? v.join(',') : String(v)
+          }
+          adjustRateLimits(RATE_LIMIT_RULES[category], flatHeaders)
           const limitState = response.headers['x-rate-limit-ip-state']
           const limitRules = response.headers['x-rate-limit-ip']
           if (limitState && limitRules) {
@@ -233,8 +324,15 @@ async function fetchJson(url: string, options?: { method?: string; body?: string
           }
 
           if (response.statusCode === 429) {
+            clearTimeout(timer)
             const retryAfter = response.headers['retry-after']
             const wait = retryAfter ? parseInt(String(retryAfter)) * 1000 : 5000
+            console.error(`[trade] 429 rate limited: retry-after=${Math.round(wait / 1000)}s for ${url}`)
+            // Broadcast only when the penalty is long enough to surface to the
+            // user. Short waits are absorbed by the retry loop and never reach
+            // the UI, so lighting up the Greg banner for a 1-second blip would
+            // just flicker.
+            if (wait >= 10000) broadcastTradePenalty(Date.now() + wait)
             reject({ rateLimited: true, wait })
             return
           }
@@ -242,36 +340,60 @@ async function fetchJson(url: string, options?: { method?: string; body?: string
             data += chunk.toString()
           })
           response.on('end', () => {
+            if (timedOut) return
+            clearTimeout(timer)
+            const elapsed = Date.now() - started
             try {
               const parsed = JSON.parse(data)
               // Surface trade-API error bodies (e.g. invalid stat ID, bad category) so
               // they don't silently appear as "0 results". Leave rate limits (429) to
               // the dedicated branch above.
               if (response.statusCode && response.statusCode >= 400) {
-                console.error(`[trade] ${response.statusCode} from ${url}:`, data.slice(0, 500))
+                console.error(`[trade] ${response.statusCode} in ${elapsed}ms from ${url}:`, data.slice(0, 500))
               } else if (parsed && typeof parsed === 'object' && 'error' in parsed) {
-                console.error(`[trade] API error from ${url}:`, data.slice(0, 500))
+                console.error(`[trade] API error in ${elapsed}ms from ${url}:`, data.slice(0, 500))
               }
               resolve(parsed)
             } catch (e) {
+              console.error(`[trade] JSON parse failed after ${elapsed}ms from ${url}:`, data.slice(0, 200))
               reject(e)
             }
           })
         })
-        request.on('error', reject)
+        request.on('error', (err) => {
+          if (timedOut) return
+          clearTimeout(timer)
+          console.error(`[trade] request error for ${url}:`, err)
+          reject(err)
+        })
         if (options?.body) request.write(options.body)
         request.end()
       })
       return result
     } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'rateLimited' in e && attempt < retries) {
+      if (e && typeof e === 'object' && 'rateLimited' in e) {
+        // With the proactive limiter, reaching this path means a hidden tier
+        // we can't see in the response headers kicked in (GGG does bucket by
+        // things like UA fingerprint on top of the advertised policies). No
+        // point sleeping the retry out silently -- surface the wait to the
+        // user and let the Greg banner count it down.
         const wait = (e as unknown as { wait: number }).wait
-        await new Promise((r) => setTimeout(r, wait))
-        lastRequestTime = Date.now()
+        const MAX_SILENT_WAIT_MS = 30000
+        if (wait <= MAX_SILENT_WAIT_MS && attempt < retries) {
+          await new Promise((r) => setTimeout(r, wait))
+          continue
+        }
+        const waitSec = Math.round(wait / 1000)
+        throw new Error(`Rate limited by the trade API -- wait ${waitSec}s and try again`)
+      }
+      if (e && typeof e === 'object' && 'timedOut' in e && attempt < retries) {
+        // Re-loop without sleeping: the remote just ate our connection, try
+        // the next endpoint immediately rather than stalling the user further.
+        console.error(`[trade] timeout after ${REQUEST_TIMEOUT_MS}ms on ${url}, retrying (${attempt + 1}/${retries})`)
         continue
       }
-      if (e && typeof e === 'object' && 'rateLimited' in e) {
-        throw new Error('Rate limited - please wait a moment and try again')
+      if (e && typeof e === 'object' && 'timedOut' in e) {
+        throw new Error(`Trade API timed out after ${REQUEST_TIMEOUT_MS / 1000}s -- retry when you're ready`)
       }
       throw e
     }
@@ -304,7 +426,6 @@ export async function searchTrade(
   listedTime?: string,
 ): Promise<TradeResult> {
   await _ensureStatsLoaded()
-  await throttle()
   const dialect = TRADE_DIALECTS[poeVersion]
   const priceOption = tradePriceOption ?? dialect.priceDivinePair
 
@@ -688,7 +809,6 @@ export async function searchTrade(
   }
 
   // Fetch first 10 results
-  await throttle()
   const ids = searchResult.result.slice(0, 10).join(',')
   const fetchResult = (await fetchJson(urls.fetch(ids, searchResult.id ?? ''))) as {
     result: Array<{
@@ -972,8 +1092,6 @@ export async function searchBulkExchange(
   currencyId: string = 'chaos',
   minimum: number = 1,
 ): Promise<BulkExchangeResult> {
-  await throttle()
-
   // "I have currency, I want to buy the item"
   const body = JSON.stringify({
     engine: 'new',
@@ -1042,7 +1160,6 @@ export async function searchBulkExchange(
 // ─── Shared listing fetch helper ─────────────────────────────────────────────
 
 async function fetchAndMapListings(ids: string[], queryId: string): Promise<TradeListing[]> {
-  await throttle()
   const fetchResult = (await fetchJson(getTradeUrls(poeVersion).fetch(ids.join(','), queryId))) as {
     result: Array<{
       id: string
@@ -1131,7 +1248,6 @@ export async function searchMapsByRegex(
   tradePriceOption: string,
 ): Promise<TradeResult> {
   await _ensureStatsLoaded()
-  await throttle()
   const dialect = TRADE_DIALECTS[poeVersion]
 
   // poe.re text -> trade API text overrides for mods with different wording
@@ -1274,7 +1390,6 @@ export async function fetchMoreListings(
   queryId: string,
   ids: string[],
 ): Promise<{ listings: TradeListing[]; remainingIds: string[] }> {
-  await throttle()
   const batch = ids.slice(0, 10)
   const listings = await fetchAndMapListings(batch, queryId)
   return { listings, remainingIds: ids.slice(10) }

@@ -11,6 +11,9 @@ vi.mock('electron', () => ({
   // an ipcMain listener at module scope, so the mock has to expose ipcMain even
   // though these tests never exercise it.
   ipcMain: { on: vi.fn(), handle: vi.fn(), removeListener: vi.fn() },
+  // trade.ts reads `app.userAgentFallback` on every request so we set a UA
+  // the way APT/EE2 do. Tests don't exercise the value, just need it to exist.
+  app: { userAgentFallback: 'Scalpel-Test/1.0' },
   net: {
     request: vi.fn((opts: { url: string; method: string }) => {
       const entry = { url: opts.url, method: opts.method } as {
@@ -57,7 +60,7 @@ vi.mock('./stat-matcher', async (orig) => {
   return { ...actual, ensureStatsLoaded: vi.fn().mockResolvedValue(undefined) }
 })
 
-import { buildGemTypeField, searchTrade, stripTradeTokens, type StatFilter } from './trade'
+import { buildGemTypeField, searchTrade, stripTradeTokens, _resetRateLimitsForTests, type StatFilter } from './trade'
 import { setPoeVersion } from '../game-state'
 
 describe('buildGemTypeField', () => {
@@ -151,6 +154,11 @@ describe('searchTrade filter-group dispatch', () => {
 
   beforeEach(() => {
     capturedRequests.length = 0
+    // The proactive rate limiter's seed buckets live across the test module,
+    // so a test that fires a request leaves a used slot behind for the next
+    // one. Reset them each case or the second test hits the 5-second window
+    // wait and fails the default 5s vitest timeout.
+    _resetRateLimitsForTests()
   })
 
   it('PoE1 rare body armour uses armour_filters, never equipment_filters', async () => {

@@ -1,4 +1,4 @@
-import { net } from 'electron'
+import { app, net } from 'electron'
 import type { AdvancedMod } from '../../shared/types'
 import { getTradeUrls } from '../../shared/endpoints'
 import { poeVersion } from '../game-state'
@@ -95,6 +95,16 @@ function statTextToRelaxedPattern(text: string): RegExp {
   return new RegExp('^' + escaped + '$', 'i')
 }
 
+/** Hard ceiling on the stats fetch. Without this a half-open TCP socket can
+ *  stall `await ensureStatsLoaded()` forever and nothing else in the price
+ *  check path ever runs -- not even the search the user actually asked for.
+ *  30s is generous since the stats payload is multi-MB on first launch. */
+const STATS_TIMEOUT_MS = 30000
+
+/** Dedup in-flight fetches so two near-simultaneous callers don't fire two
+ *  requests. Cleared on settle. */
+let inFlight: Promise<void> | null = null
+
 /** Fetch stat entries from the PoE trade API (simple GET, no rate limiting needed) */
 async function fetchStats(): Promise<void> {
   if (statsFetched) {
@@ -110,32 +120,68 @@ async function fetchStats(): Promise<void> {
     }
     return
   }
-  try {
-    const data = await new Promise<string>((resolve, reject) => {
-      const request = net.request({
-        url: getTradeUrls(poeVersion).stats,
-        method: 'GET',
-      })
-      request.setHeader('Content-Type', 'application/json')
-      request.setHeader('User-Agent', 'FilterScalpel/1.0')
-      let body = ''
-      request.on('response', (response) => {
-        response.on('data', (chunk) => {
-          body += chunk.toString()
+  if (inFlight) return inFlight
+  const url = getTradeUrls(poeVersion).stats
+  inFlight = (async () => {
+    const started = Date.now()
+    try {
+      const data = await new Promise<string>((resolve, reject) => {
+        const request = net.request({
+          url,
+          method: 'GET',
+          useSessionCookies: true,
+          referrerPolicy: 'no-referrer-when-downgrade',
         })
-        response.on('end', () => resolve(body))
+        // Header set matches trade.ts (and APT/EE2's proxy): minimal headers,
+        // Electron's default UA, no Origin / Referer / Sec-Fetch-* overrides.
+        // Those last three are what put us in a stricter bucket than the
+        // trade website was; APT actively strips them.
+        request.setHeader('Content-Type', 'application/json')
+        request.setHeader('Accept', 'application/json')
+        request.setHeader('User-Agent', app.userAgentFallback)
+        let body = ''
+        let done = false
+        const timer = setTimeout(() => {
+          if (done) return
+          done = true
+          try {
+            request.abort()
+          } catch {
+            /* already done */
+          }
+          reject(new Error(`stats fetch timed out after ${STATS_TIMEOUT_MS}ms`))
+        }, STATS_TIMEOUT_MS)
+        request.on('response', (response) => {
+          response.on('data', (chunk) => {
+            body += chunk.toString()
+          })
+          response.on('end', () => {
+            if (done) return
+            done = true
+            clearTimeout(timer)
+            resolve(body)
+          })
+        })
+        request.on('error', (err) => {
+          if (done) return
+          done = true
+          clearTimeout(timer)
+          reject(err)
+        })
+        request.end()
       })
-      request.on('error', reject)
-      request.end()
-    })
-    const resp = JSON.parse(data) as {
-      result: Array<{ id: string; label: string; entries: StatEntry[] }>
+      const resp = JSON.parse(data) as {
+        result: Array<{ id: string; label: string; entries: StatEntry[] }>
+      }
+      statEntries = resp.result.flatMap((cat) => cat.entries)
+      statsFetched = true
+    } catch (e) {
+      console.error(`[trade] Failed to fetch stats from ${url} after ${Date.now() - started}ms:`, e)
+    } finally {
+      inFlight = null
     }
-    statEntries = resp.result.flatMap((cat) => cat.entries)
-    statsFetched = true
-  } catch (e) {
-    console.error('[trade] Failed to fetch stats:', e)
-  }
+  })()
+  return inFlight
 }
 
 export { fetchStats as ensureStatsLoaded }

@@ -22,7 +22,7 @@ import { TierItemsSister } from './TierItemsSister'
 import { getActiveMatch } from '../shared/activeMatch'
 import { ItemSearchCombobox } from '../components/ItemSearchCombobox'
 import { Clipboard } from '@icon-park/react'
-import { IP, initIconMap } from '../shared/constants'
+import { IP, initIconMap, mergeIconCache } from '../shared/constants'
 import { prettyHotkey } from '../components/settings'
 
 type View =
@@ -81,9 +81,21 @@ export default function App(): JSX.Element {
   // Swap the per-version icon CDN sheet into the shared iconMap whenever the
   // version changes. In practice this fires once per process (we relaunch on
   // game switch), but gating on the effect keeps it robust to null -> version.
+  // After the bundled sheet loads, merge in any runtime-harvested entries from
+  // disk so icons for items we didn't ship art for show up immediately instead
+  // of waiting for the next trade fetch to re-populate them.
   useEffect(() => {
-    if (poeVersion) initIconMap(poeVersion)
+    if (!poeVersion) return
+    initIconMap(poeVersion)
+    window.api.getIconCache().then(mergeIconCache)
   }, [poeVersion])
+
+  // Live-merge newly-harvested icons as trade-fetch responses arrive so the
+  // filter hero, price-check hero, and other iconMap consumers reflect new
+  // base-type art without waiting for a restart.
+  useEffect(() => {
+    return window.api.onIconCacheUpdated(mergeIconCache)
+  }, [])
 
   // Auto-update state
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)

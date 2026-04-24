@@ -418,6 +418,15 @@ export const api = {
     return () => ipcRenderer.removeListener('rate-limit', handler)
   },
 
+  /** Fired when the trade API returns 429 with a retry-after. Payload is the
+   *  absolute epoch ms when the penalty ends, so the renderer doesn't have to
+   *  track request-time skew. Used by the Greg banner to count down. */
+  onTradePenalty: (cb: (until: number) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, until: number): void => cb(until)
+    ipcRenderer.on('trade-penalty', handler)
+    return () => ipcRenderer.removeListener('trade-penalty', handler)
+  },
+
   // Online filter sync
   checkForOnlineUpdate: (): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke('check-online-update'),
   quickUpdateFilter: (): Promise<{

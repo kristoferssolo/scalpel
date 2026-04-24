@@ -15,6 +15,7 @@ import { FilterChip } from './FilterChip'
 import { PriceChip } from '../../shared/PriceChip'
 import { FaustusBanner } from './FaustusBanner'
 import { AngeBanner } from './AngeBanner'
+import { TradeTimeoutBanner } from './TradeTimeoutBanner'
 import { ItemHeader } from './ItemHeader'
 import { getDustInfo } from '../../shared/dust'
 import { StatFilterRow } from './StatFilterRow'
@@ -50,12 +51,34 @@ export function PriceCheck({
   const [rateLimitTiers, setRateLimitTiers] = useState<
     Array<{ used: number; max: number; window: number; penalty: number; lastUpdate?: number }>
   >([])
+  /** Absolute epoch ms when the current trade-API penalty ends, or null when
+   *  we're not in a penalty window. Broadcast from main on each 429 with a
+   *  retry-after long enough to warrant surfacing (see trade.ts). Lives at
+   *  this level so the Greg banner can replace the search-results area. */
+  const [penaltyUntil, setPenaltyUntil] = useState<number | null>(null)
 
   useEffect(() => {
     window.api.poeCheckAuth().then((r) => setLoggedIn(r.loggedIn))
-    const unsub = window.api.onRateLimit((state) => setRateLimitTiers(state.tiers))
-    return () => unsub()
+    const unsubRate = window.api.onRateLimit((state) => setRateLimitTiers(state.tiers))
+    const unsubPenalty = window.api.onTradePenalty((until) => setPenaltyUntil(until))
+    return () => {
+      unsubRate()
+      unsubPenalty()
+    }
   }, [])
+
+  // Auto-clear the penalty once the countdown actually elapses so the search
+  // UI re-enables without the user having to dismiss anything manually.
+  useEffect(() => {
+    if (penaltyUntil == null) return
+    const remaining = penaltyUntil - Date.now()
+    if (remaining <= 0) {
+      setPenaltyUntil(null)
+      return
+    }
+    const id = setTimeout(() => setPenaltyUntil(null), remaining)
+    return () => clearTimeout(id)
+  }, [penaltyUntil])
 
   const [filters, setFilters] = useState<StatFilter[]>(initialFilters)
   const [filtersCollapsed, setFiltersCollapsed] = useState(false)
@@ -580,8 +603,14 @@ export function PriceCheck({
           <FaustusBanner item={item} priceInfo={priceInfo} chaosPerDivine={chaosPerDivine} />
         )}
 
-        {/* Error */}
-        {error && <div className="text-[10px] text-[#ef5350] px-1">{error}</div>}
+        {/* Trade-API penalty wins over the raw error text: same information,
+         *  but with Greg's face on it and a real countdown the user can plan
+         *  around. The raw error still shows for non-rate-limit failures. */}
+        {penaltyUntil != null ? (
+          <TradeTimeoutBanner until={penaltyUntil} />
+        ) : (
+          error && <div className="text-[10px] text-[#ef5350] px-1">{error}</div>
+        )}
 
         {/* Searching placeholder rows so the results area isn't empty while the trade
             API is in flight (can take several seconds under rate limit). */}
