@@ -78,7 +78,13 @@ export function parseItemText(text: string): PoeItem | null {
 
   // Name and base type follow rarity
   const afterRarity = headerLines.slice(headerLines.indexOf(rarityLine) + 1)
-  const name = afterRarity[0] ?? ''
+  const rawName = afterRarity[0] ?? ''
+  // PoE2 uncut gems inline the gem level in the name: "Uncut Skill Gem (Level 20)".
+  // Strip the suffix so name/baseType match what filters list (plain "Uncut Skill
+  // Gem"), and remember the parsed level for use when the body has no "Level:" line.
+  const nameLevelMatch = rawName.match(/\s*\(Level (\d+)\)\s*$/)
+  const nameGemLevel = nameLevelMatch ? parseInt(nameLevelMatch[1]) : 0
+  const name = nameLevelMatch ? rawName.slice(0, nameLevelMatch.index).trim() : rawName
   // For Normal/Magic items, name IS the base type; for Rare/Unique, line 2 is base type
   // Unidentified Rare/Unique items only have one line (the base type), no separate name
   const rawBaseType = rarity === 'Rare' || rarity === 'Unique' ? (afterRarity[1] ?? name) : name
@@ -175,7 +181,10 @@ export function parseItemText(text: string): PoeItem | null {
   const storedExpLine = allLines.find((l) => l.startsWith('Stored Experience:'))
   const storedExperience = storedExpLine ? parseInt(storedExpLine.split(':')[1].trim().replace(/,/g, '')) : undefined
 
-  const gemLevel = extractNum(allLines, 'Level:') ?? 0
+  // `Level:` body line is how PoE1 gems report their level. PoE2 uncut gems
+  // don't have it -- their level lives in the name (see nameGemLevel above) --
+  // so fall back to that when the body didn't surface one.
+  const gemLevel = extractNum(allLines, 'Level:') ?? nameGemLevel
   const stackSizeLine = allLines.find((l) => l.startsWith('Stack Size:'))
   const stackParts = stackSizeLine?.split(':')[1]?.trim().split('/') ?? []
   const stackSize = stackParts[0] ? parseInt(stackParts[0].replace(/,/g, '')) : 1
