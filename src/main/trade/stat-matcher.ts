@@ -83,6 +83,13 @@ function statTextToPattern(text: string): RegExp {
   return new RegExp('^' + escaped + '$', 'i')
 }
 
+/** Validates a `(.+?)` capture as a numeric value worth parsing. Allows an
+ *  optional leading sign because PoE2's trade stat texts omit the "+" that
+ *  PoE2 item clipboard text includes ("# to maximum Life" vs "+50 to maximum
+ *  Life"), so the capture comes back as "+50" -- parseFloat handles that
+ *  fine, but we still want to reject non-numeric captures like option text. */
+const NUMERIC_CAPTURE = /^[+-]?\d+(?:\.\d+)?$/
+
 /** Relaxed pattern: also treat hardcoded numbers in stat text as wildcards.
  *  Used as fallback when exact matching fails -- handles cases where
  *  trade API has a fixed number but the item text has a different value. */
@@ -185,6 +192,13 @@ async function fetchStats(): Promise<void> {
 }
 
 export { fetchStats as ensureStatsLoaded }
+
+/** Test hook: seed the in-memory stat list without making network calls.
+ *  No-op in production -- callers must use ensureStatsLoaded(). */
+export function _setStatEntriesForTests(entries: StatEntry[]): void {
+  statEntries = entries
+  statsFetched = true
+}
 
 /** Strip range annotations and parenthetical text from advanced mod lines */
 function stripAdvModLines(lines: string[]): string[] {
@@ -370,13 +384,13 @@ function _matchModToStat(
         // For stats with two numeric values (e.g. "Adds # to # Damage"), average them
         const numericCaptures = Array.from(match)
           .slice(1)
-          .filter((v) => v && /^\d+(?:\.\d+)?$/.test(v))
+          .filter((v) => v && NUMERIC_CAPTURE.test(v))
         const rawValue = match[1]
         let value: number | null
         if (numericCaptures.length >= 2) {
           value = numericCaptures.reduce((sum, v) => sum + parseFloat(v), 0) / numericCaptures.length
         } else {
-          value = rawValue && /^\d+(?:\.\d+)?$/.test(rawValue) ? parseFloat(rawValue) : null
+          value = rawValue && NUMERIC_CAPTURE.test(rawValue) ? parseFloat(rawValue) : null
         }
         // Restore negative sign when matching via sign-flipped variant
         if (isNegativeMod && value != null && value > 0) value = -value
@@ -420,7 +434,7 @@ function _matchModToStat(
       if (match) {
         const numericCaptures = Array.from(match)
           .slice(1)
-          .filter((v) => v && /^-?\d+(?:\.\d+)?$/.test(v))
+          .filter((v) => v && NUMERIC_CAPTURE.test(v))
         const value = numericCaptures.length > 0 ? parseFloat(numericCaptures[0]) : null
         const result = { statId: entry.id, value, _textLen: entry.text.length }
         if (!bestMatch || entry.text.length > bestMatch._textLen) bestMatch = result

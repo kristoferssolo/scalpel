@@ -7,7 +7,7 @@ vi.mock('electron', () => ({
   },
 }))
 
-import { matchItemMods, ITEM_CLASS_TO_CATEGORY } from './stat-matcher'
+import { matchItemMods, matchModToStat, ITEM_CLASS_TO_CATEGORY, _setStatEntriesForTests } from './stat-matcher'
 import type { AdvancedMod } from '../../shared/types'
 
 // Helper to build a minimal itemInfo object
@@ -932,5 +932,58 @@ describe('matchModToStat (requires stat entries)', () => {
     // const result = matchModToStat('-50% to Lightning Resistance')
     // expect(result).not.toBeNull()
     // expect(result!.value).toBe(-50)
+  })
+})
+
+// ─── PoE2 stat text format (no leading "+") ─────────────────────────────────
+//
+// PoE2's /api/trade2/data/stats returns stat texts without the "+" sign that
+// PoE1 includes (e.g. "# to maximum Life" vs PoE1's "+# to maximum Life"),
+// while item clipboard text in both games still has the "+". The (.+?) capture
+// then grabs "+50" instead of "50", and the numeric validation must accept
+// that or value comes back null and the price-check row has no prefill.
+
+describe('matchModToStat (PoE2 stat text without leading sign)', () => {
+  it('extracts numeric value from "+# to maximum Life" item text matched against bare "# to maximum Life" stat', () => {
+    _setStatEntriesForTests([{ id: 'explicit.stat_3299347043', text: '# to maximum Life', type: 'explicit' }])
+    const result = matchModToStat('+50 to maximum Life')
+    expect(result).not.toBeNull()
+    expect(result!.value).toBe(50)
+  })
+
+  it('extracts percent value from "+#% to Cold Resistance" item against bare "#% to Cold Resistance" stat', () => {
+    _setStatEntriesForTests([{ id: 'explicit.stat_4220027924', text: '#% to Cold Resistance', type: 'explicit' }])
+    const result = matchModToStat('+47% to Cold Resistance')
+    expect(result).not.toBeNull()
+    expect(result!.value).toBe(47)
+  })
+
+  it('extracts negative value when stat text has no sign', () => {
+    _setStatEntriesForTests([{ id: 'explicit.stat_x', text: '#% to Lightning Resistance', type: 'explicit' }])
+    const result = matchModToStat('-50% to Lightning Resistance')
+    expect(result).not.toBeNull()
+    expect(result!.value).toBe(-50)
+  })
+
+  it('still works for unsigned PoE1-style mod text', () => {
+    _setStatEntriesForTests([{ id: 'explicit.stat_y', text: '#% increased Spell Damage', type: 'explicit' }])
+    const result = matchModToStat('20% increased Spell Damage')
+    expect(result).not.toBeNull()
+    expect(result!.value).toBe(20)
+  })
+
+  it('averages multiple signed numeric captures (PoE2 "Adds #-#" hybrid case)', () => {
+    _setStatEntriesForTests([{ id: 'explicit.stat_z', text: 'Adds # to # Cold Damage', type: 'explicit' }])
+    const result = matchModToStat('Adds +5 to +15 Cold Damage')
+    expect(result).not.toBeNull()
+    expect(result!.value).toBe(10)
+  })
+
+  it('rejects non-numeric captures', () => {
+    _setStatEntriesForTests([{ id: 'explicit.stat_q', text: 'Causes # additional Effects', type: 'explicit' }])
+    const result = matchModToStat('Causes random additional Effects')
+    // "random" isn't numeric -- value stays null even though the pattern matches
+    expect(result).not.toBeNull()
+    expect(result!.value).toBeNull()
   })
 })
