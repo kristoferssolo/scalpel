@@ -12,7 +12,7 @@ import {
   getGemNames,
 } from '../trade/prices'
 import { loadIconCache } from '../trade/icon-cache'
-import { poeVersion } from '../game-state'
+import { getPoeVersion } from '../game-state'
 import type { AppSettings, FilterBlock, FilterFile, PoeItem, SearchableItem } from '../../shared/types'
 import { defaultPoeItem } from '../../shared/poe-item'
 import uniqueInfoData from '../../shared/data/items/unique-info.json'
@@ -137,7 +137,7 @@ export function buildSearchableRow(
   base: Omit<SearchableItem, 'blocks'>,
   syntheticOverrides: Partial<PoeItem>,
 ): SearchableItem {
-  const chain = resolveMatchChain(filter, defaultPoeItem(syntheticOverrides, poeVersion))
+  const chain = resolveMatchChain(filter, defaultPoeItem(syntheticOverrides, getPoeVersion()))
   return { ...base, blocks: chain.length > 0 ? chain.map(toLabelBlock) : null }
 }
 
@@ -308,7 +308,7 @@ export async function primeSearchableItemsCache(store: Store<AppSettings>): Prom
 export function register(store: Store<AppSettings>): void {
   // Serve the current version's runtime icon cache to the renderer on startup;
   // filled over time by harvestIcons() in trade.ts.
-  ipcMain.handle('get-icon-cache', () => loadIconCache(poeVersion))
+  ipcMain.handle('get-icon-cache', () => loadIconCache(getPoeVersion()))
 
   ipcMain.handle(
     'lookup-base-type',
@@ -337,7 +337,7 @@ export function register(store: Store<AppSettings>): void {
           ...clickSyntheticOverrides(baseType, itemClass, resolvedRarity, flags),
           name: uniqueName || baseType,
         },
-        poeVersion,
+        getPoeVersion(),
       )
       evaluateAndSend(synthetic)
       // Preload the price check too so switching to the Price tab lands on populated
@@ -404,7 +404,7 @@ export function register(store: Store<AppSettings>): void {
           itemLevel: 0,
           ...gemDefaults,
         },
-        poeVersion,
+        getPoeVersion(),
       )
       await runPriceCheck(synthetic, store)
     },

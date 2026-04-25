@@ -251,7 +251,13 @@ export default function App(): JSX.Element {
           auditPending.current = true
         } else {
           const valid = ['setup', 'dust', 'divcards', 'regex'] as const
-          if (valid.includes(v as (typeof valid)[number])) setView(v as View)
+          if (!valid.includes(v as (typeof valid)[number])) return
+          // Don't reopen tabs that the active game has disabled (e.g. regex on PoE2).
+          const active = getGameFeatures(settings?.poeVersion ?? 1)
+          if (v === 'dust' && !active.dustExplorer) return
+          if (v === 'divcards' && !active.divCards) return
+          if (v === 'regex' && !active.regexTool) return
+          setView(v as View)
         }
       }),
       window.api.onGameBounds((bounds) => setGameBounds(bounds)),
@@ -768,9 +774,11 @@ export default function App(): JSX.Element {
                   <DivCardExplorer onSelectItem={() => setView('item')} />
                 </div>
               )}
-              <div className="flex-col flex-1 min-h-0" style={{ display: view === 'regex' ? 'flex' : 'none' }}>
-                <RegexTool />
-              </div>
+              {features.regexTool && (
+                <div className="flex-col flex-1 min-h-0" style={{ display: view === 'regex' ? 'flex' : 'none' }}>
+                  <RegexTool />
+                </div>
+              )}
               {view === 'audit' && overlayData && overlayData.matches.length > 0 && (
                 <AuditView
                   overlayData={overlayData}

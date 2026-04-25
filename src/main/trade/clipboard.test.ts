@@ -237,6 +237,67 @@ describe('parseItemText', () => {
       expect(item.baseType).toBe('Ruby Ring')
     })
 
+    it('strips magic affixes for bases not in the static list using the advanced-mod header names', () => {
+      // PoE2 "Layered Vest" isn't in our shipped Body Armours base list, but
+      // the advanced-mod headers tell us which words are the prefix/suffix so
+      // cleanBaseType can peel them off as a last resort.
+      const text = [
+        'Item Class: Body Armours',
+        'Rarity: Magic',
+        'Sanguine Layered Vest of the Troll',
+        '--------',
+        'Evasion Rating: 285',
+        '--------',
+        'Requires: Level 54, 86 Dex',
+        '--------',
+        'Item Level: 66',
+        '--------',
+        '{ Prefix Modifier "Sanguine" (Tier: 11) -- Life }',
+        '+38(30-39) to maximum Life',
+        '{ Suffix Modifier "of the Troll" (Tier: 6) -- Life }',
+        '12.4(9.1-13) Life Regeneration per second',
+      ].join('\n')
+
+      const item = parseItemText(text)!
+      expect(item.baseType).toBe('Layered Vest')
+    })
+
+    it('strips just the prefix when the magic item has no suffix', () => {
+      const text = [
+        'Item Class: Body Armours',
+        'Rarity: Magic',
+        'Sanguine Layered Vest',
+        '--------',
+        'Evasion Rating: 285',
+        '--------',
+        'Item Level: 66',
+        '--------',
+        '{ Prefix Modifier "Sanguine" (Tier: 11) -- Life }',
+        '+38(30-39) to maximum Life',
+      ].join('\n')
+
+      const item = parseItemText(text)!
+      expect(item.baseType).toBe('Layered Vest')
+    })
+
+    it('strips just the suffix when the magic item has no prefix', () => {
+      const text = [
+        'Item Class: Body Armours',
+        'Rarity: Magic',
+        'Layered Vest of the Troll',
+        '--------',
+        'Evasion Rating: 285',
+        '--------',
+        'Item Level: 66',
+        '--------',
+        '{ Suffix Modifier "of the Troll" (Tier: 6) -- Life }',
+        '12.4(9.1-13) Life Regeneration per second',
+      ].join('\n')
+
+      const item = parseItemText(text)!
+      expect(item.baseType).toBe('Layered Vest')
+    })
+
     it('parses a Normal item', () => {
       const text = [
         'Item Class: Rings',

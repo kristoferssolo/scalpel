@@ -3,9 +3,11 @@ import divinePoe1 from '../assets/currency/divine-orb.png'
 import divinePoe2 from '../assets/currency/poe2/divine-orb.png'
 import exaltedPoe2 from '../assets/currency/poe2/exalted-orb.png'
 
-/** PoE1 icon defaults. Keep these exports for feature code that's gated to PoE1
- *  only (dust explorer, div cards, socket recolor) -- those never render in PoE2
- *  so they can avoid the version plumbing. */
+/** PoE1-only currency icons. CONTRACT: import these *only* inside a subtree
+ *  gated by a `features.X` flag that's false on PoE2 (dust explorer, div cards,
+ *  socket recolor). Game-agnostic UI must use `getCurrencyIcons(version)`
+ *  below; importing chaosIcon there would silently render the PoE1 art on a
+ *  PoE2 item, which is the kind of "subtle wrong" that takes a week to catch. */
 export { default as chaosIcon } from '../assets/currency/chaos-orb.png'
 export { default as divineIcon } from '../assets/currency/divine-orb.png'
 export { default as goldIcon } from '../assets/currency/gold.png'

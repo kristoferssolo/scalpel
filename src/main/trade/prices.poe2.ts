@@ -58,7 +58,7 @@ const POE2_EXCHANGE_TYPES = [
  *  primary=divine and rates.X = "units of X per 1 divine", so:
  *    divineValue = primaryValue
  *    chaosValue  = primaryValue * rates.exalted (i.e. exalted-equivalent) */
-function applyResponse(resp: Poe2ExchangeResponse, priceMap: Map<string, PriceInfo>): void {
+export function applyResponse(resp: Poe2ExchangeResponse, priceMap: Map<string, PriceInfo>): void {
   const exaltedPerPrimary = resp.core.rates?.exalted ?? 0
   const nameById = new Map<string, string>()
   for (const item of [...(resp.core.items ?? []), ...(resp.items ?? [])]) {

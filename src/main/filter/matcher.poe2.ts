@@ -1,5 +1,5 @@
 import type { ConditionResult, FilterCondition, PoeItem } from '../../shared/types'
-import { boolMatch, compareNum } from './matcher'
+import { compareNum } from './matcher'
 
 /**
  * Evaluate a single filter condition that only exists in PoE2 filters. Called
@@ -11,25 +11,19 @@ import { boolMatch, compareNum } from './matcher'
  * PoE1-only conditions live inline in matcher.ts; mixing them across files
  * would be cross-talk we explicitly want to avoid. Anything PoE2-exclusive
  * belongs in this file.
+ *
+ * Conditions that the clipboard parser doesn't yet populate (IsVaalUnique,
+ * HasVaalUniqueMod, TwiceCorrupted, UnidentifiedItemTier) deliberately fall
+ * through to 'unknown' rather than hardcoding 'false' -- a hardcoded false
+ * makes "X False" rules silently match every item, which is worse than
+ * reporting the result as undetermined. Re-enable each case once the parser
+ * surfaces the underlying field.
  */
 export function evaluatePoe2Condition(cond: FilterCondition, item: PoeItem): ConditionResult {
   const { type, operator, values } = cond
 
   switch (type) {
-    case 'TwiceCorrupted':
-      return boolMatch(item.twiceCorrupted ?? false, values[0]) ? 'pass' : 'fail'
-
-    case 'IsVaalUnique':
-      return boolMatch(item.isVaalUnique ?? false, values[0]) ? 'pass' : 'fail'
-
-    case 'HasVaalUniqueMod':
-      return boolMatch(item.hasVaalUniqueMod ?? false, values[0]) ? 'pass' : 'fail'
-
     case 'UnidentifiedItemTier':
-      // Clipboard doesn't currently surface the unid tier on PoE2 rares, so
-      // treat it as 'unknown' until the parser populates the field. Tracking
-      // this as a deliberate unknown (rather than a hardcoded false) keeps the
-      // "block gated only on this" path from accidentally matching everything.
       if (item.unidentifiedItemTier == null) return 'unknown'
       return compareNum(item.unidentifiedItemTier, operator, parseInt(values[0])) ? 'pass' : 'fail'
 

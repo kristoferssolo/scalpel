@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { PoeItem, PriceInfo } from '../../../../shared/types'
-import { isFaustusItem } from '../../../../shared/data/trade/faustus-items'
+import { isVendorExchangeItem } from '../../../../shared/data/trade/bulk-exchange-eligibility'
 import { faustusPortrait } from '../../shared/icons'
 import { PriceChip } from '../../shared/PriceChip'
 
@@ -30,7 +30,7 @@ export function FaustusBanner({ item, priceInfo, chaosPerDivine }: FaustusBanner
     [item.name, item.baseType],
   )
 
-  if (!isFaustusItem(item.itemClass, item.baseType, item.rarity)) return null
+  if (!isVendorExchangeItem(1, item.itemClass, item.baseType, item.rarity)) return null
 
   return (
     <div className="relative flex items-stretch gap-3 my-2 rounded-lg overflow-visible bg-bg-card">

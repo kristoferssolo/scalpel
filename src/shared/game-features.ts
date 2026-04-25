@@ -14,6 +14,17 @@ export interface GameFeatures {
   divCards: boolean
   /** Socket recolor tool + the "Recolor" chip on items with sockets. */
   socketRecolor: boolean
+  /** Regex generator tab in the overlay's tool tray. */
+  regexTool: boolean
+  /** Baseline currency for the bulk-exchange "pay with" choice when the item
+   *  isn't priced in divines. PoE1's PriceInfo.chaosValue is denominated in
+   *  chaos; PoE2 reuses the same field for exalted, so the currency we offer
+   *  to pay with has to follow suit. */
+  bulkBaselineCurrency: 'chaos' | 'exalted'
+  /** Which "Recommended trader" banner to render on a price-check result --
+   *  Faustus on PoE1, Ange on PoE2 (same shape, different bulk-exchange
+   *  eligibility lists per game). */
+  bulkExchangeBanner: 'faustus' | 'ange'
   /** League options for the settings dropdown, in the order they appear. */
   leagues: readonly string[]
   /** Path hint shown under an empty filter picker. */
@@ -25,6 +36,9 @@ const FEATURES_BY_VERSION: Record<1 | 2, GameFeatures> = {
     dustExplorer: true,
     divCards: true,
     socketRecolor: true,
+    regexTool: true,
+    bulkBaselineCurrency: 'chaos',
+    bulkExchangeBanner: 'faustus',
     leagues: ['Mirage', 'Hardcore Mirage', 'Standard', 'Hardcore'],
     filterFolderHint: 'Documents\\My Games\\Path of Exile',
   },
@@ -32,6 +46,9 @@ const FEATURES_BY_VERSION: Record<1 | 2, GameFeatures> = {
     dustExplorer: false,
     divCards: false,
     socketRecolor: false,
+    regexTool: false,
+    bulkBaselineCurrency: 'exalted',
+    bulkExchangeBanner: 'ange',
     leagues: ['Fate of the Vaal', 'HC Fate of the Vaal', 'Standard', 'Hardcore'],
     filterFolderHint: 'Documents\\My Games\\Path of Exile 2',
   },

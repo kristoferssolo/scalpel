@@ -3,9 +3,17 @@
  *  electron-overlay-window / uiohook-napi into their import graphs -- those native
  *  modules would otherwise fail to load in Vitest. Set once by createOverlayWindow
  *  at startup; stable for the process lifetime since game switches trigger an
- *  app.relaunch() rather than an in-process swap. */
-export let poeVersion: 1 | 2 = 1
+ *  app.relaunch() rather than an in-process swap.
+ *
+ *  Exposed via a getter (instead of a `let`-export) so consumers can never
+ *  cache the value at import time -- every read goes through the function and
+ *  reflects the current state, not whatever was set when the module loaded. */
+let _poeVersion: 1 | 2 = 1
+
+export function getPoeVersion(): 1 | 2 {
+  return _poeVersion
+}
 
 export function setPoeVersion(v: 1 | 2): void {
-  poeVersion = v
+  _poeVersion = v
 }

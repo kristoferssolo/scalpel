@@ -1,7 +1,7 @@
 import { app, net } from 'electron'
 import type { AdvancedMod } from '../../shared/types'
 import { getTradeUrls } from '../../shared/endpoints'
-import { poeVersion } from '../game-state'
+import { getPoeVersion } from '../game-state'
 import { ATZOATL_ROOMS, ATZOATL_KEY_ROOMS } from '../../shared/data/trade/atzoatl'
 import { BENEFICIAL_NEGATIVE_KEYWORDS } from '../../shared/data/trade/beneficial-negatives'
 import { STAT_ID_REMAPS } from './stat-exceptions'
@@ -19,6 +19,7 @@ interface StatEntry {
 // ─── Item Class to Trade Category ─────────────────────────────────────────────
 
 export const ITEM_CLASS_TO_CATEGORY: Record<string, string> = {
+  // Shared between PoE1 and PoE2 (clipboard plural form -> trade `category` id).
   Rings: 'accessory.ring',
   Amulets: 'accessory.amulet',
   Belts: 'accessory.belt',
@@ -45,6 +46,20 @@ export const ITEM_CLASS_TO_CATEGORY: Record<string, string> = {
   'Rune Daggers': 'weapon.runedagger',
   Jewels: 'jewel',
   Flasks: 'flask',
+  // PoE2-only classes that have live listings. Keeping them in the same map
+  // is safe -- no key collides with PoE1, and stat-matcher / trade.ts both
+  // look up by the exact class name the clipboard reports. Without these
+  // entries the trade router falls back to `query.type = baseType`, which
+  // constrains the search to one base type when the user wants the whole
+  // class. Excluded classes that PoE2 players never see drops in (Claws,
+  // Daggers, Flails, 1H/2H Swords + Axes, Trap Tools) -- adding them here
+  // would point the router at a category with zero live listings.
+  Bucklers: 'armour.buckler',
+  Crossbows: 'weapon.crossbow',
+  Spears: 'weapon.spear',
+  Foci: 'armour.focus',
+  'Fishing Rods': 'weapon.rod',
+  Talismans: 'weapon.talisman',
 }
 
 // ─── Stat Matcher ─────────────────────────────────────────────────────────────
@@ -128,7 +143,7 @@ async function fetchStats(): Promise<void> {
     return
   }
   if (inFlight) return inFlight
-  const url = getTradeUrls(poeVersion).stats
+  const url = getTradeUrls(getPoeVersion()).stats
   inFlight = (async () => {
     const started = Date.now()
     try {

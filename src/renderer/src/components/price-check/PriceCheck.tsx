@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import type { PriceCheckProps, StatFilter, Listing, BulkListing } from './types'
 import { getTradeUrls } from '../../../../shared/endpoints'
+import { getGameFeatures } from '../../../../shared/game-features'
 import { getCurrencyIcons } from '../../shared/icons'
 import {
   RARITY_COLORS,
@@ -40,6 +41,7 @@ export function PriceCheck({
 }: PriceCheckProps): JSX.Element {
   const tradeUrls = getTradeUrls(poeVersion)
   const currencyIcons = getCurrencyIcons(poeVersion)
+  const features = getGameFeatures(poeVersion)
   const isDivCard = item.itemClass === 'Divination Cards'
   const [selectedUnique, setSelectedUnique] = useState<string | null>(null)
   const color = selectedUnique ? RARITY_COLORS['Unique'] : (RARITY_COLORS[item.rarity] ?? '#c8c8c8')
@@ -161,12 +163,11 @@ export function PriceCheck({
     setError(null)
     setSearched(true)
     try {
-      // Baseline currency flips per game -- chaos for PoE1, exalted for PoE2.
-      // The `chaosValue` on PriceInfo keeps its PoE1 name but semantically
-      // means "baseline currency count" (exalted in PoE2), so the currency we
-      // pay with follows suit.
-      const baseline = poeVersion === 2 ? 'exalted' : 'chaos'
-      const payWith = priceInfo?.divineValue != null && priceInfo.divineValue >= 1 ? 'divine' : baseline
+      // PriceInfo.chaosValue keeps its PoE1 name but semantically means
+      // "baseline currency count" -- chaos in PoE1, exalted in PoE2 -- so the
+      // currency we offer to pay with follows the active game's baseline.
+      const payWith =
+        priceInfo?.divineValue != null && priceInfo.divineValue >= 1 ? 'divine' : features.bulkBaselineCurrency
       const result = await window.api.bulkExchange(item.name, item.baseType, payWith)
       setBulkListings(result.listings)
       setTotal(result.total)
@@ -608,7 +609,7 @@ export function PriceCheck({
           )}
         </div>
 
-        {poeVersion === 2 ? (
+        {features.bulkExchangeBanner === 'ange' ? (
           <AngeBanner item={item} priceInfo={priceInfo} chaosPerDivine={chaosPerDivine} />
         ) : (
           <FaustusBanner item={item} priceInfo={priceInfo} chaosPerDivine={chaosPerDivine} />

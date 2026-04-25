@@ -1,4 +1,3 @@
-import { chaosIcon, divineIcon } from '../../shared/icons'
 import { RARITY_COLORS, iconMap } from '../../shared/constants'
 import { formatPrice, getItemIcon } from '../../shared/utils'
 // CURRENCY_ICONS_* below are module-load-time currency-abbrev -> icon-url maps.
@@ -23,7 +22,6 @@ import socketBlue from '../../assets/sockets/socket-blue.png'
 import socketWhite from '../../assets/sockets/socket-white.png'
 import socketAbyss from '../../assets/sockets/socket-abyss.png'
 
-export { chaosIcon, divineIcon }
 export { RARITY_COLORS, iconMap }
 export { formatPrice, getItemIcon }
 export { socketWhite }
@@ -110,10 +108,6 @@ const CURRENCY_ICONS_POE2: Record<string, string> = buildCurrencyIcons(itemIcons
 export function getCurrencyIconMap(version: 1 | 2): Record<string, string> {
   return version === 2 ? CURRENCY_ICONS_POE2 : CURRENCY_ICONS_POE1
 }
-
-/** Legacy export kept so existing PoE1 call sites don't need to thread version
- *  until they migrate. New code should prefer getCurrencyIconMap(version). */
-export const CURRENCY_ICONS = CURRENCY_ICONS_POE1
 
 export const SOCKET_IMGS: Record<string, string> = {
   R: socketRed,

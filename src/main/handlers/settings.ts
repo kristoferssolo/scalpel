@@ -28,6 +28,16 @@ export function register(store: Store<AppSettings>): void {
   } as const satisfies Partial<Record<keyof AppSettings, readonly [keyof AppSettings, keyof AppSettings]>>
 
   ipcMain.handle('set-setting', (event, key: keyof AppSettings, value: AppSettings[typeof key]) => {
+    // poeVersion is intentionally not writable through this path. The boot sync
+    // in main/index.ts seeds the flat league/filterPath/filterDir/tradePriceOption
+    // fields from whichever per-version mirror matches `poeVersion` -- flipping
+    // it here without also relaunching would leave the flat fields pointing at
+    // the wrong game's data. requestGameSwitch() in main/game-switch.ts owns
+    // the toggle and triggers a relaunch after writing.
+    if (key === 'poeVersion') {
+      console.warn('[settings] ignoring set-setting(poeVersion) -- use requestGameSwitch')
+      return
+    }
     const prev = store.get(key)
     store.set(key, value)
     const mirror = MIRROR_KEYS[key as keyof typeof MIRROR_KEYS]

@@ -1,6 +1,7 @@
 import { clipboard } from 'electron'
 import type { PoeItem, ItemRarity, AdvancedMod } from '../../shared/types'
-import { ITEM_CLASSES_ALL } from '../../shared/data/items/item-classes'
+import { ITEM_CLASSES_ALL, getItemClasses } from '../../shared/data/items/item-classes'
+import { getPoeVersion } from '../game-state'
 
 const knownBaseTypes = new Set(Object.values(ITEM_CLASSES_ALL).flatMap((c) => c.bases))
 const ITEM_SIZES: Record<string, [number, number]> = Object.fromEntries(
@@ -27,22 +28,71 @@ function findBaseInName(name: string, candidates: Iterable<string>): string | nu
   return null
 }
 
-/** Strip "Superior" prefix and magic item affixes to get the real base type */
-function cleanBaseType(rawBase: string, rarity: ItemRarity, itemClass?: string): string {
+/** Strip "Superior" prefix and magic item affixes to get the real base type. */
+function cleanBaseType(
+  rawBase: string,
+  rarity: ItemRarity,
+  itemClass?: string,
+  affixNames?: { prefix?: string; suffix?: string },
+): string {
   const clean = rawBase.replace(/^Superior\s+/i, '')
   if (rarity === 'Magic') {
-    // First try bases specific to this item class (avoids false matches)
+    // First try bases specific to this item class for the active game (avoids
+    // false matches and keeps PoE1/PoE2 base lists from shadowing each other).
     if (itemClass) {
-      const classBases = ITEM_CLASSES_ALL[itemClass]?.bases
+      const classBases = getItemClasses(getPoeVersion())[itemClass]?.bases
       if (classBases?.length) {
         const match = findBaseInName(clean, classBases)
         if (match) return match
       }
     }
-    // Fall back to all known base types
-    return findBaseInName(clean, knownBaseTypes) ?? clean
+    // Then any base type seen in the loaded filter (covers PoE2 bases the
+    // shipped item-classes data doesn't enumerate yet).
+    const knownMatch = findBaseInName(clean, knownBaseTypes)
+    if (knownMatch) return knownMatch
+    // Last resort: peel the affix names parsed from the advanced-mod headers
+    // ({ Prefix Modifier "Sanguine" }, { Suffix Modifier "of the Troll" }).
+    // This is exact (the names come from the clipboard, not a regex guess),
+    // so it works for any base even if our static base list is missing it.
+    if (affixNames) {
+      let stripped = clean
+      if (affixNames.prefix) {
+        const re = new RegExp(`^${escapeRegex(affixNames.prefix)}\\s+`, 'i')
+        stripped = stripped.replace(re, '')
+      }
+      if (affixNames.suffix) {
+        const re = new RegExp(`\\s+${escapeRegex(affixNames.suffix)}$`, 'i')
+        stripped = stripped.replace(re, '')
+      }
+      if (stripped !== clean) return stripped
+    }
+    return clean
   }
   return clean
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** Cheap scan for the prefix/suffix names in advanced-mod headers, e.g.
+ *   { Prefix Modifier "Sanguine" (Tier: 11) -- Life }
+ *   { Suffix Modifier "of the Troll" (Tier: 6) -- Life }
+ *  Returns only the FIRST of each so cleanBaseType has something to peel off
+ *  the raw "Sanguine Layered Vest of the Troll" when the static base lists
+ *  don't recognize the base. Magic items only ever have one prefix and one
+ *  suffix so first-match is correct. */
+function scanMagicAffixNames(text: string): { prefix?: string; suffix?: string } {
+  const result: { prefix?: string; suffix?: string } = {}
+  const headerPattern = /^\{\s*(?:[A-Z][a-z]+\s+)?(Prefix|Suffix)\s+Modifier\s*"([^"]+)"/
+  for (const line of text.split('\n')) {
+    const m = line.trim().match(headerPattern)
+    if (!m) continue
+    const kind = m[1].toLowerCase() as 'prefix' | 'suffix'
+    if (!result[kind]) result[kind] = m[2]
+    if (result.prefix && result.suffix) break
+  }
+  return result
 }
 
 /**
@@ -115,6 +165,12 @@ export function parseItemText(text: string): PoeItem | null {
     }
     return keyword
   })()
+  // Pull just the prefix/suffix names from the advanced-mod headers so
+  // cleanBaseType can fall back to peeling them off the raw name when the
+  // static base list doesn't recognize the base. We do a lightweight regex
+  // scan instead of running the full parseAdvancedMods up here.
+  const magicAffixNames = rarity === 'Magic' ? scanMagicAffixNames(text) : undefined
+
   const baseType =
     heistBaseType ??
     cleanBaseType(
@@ -124,6 +180,7 @@ export function parseItemText(text: string): PoeItem | null {
         .replace(keepBlight ? /(?:)/ : /^Blight-[Rr]avaged /i, ''),
       rarity as ItemRarity,
       itemClass,
+      magicAffixNames,
     )
 
   const isGemClass = ['Gems', 'Support Gems', 'Skill Gems', 'Active Skill Gems', 'Support Skill Gems'].includes(

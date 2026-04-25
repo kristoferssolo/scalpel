@@ -1,6 +1,6 @@
 import { app, net } from 'electron'
 import { getTradeUrls } from '../../shared/endpoints'
-import { poeVersion } from '../game-state'
+import { getPoeVersion } from '../game-state'
 import { harvestIcons } from './icon-cache'
 import { getOverlayWindow } from '../overlay'
 import { TRANSFIGURED_GEM_DISC } from '../../shared/data/trade/transfigured-gems'
@@ -426,7 +426,7 @@ export async function searchTrade(
   listedTime?: string,
 ): Promise<TradeResult> {
   await _ensureStatsLoaded()
-  const dialect = TRADE_DIALECTS[poeVersion]
+  const dialect = TRADE_DIALECTS[getPoeVersion()]
   const priceOption = tradePriceOption ?? dialect.priceDivinePair
 
   // Build query - div cards always use 'available' (most listings aren't instant buyout)
@@ -798,7 +798,7 @@ export async function searchTrade(
     sort: { price: 'asc' },
   })
 
-  const urls = getTradeUrls(poeVersion)
+  const urls = getTradeUrls(getPoeVersion())
   const searchResult = (await fetchJson(urls.search(league), {
     method: 'POST',
     body,
@@ -862,10 +862,15 @@ export async function searchTrade(
     }>
   }
 
+  // The trade fetch endpoint occasionally returns `null` for entries whose
+  // listing was deleted between our search call and our fetch call -- guard
+  // both consumers below so we don't NPE inside the map callback.
+  const fetchedEntries = (fetchResult.result ?? []).filter((r): r is NonNullable<typeof r> => r != null)
+
   broadcastNewIcons(
     harvestIcons(
-      poeVersion,
-      (fetchResult.result ?? []).map((r) => ({
+      getPoeVersion(),
+      fetchedEntries.map((r) => ({
         name: r.item?.name,
         baseType: r.item?.baseType,
         rarity: ['Normal', 'Magic', 'Rare', 'Unique'][r.item?.frameType ?? 0],
@@ -874,7 +879,7 @@ export async function searchTrade(
     ),
   )
 
-  const listings: TradeListing[] = (fetchResult.result ?? []).map((r) => ({
+  const listings: TradeListing[] = fetchedEntries.map((r) => ({
     id: r.id,
     price: r.listing.price ?? null,
     account: r.listing.account.name,
@@ -1023,7 +1028,7 @@ export async function searchTrade(
 // ─── Bulk Exchange ──────────────────────────────────────────────────────────
 
 import { getBulkExchangeIdMap } from '../../shared/data/trade/bulk-exchange-ids'
-import { isAngeItem } from '../../shared/data/trade/ange-items.poe2'
+import { isVendorExchangeItem } from '../../shared/data/trade/bulk-exchange-eligibility'
 
 /** Build the `type` field of a gem trade query. Returns the discriminator shape for
  *  transfigured gems (with "Vaal " prepended to the base when the gem has a Vaal alt),
@@ -1046,7 +1051,7 @@ export function getBulkExchangeId(name: string, baseType: string): string | null
   // Try exact name first (e.g. "Divine Orb", "Uncut Skill Gem (Level 20)"),
   // then base type. Map is picked per game: PoE1 uses the hand-maintained
   // legacy list, PoE2 uses EE2-sourced IDs.
-  const bulkIdMap = getBulkExchangeIdMap(poeVersion)
+  const bulkIdMap = getBulkExchangeIdMap(getPoeVersion())
   let id = bulkIdMap[name] ?? bulkIdMap[baseType] ?? null
   if (!id || id === 'sep') return null
   // Fix legacy zana- prefixed map IDs to current format
@@ -1074,9 +1079,10 @@ export function isBulkExchangeItem(itemClass: string, name: string, baseType: st
   if (itemClass === 'Stackable Currency' && (_rarity === 'Rare' || _rarity === 'Unique')) return false
 
   // PoE2 routing: anything sold at Ange's exchange goes through bulk, and the
-  // final check below catches the rest via exchange-ID presence. Ange coverage
-  // is the user-facing source of truth for "what you'd trade in bulk" here.
-  if (poeVersion === 2 && isAngeItem(itemClass, baseType, _rarity)) return true
+  // final check below catches the rest via exchange-ID presence. The shared
+  // eligibility table is the user-facing source of truth for "what you'd
+  // trade in bulk" -- PoE1 uses the same predicate via Faustus elsewhere.
+  if (getPoeVersion() === 2 && isVendorExchangeItem(2, itemClass, baseType, _rarity)) return true
 
   const bulkClasses = new Set([
     'Currency',
@@ -1111,7 +1117,7 @@ export async function searchBulkExchange(
     sort: { have: 'asc' },
   })
 
-  const result = (await fetchJson(getTradeUrls(poeVersion).exchange(league), {
+  const result = (await fetchJson(getTradeUrls(getPoeVersion()).exchange(league), {
     method: 'POST',
     body,
   })) as {
@@ -1167,7 +1173,7 @@ export async function searchBulkExchange(
 // ─── Shared listing fetch helper ─────────────────────────────────────────────
 
 async function fetchAndMapListings(ids: string[], queryId: string): Promise<TradeListing[]> {
-  const fetchResult = (await fetchJson(getTradeUrls(poeVersion).fetch(ids.join(','), queryId))) as {
+  const fetchResult = (await fetchJson(getTradeUrls(getPoeVersion()).fetch(ids.join(','), queryId))) as {
     result: Array<{
       id: string
       listing: {
@@ -1196,10 +1202,14 @@ async function fetchAndMapListings(ids: string[], queryId: string): Promise<Trad
     }>
   }
 
+  // Same null-entry guard as searchTrade: the fetch endpoint occasionally
+  // returns null for listings deleted mid-flight.
+  const fetchedEntries = (fetchResult.result ?? []).filter((r): r is NonNullable<typeof r> => r != null)
+
   broadcastNewIcons(
     harvestIcons(
-      poeVersion,
-      (fetchResult.result ?? []).map((r) => ({
+      getPoeVersion(),
+      fetchedEntries.map((r) => ({
         name: r.item?.name,
         baseType: r.item?.baseType ?? r.item?.typeLine,
         rarity: ['Normal', 'Magic', 'Rare', 'Unique'][r.item?.frameType ?? 0],
@@ -1208,7 +1218,7 @@ async function fetchAndMapListings(ids: string[], queryId: string): Promise<Trad
     ),
   )
 
-  return (fetchResult.result ?? []).map((r) => ({
+  return fetchedEntries.map((r) => ({
     id: r.id,
     price: r.listing.price ? { amount: r.listing.price.amount, currency: r.listing.price.currency } : null,
     account: r.listing.account.name,
@@ -1255,7 +1265,7 @@ export async function searchMapsByRegex(
   tradePriceOption: string,
 ): Promise<TradeResult> {
   await _ensureStatsLoaded()
-  const dialect = TRADE_DIALECTS[poeVersion]
+  const dialect = TRADE_DIALECTS[getPoeVersion()]
 
   // poe.re text -> trade API text overrides for mods with different wording
   const modTextOverrides: Record<string, string> = {
@@ -1374,7 +1384,7 @@ export async function searchMapsByRegex(
 
   const body = JSON.stringify({ query, sort: { price: 'asc' } })
 
-  const searchResult = (await fetchJson(getTradeUrls(poeVersion).search(league), {
+  const searchResult = (await fetchJson(getTradeUrls(getPoeVersion()).search(league), {
     method: 'POST',
     body,
   })) as TradeSearchResult

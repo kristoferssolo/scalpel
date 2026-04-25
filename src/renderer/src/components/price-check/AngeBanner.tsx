@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { PoeItem, PriceInfo } from '../../../../shared/types'
-import { isAngeItem } from '../../../../shared/data/trade/ange-items.poe2'
+import { isVendorExchangeItem } from '../../../../shared/data/trade/bulk-exchange-eligibility'
 import { angePortrait } from '../../shared/icons'
 import { PriceChip } from '../../shared/PriceChip'
 
@@ -27,7 +27,7 @@ interface AngeBannerProps {
 export function AngeBanner({ item, priceInfo, chaosPerDivine }: AngeBannerProps): JSX.Element | null {
   const joke = useMemo(() => ANGE_JOKES[Math.floor(Math.random() * ANGE_JOKES.length)], [item.name, item.baseType])
 
-  if (!isAngeItem(item.itemClass, item.baseType, item.rarity)) return null
+  if (!isVendorExchangeItem(2, item.itemClass, item.baseType, item.rarity)) return null
 
   return (
     <div className="relative flex items-stretch gap-3 my-2 rounded-lg overflow-visible bg-bg-card">

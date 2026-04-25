@@ -2,7 +2,7 @@ import { BrowserWindow, ipcMain, screen } from 'electron'
 import { join } from 'path'
 import { OverlayController, OVERLAY_WINDOW_OPTS } from 'electron-overlay-window'
 import { uIOhook } from 'uiohook-napi'
-import { poeVersion, setPoeVersion } from './game-state'
+import { getPoeVersion, setPoeVersion } from './game-state'
 
 let overlayWindow: BrowserWindow | null = null
 let overlayVisible = false
@@ -69,7 +69,7 @@ ipcMain.handle('get-overlay-state', () => {
   const tb = OverlayController.targetBounds
   const sf = getScaleFactor()
   return {
-    poeVersion,
+    poeVersion: getPoeVersion(),
     gameBounds:
       tb && tb.width
         ? {
@@ -227,12 +227,12 @@ export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
   }
 
   // Attach to the PoE game window — syncs overlay bounds automatically
-  OverlayController.attachByTitle(overlayWindow, POE_WINDOW_TITLES[poeVersion])
+  OverlayController.attachByTitle(overlayWindow, POE_WINDOW_TITLES[getPoeVersion()])
 
   OverlayController.events.on('attach', (ev) => {
     try {
       if (overlayWindow && !overlayWindow.isDestroyed()) {
-        overlayWindow.webContents.send('poe-version', poeVersion)
+        overlayWindow.webContents.send('poe-version', getPoeVersion())
       }
       sendGameBounds(ev.width, ev.height)
       mouseOverPanel = false
@@ -296,7 +296,7 @@ export function showOverlay(): void {
   try {
     const tb = OverlayController.targetBounds
     if (tb && tb.width) sendGameBounds(tb.width, tb.height)
-    overlayWindow.webContents.send('poe-version', poeVersion)
+    overlayWindow.webContents.send('poe-version', getPoeVersion())
   } catch (err) {
     console.error('[overlay] Error in showOverlay:', err)
   }

@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import type { PriceInfo } from '../../shared/types'
 import { POE_NINJA_API } from '../../shared/endpoints'
-import { poeVersion } from '../game-state'
+import { getPoeVersion } from '../game-state'
 import { fetchAndBuildPoe2PriceMap } from './prices.poe2'
 import uniqueInfoData from '../../shared/data/items/unique-info.json'
 const staticUniquesByBase = uniqueInfoData as Record<string, string[]>
@@ -36,8 +36,11 @@ function saveCachedUniquesByBase(data: Record<string, string[]>): void {
   }
 }
 
-// Cache: league -> (name -> price)
-let cachedLeague = ''
+// Cache: "<poeVersion>:<league>" -> (name -> price). Versioning the key prevents
+// "Standard" from one game silently serving the other game's prices if an
+// in-process flip ever happens (relaunch on game switch makes that rare today,
+// but the cost of the discriminator is one string concat per refresh).
+let cachedKey = ''
 let priceMap = new Map<string, PriceInfo>()
 let lastFetchTime = 0
 // PoE2 fires 13 parallel requests per refresh (one per exchange category) while
@@ -206,8 +209,12 @@ function processDenseResponse(resp: DenseResponse): void {
 /** Reset all price maps + bookkeeping in one shot. Called after a successful fetch
  *  so a failed request (offline, sleep/resume, net::ERR_NETWORK_IO_SUSPENDED) leaves
  *  the old cache intact until the next scheduled retry 10-20 min later. */
+function cacheKeyFor(league: string): string {
+  return `${getPoeVersion()}:${league}`
+}
+
 function resetCache(league: string, now: number): void {
-  cachedLeague = league
+  cachedKey = cacheKeyFor(league)
   priceMap = new Map()
   divCardPriceMap = new Map()
   gemNames = new Set()
@@ -217,10 +224,10 @@ function resetCache(league: string, now: number): void {
 export async function refreshPrices(league: string): Promise<void> {
   if (!league) return
   const now = Date.now()
-  if (league === cachedLeague && now - lastFetchTime < CACHE_TTL_BY_VERSION[poeVersion]) return
+  if (cacheKeyFor(league) === cachedKey && now - lastFetchTime < CACHE_TTL_BY_VERSION[getPoeVersion()]) return
 
   try {
-    if (poeVersion === 2) {
+    if (getPoeVersion() === 2) {
       // PoE2 pricing lives in prices.poe2.ts; we just orchestrate cache swap
       // here. Build the new map first so a failed fetch leaves old data intact.
       const nextPriceMap = await fetchAndBuildPoe2PriceMap(league, fetchJson)

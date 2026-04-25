@@ -174,21 +174,23 @@ export function TitleBar({
             />
           </button>
         )}
-        <button
-          onClick={() => onSetView('regex')}
-          title="Regex Tool"
-          className="w-[30px] h-[30px] flex items-center justify-center p-0.5"
-          style={{
-            background: view === 'regex' ? 'var(--accent)' : undefined,
-          }}
-        >
-          <img
-            src={poereIcon}
-            alt=""
-            className="w-[18px] h-[18px] object-contain"
-            style={{ filter: view === 'regex' ? 'brightness(0.1)' : 'none' }}
-          />
-        </button>
+        {features.regexTool && (
+          <button
+            onClick={() => onSetView('regex')}
+            title="Regex Tool"
+            className="w-[30px] h-[30px] flex items-center justify-center p-0.5"
+            style={{
+              background: view === 'regex' ? 'var(--accent)' : undefined,
+            }}
+          >
+            <img
+              src={poereIcon}
+              alt=""
+              className="w-[18px] h-[18px] object-contain"
+              style={{ filter: view === 'regex' ? 'brightness(0.1)' : 'none' }}
+            />
+          </button>
+        )}
         <button
           onClick={() => onSetView('setup')}
           className="w-[30px] h-[30px] flex items-center justify-center"

@@ -36,6 +36,22 @@ describe('ITEM_CLASS_TO_CATEGORY', () => {
     expect(ITEM_CLASS_TO_CATEGORY['Wands']).toBe('weapon.wand')
     expect(ITEM_CLASS_TO_CATEGORY['Jewels']).toBe('jewel')
     expect(ITEM_CLASS_TO_CATEGORY['Flasks']).toBe('flask')
+    // PoE2-specific classes that have live listings -- without these the
+    // trade router falls back to searching a single base type instead of the
+    // whole class.
+    expect(ITEM_CLASS_TO_CATEGORY['Bucklers']).toBe('armour.buckler')
+    expect(ITEM_CLASS_TO_CATEGORY['Crossbows']).toBe('weapon.crossbow')
+    expect(ITEM_CLASS_TO_CATEGORY['Spears']).toBe('weapon.spear')
+    expect(ITEM_CLASS_TO_CATEGORY['Foci']).toBe('armour.focus')
+  })
+
+  it('excludes PoE2 categories that have zero live listings (Claws, Daggers, Flails, 1H/2H Swords+Axes, Trap Tools)', () => {
+    // These class names exist in RePoE-fork's metadata but PoE2 players never
+    // get drops in them, so trade2/search returns nothing. Routing through
+    // baseType (the fallback when the class has no category) is closer to
+    // correct than pointing at an empty category.
+    expect(ITEM_CLASS_TO_CATEGORY['Flails']).toBeUndefined()
+    expect(ITEM_CLASS_TO_CATEGORY['Trap Tools']).toBeUndefined()
   })
 
   it('does not contain unknown classes', () => {

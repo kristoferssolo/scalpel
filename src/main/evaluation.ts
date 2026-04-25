@@ -11,7 +11,7 @@ import {
   evaluateBlock,
 } from './filter/matcher'
 import { getOverlayWindow, showOverlay } from './overlay'
-import { poeVersion } from './game-state'
+import { getPoeVersion } from './game-state'
 import { sendCtrlCToPoE } from './hotkeys'
 import { focusGameWindow } from './overlay'
 import { snapshotClipboard } from './clipboard-preserve'
@@ -335,7 +335,7 @@ async function ensureCorrectGameForHotkey(store: Store<AppSettings>): Promise<bo
   if (OverlayController.targetHasFocus) return true
   const v = await detectFocusedPoeVersion()
   if (!v) return false
-  if (v === poeVersion) return true
+  if (v === getPoeVersion()) return true
   requestGameSwitch(store, v).catch((err) => console.error('[game-switch]', err))
   return false
 }
