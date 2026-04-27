@@ -173,6 +173,9 @@ export function GeneralTab({ settings, update }: Props): JSX.Element {
                 const k = localStorage.key(i)
                 if (k && k.startsWith('tip.')) localStorage.removeItem(k)
               }
+              // Mounted DismissibleTip instances only check localStorage on mount,
+              // so reload to surface the dismissed tips again.
+              window.location.reload()
             }}
             className="text-[11px] px-3 py-1.5 mt-[6px] text-text-dim"
           >

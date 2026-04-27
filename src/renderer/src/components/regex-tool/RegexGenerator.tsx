@@ -68,8 +68,8 @@ export function RegexGenerator(): JSX.Element {
   const [saveOpen, setSaveOpen] = useState(false)
   const [loadOpen, setLoadOpen] = useState(false)
   const [macroTagError, setMacroTagError] = useState<string | null>(null)
-  /** When set, Save updates this preset id instead of dedup-or-creating. Set on load,
-   *  cleared on delete-of-this-preset. Saves keep it set so further edits keep updating. */
+  /** Active save target. When set, Save updates this preset id instead of dedup-or-creating;
+   *  null means "create new". Saves keep it set so further edits keep updating. */
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null)
 
   // Active generator pushes its current regex and auto-tags up here.
@@ -87,6 +87,9 @@ export function RegexGenerator(): JSX.Element {
     setPresetTags(savedTagsByGenerator.current[g] ?? [])
     setCustomTagInput('')
     setSaveOpen(false)
+    // Editing context belongs to one generator; switching tabs starts fresh so a stray
+    // Update doesn't overwrite a preset that lives on a different generator.
+    setEditingPresetId(null)
     localStorage.setItem('scalpel:regex:generator', g)
     _setGenerator(g)
   }
@@ -239,6 +242,7 @@ export function RegexGenerator(): JSX.Element {
     })
     setPresetTags([])
     setCustomTagInput('')
+    setEditingPresetId(null)
   }
 
   // ---- Shared chrome rendered as render-props slots the active generator composes. --
