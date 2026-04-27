@@ -1,10 +1,11 @@
 interface BoundaryControlProps {
   value: number
   min: number
+  max?: number
   onChange: (val: number) => void
 }
 
-export function BoundaryControl({ value, min, onChange }: BoundaryControlProps): JSX.Element {
+export function BoundaryControl({ value, min, max = Infinity, onChange }: BoundaryControlProps): JSX.Element {
   return (
     <div className="flex flex-col items-center shrink-0">
       <input
@@ -13,7 +14,7 @@ export function BoundaryControl({ value, min, onChange }: BoundaryControlProps):
         value={value}
         onChange={(e) => {
           const val = parseInt(e.target.value)
-          if (!isNaN(val) && val >= min) onChange(val)
+          if (!isNaN(val) && val >= min && val <= max) onChange(val)
         }}
         className="w-12 px-1 py-[5px] text-[16px] font-bold font-mono text-center bg-bg-solid text-accent border border-border rounded-[5px] relative z-[1]"
       />
@@ -33,7 +34,7 @@ export function BoundaryControl({ value, min, onChange }: BoundaryControlProps):
           </svg>
         </div>
         <div
-          onClick={() => onChange(value + 1)}
+          onClick={() => value < max && onChange(value + 1)}
           className="flex items-center justify-center w-[22px] h-[20px] cursor-pointer text-text-dim hover:text-accent opacity-70 hover:opacity-100 select-none rounded-[3px] transition-[opacity,color] duration-100"
         >
           <svg width="12" height="12" viewBox="0 0 10 10" fill="none">

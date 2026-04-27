@@ -60,6 +60,12 @@ export function BreakpointEditor({
     if (newValue < minBoundary) return
     const prevBoundary = boundaryIndex > 0 ? localBoundaries[boundaryIndex - 1] : startValue
     if (newValue <= prevBoundary) return
+    // Reject moves that would cross the next boundary -- the cascade can't be persisted
+    // (we only send one oldValue/newValue pair) so cross-boundary moves silently lose
+    // their adjacent threshold's intent. Forcing every segment to keep width >= 1 also
+    // preserves filterblade's tier groupings instead of collapsing them.
+    const nextBoundary = boundaryIndex < localBoundaries.length - 1 ? localBoundaries[boundaryIndex + 1] : Infinity
+    if (newValue >= nextBoundary) return
 
     const updated = applyBoundaryChange(localBoundaries, boundaryIndex, newValue, minBoundary)
     setLocalBoundaries(updated)
@@ -133,6 +139,7 @@ export function BreakpointEditor({
                   <BoundaryControl
                     value={localBoundaries[i]}
                     min={i === 0 ? minBoundary : localBoundaries[i - 1] + 1}
+                    max={i < localBoundaries.length - 1 ? localBoundaries[i + 1] - 1 : Infinity}
                     onChange={(val) => handleLocalChange(i, val)}
                   />
                 )}
