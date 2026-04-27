@@ -86,8 +86,7 @@ export function PriceCheckTab({ settings, update, tryHotkey }: Props): JSX.Eleme
 
       <div className="text-[10px] text-accent tracking-[1.5px] uppercase mt-3 font-bold">Defaults</div>
 
-      {/* Group the defaults so they pack tighter than the outer section gap. */}
-      <div className="flex flex-col gap-[10px]">
+      <div className="grid grid-cols-2 gap-x-2 gap-y-[10px]">
         <SettingSelectBox
           label="Trade listings"
           value={settings.tradeStatus ?? 'available'}
@@ -113,8 +112,21 @@ export function PriceCheckTab({ settings, update, tryHotkey }: Props): JSX.Eleme
           onChange={(v) => update('tradeResultsView', v)}
         />
         <section>
+          <label>Collapse Listings by Account</label>
+          <div
+            className="setting-box mt-[2px] flex items-center justify-between cursor-pointer"
+            onClick={() => update('tradeCollapseListings', !(settings.tradeCollapseListings ?? true))}
+          >
+            <span className="value">{(settings.tradeCollapseListings ?? true) ? 'Yes' : 'No'}</span>
+            <Toggle
+              checked={settings.tradeCollapseListings ?? true}
+              onChange={(val) => update('tradeCollapseListings', val)}
+            />
+          </div>
+        </section>
+        <section>
           <label>Default search percentage</label>
-          <div className="flex items-center gap-[10px] mt-[2px]">
+          <div className="setting-box mt-[2px] flex items-center gap-[10px]">
             <input
               type="range"
               min={50}

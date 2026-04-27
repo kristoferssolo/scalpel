@@ -147,7 +147,8 @@ export function register(store: Store<AppSettings>): void {
       // persisted global settings.
       const status = searchOptions?.statusOption ?? store.get('tradeStatus') ?? 'available'
       const price = searchOptions?.priceOption ?? store.get('tradePriceOption') ?? 'chaos_divine'
-      return searchTrade(league, item, statFilters, status, price, searchOptions?.listedTime)
+      const collapse = store.get('tradeCollapseListings') ?? true
+      return searchTrade(league, item, statFilters, status, price, searchOptions?.listedTime, collapse)
     },
   )
 
@@ -241,6 +242,7 @@ export function register(store: Store<AppSettings>): void {
       const league = store.get('league')
       const tradeStatus = store.get('tradeStatus') ?? 'available'
       const tradePriceOption = store.get('tradePriceOption') ?? 'chaos_divine'
+      const collapse = store.get('tradeCollapseListings') ?? true
       const result = await searchMapsByRegex(
         league,
         params.tier,
@@ -253,6 +255,7 @@ export function register(store: Store<AppSettings>): void {
         params.corrupted8mod,
         tradeStatus,
         tradePriceOption,
+        collapse,
       )
       return { ...result, league }
     },

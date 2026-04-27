@@ -87,6 +87,7 @@ const store = new Store<AppSettings>({
     reloadOnSave: true,
     updateChannel: 'stable',
     tradeStatus: 'available',
+    tradeCollapseListings: true,
     tradePriceOption: 'chaos_divine',
     tradePriceOptionPoe1: 'chaos_divine',
     tradePriceOptionPoe2: 'exalted_divine',

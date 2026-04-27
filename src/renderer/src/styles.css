@@ -207,6 +207,7 @@ input[type='number']::-webkit-outer-spin-button {
   .setting-box {
     @apply flex items-center justify-between rounded bg-black/30 cursor-pointer;
     padding: 8px 12px;
+    min-height: 40px;
   }
   .setting-box .value {
     @apply font-mono text-xs text-text truncate;

@@ -426,6 +426,7 @@ export async function searchTrade(
   tradeStatus: string = 'available',
   tradePriceOption?: string,
   listedTime?: string,
+  collapseListings: boolean = true,
 ): Promise<TradeResult> {
   await _ensureStatsLoaded()
   const dialect = TRADE_DIALECTS[getPoeVersion()]
@@ -766,7 +767,7 @@ export async function searchTrade(
   // filter entirely in that mode and do the equivalence math client-side; same here.
   const existing = (query.filters as Record<string, unknown>) ?? {}
   const tradeFiltersInner: Record<string, unknown> = {
-    collapse: { option: 'true' },
+    collapse: { option: collapseListings ? 'true' : 'false' },
   }
   if (priceOption !== dialect.priceEquivalent) {
     tradeFiltersInner.price = { min: null, max: null, option: priceOption }
@@ -1247,6 +1248,7 @@ export async function searchMapsByRegex(
   corrupted8mod: boolean,
   tradeStatus: string,
   tradePriceOption: string,
+  collapseListings: boolean = true,
 ): Promise<TradeResult> {
   await _ensureStatsLoaded()
   const dialect = TRADE_DIALECTS[getPoeVersion()]
@@ -1360,7 +1362,7 @@ export async function searchMapsByRegex(
           ...(tradePriceOption === dialect.priceDivinePair
             ? { price: { min: null, max: null, option: tradePriceOption } }
             : {}),
-          collapse: { option: 'true' },
+          collapse: { option: collapseListings ? 'true' : 'false' },
         },
       },
     },
