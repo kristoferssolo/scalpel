@@ -1,5 +1,14 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.7',
+    notes: [
+      'Added Path of Exile 2 support. Game is detected automatically, however you will need to restart Scalpel when switching games. It will prompt you.',
+      'Fixed default label colors not carrying through continue blocks.',
+      'Big internal refactor to keep PoE 1 and PoE 2 cleanly separated for future work.',
+      'Updated onboarding to handle setting up both or either game.',
+    ],
+  },
+  {
     version: '0.9.6',
     notes: [
       'Major changes to tier section in filter page',
