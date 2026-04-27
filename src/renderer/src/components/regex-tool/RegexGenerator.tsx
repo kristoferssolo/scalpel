@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ReactSortable } from 'react-sortablejs'
 import { CloseSmall, Save } from '@icon-park/react'
+import { DismissibleTip } from '../../shared/DismissibleTip'
 import { POE_REGEX_MAX_LENGTH } from './regex-engine'
 import { TagSourceIcon, loadStorage, tagChipStyle } from './mapmods-helpers'
 import poereIconTight from '../../assets/other/poere-logo-tight.svg'
@@ -67,6 +68,9 @@ export function RegexGenerator(): JSX.Element {
   const [saveOpen, setSaveOpen] = useState(false)
   const [loadOpen, setLoadOpen] = useState(false)
   const [macroTagError, setMacroTagError] = useState<string | null>(null)
+  /** When set, Save updates this preset id instead of dedup-or-creating. Set on load,
+   *  cleared on delete-of-this-preset. Saves keep it set so further edits keep updating. */
+  const [editingPresetId, setEditingPresetId] = useState<string | null>(null)
 
   // Active generator pushes its current regex and auto-tags up here.
   const [regex, setRegex] = useState('')
@@ -182,9 +186,9 @@ export function RegexGenerator(): JSX.Element {
   const savePreset = async (): Promise<void> => {
     if (presetTags.length === 0) return
     const payload = activeHandleRef.current?.getPresetPayload() ?? {}
-    const existingDupe = findMatchingPreset()
+    const id = editingPresetId ?? findMatchingPreset()?.id ?? crypto.randomUUID()
     const preset: RegexPreset = {
-      id: existingDupe?.id ?? crypto.randomUUID(),
+      id,
       generator,
       tags: presetTags,
       avoid: [],
@@ -197,12 +201,14 @@ export function RegexGenerator(): JSX.Element {
     }
     const updated = await window.api.saveRegexPreset(preset)
     setPresets(updated)
-    setPresetTags([])
+    // Stay in edit mode for this preset so further tweaks keep updating instead of forking.
+    setEditingPresetId(id)
     setCustomTagInput('')
   }
 
   const loadPreset = (preset: RegexPreset): void => {
     setPresetTags((preset.tags || []).map((t, i) => ({ ...t, id: Date.now() + i })))
+    setEditingPresetId(preset.id)
     const targetGenerator = (preset.generator ?? 'maps') as GeneratorKey
     if (targetGenerator !== generator) _setGenerator(targetGenerator)
     // Let the target generator mount before hydrating via its ref.
@@ -215,6 +221,7 @@ export function RegexGenerator(): JSX.Element {
   const deletePreset = async (id: string): Promise<void> => {
     const updated = await window.api.deleteRegexPreset(id)
     setPresets(updated)
+    if (id === editingPresetId) setEditingPresetId(null)
   }
 
   const clearAll = (): void => {
@@ -316,9 +323,12 @@ export function RegexGenerator(): JSX.Element {
             disabled={presetTags.length === 0}
             className="primary disabled:opacity-30 disabled:cursor-default shrink-0"
           >
-            Save
+            {editingPresetId ? 'Update' : 'Save'}
           </button>
         </div>
+        <DismissibleTip id="regex-tool.macro-tag">
+          Tip: Add &quot;macro&quot; to any custom tag to set a hotkey for it in settings
+        </DismissibleTip>
       </div>
     </div>
   )

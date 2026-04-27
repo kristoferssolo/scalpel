@@ -163,6 +163,23 @@ export function GeneralTab({ settings, update }: Props): JSX.Element {
           </div>
         )}
       </section>
+
+      {import.meta.env.DEV && (
+        <section>
+          <div className="text-[10px] text-accent tracking-[1.5px] uppercase mt-3 font-bold">Dev Only Stuff</div>
+          <button
+            onClick={() => {
+              for (let i = localStorage.length - 1; i >= 0; i--) {
+                const k = localStorage.key(i)
+                if (k && k.startsWith('tip.')) localStorage.removeItem(k)
+              }
+            }}
+            className="text-[11px] px-3 py-1.5 mt-[6px] text-text-dim"
+          >
+            Reset tooltips
+          </button>
+        </section>
+      )}
     </>
   )
 }
