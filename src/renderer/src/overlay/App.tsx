@@ -536,6 +536,7 @@ export default function App(): JSX.Element {
           baseTypes={tierSisterData?.baseTypes ?? []}
           itemClass={tierSisterData?.itemClass ?? overlayData.item.itemClass}
           currentBaseType={overlayData.item.baseType}
+          currentRarity={overlayData.item.rarity}
           league={settings?.league ?? ''}
           uniqueTier={tierSisterData?.uniqueTier}
           left={sisterLeft}
