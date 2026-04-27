@@ -70,7 +70,10 @@ function charRange(from: number, to: number): string {
   return `[${from}-${to}]`
 }
 
-/** N dots */
+/** Match any N-digit number: leading `\d` anchors the alternation to actual
+ *  numbers; trailing dots stay loose to keep the pattern compact. Without the
+ *  digit anchor, `.*(9.|...)%` can land on non-numeric 3-char sequences in PoE's
+ *  stash search and produce false positives. */
 function dots(n: number): string {
-  return '.'.repeat(n)
+  return '\\d' + '.'.repeat(n - 1)
 }

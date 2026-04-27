@@ -11,9 +11,8 @@ describe('buildQualifierRegex', () => {
   })
 
   it('emits a single "keyword.*atLeastRegex(N)suffix" token for one qualifier', () => {
-    // quantity -> keyword "m q", suffix "%". 70 -> atLeastRegex yields ([7-9].|...).
     const out = buildQualifierRegex({ quantity: 70 })
-    expect(out).toBe('"m q.*([7-9].|...)%"')
+    expect(out).toBe('"m q.*([7-9].|\\d..)%"')
   })
 
   it('joins multiple qualifier tokens with spaces in QUALIFIERS declaration order', () => {
