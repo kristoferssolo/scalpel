@@ -198,7 +198,9 @@ export function FilterPanel({
             </div>
           )}
 
-          <UniquesForBase baseType={item.baseType} itemClass={item.itemClass} />
+          {displayMatch?.block.conditions.some((c) => c.type === 'Rarity' && c.values.some((v) => v === 'Unique')) && (
+            <UniquesForBase baseType={item.baseType} itemClass={item.itemClass} />
+          )}
 
           {hasBreakpoints && (
             <BreakpointEditor
