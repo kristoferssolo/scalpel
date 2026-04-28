@@ -6,7 +6,7 @@ import socketGreen from '../assets/sockets/socket-green.png'
 import socketBlue from '../assets/sockets/socket-blue.png'
 import socketWhite from '../assets/sockets/socket-white.png'
 import socketLink from '../assets/sockets/socket-link.png'
-import { getItemClasses } from '../../../shared/data/items/item-classes'
+import { MAX_SOCKETS_BY_CLASS_POE1 } from '../../../shared/data/items/max-sockets'
 import { chaosIcon } from '../shared/icons'
 // Socket recolor is a PoE1-only feature (gated via features.socketRecolor), so we
 // pull its icons directly from the PoE1 sheet rather than going through the shared
@@ -20,28 +20,6 @@ const fusIcon = icons['Orb of Fusing']
 
 const SOCKET_IMG: Record<string, string> = { R: socketRed, G: socketGreen, B: socketBlue, W: socketWhite }
 const CYCLE: Record<string, string> = { R: 'G', G: 'B', B: 'R', W: 'R' }
-// Pin to the PoE1 class map -- this whole component is PoE1-only (see comment
-// above on the icon sheet). Pulling the shared union would leak PoE2 classes
-// into the sizing lookup for no benefit.
-const _itemClasses = getItemClasses(1)
-const classSizes: Record<string, [number, number]> = Object.fromEntries(
-  Object.entries(_itemClasses).map(([k, v]) => [k, v.size]),
-)
-const baseClassMap: Record<string, string> = {}
-for (const [cls, { bases }] of Object.entries(_itemClasses)) {
-  for (const base of bases) baseClassMap[base] = cls
-}
-
-function getDims(baseType: string, itemClass: string): { w: number; h: number } | undefined {
-  const cs = classSizes[itemClass]
-  if (cs) return { w: cs[0], h: cs[1] }
-  const cls = baseClassMap[baseType]
-  if (cls) {
-    const s = classSizes[cls]
-    if (s) return { w: s[0], h: s[1] }
-  }
-  return undefined
-}
 
 // Bench costs in jewellers to craft N sockets
 const JEWELLER_BENCH = [0, 1, 1, 3, 10, 70, 350]
@@ -248,8 +226,10 @@ interface Props {
 }
 
 function getMaxSockets(item: PoeItem): number {
-  const dims = getDims(item.baseType, item.itemClass)
-  if (dims) return Math.min(dims.w * dims.h, 6)
+  const cap = MAX_SOCKETS_BY_CLASS_POE1[item.itemClass]
+  if (cap !== undefined) return cap
+  // Unknown class -- fall back to whatever sockets the item already rolled,
+  // or 6 (PoE absolute max) if it has none.
   const current = item.sockets.replace(/[^RGBWAD]/g, '').length
   return current || 6
 }
