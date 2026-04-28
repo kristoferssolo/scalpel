@@ -154,11 +154,21 @@ export function RegexGenerator(): JSX.Element {
 
   const isOverLimit = regex.length > POE_REGEX_MAX_LENGTH
 
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const macroErrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    return () => {
+      if (copiedTimer.current) clearTimeout(copiedTimer.current)
+      if (macroErrorTimer.current) clearTimeout(macroErrorTimer.current)
+    }
+  }, [])
+
   const copyRegex = (): void => {
     if (!regex) return
     navigator.clipboard.writeText(regex)
     setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    if (copiedTimer.current) clearTimeout(copiedTimer.current)
+    copiedTimer.current = setTimeout(() => setCopied(false), 1500)
   }
 
   const removePresetTag = (index: number): void => {
@@ -178,7 +188,8 @@ export function RegexGenerator(): JSX.Element {
       )
       if (inUseByOther) {
         setMacroTagError('Macro tag is in use')
-        setTimeout(() => setMacroTagError(null), 3000)
+        if (macroErrorTimer.current) clearTimeout(macroErrorTimer.current)
+        macroErrorTimer.current = setTimeout(() => setMacroTagError(null), 3000)
         return
       }
     }

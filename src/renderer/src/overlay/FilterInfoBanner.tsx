@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+
 interface FilterInfoBannerProps {
   filterPath: string
   updatedOnlineFilters: Set<string>
@@ -28,6 +30,15 @@ export function FilterInfoBanner({
   onSetUpdatingFilter,
   onSetCheckingUpdate,
 }: FilterInfoBannerProps): JSX.Element {
+  const mergeMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const checkingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    return () => {
+      if (mergeMsgTimer.current) clearTimeout(mergeMsgTimer.current)
+      if (checkingTimer.current) clearTimeout(checkingTimer.current)
+    }
+  }, [])
+
   const activeFile = filterPath.replace(/^.*[\\/]/, '').replace(/\.filter$/i, '')
   const isOnlineFilter = activeFile.endsWith('-local')
   const hasUpdate =
@@ -65,7 +76,8 @@ export function FilterInfoBanner({
                 const s = result.stats
                 const changes = s ? s.userOnly || s.upstreamOnly + s.bothChanged + s.added + s.removed : 0
                 onMergeMessage(changes > 0 ? `${changes} Scalpel Changes Reapplied Successfully` : 'Filter Updated')
-                setTimeout(() => onMergeMessage(null), 10000)
+                if (mergeMsgTimer.current) clearTimeout(mergeMsgTimer.current)
+                mergeMsgTimer.current = setTimeout(() => onMergeMessage(null), 10000)
               }
             }}
             disabled={updatingFilter}
@@ -87,7 +99,8 @@ export function FilterInfoBanner({
             onClick={async () => {
               onSetCheckingUpdate(true)
               await onCheckForUpdate()
-              setTimeout(() => onSetCheckingUpdate(false), 2000)
+              if (checkingTimer.current) clearTimeout(checkingTimer.current)
+              checkingTimer.current = setTimeout(() => onSetCheckingUpdate(false), 2000)
             }}
             disabled={checkingUpdate}
             className="shrink-0 text-[11px]"

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { UpdateAvailableBanner, JustUpdatedBanner, BrickedReleaseBanner } from '../shared/update-banners'
 
 /**
@@ -12,6 +12,8 @@ export function AppUpdateBanner(): JSX.Element | null {
   const [updateReady, setUpdateReady] = useState(false)
   const [justUpdated, setJustUpdated] = useState<string | null>(null)
   const [brickedRelease, setBrickedRelease] = useState<{ version: string; message: string | null } | null>(null)
+
+  const justUpdatedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     // Pull current state on mount so a late-opening window still sees what's already fired.
@@ -29,11 +31,15 @@ export function AppUpdateBanner(): JSX.Element | null {
       }),
       window.api.onUpdateApplied((v) => {
         setJustUpdated(v)
-        setTimeout(() => setJustUpdated(null), 4000)
+        if (justUpdatedTimer.current) clearTimeout(justUpdatedTimer.current)
+        justUpdatedTimer.current = setTimeout(() => setJustUpdated(null), 4000)
       }),
       window.api.onBrickedRelease((info) => setBrickedRelease(info)),
     ]
-    return () => unsubs.forEach((fn) => fn())
+    return () => {
+      unsubs.forEach((fn) => fn())
+      if (justUpdatedTimer.current) clearTimeout(justUpdatedTimer.current)
+    }
   }, [])
 
   if (!updateVersion && !justUpdated && !brickedRelease) return null
