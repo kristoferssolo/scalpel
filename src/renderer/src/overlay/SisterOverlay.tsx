@@ -1,8 +1,7 @@
 import { forwardRef, useEffect, useMemo, useState } from 'react'
 import type { RelatedRef } from '../shared/related-items'
 import { findRelated } from '../shared/related-items'
-import { IconGlow } from '../shared/IconGlow'
-import { PriceChip } from '../shared/PriceChip'
+import { ItemRowContent } from '../shared/ItemRowContent'
 import { RARITY_COLORS, iconMap } from '../shared/constants'
 import { SisterShell } from './SisterShell'
 import { SisterRow } from './SisterRow'
@@ -125,27 +124,13 @@ export const SisterOverlay = forwardRef<HTMLDivElement, SisterOverlayProps>(func
                 })
               }
             >
-              <div
-                className="text-[11px] text-center leading-tight"
-                style={{ color: RARITY_COLORS[CATEGORY_TO_RARITY[item.category]] }}
-              >
-                {item.name}
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                {iconUrl ? (
-                  <IconGlow src={iconUrl} size={44} blur={14} saturate={2.5} opacity={0.35} />
-                ) : (
-                  <div className="w-[44px] h-[44px] shrink-0" />
-                )}
-                {price && price.chaosValue > 0 && (
-                  <PriceChip
-                    chaosValue={price.chaosValue}
-                    divineValue={price.divineValue}
-                    chaosPerDivine={chaosPerDivine}
-                    size="sm"
-                  />
-                )}
-              </div>
+              <ItemRowContent
+                name={item.name}
+                iconUrl={iconUrl}
+                price={price}
+                nameColor={RARITY_COLORS[CATEGORY_TO_RARITY[item.category]]}
+                chaosPerDivine={chaosPerDivine}
+              />
             </SisterRow>
           )
         })}

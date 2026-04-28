@@ -10,12 +10,14 @@ export function ItemRowContent({
   price,
   nameColor,
   iconSize = 44,
+  chaosPerDivine,
 }: {
   name: string
   iconUrl?: string
   price?: { chaosValue: number; divineValue?: number } | null
   nameColor?: string
   iconSize?: number
+  chaosPerDivine?: number
 }): JSX.Element {
   return (
     <>
@@ -29,7 +31,12 @@ export function ItemRowContent({
           <div style={{ width: iconSize, height: iconSize }} />
         )}
         {price && price.chaosValue > 0 && (
-          <PriceChip chaosValue={price.chaosValue} divineValue={price.divineValue} size="sm" />
+          <PriceChip
+            chaosValue={price.chaosValue}
+            divineValue={price.divineValue}
+            chaosPerDivine={chaosPerDivine}
+            size="sm"
+          />
         )}
       </div>
     </>

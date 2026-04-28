@@ -31,8 +31,9 @@ export function DustEntryRow({
   }
   const openPriceCheck = (): void => {
     // Routes through main's runPriceCheck so it fires 'price-check-open', which
-    // sets the priceCheckPending flag in App and prevents onOverlayData from
-    // racing setView('item') over our setView('pricecheck').
+    // arms the priceCheckPending flag in App. That flag then suppresses the
+    // 'item' view-switch in onOverlayData. The actual setView('pricecheck')
+    // happens via onPriceCheckItem -- the IPC just guards against the race.
     window.api.sisterOpenPriceCheck({ name: entry.name, baseType: entry.baseType, category: 'unique' })
   }
   return (

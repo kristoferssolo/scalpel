@@ -1198,6 +1198,9 @@ export function matchItemMods(
       // Synthetic items have a placeholder ilvl that's meaningless. Render as an
       // editable row pre-set to 83 (typical T16 map level) so users price-checking
       // for dust can lift the ilvl floor without first having to enable a chip.
+      // Type 'gem' (instead of 'misc') routes the filter through StatFilterRow
+      // rendering -- 'misc' goes through FilterChip -- while still landing in the
+      // misc-filter group on the API side (trade.ts dispatches by id).
       miscFilters.push({
         id: 'misc.ilvl',
         text: 'Item Level',
