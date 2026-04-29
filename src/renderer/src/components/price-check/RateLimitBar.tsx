@@ -68,14 +68,20 @@ export function RateLimitBar({ rateLimitTiers }: { rateLimitTiers: Tier[] }): JS
         className="flex items-center gap-2"
         onMouseMove={(e) => {
           const tip = e.currentTarget.querySelector('.rate-limit-tooltip') as HTMLElement
-          if (tip) {
-            const rect = e.currentTarget.getBoundingClientRect()
-            const tipWidth = tip.offsetWidth
-            const x = e.clientX - rect.left
-            const minX = tipWidth / 2
-            const maxX = rect.width - tipWidth / 2
-            tip.style.left = `${Math.max(minX, Math.min(x, maxX))}px`
-          }
+          if (!tip) return
+          // The overlay applies CSS scale, so getBoundingClientRect is in scaled
+          // viewport pixels but we set `left` in unscaled CSS pixels (the child's
+          // local coord space). Divide the cursor offset by the scale factor and
+          // clamp against the bar's unscaled width so the tooltip tracks the
+          // cursor and stays inside the bar at any overlayScale.
+          const rect = e.currentTarget.getBoundingClientRect()
+          const unscaledWidth = e.currentTarget.offsetWidth
+          const scale = unscaledWidth > 0 ? rect.width / unscaledWidth : 1
+          const xUnscaled = (e.clientX - rect.left) / scale
+          const tipWidth = tip.offsetWidth
+          const minX = tipWidth / 2
+          const maxX = unscaledWidth - tipWidth / 2
+          tip.style.left = `${Math.max(minX, Math.min(xUnscaled, maxX))}px`
         }}
       >
         <div
