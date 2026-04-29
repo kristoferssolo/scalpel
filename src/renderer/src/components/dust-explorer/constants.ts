@@ -16,11 +16,11 @@ for (const [base, uniques] of Object.entries(_baseToUniques)) {
 const iconMap = itemIcons as Record<string, string>
 // PoE1-only module; pin to the PoE1 class list explicitly.
 const _itemClasses = getItemClasses(1)
-const baseClassMap: Record<string, string> = {}
+export const baseClassMap: Record<string, string> = {}
 const classSizes: Record<string, [number, number]> = {}
 for (const [cls, { bases, size }] of Object.entries(_itemClasses)) {
   classSizes[cls] = size
-  for (const base of bases) baseClassMap[base] = cls
+  for (const base of bases) baseClassMap[base.name] = cls
 }
 
 export const mirrorIconUrl = (itemIcons as Record<string, string>)['Mirror of Kalandra']

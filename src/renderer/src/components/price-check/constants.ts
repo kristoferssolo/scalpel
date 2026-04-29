@@ -1,4 +1,4 @@
-import { RARITY_COLORS, iconMap } from '../../shared/constants'
+import { RARITY_COLORS, iconMap, baseToClass, classSizes } from '../../shared/constants'
 import { formatPrice, getItemIcon } from '../../shared/utils'
 // CURRENCY_ICONS_* below are module-load-time currency-abbrev -> icon-url maps.
 // Both games share the same trade-API currency IDs (chaos, divine, exa, regal,
@@ -7,7 +7,6 @@ import { formatPrice, getItemIcon } from '../../shared/utils'
 import itemIconsPoe1 from '../../../../shared/data/items/item-icons-poe1.json'
 import itemIconsPoe2 from '../../../../shared/data/items/item-icons-poe2.json'
 import baseToUniques from '../../../../shared/data/items/unique-info.json'
-import { ITEM_CLASSES_ALL } from '../../../../shared/data/items/item-classes'
 import elderIcon from '../../assets/influences/Elder-item-symbol.png'
 import shaperIcon from '../../assets/influences/Shaper-item-symbol.png'
 import crusaderIcon from '../../assets/influences/Crusader-item-symbol.png'
@@ -55,11 +54,6 @@ export const uniqueToBase: Record<string, string> = {}
 for (const [base, uniques] of Object.entries(_baseToUniques)) {
   for (const name of uniques) uniqueToBase[name] = base
 }
-
-// PoE inventory slot sizes [width, height] by item class
-export const ITEM_SIZES: Record<string, [number, number]> = Object.fromEntries(
-  Object.entries(ITEM_CLASSES_ALL).map(([k, v]) => [k, v.size]),
-)
 
 // Map trade API currency keys to item-icons.json names. PoE1 version keeps its
 // existing full set; PoE2 version only maps the currencies that actually exist
@@ -119,17 +113,14 @@ export const SOCKET_IMGS: Record<string, string> = {
 }
 
 export function getItemSize(itemClass: string, name?: string): [number, number] {
-  // For uniques, look up base type then get class size
   if (name) {
     const base = uniqueToBase[name]
     if (base) {
-      // Find the item class for this base type
-      for (const [_cls, data] of Object.entries(ITEM_CLASSES_ALL)) {
-        if (data.bases.includes(base)) return data.size
-      }
+      const cls = baseToClass[base]
+      if (cls && classSizes[cls]) return classSizes[cls]
     }
   }
-  return ITEM_SIZES[itemClass] ?? [2, 2]
+  return classSizes[itemClass] ?? [2, 2]
 }
 
 export const MOD_COLORS: Record<string, string> = {

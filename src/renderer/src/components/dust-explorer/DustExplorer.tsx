@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react'
-import { getItemClasses } from '../../../../shared/data/items/item-classes'
 import dustIcon from '../../assets/currency/thaumaturgic-dust.png'
 import { chaosIcon } from '../../shared/icons'
 import socketWhite from '../../assets/sockets/socket-white.png'
@@ -8,6 +7,7 @@ import {
   cachedBaseEntries,
   ALL_FILTER_TYPES,
   persistedState,
+  baseClassMap,
   COL_PRICE,
   COL_DUST,
   COL_DPC,
@@ -17,14 +17,6 @@ import { scaleRange } from './utils'
 import { SortHeader } from './SortHeader'
 import { FilterRow, EmptyFilterRow } from './FilterRow'
 import { DustEntryRow } from './DustEntryRow'
-
-// Dust is a PoE1-only mechanic, so the base-to-class map used for entry rows
-// comes from the PoE1 class list exclusively.
-const itemClasses = getItemClasses(1)
-const classMap: Record<string, string> = {}
-for (const [cls, { bases }] of Object.entries(itemClasses)) {
-  for (const base of bases) classMap[base] = cls
-}
 
 export function DustExplorer({
   onSelectItem,
@@ -298,7 +290,7 @@ export function DustExplorer({
             index={i}
             divineRate={divineRate}
             mirrorRate={mirrorRate}
-            classMap={classMap}
+            classMap={baseClassMap}
             onSelectItem={onSelectItem}
             onPriceCheckItem={onPriceCheckItem}
           />

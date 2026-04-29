@@ -24,7 +24,7 @@ import { TierItemsSister } from './TierItemsSister'
 import { getActiveMatch } from '../shared/activeMatch'
 import { ItemSearchCombobox } from '../components/ItemSearchCombobox'
 import { Clipboard } from '@icon-park/react'
-import { IP, initIconMap, initUniquesByBase, mergeIconCache } from '../shared/constants'
+import { IP, initIconMap, initItemClassMaps, initUniquesByBase, mergeIconCache } from '../shared/constants'
 import { prettyHotkey } from '../components/settings'
 
 type View =
@@ -105,6 +105,7 @@ export default function App(): JSX.Element {
     if (!poeVersion) return
     initIconMap(poeVersion)
     initUniquesByBase(poeVersion)
+    initItemClassMaps(poeVersion)
     window.api.getIconCache().then(mergeIconCache)
   }, [poeVersion])
 

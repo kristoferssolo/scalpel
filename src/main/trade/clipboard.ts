@@ -1,16 +1,32 @@
 import { clipboard } from 'electron'
 import type { PoeItem, ItemRarity, AdvancedMod } from '../../shared/types'
-import { ITEM_CLASSES_ALL, getItemClasses } from '../../shared/data/items/item-classes'
+import { getItemClasses } from '../../shared/data/items/item-classes'
 import { getPoeVersion } from '../game-state'
 
-const knownBaseTypes = new Set(Object.values(ITEM_CLASSES_ALL).flatMap((c) => c.bases))
-const ITEM_SIZES: Record<string, [number, number]> = Object.fromEntries(
-  Object.entries(ITEM_CLASSES_ALL).map(([k, v]) => [k, v.size]),
-)
+// Both base-name and class-size lookups seed lazily from the active game's
+// class sheet -- getPoeVersion() isn't reliable at module load (game-state
+// hasn't been set yet), so we resolve on first access. registerFilterBaseTypes()
+// then adds filter-discovered bases on top.
+let _knownBaseTypes: Set<string> | null = null
+function getKnownBaseTypes(): Set<string> {
+  if (_knownBaseTypes === null) {
+    _knownBaseTypes = new Set(Object.values(getItemClasses(getPoeVersion())).flatMap((c) => c.bases.map((b) => b.name)))
+  }
+  return _knownBaseTypes
+}
+
+let _itemSizes: Record<string, [number, number]> | null = null
+function getItemSizes(): Record<string, [number, number]> {
+  if (_itemSizes === null) {
+    _itemSizes = Object.fromEntries(Object.entries(getItemClasses(getPoeVersion())).map(([k, v]) => [k, v.size]))
+  }
+  return _itemSizes
+}
 
 /** Add base types extracted from the loaded filter */
 export function registerFilterBaseTypes(baseTypes: string[]): void {
-  for (const bt of baseTypes) knownBaseTypes.add(bt)
+  const set = getKnownBaseTypes()
+  for (const bt of baseTypes) set.add(bt)
 }
 
 /** Try to find a known base type within a magic item name */
@@ -42,13 +58,16 @@ function cleanBaseType(
     if (itemClass) {
       const classBases = getItemClasses(getPoeVersion())[itemClass]?.bases
       if (classBases?.length) {
-        const match = findBaseInName(clean, classBases)
+        const match = findBaseInName(
+          clean,
+          classBases.map((b) => b.name),
+        )
         if (match) return match
       }
     }
     // Then any base type seen in the loaded filter (covers PoE2 bases the
     // shipped item-classes data doesn't enumerate yet).
-    const knownMatch = findBaseInName(clean, knownBaseTypes)
+    const knownMatch = findBaseInName(clean, getKnownBaseTypes())
     if (knownMatch) return knownMatch
     // Last resort: peel the affix names parsed from the advanced-mod headers
     // ({ Prefix Modifier "Sanguine" }, { Suffix Modifier "of the Troll" }).
@@ -447,6 +466,8 @@ export function parseItemText(text: string): PoeItem | null {
     }
   }
 
+  const itemSize = getItemSizes()[itemClass]
+
   return {
     itemClass,
     rarity,
@@ -500,7 +521,7 @@ export function parseItemText(text: string): PoeItem | null {
     ...(chaosDamageAvg != null ? { chaosDamageAvg } : {}),
     ...(attacksPerSecond != null ? { attacksPerSecond } : {}),
     ...(critChance != null ? { critChance } : {}),
-    ...(ITEM_SIZES[itemClass] ? { width: ITEM_SIZES[itemClass][0], height: ITEM_SIZES[itemClass][1] } : {}),
+    ...(itemSize ? { width: itemSize[0], height: itemSize[1] } : {}),
     ...(heistJob ? { heistJob } : {}),
     ...(monsterLevel != null ? { monsterLevel } : {}),
     ...(wingsRevealed != null ? { wingsRevealed, wingsTotal } : {}),

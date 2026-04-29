@@ -1,21 +1,51 @@
 {
   "Amulets": {
     "bases": [
-      "Amber Amulet",
-      "Azure Amulet",
-      "Bloodstone Amulet",
-      "Crimson Amulet",
-      "Dusk Amulet",
-      "Gloam Amulet",
-      "Gold Amulet",
-      "Jade Amulet",
-      "Lapis Amulet",
-      "Lunar Amulet",
-      "Pearlescent Amulet",
-      "Penumbra Amulet",
-      "Solar Amulet",
-      "Stellar Amulet",
-      "Tenebrous Amulet"
+      {
+        "name": "Amber Amulet"
+      },
+      {
+        "name": "Azure Amulet"
+      },
+      {
+        "name": "Bloodstone Amulet"
+      },
+      {
+        "name": "Crimson Amulet"
+      },
+      {
+        "name": "Dusk Amulet"
+      },
+      {
+        "name": "Gloam Amulet"
+      },
+      {
+        "name": "Gold Amulet"
+      },
+      {
+        "name": "Jade Amulet"
+      },
+      {
+        "name": "Lapis Amulet"
+      },
+      {
+        "name": "Lunar Amulet"
+      },
+      {
+        "name": "Pearlescent Amulet"
+      },
+      {
+        "name": "Penumbra Amulet"
+      },
+      {
+        "name": "Solar Amulet"
+      },
+      {
+        "name": "Stellar Amulet"
+      },
+      {
+        "name": "Tenebrous Amulet"
+      }
     ],
     "size": [
       1,
@@ -24,17 +54,39 @@
   },
   "Belts": {
     "bases": [
-      "Double Belt",
-      "Fine Belt",
-      "Heavy Belt",
-      "Linen Belt",
-      "Long Belt",
-      "Mail Belt",
-      "Ornate Belt",
-      "Plate Belt",
-      "Rawhide Belt",
-      "Utility Belt",
-      "Wide Belt"
+      {
+        "name": "Double Belt"
+      },
+      {
+        "name": "Fine Belt"
+      },
+      {
+        "name": "Heavy Belt"
+      },
+      {
+        "name": "Linen Belt"
+      },
+      {
+        "name": "Long Belt"
+      },
+      {
+        "name": "Mail Belt"
+      },
+      {
+        "name": "Ornate Belt"
+      },
+      {
+        "name": "Plate Belt"
+      },
+      {
+        "name": "Rawhide Belt"
+      },
+      {
+        "name": "Utility Belt"
+      },
+      {
+        "name": "Wide Belt"
+      }
     ],
     "size": [
       2,
@@ -43,134 +95,400 @@
   },
   "Body Armours": {
     "bases": [
-      "Adherent's Raiment",
-      "Altar Robe",
-      "Ancestral Mail",
-      "Anchorite Garb",
-      "Armoured Vest",
-      "Ascetic Garb",
-      "Assassin Garb",
-      "Austere Garb",
-      "Avian Robe",
-      "Barbarian Plate",
-      "Bearskin Mantle",
-      "Bone Raiment",
-      "Ceremonial Robe",
-      "Chain Mail",
-      "Chain Vestments",
-      "Champion Cuirass",
-      "Chieftain Cuirass",
-      "Cleric Vestments",
-      "Cloaked Mail",
-      "Conjurer Mantle",
-      "Conqueror Plate",
-      "Corsair Coat",
-      "Corsair Vest",
-      "Corvus Mantle",
-      "Cursespeaker's Robe",
-      "Dastard Armour",
-      "Death Mail",
-      "Death Mantle",
-      "Elegant Plate",
-      "Elementalist Robe",
-      "Enlightened Robe",
-      "Evangelist Garb",
-      "Explorer Armour",
-      "Falconer's Jacket",
-      "Feathered Raiment",
-      "Feathered Robe",
-      "Flowing Raiment",
-      "Full Plate",
-      "Fur Plate",
-      "Garment",
-      "Gilded Vestments",
-      "Golden Mail",
-      "Grand Regalia",
-      "Hatungo Garb",
-      "Havoc Raiment",
-      "Hawker's Jacket",
-      "Heartcarver Mantle",
-      "Heavy Plate",
-      "Hermit Garb",
-      "Heroic Armour",
-      "Hexer's Robe",
-      "Hunting Coat",
-      "Iron Cuirass",
-      "Ironclad Vestments",
-      "Itinerant Jacket",
-      "Juggernaut Plate",
-      "Keth Raiment",
-      "Knight Armour",
-      "Lamellar Mail",
-      "Layered Vest",
-      "Leather Vest",
-      "Lizardscale Coat",
-      "Luxurious Robe",
-      "Mail Vestments",
-      "Mantled Mail",
-      "Marabout Garb",
-      "Maraketh Cuirass",
-      "Mystic Raiment",
-      "Occultist Mantle",
-      "Oiled Jacket",
-      "Ornate Plate",
-      "Patchwork Vest",
-      "Pathfinder Coat",
-      "Pelt Mantle",
-      "Pilgrim Vestments",
-      "Plated Raiment",
-      "Plated Vestments",
-      "Quilted Vest",
-      "Raider Plate",
-      "Rambler Jacket",
-      "Rhoahide Coat",
-      "Riding Coat",
-      "Ring Mail",
-      "River Raiment",
-      "Rogue Armour",
-      "Rugged Cuirass",
-      "Runner Vest",
-      "Rusted Cuirass",
-      "Sacramental Robe",
-      "Sacrificial Mantle",
-      "Sacrificial Regalia",
-      "Sandsworn Cuirass",
-      "Scale Mail",
-      "Scalper's Jacket",
-      "Scoundrel Armour",
-      "Scoundrel Jacket",
-      "Scout's Vest",
-      "Seastorm Mantle",
-      "Serpentscale Coat",
-      "Shaman Mantle",
-      "Shrouded Mail",
-      "Shrouded Vest",
-      "Silk Robe",
-      "Sleek Jacket",
-      "Slipstrike Vest",
-      "Smuggler Coat",
-      "Soldier Cuirass",
-      "Steel Plate",
-      "Stone Cuirass",
-      "Strider Vest",
-      "Studded Vest",
-      "Swiftstalker Coat",
-      "Tattered Robe",
-      "Templar Vestments",
-      "Thane Mail",
-      "Tideseer Mantle",
-      "Trailblazer Armour",
-      "Utzaal Cuirass",
-      "Vaal Cuirass",
-      "Vagabond Armour",
-      "Vile Robe",
-      "Votive Raiment",
-      "Wanderer Armour",
-      "Warlord Cuirass",
-      "Waxed Jacket",
-      "Wayfarer Jacket",
-      "Wolfskin Mantle",
-      "Wyrmscale Coat"
+      {
+        "name": "Adherent's Raiment"
+      },
+      {
+        "name": "Altar Robe"
+      },
+      {
+        "name": "Ancestral Mail"
+      },
+      {
+        "name": "Anchorite Garb"
+      },
+      {
+        "name": "Armoured Vest"
+      },
+      {
+        "name": "Ascetic Garb"
+      },
+      {
+        "name": "Assassin Garb"
+      },
+      {
+        "name": "Austere Garb"
+      },
+      {
+        "name": "Avian Robe"
+      },
+      {
+        "name": "Barbarian Plate"
+      },
+      {
+        "name": "Bearskin Mantle"
+      },
+      {
+        "name": "Bone Raiment"
+      },
+      {
+        "name": "Ceremonial Robe"
+      },
+      {
+        "name": "Chain Mail"
+      },
+      {
+        "name": "Chain Vestments"
+      },
+      {
+        "name": "Champion Cuirass"
+      },
+      {
+        "name": "Chieftain Cuirass"
+      },
+      {
+        "name": "Cleric Vestments"
+      },
+      {
+        "name": "Cloaked Mail"
+      },
+      {
+        "name": "Conjurer Mantle"
+      },
+      {
+        "name": "Conqueror Plate"
+      },
+      {
+        "name": "Corsair Coat"
+      },
+      {
+        "name": "Corsair Vest"
+      },
+      {
+        "name": "Corvus Mantle"
+      },
+      {
+        "name": "Cursespeaker's Robe"
+      },
+      {
+        "name": "Dastard Armour"
+      },
+      {
+        "name": "Death Mail"
+      },
+      {
+        "name": "Death Mantle"
+      },
+      {
+        "name": "Elegant Plate"
+      },
+      {
+        "name": "Elementalist Robe"
+      },
+      {
+        "name": "Enlightened Robe"
+      },
+      {
+        "name": "Evangelist Garb"
+      },
+      {
+        "name": "Explorer Armour"
+      },
+      {
+        "name": "Falconer's Jacket"
+      },
+      {
+        "name": "Feathered Raiment"
+      },
+      {
+        "name": "Feathered Robe"
+      },
+      {
+        "name": "Flowing Raiment"
+      },
+      {
+        "name": "Full Plate",
+        "reqs": [
+          81,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "Fur Plate"
+      },
+      {
+        "name": "Garment"
+      },
+      {
+        "name": "Gilded Vestments"
+      },
+      {
+        "name": "Golden Mail"
+      },
+      {
+        "name": "Grand Regalia"
+      },
+      {
+        "name": "Hatungo Garb"
+      },
+      {
+        "name": "Havoc Raiment"
+      },
+      {
+        "name": "Hawker's Jacket"
+      },
+      {
+        "name": "Heartcarver Mantle"
+      },
+      {
+        "name": "Heavy Plate"
+      },
+      {
+        "name": "Hermit Garb"
+      },
+      {
+        "name": "Heroic Armour"
+      },
+      {
+        "name": "Hexer's Robe"
+      },
+      {
+        "name": "Hunting Coat"
+      },
+      {
+        "name": "Iron Cuirass"
+      },
+      {
+        "name": "Ironclad Vestments"
+      },
+      {
+        "name": "Itinerant Jacket"
+      },
+      {
+        "name": "Juggernaut Plate"
+      },
+      {
+        "name": "Keth Raiment"
+      },
+      {
+        "name": "Knight Armour"
+      },
+      {
+        "name": "Lamellar Mail"
+      },
+      {
+        "name": "Layered Vest"
+      },
+      {
+        "name": "Leather Vest"
+      },
+      {
+        "name": "Lizardscale Coat"
+      },
+      {
+        "name": "Luxurious Robe"
+      },
+      {
+        "name": "Mail Vestments"
+      },
+      {
+        "name": "Mantled Mail"
+      },
+      {
+        "name": "Marabout Garb"
+      },
+      {
+        "name": "Maraketh Cuirass"
+      },
+      {
+        "name": "Mystic Raiment"
+      },
+      {
+        "name": "Occultist Mantle"
+      },
+      {
+        "name": "Oiled Jacket"
+      },
+      {
+        "name": "Ornate Plate"
+      },
+      {
+        "name": "Patchwork Vest"
+      },
+      {
+        "name": "Pathfinder Coat"
+      },
+      {
+        "name": "Pelt Mantle"
+      },
+      {
+        "name": "Pilgrim Vestments"
+      },
+      {
+        "name": "Plated Raiment"
+      },
+      {
+        "name": "Plated Vestments"
+      },
+      {
+        "name": "Quilted Vest"
+      },
+      {
+        "name": "Raider Plate"
+      },
+      {
+        "name": "Rambler Jacket"
+      },
+      {
+        "name": "Rhoahide Coat"
+      },
+      {
+        "name": "Riding Coat"
+      },
+      {
+        "name": "Ring Mail"
+      },
+      {
+        "name": "River Raiment"
+      },
+      {
+        "name": "Rogue Armour"
+      },
+      {
+        "name": "Rugged Cuirass"
+      },
+      {
+        "name": "Runner Vest"
+      },
+      {
+        "name": "Rusted Cuirass"
+      },
+      {
+        "name": "Sacramental Robe"
+      },
+      {
+        "name": "Sacrificial Mantle"
+      },
+      {
+        "name": "Sacrificial Regalia"
+      },
+      {
+        "name": "Sandsworn Cuirass"
+      },
+      {
+        "name": "Scale Mail"
+      },
+      {
+        "name": "Scalper's Jacket"
+      },
+      {
+        "name": "Scoundrel Armour"
+      },
+      {
+        "name": "Scoundrel Jacket"
+      },
+      {
+        "name": "Scout's Vest"
+      },
+      {
+        "name": "Seastorm Mantle"
+      },
+      {
+        "name": "Serpentscale Coat"
+      },
+      {
+        "name": "Shaman Mantle"
+      },
+      {
+        "name": "Shrouded Mail"
+      },
+      {
+        "name": "Shrouded Vest"
+      },
+      {
+        "name": "Silk Robe",
+        "reqs": [
+          0,
+          0,
+          91
+        ]
+      },
+      {
+        "name": "Sleek Jacket"
+      },
+      {
+        "name": "Slipstrike Vest"
+      },
+      {
+        "name": "Smuggler Coat"
+      },
+      {
+        "name": "Soldier Cuirass"
+      },
+      {
+        "name": "Steel Plate"
+      },
+      {
+        "name": "Stone Cuirass"
+      },
+      {
+        "name": "Strider Vest"
+      },
+      {
+        "name": "Studded Vest"
+      },
+      {
+        "name": "Swiftstalker Coat"
+      },
+      {
+        "name": "Tattered Robe"
+      },
+      {
+        "name": "Templar Vestments"
+      },
+      {
+        "name": "Thane Mail"
+      },
+      {
+        "name": "Tideseer Mantle"
+      },
+      {
+        "name": "Trailblazer Armour"
+      },
+      {
+        "name": "Utzaal Cuirass"
+      },
+      {
+        "name": "Vaal Cuirass"
+      },
+      {
+        "name": "Vagabond Armour"
+      },
+      {
+        "name": "Vile Robe"
+      },
+      {
+        "name": "Votive Raiment"
+      },
+      {
+        "name": "Wanderer Armour"
+      },
+      {
+        "name": "Warlord Cuirass"
+      },
+      {
+        "name": "Waxed Jacket"
+      },
+      {
+        "name": "Wayfarer Jacket"
+      },
+      {
+        "name": "Wolfskin Mantle"
+      },
+      {
+        "name": "Wyrmscale Coat"
+      }
     ],
     "size": [
       2,
@@ -179,83 +497,272 @@
   },
   "Boots": {
     "bases": [
-      "Adherent Leggings",
-      "Apostle Leggings",
-      "Bangled Sandals",
-      "Bastion Sabatons",
-      "Blacksteel Sabatons",
-      "Bound Boots",
-      "Bound Leggings",
-      "Bound Sandals",
-      "Braced Sabatons",
-      "Bronze Greaves",
-      "Bulwark Greaves",
-      "Carved Greaves",
-      "Cavalry Boots",
-      "Charmed Shoes",
-      "Cinched Boots",
-      "Covered Sabatons",
-      "Cryptic Leggings",
-      "Daggerfoot Shoes",
-      "Dragonscale Boots",
-      "Drakeskin Boots",
-      "Dunerunner Sandals",
-      "Elegant Greaves",
-      "Elegant Slippers",
-      "Embossed Boots",
-      "Faithful Leggings",
-      "Feathered Sandals",
-      "Flared Boots",
-      "Flax Sandals",
-      "Fortress Sabatons",
-      "Frayed Shoes",
-      "Goldwork Sabatons",
-      "Grand Cuisses",
-      "Hunting Shoes",
-      "Iron Greaves",
-      "Laced Boots",
-      "Laced Sandals",
-      "Lattice Sandals",
-      "Lionheart Greaves",
-      "Lizardscale Boots",
-      "Luxurious Slippers",
-      "Mail Sabatons",
-      "Noble Sabatons",
-      "Ornate Greaves",
-      "Padded Leggings",
-      "Pelt Leggings",
-      "Plated Greaves",
-      "Quickslip Shoes",
-      "Rawhide Boots",
-      "Reefsteel Greaves",
-      "Rough Greaves",
-      "Sandsworn Sandals",
-      "Secured Leggings",
-      "Sekhema Sandals",
-      "Serpentscale Boots",
-      "Shamanistic Leggings",
-      "Silk Slippers",
-      "Silverbuckled Shoes",
-      "Sleek Boots",
-      "Soldiering Sabatons",
-      "Stacked Sabatons",
-      "Steelpoint Shoes",
-      "Steeltoe Boots",
-      "Stone Greaves",
-      "Straw Sandals",
-      "Studded Boots",
-      "Tasalian Greaves",
-      "Threaded Shoes",
-      "Treerunner Shoes",
-      "Trimmed Greaves",
-      "Vaal Greaves",
-      "Velour Shoes",
-      "Veteran Sabatons",
-      "Wanderer Shoes",
-      "Warlock Leggings",
-      "Wayfarer Shoes",
-      "Weaver Leggings",
-      "Wrapped Sandals"
+      {
+        "name": "Adherent Leggings"
+      },
+      {
+        "name": "Apostle Leggings"
+      },
+      {
+        "name": "Bangled Sandals"
+      },
+      {
+        "name": "Bastion Sabatons"
+      },
+      {
+        "name": "Blacksteel Sabatons"
+      },
+      {
+        "name": "Bound Boots"
+      },
+      {
+        "name": "Bound Leggings"
+      },
+      {
+        "name": "Bound Sandals"
+      },
+      {
+        "name": "Braced Sabatons"
+      },
+      {
+        "name": "Bronze Greaves"
+      },
+      {
+        "name": "Bulwark Greaves"
+      },
+      {
+        "name": "Carved Greaves"
+      },
+      {
+        "name": "Cavalry Boots"
+      },
+      {
+        "name": "Charmed Shoes"
+      },
+      {
+        "name": "Cinched Boots"
+      },
+      {
+        "name": "Covered Sabatons"
+      },
+      {
+        "name": "Cryptic Leggings"
+      },
+      {
+        "name": "Daggerfoot Shoes"
+      },
+      {
+        "name": "Dragonscale Boots",
+        "reqs": [
+          62,
+          62,
+          0
+        ]
+      },
+      {
+        "name": "Drakeskin Boots"
+      },
+      {
+        "name": "Dunerunner Sandals"
+      },
+      {
+        "name": "Elegant Greaves"
+      },
+      {
+        "name": "Elegant Slippers"
+      },
+      {
+        "name": "Embossed Boots"
+      },
+      {
+        "name": "Faithful Leggings"
+      },
+      {
+        "name": "Feathered Sandals"
+      },
+      {
+        "name": "Flared Boots"
+      },
+      {
+        "name": "Flax Sandals"
+      },
+      {
+        "name": "Fortress Sabatons"
+      },
+      {
+        "name": "Frayed Shoes"
+      },
+      {
+        "name": "Goldwork Sabatons"
+      },
+      {
+        "name": "Grand Cuisses"
+      },
+      {
+        "name": "Hunting Shoes"
+      },
+      {
+        "name": "Iron Greaves",
+        "reqs": [
+          8,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "Laced Boots"
+      },
+      {
+        "name": "Laced Sandals"
+      },
+      {
+        "name": "Lattice Sandals"
+      },
+      {
+        "name": "Lionheart Greaves"
+      },
+      {
+        "name": "Lizardscale Boots"
+      },
+      {
+        "name": "Luxurious Slippers"
+      },
+      {
+        "name": "Mail Sabatons"
+      },
+      {
+        "name": "Noble Sabatons"
+      },
+      {
+        "name": "Ornate Greaves"
+      },
+      {
+        "name": "Padded Leggings"
+      },
+      {
+        "name": "Pelt Leggings"
+      },
+      {
+        "name": "Plated Greaves",
+        "reqs": [
+          44,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "Quickslip Shoes"
+      },
+      {
+        "name": "Rawhide Boots",
+        "reqs": [
+          0,
+          11,
+          0
+        ]
+      },
+      {
+        "name": "Reefsteel Greaves"
+      },
+      {
+        "name": "Rough Greaves"
+      },
+      {
+        "name": "Sandsworn Sandals"
+      },
+      {
+        "name": "Secured Leggings"
+      },
+      {
+        "name": "Sekhema Sandals"
+      },
+      {
+        "name": "Serpentscale Boots",
+        "reqs": [
+          40,
+          40,
+          0
+        ]
+      },
+      {
+        "name": "Shamanistic Leggings"
+      },
+      {
+        "name": "Silk Slippers",
+        "reqs": [
+          0,
+          0,
+          42
+        ]
+      },
+      {
+        "name": "Silverbuckled Shoes"
+      },
+      {
+        "name": "Sleek Boots"
+      },
+      {
+        "name": "Soldiering Sabatons"
+      },
+      {
+        "name": "Stacked Sabatons"
+      },
+      {
+        "name": "Steelpoint Shoes"
+      },
+      {
+        "name": "Steeltoe Boots"
+      },
+      {
+        "name": "Stone Greaves"
+      },
+      {
+        "name": "Straw Sandals"
+      },
+      {
+        "name": "Studded Boots"
+      },
+      {
+        "name": "Tasalian Greaves"
+      },
+      {
+        "name": "Threaded Shoes"
+      },
+      {
+        "name": "Treerunner Shoes"
+      },
+      {
+        "name": "Trimmed Greaves"
+      },
+      {
+        "name": "Vaal Greaves",
+        "reqs": [
+          117,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "Velour Shoes"
+      },
+      {
+        "name": "Veteran Sabatons"
+      },
+      {
+        "name": "Wanderer Shoes"
+      },
+      {
+        "name": "Warlock Leggings"
+      },
+      {
+        "name": "Wayfarer Shoes"
+      },
+      {
+        "name": "Weaver Leggings"
+      },
+      {
+        "name": "Wrapped Sandals"
+      }
     ],
     "size": [
       2,
@@ -264,30 +771,93 @@
   },
   "Bows": {
     "bases": [
-      "Adherent Bow",
-      "Artillery Bow",
-      "Cavalry Bow",
-      "Composite Bow",
-      "Crude Bow",
-      "Cultist Bow",
-      "Dualstring Bow",
-      "Fanatic Bow",
-      "Gemini Bow",
-      "Guardian Bow",
-      "Heavy Bow",
-      "Ironwood Shortbow",
-      "Militant Bow",
-      "Obliterator Bow",
-      "Protector Bow",
-      "Recurve Bow",
-      "Rider Bow",
-      "Shortbow",
-      "Snakewood Shortbow",
-      "Tribal Bow",
-      "Twin Bow",
-      "Warden Bow",
-      "Warmonger Bow",
-      "Zealot Bow"
+      {
+        "name": "Adherent Bow"
+      },
+      {
+        "name": "Artillery Bow"
+      },
+      {
+        "name": "Cavalry Bow"
+      },
+      {
+        "name": "Composite Bow",
+        "reqs": [
+          0,
+          53,
+          0
+        ]
+      },
+      {
+        "name": "Crude Bow",
+        "reqs": [
+          0,
+          14,
+          0
+        ]
+      },
+      {
+        "name": "Cultist Bow"
+      },
+      {
+        "name": "Dualstring Bow"
+      },
+      {
+        "name": "Fanatic Bow"
+      },
+      {
+        "name": "Gemini Bow"
+      },
+      {
+        "name": "Guardian Bow"
+      },
+      {
+        "name": "Heavy Bow"
+      },
+      {
+        "name": "Ironwood Shortbow"
+      },
+      {
+        "name": "Militant Bow"
+      },
+      {
+        "name": "Obliterator Bow"
+      },
+      {
+        "name": "Protector Bow"
+      },
+      {
+        "name": "Recurve Bow",
+        "reqs": [
+          0,
+          65,
+          0
+        ]
+      },
+      {
+        "name": "Rider Bow"
+      },
+      {
+        "name": "Shortbow"
+      },
+      {
+        "name": "Snakewood Shortbow"
+      },
+      {
+        "name": "Tribal Bow"
+      },
+      {
+        "name": "Twin Bow"
+      },
+      {
+        "name": "Warden Bow"
+      },
+      {
+        "name": "Warmonger Bow"
+      },
+      {
+        "name": "Zealot Bow"
+      }
     ],
     "size": [
       2,
@@ -296,27 +866,79 @@
   },
   "Bucklers": {
     "bases": [
-      "Ancient Buckler",
-      "Array Buckler",
-      "Bladeguard Buckler",
-      "Coiled Buckler",
-      "Desert Buckler",
-      "Edged Buckler",
-      "Gutspike Buckler",
-      "Iron Buckler",
-      "Jingling Buckler",
-      "Laminate Buckler",
-      "Leather Buckler",
-      "Oak Buckler",
-      "Ornate Buckler",
-      "Painted Buckler",
-      "Pearl Buckler",
-      "Plated Buckler",
-      "Ridged Buckler",
-      "Ringed Buckler",
-      "Spiked Buckler",
-      "Spikeward Buckler",
-      "Wooden Buckler"
+      {
+        "name": "Ancient Buckler"
+      },
+      {
+        "name": "Array Buckler"
+      },
+      {
+        "name": "Bladeguard Buckler"
+      },
+      {
+        "name": "Coiled Buckler"
+      },
+      {
+        "name": "Desert Buckler"
+      },
+      {
+        "name": "Edged Buckler"
+      },
+      {
+        "name": "Gutspike Buckler"
+      },
+      {
+        "name": "Iron Buckler"
+      },
+      {
+        "name": "Jingling Buckler"
+      },
+      {
+        "name": "Laminate Buckler"
+      },
+      {
+        "name": "Leather Buckler"
+      },
+      {
+        "name": "Oak Buckler",
+        "reqs": [
+          0,
+          94,
+          0
+        ]
+      },
+      {
+        "name": "Ornate Buckler"
+      },
+      {
+        "name": "Painted Buckler",
+        "reqs": [
+          0,
+          44,
+          0
+        ]
+      },
+      {
+        "name": "Pearl Buckler"
+      },
+      {
+        "name": "Plated Buckler"
+      },
+      {
+        "name": "Ridged Buckler"
+      },
+      {
+        "name": "Ringed Buckler"
+      },
+      {
+        "name": "Spiked Buckler"
+      },
+      {
+        "name": "Spikeward Buckler"
+      },
+      {
+        "name": "Wooden Buckler"
+      }
     ],
     "size": [
       2,
@@ -325,29 +947,75 @@
   },
   "Crossbows": {
     "bases": [
-      "Alloy Crossbow",
-      "Blackfire Crossbow",
-      "Bleak Crossbow",
-      "Bombard Crossbow",
-      "Cannonade Crossbow",
-      "Construct Crossbow",
-      "Desolate Crossbow",
-      "Dyad Crossbow",
-      "Elegant Crossbow",
-      "Engraved Crossbow",
-      "Flexed Crossbow",
-      "Gemini Crossbow",
-      "Makeshift Crossbow",
-      "Painted Crossbow",
-      "Piercing Crossbow",
-      "Robust Crossbow",
-      "Siege Crossbow",
-      "Stout Crossbow",
-      "Sturdy Crossbow",
-      "Taut Crossbow",
-      "Tense Crossbow",
-      "Twin Crossbow",
-      "Varnished Crossbow"
+      {
+        "name": "Alloy Crossbow"
+      },
+      {
+        "name": "Blackfire Crossbow"
+      },
+      {
+        "name": "Bleak Crossbow"
+      },
+      {
+        "name": "Bombard Crossbow"
+      },
+      {
+        "name": "Cannonade Crossbow"
+      },
+      {
+        "name": "Construct Crossbow"
+      },
+      {
+        "name": "Desolate Crossbow"
+      },
+      {
+        "name": "Dyad Crossbow"
+      },
+      {
+        "name": "Elegant Crossbow"
+      },
+      {
+        "name": "Engraved Crossbow"
+      },
+      {
+        "name": "Flexed Crossbow"
+      },
+      {
+        "name": "Gemini Crossbow"
+      },
+      {
+        "name": "Makeshift Crossbow"
+      },
+      {
+        "name": "Painted Crossbow"
+      },
+      {
+        "name": "Piercing Crossbow"
+      },
+      {
+        "name": "Robust Crossbow"
+      },
+      {
+        "name": "Siege Crossbow"
+      },
+      {
+        "name": "Stout Crossbow"
+      },
+      {
+        "name": "Sturdy Crossbow"
+      },
+      {
+        "name": "Taut Crossbow"
+      },
+      {
+        "name": "Tense Crossbow"
+      },
+      {
+        "name": "Twin Crossbow"
+      },
+      {
+        "name": "Varnished Crossbow"
+      }
     ],
     "size": [
       2,
@@ -356,26 +1024,66 @@
   },
   "Foci": {
     "bases": [
-      "Antler Focus",
-      "Arrayed Focus",
-      "Crystal Focus",
-      "Cultist Focus",
-      "Druidic Focus",
-      "Engraved Focus",
-      "Hallowed Focus",
-      "Jingling Focus",
-      "Leyline Focus",
-      "Plumed Focus",
-      "Runed Focus",
-      "Sacred Focus",
-      "Staghorn Focus",
-      "Tasalian Focus",
-      "Tonal Focus",
-      "Twig Focus",
-      "Voodoo Focus",
-      "Whorl Focus",
-      "Woven Focus",
-      "Wreath Focus"
+      {
+        "name": "Antler Focus"
+      },
+      {
+        "name": "Arrayed Focus"
+      },
+      {
+        "name": "Crystal Focus"
+      },
+      {
+        "name": "Cultist Focus"
+      },
+      {
+        "name": "Druidic Focus"
+      },
+      {
+        "name": "Engraved Focus"
+      },
+      {
+        "name": "Hallowed Focus"
+      },
+      {
+        "name": "Jingling Focus"
+      },
+      {
+        "name": "Leyline Focus"
+      },
+      {
+        "name": "Plumed Focus"
+      },
+      {
+        "name": "Runed Focus"
+      },
+      {
+        "name": "Sacred Focus"
+      },
+      {
+        "name": "Staghorn Focus"
+      },
+      {
+        "name": "Tasalian Focus"
+      },
+      {
+        "name": "Tonal Focus"
+      },
+      {
+        "name": "Twig Focus"
+      },
+      {
+        "name": "Voodoo Focus"
+      },
+      {
+        "name": "Whorl Focus"
+      },
+      {
+        "name": "Woven Focus"
+      },
+      {
+        "name": "Wreath Focus"
+      }
     ],
     "size": [
       2,
@@ -384,88 +1092,257 @@
   },
   "Gloves": {
     "bases": [
-      "Adherent Cuffs",
-      "Adorned Wraps",
-      "Aged Cuffs",
-      "Ancient Cuffs",
-      "Ancient Mitts",
-      "Bandage Wraps",
-      "Barbed Bracers",
-      "Baroque Gloves",
-      "Blacksteel Gauntlets",
-      "Bolstered Mitts",
-      "Bound Bracers",
-      "Bound Cuffs",
-      "Braided Cuffs",
-      "Buckled Wraps",
-      "Burnished Gauntlets",
-      "Cambric Wraps",
-      "Captain Gauntlets",
-      "Commander Gauntlets",
-      "Cultist Gauntlets",
-      "Detailed Mitts",
-      "Doubled Gauntlets",
-      "Elegant Mitts",
-      "Elegant Wraps",
-      "Embellished Gloves",
-      "Embroidered Gloves",
-      "Feathered Mitts",
-      "Fine Bracers",
-      "Firm Bracers",
-      "Furtive Wraps",
-      "Gauze Wraps",
-      "Gleaming Cuffs",
-      "Gold Gloves",
-      "Goldcast Cuffs",
-      "Grand Bracers",
-      "Grand Manchettes",
-      "Grim Gloves",
-      "Heirloom Cuffs",
-      "Hunting Bracers",
-      "Intricate Gloves",
-      "Ironmail Gauntlets",
-      "Jewelled Gloves",
-      "Knightly Mitts",
-      "Layered Gauntlets",
-      "Linen Wraps",
-      "Massive Mitts",
-      "Moulded Mitts",
-      "Ominous Gloves",
-      "Opulent Gloves",
-      "Ornate Cuffs",
-      "Ornate Gauntlets",
-      "Ornate Mitts",
-      "Pauascale Gloves",
-      "Plate Gauntlets",
-      "Plated Mitts",
-      "Polished Bracers",
-      "Refined Bracers",
-      "Ringmail Gauntlets",
-      "Riveted Mitts",
-      "Rope Cuffs",
-      "Sectioned Bracers",
-      "Secured Wraps",
-      "Sirenscale Gloves",
-      "Sombre Gloves",
-      "Spiked Bracers",
-      "Spined Bracers",
-      "Spiral Wraps",
-      "Stalking Bracers",
-      "Steelmail Gauntlets",
-      "Stitched Gloves",
-      "Stocky Mitts",
-      "Suede Bracers",
-      "Swift Bracers",
-      "Tempered Mitts",
-      "Titan Mitts",
-      "Torn Gloves",
-      "Utility Wraps",
-      "Vaal Gloves",
-      "Vaal Mitts",
-      "Vaal Wraps",
-      "Verisium Cuffs",
-      "War Wraps",
-      "Zealot Gauntlets"
+      {
+        "name": "Adherent Cuffs"
+      },
+      {
+        "name": "Adorned Wraps"
+      },
+      {
+        "name": "Aged Cuffs"
+      },
+      {
+        "name": "Ancient Cuffs"
+      },
+      {
+        "name": "Ancient Mitts"
+      },
+      {
+        "name": "Bandage Wraps"
+      },
+      {
+        "name": "Barbed Bracers"
+      },
+      {
+        "name": "Baroque Gloves"
+      },
+      {
+        "name": "Blacksteel Gauntlets"
+      },
+      {
+        "name": "Bolstered Mitts"
+      },
+      {
+        "name": "Bound Bracers"
+      },
+      {
+        "name": "Bound Cuffs"
+      },
+      {
+        "name": "Braided Cuffs"
+      },
+      {
+        "name": "Buckled Wraps"
+      },
+      {
+        "name": "Burnished Gauntlets"
+      },
+      {
+        "name": "Cambric Wraps"
+      },
+      {
+        "name": "Captain Gauntlets"
+      },
+      {
+        "name": "Commander Gauntlets"
+      },
+      {
+        "name": "Cultist Gauntlets"
+      },
+      {
+        "name": "Detailed Mitts"
+      },
+      {
+        "name": "Doubled Gauntlets"
+      },
+      {
+        "name": "Elegant Mitts"
+      },
+      {
+        "name": "Elegant Wraps"
+      },
+      {
+        "name": "Embellished Gloves"
+      },
+      {
+        "name": "Embroidered Gloves",
+        "reqs": [
+          0,
+          0,
+          54
+        ]
+      },
+      {
+        "name": "Feathered Mitts"
+      },
+      {
+        "name": "Fine Bracers"
+      },
+      {
+        "name": "Firm Bracers"
+      },
+      {
+        "name": "Furtive Wraps"
+      },
+      {
+        "name": "Gauze Wraps"
+      },
+      {
+        "name": "Gleaming Cuffs"
+      },
+      {
+        "name": "Gold Gloves"
+      },
+      {
+        "name": "Goldcast Cuffs"
+      },
+      {
+        "name": "Grand Bracers"
+      },
+      {
+        "name": "Grand Manchettes"
+      },
+      {
+        "name": "Grim Gloves"
+      },
+      {
+        "name": "Heirloom Cuffs"
+      },
+      {
+        "name": "Hunting Bracers"
+      },
+      {
+        "name": "Intricate Gloves"
+      },
+      {
+        "name": "Ironmail Gauntlets"
+      },
+      {
+        "name": "Jewelled Gloves"
+      },
+      {
+        "name": "Knightly Mitts"
+      },
+      {
+        "name": "Layered Gauntlets"
+      },
+      {
+        "name": "Linen Wraps"
+      },
+      {
+        "name": "Massive Mitts"
+      },
+      {
+        "name": "Moulded Mitts"
+      },
+      {
+        "name": "Ominous Gloves"
+      },
+      {
+        "name": "Opulent Gloves"
+      },
+      {
+        "name": "Ornate Cuffs"
+      },
+      {
+        "name": "Ornate Gauntlets"
+      },
+      {
+        "name": "Ornate Mitts"
+      },
+      {
+        "name": "Pauascale Gloves"
+      },
+      {
+        "name": "Plate Gauntlets"
+      },
+      {
+        "name": "Plated Mitts"
+      },
+      {
+        "name": "Polished Bracers"
+      },
+      {
+        "name": "Refined Bracers"
+      },
+      {
+        "name": "Ringmail Gauntlets"
+      },
+      {
+        "name": "Riveted Mitts"
+      },
+      {
+        "name": "Rope Cuffs"
+      },
+      {
+        "name": "Sectioned Bracers"
+      },
+      {
+        "name": "Secured Wraps"
+      },
+      {
+        "name": "Sirenscale Gloves"
+      },
+      {
+        "name": "Sombre Gloves"
+      },
+      {
+        "name": "Spiked Bracers"
+      },
+      {
+        "name": "Spined Bracers"
+      },
+      {
+        "name": "Spiral Wraps"
+      },
+      {
+        "name": "Stalking Bracers"
+      },
+      {
+        "name": "Steelmail Gauntlets"
+      },
+      {
+        "name": "Stitched Gloves"
+      },
+      {
+        "name": "Stocky Mitts"
+      },
+      {
+        "name": "Suede Bracers"
+      },
+      {
+        "name": "Swift Bracers"
+      },
+      {
+        "name": "Tempered Mitts"
+      },
+      {
+        "name": "Titan Mitts"
+      },
+      {
+        "name": "Torn Gloves"
+      },
+      {
+        "name": "Utility Wraps"
+      },
+      {
+        "name": "Vaal Gloves"
+      },
+      {
+        "name": "Vaal Mitts"
+      },
+      {
+        "name": "Vaal Wraps"
+      },
+      {
+        "name": "Verisium Cuffs"
+      },
+      {
+        "name": "War Wraps"
+      },
+      {
+        "name": "Zealot Gauntlets"
+      }
     ],
     "size": [
       2,
@@ -474,110 +1351,328 @@
   },
   "Helmets": {
     "bases": [
-      "Ancestral Tiara",
-      "Armoured Cap",
-      "Avian Mask",
-      "Avian Tiara",
-      "Bandit Mask",
-      "Beaded Circlet",
-      "Brigand Mask",
-      "Brimmed Helm",
-      "Cabalist Helm",
-      "Chain Tiara",
-      "Champion Helm",
-      "Closed Helm",
-      "Commander Greathelm",
-      "Corroded Greathelm",
-      "Corsair Cap",
-      "Covert Hood",
-      "Cowled Helm",
-      "Cryptic Crown",
-      "Cryptic Helm",
-      "Cultist Crown",
-      "Death Mask",
-      "Decorated Helm",
-      "Deerstalker Hood",
-      "Desert Cap",
-      "Desert Circlet",
-      "Divine Crown",
-      "Domed Helm",
-      "Druidic Circlet",
-      "Druidic Crown",
-      "Elegant Greathelm",
-      "Elite Greathelm",
-      "Engraved Helm",
-      "Face Mask",
-      "Faridun Mask",
-      "Feathered Tiara",
-      "Felt Cap",
-      "Fierce Greathelm",
-      "Forest Crown",
-      "Freebooter Cap",
-      "Gladiatoral Helm",
-      "Gladiatorial Helm",
-      "Gold Circlet",
-      "Golden Visage",
-      "Grand Visage",
-      "Grinning Mask",
-      "Guarded Helm",
-      "Hallowed Crown",
-      "Heavy Crown",
-      "Hewn Mask",
-      "Homeguard Greathelm",
-      "Hooded Mask",
-      "Horned Crown",
-      "Hunter Hood",
-      "Imperial Greathelm",
-      "Inquisitor Crown",
-      "Iron Crown",
-      "Jade Tiara",
-      "Jungle Tiara",
-      "Kamasan Tiara",
-      "Lace Hood",
-      "Leatherbound Hood",
-      "Magus Tiara",
-      "Mailed Crown",
-      "Martyr Crown",
-      "Masked Greathelm",
-      "Mercenary Greathelm",
-      "Narrow Hood",
-      "Noble Greathelm",
-      "Oak Mask",
-      "Paragon Greathelm",
-      "Pariah Mask",
-      "Rotted Hood",
-      "Rusted Greathelm",
-      "Saintly Crown",
-      "Sandsworn Tiara",
-      "Shabby Hood",
-      "Shielded Helm",
-      "Skulking Mask",
-      "Skycrown Tiara",
-      "Soaring Mask",
-      "Soldier Greathelm",
-      "Soldier Helm",
-      "Solid Mask",
-      "Sorcerous Tiara",
-      "Spired Greathelm",
-      "Spiritbone Crown",
-      "Swathed Cap",
-      "Trapper Hood",
-      "Tribal Mask",
-      "Twig Circlet",
-      "Veiled Mask",
-      "Velvet Cap",
-      "Vermeil Circlet",
-      "Viper Cap",
-      "Visored Helm",
-      "Warded Helm",
-      "Warmonger Greathelm",
-      "Warrior Greathelm",
-      "Wicker Tiara",
-      "Wool Cap",
-      "Woven Cap",
-      "Wrapped Cap",
-      "Wrapped Greathelm",
-      "Zealot Crown"
+      {
+        "name": "Ancestral Tiara"
+      },
+      {
+        "name": "Armoured Cap"
+      },
+      {
+        "name": "Avian Mask"
+      },
+      {
+        "name": "Avian Tiara"
+      },
+      {
+        "name": "Bandit Mask"
+      },
+      {
+        "name": "Beaded Circlet"
+      },
+      {
+        "name": "Brigand Mask"
+      },
+      {
+        "name": "Brimmed Helm"
+      },
+      {
+        "name": "Cabalist Helm"
+      },
+      {
+        "name": "Chain Tiara"
+      },
+      {
+        "name": "Champion Helm"
+      },
+      {
+        "name": "Closed Helm"
+      },
+      {
+        "name": "Commander Greathelm"
+      },
+      {
+        "name": "Corroded Greathelm"
+      },
+      {
+        "name": "Corsair Cap"
+      },
+      {
+        "name": "Covert Hood"
+      },
+      {
+        "name": "Cowled Helm"
+      },
+      {
+        "name": "Cryptic Crown"
+      },
+      {
+        "name": "Cryptic Helm"
+      },
+      {
+        "name": "Cultist Crown"
+      },
+      {
+        "name": "Death Mask"
+      },
+      {
+        "name": "Decorated Helm"
+      },
+      {
+        "name": "Deerstalker Hood"
+      },
+      {
+        "name": "Desert Cap"
+      },
+      {
+        "name": "Desert Circlet"
+      },
+      {
+        "name": "Divine Crown",
+        "reqs": [
+          132,
+          0,
+          132
+        ]
+      },
+      {
+        "name": "Domed Helm"
+      },
+      {
+        "name": "Druidic Circlet"
+      },
+      {
+        "name": "Druidic Crown"
+      },
+      {
+        "name": "Elegant Greathelm"
+      },
+      {
+        "name": "Elite Greathelm"
+      },
+      {
+        "name": "Engraved Helm"
+      },
+      {
+        "name": "Face Mask"
+      },
+      {
+        "name": "Faridun Mask"
+      },
+      {
+        "name": "Feathered Tiara"
+      },
+      {
+        "name": "Felt Cap"
+      },
+      {
+        "name": "Fierce Greathelm"
+      },
+      {
+        "name": "Forest Crown"
+      },
+      {
+        "name": "Freebooter Cap"
+      },
+      {
+        "name": "Gladiatoral Helm"
+      },
+      {
+        "name": "Gladiatorial Helm"
+      },
+      {
+        "name": "Gold Circlet"
+      },
+      {
+        "name": "Golden Visage"
+      },
+      {
+        "name": "Grand Visage"
+      },
+      {
+        "name": "Grinning Mask"
+      },
+      {
+        "name": "Guarded Helm"
+      },
+      {
+        "name": "Hallowed Crown"
+      },
+      {
+        "name": "Heavy Crown"
+      },
+      {
+        "name": "Hewn Mask"
+      },
+      {
+        "name": "Homeguard Greathelm"
+      },
+      {
+        "name": "Hooded Mask"
+      },
+      {
+        "name": "Horned Crown"
+      },
+      {
+        "name": "Hunter Hood",
+        "reqs": [
+          0,
+          87,
+          0
+        ]
+      },
+      {
+        "name": "Imperial Greathelm"
+      },
+      {
+        "name": "Inquisitor Crown"
+      },
+      {
+        "name": "Iron Crown"
+      },
+      {
+        "name": "Jade Tiara"
+      },
+      {
+        "name": "Jungle Tiara"
+      },
+      {
+        "name": "Kamasan Tiara"
+      },
+      {
+        "name": "Lace Hood"
+      },
+      {
+        "name": "Leatherbound Hood"
+      },
+      {
+        "name": "Magus Tiara"
+      },
+      {
+        "name": "Mailed Crown"
+      },
+      {
+        "name": "Martyr Crown"
+      },
+      {
+        "name": "Masked Greathelm"
+      },
+      {
+        "name": "Mercenary Greathelm"
+      },
+      {
+        "name": "Narrow Hood"
+      },
+      {
+        "name": "Noble Greathelm"
+      },
+      {
+        "name": "Oak Mask"
+      },
+      {
+        "name": "Paragon Greathelm"
+      },
+      {
+        "name": "Pariah Mask"
+      },
+      {
+        "name": "Rotted Hood"
+      },
+      {
+        "name": "Rusted Greathelm"
+      },
+      {
+        "name": "Saintly Crown"
+      },
+      {
+        "name": "Sandsworn Tiara"
+      },
+      {
+        "name": "Shabby Hood"
+      },
+      {
+        "name": "Shielded Helm"
+      },
+      {
+        "name": "Skulking Mask"
+      },
+      {
+        "name": "Skycrown Tiara"
+      },
+      {
+        "name": "Soaring Mask"
+      },
+      {
+        "name": "Soldier Greathelm"
+      },
+      {
+        "name": "Soldier Helm"
+      },
+      {
+        "name": "Solid Mask"
+      },
+      {
+        "name": "Sorcerous Tiara"
+      },
+      {
+        "name": "Spired Greathelm"
+      },
+      {
+        "name": "Spiritbone Crown"
+      },
+      {
+        "name": "Swathed Cap"
+      },
+      {
+        "name": "Trapper Hood"
+      },
+      {
+        "name": "Tribal Mask"
+      },
+      {
+        "name": "Twig Circlet"
+      },
+      {
+        "name": "Veiled Mask"
+      },
+      {
+        "name": "Velvet Cap"
+      },
+      {
+        "name": "Vermeil Circlet"
+      },
+      {
+        "name": "Viper Cap"
+      },
+      {
+        "name": "Visored Helm"
+      },
+      {
+        "name": "Warded Helm"
+      },
+      {
+        "name": "Warmonger Greathelm"
+      },
+      {
+        "name": "Warrior Greathelm"
+      },
+      {
+        "name": "Wicker Tiara"
+      },
+      {
+        "name": "Wool Cap"
+      },
+      {
+        "name": "Woven Cap"
+      },
+      {
+        "name": "Wrapped Cap"
+      },
+      {
+        "name": "Wrapped Greathelm"
+      },
+      {
+        "name": "Zealot Crown"
+      }
     ],
     "size": [
       2,
@@ -586,31 +1681,96 @@
   },
   "One Hand Maces": {
     "bases": [
-      "Akoyan Club",
-      "Bandit Mace",
-      "Battle Pick",
-      "Brigand Mace",
-      "Calescent Hammer",
-      "Construct Hammer",
-      "Crown Mace",
-      "Execratus Hammer",
-      "Flanged Mace",
-      "Flared Mace",
-      "Fortified Hammer",
-      "Jade Club",
-      "Marauding Mace",
-      "Marching Mace",
-      "Molten Hammer",
-      "Morning Star",
-      "Plated Mace",
-      "Slim Mace",
-      "Smithing Hammer",
-      "Spiked Club",
-      "Strife Pick",
-      "Structured Hammer",
-      "Torment Club",
-      "Warpick",
-      "Wooden Club"
+      {
+        "name": "Akoyan Club"
+      },
+      {
+        "name": "Bandit Mace"
+      },
+      {
+        "name": "Battle Pick"
+      },
+      {
+        "name": "Brigand Mace"
+      },
+      {
+        "name": "Calescent Hammer"
+      },
+      {
+        "name": "Construct Hammer"
+      },
+      {
+        "name": "Crown Mace"
+      },
+      {
+        "name": "Execratus Hammer"
+      },
+      {
+        "name": "Flanged Mace",
+        "reqs": [
+          152,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "Flared Mace"
+      },
+      {
+        "name": "Fortified Hammer"
+      },
+      {
+        "name": "Jade Club"
+      },
+      {
+        "name": "Marauding Mace"
+      },
+      {
+        "name": "Marching Mace"
+      },
+      {
+        "name": "Molten Hammer"
+      },
+      {
+        "name": "Morning Star",
+        "reqs": [
+          118,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "Plated Mace"
+      },
+      {
+        "name": "Slim Mace"
+      },
+      {
+        "name": "Smithing Hammer"
+      },
+      {
+        "name": "Spiked Club",
+        "reqs": [
+          41,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "Strife Pick"
+      },
+      {
+        "name": "Structured Hammer"
+      },
+      {
+        "name": "Torment Club"
+      },
+      {
+        "name": "Warpick"
+      },
+      {
+        "name": "Wooden Club"
+      }
     ],
     "size": [
       2,
@@ -619,17 +1779,39 @@
   },
   "Quivers": {
     "bases": [
-      "Blunt Quiver",
-      "Broadhead Quiver",
-      "Fire Quiver",
-      "Penetrating Quiver",
-      "Primed Quiver",
-      "Sacral Quiver",
-      "Serrated Quiver",
-      "Toxic Quiver",
-      "Two-Point Quiver",
-      "Visceral Quiver",
-      "Volant Quiver"
+      {
+        "name": "Blunt Quiver"
+      },
+      {
+        "name": "Broadhead Quiver"
+      },
+      {
+        "name": "Fire Quiver"
+      },
+      {
+        "name": "Penetrating Quiver"
+      },
+      {
+        "name": "Primed Quiver"
+      },
+      {
+        "name": "Sacral Quiver"
+      },
+      {
+        "name": "Serrated Quiver"
+      },
+      {
+        "name": "Toxic Quiver"
+      },
+      {
+        "name": "Two-Point Quiver"
+      },
+      {
+        "name": "Visceral Quiver"
+      },
+      {
+        "name": "Volant Quiver"
+      }
     ],
     "size": [
       2,
@@ -638,24 +1820,60 @@
   },
   "Rings": {
     "bases": [
-      "Abyssal Signet",
-      "Amethyst Ring",
-      "Breach Ring",
-      "Dusk Ring",
-      "Emerald Ring",
-      "Gloam Ring",
-      "Gold Ring",
-      "Iron Ring",
-      "Lazuli Ring",
-      "Pearl Ring",
-      "Penumbra Ring",
-      "Prismatic Ring",
-      "Ring",
-      "Ruby Ring",
-      "Sapphire Ring",
-      "Tenebrous Ring",
-      "Topaz Ring",
-      "Unset Ring"
+      {
+        "name": "Abyssal Signet"
+      },
+      {
+        "name": "Amethyst Ring"
+      },
+      {
+        "name": "Breach Ring"
+      },
+      {
+        "name": "Dusk Ring"
+      },
+      {
+        "name": "Emerald Ring"
+      },
+      {
+        "name": "Gloam Ring"
+      },
+      {
+        "name": "Gold Ring"
+      },
+      {
+        "name": "Iron Ring"
+      },
+      {
+        "name": "Lazuli Ring"
+      },
+      {
+        "name": "Pearl Ring"
+      },
+      {
+        "name": "Penumbra Ring"
+      },
+      {
+        "name": "Prismatic Ring"
+      },
+      {
+        "name": "Ring"
+      },
+      {
+        "name": "Ruby Ring"
+      },
+      {
+        "name": "Sapphire Ring"
+      },
+      {
+        "name": "Tenebrous Ring"
+      },
+      {
+        "name": "Topaz Ring"
+      },
+      {
+        "name": "Unset Ring"
+      }
     ],
     "size": [
       1,
@@ -664,11 +1882,21 @@
   },
   "Sceptres": {
     "bases": [
-      "Omen Sceptre",
-      "Rattling Sceptre",
-      "Shrine Sceptre",
-      "Stoic Sceptre",
-      "Wrath Sceptre"
+      {
+        "name": "Omen Sceptre"
+      },
+      {
+        "name": "Rattling Sceptre"
+      },
+      {
+        "name": "Shrine Sceptre"
+      },
+      {
+        "name": "Stoic Sceptre"
+      },
+      {
+        "name": "Wrath Sceptre"
+      }
     ],
     "size": [
       2,
@@ -677,63 +1905,187 @@
   },
   "Shields": {
     "bases": [
-      "Aged Tower Shield",
-      "Ancestor Tower Shield",
-      "Avian Targe",
-      "Baroque Targe",
-      "Barricade Tower Shield",
-      "Blacksteel Crest Shield",
-      "Blacksteel Tower Shield",
-      "Blazon Crest Shield",
-      "Braced Tower Shield",
-      "Bulwark Tower Shield",
-      "Carved Targe",
-      "Chiseled Targe",
-      "Crescent Targe",
-      "Crucible Tower Shield",
-      "Cultist Tower Shield",
-      "Dekharan Crest Shield",
-      "Descry Crest Shield",
-      "Effigial Tower Shield",
-      "Emblem Crest Shield",
-      "Engraved Crest Shield",
-      "Feathered Targe",
-      "Fortress Tower Shield",
-      "Fur-lined Targe",
-      "Glowering Crest Shield",
-      "Golden Targe",
-      "Goldworked Tower Shield",
-      "Hardwood Targe",
-      "Heraldric Tower Shield",
-      "Intricate Crest Shield",
-      "Ironwood Targe",
-      "Jingling Crest Shield",
-      "Mammoth Targe",
-      "Mercenary Targe",
-      "Metalworked Tower Shield",
-      "Noble Tower Shield",
-      "Omen Crest Shield",
-      "Painted Crest Shield",
-      "Painted Tower Shield",
-      "Pelage Targe",
-      "Polished Targe",
-      "Quartered Crest Shield",
-      "Rampart Tower Shield",
-      "Royal Tower Shield",
-      "Sectarian Crest Shield",
-      "Seer Crest Shield",
-      "Sekheman Crest Shield",
-      "Sigil Crest Shield",
-      "Soaring Targe",
-      "Splintered Tower Shield",
-      "Stone Targe",
-      "Stone Tower Shield",
-      "Stratified Targe",
-      "Studded Targe",
-      "Tawhoan Tower Shield",
-      "Vaal Crest Shield",
-      "Vaal Tower Shield",
-      "Wayward Crest Shield"
+      {
+        "name": "Aged Tower Shield"
+      },
+      {
+        "name": "Ancestor Tower Shield"
+      },
+      {
+        "name": "Avian Targe"
+      },
+      {
+        "name": "Baroque Targe"
+      },
+      {
+        "name": "Barricade Tower Shield"
+      },
+      {
+        "name": "Blacksteel Crest Shield"
+      },
+      {
+        "name": "Blacksteel Tower Shield"
+      },
+      {
+        "name": "Blazon Crest Shield"
+      },
+      {
+        "name": "Braced Tower Shield"
+      },
+      {
+        "name": "Bulwark Tower Shield"
+      },
+      {
+        "name": "Carved Targe"
+      },
+      {
+        "name": "Chiseled Targe"
+      },
+      {
+        "name": "Crescent Targe"
+      },
+      {
+        "name": "Crucible Tower Shield"
+      },
+      {
+        "name": "Cultist Tower Shield"
+      },
+      {
+        "name": "Dekharan Crest Shield"
+      },
+      {
+        "name": "Descry Crest Shield"
+      },
+      {
+        "name": "Effigial Tower Shield"
+      },
+      {
+        "name": "Emblem Crest Shield"
+      },
+      {
+        "name": "Engraved Crest Shield"
+      },
+      {
+        "name": "Feathered Targe"
+      },
+      {
+        "name": "Fortress Tower Shield"
+      },
+      {
+        "name": "Fur-lined Targe"
+      },
+      {
+        "name": "Glowering Crest Shield"
+      },
+      {
+        "name": "Golden Targe"
+      },
+      {
+        "name": "Goldworked Tower Shield"
+      },
+      {
+        "name": "Hardwood Targe"
+      },
+      {
+        "name": "Heraldric Tower Shield"
+      },
+      {
+        "name": "Intricate Crest Shield"
+      },
+      {
+        "name": "Ironwood Targe"
+      },
+      {
+        "name": "Jingling Crest Shield"
+      },
+      {
+        "name": "Mammoth Targe"
+      },
+      {
+        "name": "Mercenary Targe"
+      },
+      {
+        "name": "Metalworked Tower Shield"
+      },
+      {
+        "name": "Noble Tower Shield"
+      },
+      {
+        "name": "Omen Crest Shield"
+      },
+      {
+        "name": "Painted Crest Shield"
+      },
+      {
+        "name": "Painted Tower Shield",
+        "reqs": [
+          87,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "Pelage Targe"
+      },
+      {
+        "name": "Polished Targe"
+      },
+      {
+        "name": "Quartered Crest Shield"
+      },
+      {
+        "name": "Rampart Tower Shield"
+      },
+      {
+        "name": "Royal Tower Shield"
+      },
+      {
+        "name": "Sectarian Crest Shield"
+      },
+      {
+        "name": "Seer Crest Shield"
+      },
+      {
+        "name": "Sekheman Crest Shield"
+      },
+      {
+        "name": "Sigil Crest Shield"
+      },
+      {
+        "name": "Soaring Targe"
+      },
+      {
+        "name": "Splintered Tower Shield",
+        "reqs": [
+          11,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "Stone Targe"
+      },
+      {
+        "name": "Stone Tower Shield"
+      },
+      {
+        "name": "Stratified Targe"
+      },
+      {
+        "name": "Studded Targe"
+      },
+      {
+        "name": "Tawhoan Tower Shield"
+      },
+      {
+        "name": "Vaal Crest Shield"
+      },
+      {
+        "name": "Vaal Tower Shield"
+      },
+      {
+        "name": "Wayward Crest Shield"
+      }
     ],
     "size": [
       2,
@@ -742,34 +2094,90 @@
   },
   "Spears": {
     "bases": [
-      "Akoyan Spear",
-      "Barbed Spear",
-      "Branched Spear",
-      "Broad Spear",
-      "Coursing Spear",
-      "Crossblade Spear",
-      "Flying Spear",
-      "Forked Spear",
-      "Grand Spear",
-      "Guardian Spear",
-      "Hardwood Spear",
-      "Helix Spear",
-      "Hunting Spear",
-      "Ironhead Spear",
-      "Jagged Spear",
-      "Massive Spear",
-      "Orichalcum Spear",
-      "Pronged Spear",
-      "Seaglass Spear",
-      "Soaring Spear",
-      "Spiked Spear",
-      "Stalking Spear",
-      "Steelhead Spear",
-      "Striking Spear",
-      "Swift Spear",
-      "Sword Spear",
-      "War Spear",
-      "Winged Spear"
+      {
+        "name": "Akoyan Spear"
+      },
+      {
+        "name": "Barbed Spear"
+      },
+      {
+        "name": "Branched Spear"
+      },
+      {
+        "name": "Broad Spear"
+      },
+      {
+        "name": "Coursing Spear"
+      },
+      {
+        "name": "Crossblade Spear"
+      },
+      {
+        "name": "Flying Spear"
+      },
+      {
+        "name": "Forked Spear"
+      },
+      {
+        "name": "Grand Spear"
+      },
+      {
+        "name": "Guardian Spear"
+      },
+      {
+        "name": "Hardwood Spear"
+      },
+      {
+        "name": "Helix Spear"
+      },
+      {
+        "name": "Hunting Spear"
+      },
+      {
+        "name": "Ironhead Spear"
+      },
+      {
+        "name": "Jagged Spear"
+      },
+      {
+        "name": "Massive Spear"
+      },
+      {
+        "name": "Orichalcum Spear"
+      },
+      {
+        "name": "Pronged Spear"
+      },
+      {
+        "name": "Seaglass Spear"
+      },
+      {
+        "name": "Soaring Spear"
+      },
+      {
+        "name": "Spiked Spear"
+      },
+      {
+        "name": "Stalking Spear"
+      },
+      {
+        "name": "Steelhead Spear"
+      },
+      {
+        "name": "Striking Spear"
+      },
+      {
+        "name": "Swift Spear"
+      },
+      {
+        "name": "Sword Spear"
+      },
+      {
+        "name": "War Spear"
+      },
+      {
+        "name": "Winged Spear"
+      }
     ],
     "size": [
       1,
@@ -778,18 +2186,42 @@
   },
   "Staves": {
     "bases": [
-      "Ashen Staff",
-      "Chiming Staff",
-      "Gelid Staff",
-      "Paralysing Staff",
-      "Permafrost Staff",
-      "Pyrophyte Staff",
-      "Ravenous Staff",
-      "Reaping Staff",
-      "Reflecting Staff",
-      "Roaring Staff",
-      "Sanctified Staff",
-      "Voltaic Staff"
+      {
+        "name": "Ashen Staff"
+      },
+      {
+        "name": "Chiming Staff"
+      },
+      {
+        "name": "Gelid Staff"
+      },
+      {
+        "name": "Paralysing Staff"
+      },
+      {
+        "name": "Permafrost Staff"
+      },
+      {
+        "name": "Pyrophyte Staff"
+      },
+      {
+        "name": "Ravenous Staff"
+      },
+      {
+        "name": "Reaping Staff"
+      },
+      {
+        "name": "Reflecting Staff"
+      },
+      {
+        "name": "Roaring Staff"
+      },
+      {
+        "name": "Sanctified Staff"
+      },
+      {
+        "name": "Voltaic Staff"
+      }
     ],
     "size": [
       1,
@@ -798,28 +2230,72 @@
   },
   "Talismans": {
     "bases": [
-      "Alpha Talisman",
-      "Ashbark Talisman",
-      "Changeling Talisman",
-      "Cinderbark Talisman",
-      "Cruel Talisman",
-      "Familial Talisman",
-      "Fang Talisman",
-      "Frenzied Talisman",
-      "Fungal Talisman",
-      "Fury Talisman",
-      "Howling Talisman",
-      "Jade Talisman",
-      "Lumbering Talisman",
-      "Maji Talisman",
-      "Nettle Talisman",
-      "Primal Talisman",
-      "Rabid Talisman",
-      "Spiny Talisman",
-      "Thunder Talisman",
-      "Vicious Talisman",
-      "Voltfang Talisman",
-      "Wildwood Talisman"
+      {
+        "name": "Alpha Talisman"
+      },
+      {
+        "name": "Ashbark Talisman"
+      },
+      {
+        "name": "Changeling Talisman"
+      },
+      {
+        "name": "Cinderbark Talisman"
+      },
+      {
+        "name": "Cruel Talisman"
+      },
+      {
+        "name": "Familial Talisman"
+      },
+      {
+        "name": "Fang Talisman"
+      },
+      {
+        "name": "Frenzied Talisman"
+      },
+      {
+        "name": "Fungal Talisman"
+      },
+      {
+        "name": "Fury Talisman"
+      },
+      {
+        "name": "Howling Talisman"
+      },
+      {
+        "name": "Jade Talisman"
+      },
+      {
+        "name": "Lumbering Talisman"
+      },
+      {
+        "name": "Maji Talisman"
+      },
+      {
+        "name": "Nettle Talisman"
+      },
+      {
+        "name": "Primal Talisman"
+      },
+      {
+        "name": "Rabid Talisman"
+      },
+      {
+        "name": "Spiny Talisman"
+      },
+      {
+        "name": "Thunder Talisman"
+      },
+      {
+        "name": "Vicious Talisman"
+      },
+      {
+        "name": "Voltfang Talisman"
+      },
+      {
+        "name": "Wildwood Talisman"
+      }
     ],
     "size": [
       2,
@@ -828,30 +2304,78 @@
   },
   "Two Hand Maces": {
     "bases": [
-      "Anvil Maul",
-      "Blacksmith Maul",
-      "Crumbling Maul",
-      "Cultist Greathammer",
-      "Disintegrating Maul",
-      "Fanatic Greathammer",
-      "Felled Greatclub",
-      "Forge Maul",
-      "Giant Maul",
-      "Heavy Greathammer",
-      "Ironwood Greathammer",
-      "Leaden Greathammer",
-      "Massive Greathammer",
-      "Oak Greathammer",
-      "Pointed Maul",
-      "Ruination Maul",
-      "Sacred Maul",
-      "Snakewood Greathammer",
-      "Solemn Maul",
-      "Studded Greatclub",
-      "Tawhoan Greatclub",
-      "Temple Maul",
-      "Totemic Greatclub",
-      "Zealot Greathammer"
+      {
+        "name": "Anvil Maul"
+      },
+      {
+        "name": "Blacksmith Maul"
+      },
+      {
+        "name": "Crumbling Maul"
+      },
+      {
+        "name": "Cultist Greathammer"
+      },
+      {
+        "name": "Disintegrating Maul"
+      },
+      {
+        "name": "Fanatic Greathammer"
+      },
+      {
+        "name": "Felled Greatclub"
+      },
+      {
+        "name": "Forge Maul"
+      },
+      {
+        "name": "Giant Maul"
+      },
+      {
+        "name": "Heavy Greathammer"
+      },
+      {
+        "name": "Ironwood Greathammer"
+      },
+      {
+        "name": "Leaden Greathammer"
+      },
+      {
+        "name": "Massive Greathammer"
+      },
+      {
+        "name": "Oak Greathammer"
+      },
+      {
+        "name": "Pointed Maul"
+      },
+      {
+        "name": "Ruination Maul"
+      },
+      {
+        "name": "Sacred Maul"
+      },
+      {
+        "name": "Snakewood Greathammer"
+      },
+      {
+        "name": "Solemn Maul"
+      },
+      {
+        "name": "Studded Greatclub"
+      },
+      {
+        "name": "Tawhoan Greatclub"
+      },
+      {
+        "name": "Temple Maul"
+      },
+      {
+        "name": "Totemic Greatclub"
+      },
+      {
+        "name": "Zealot Greathammer"
+      }
     ],
     "size": [
       2,
@@ -860,14 +2384,30 @@
   },
   "Wands": {
     "bases": [
-      "Acrid Wand",
-      "Attuned Wand",
-      "Bone Wand",
-      "Dueling Wand",
-      "Galvanic Wand",
-      "Siphoning Wand",
-      "Volatile Wand",
-      "Withered Wand"
+      {
+        "name": "Acrid Wand"
+      },
+      {
+        "name": "Attuned Wand"
+      },
+      {
+        "name": "Bone Wand"
+      },
+      {
+        "name": "Dueling Wand"
+      },
+      {
+        "name": "Galvanic Wand"
+      },
+      {
+        "name": "Siphoning Wand"
+      },
+      {
+        "name": "Volatile Wand"
+      },
+      {
+        "name": "Withered Wand"
+      }
     ],
     "size": [
       1,
@@ -876,31 +2416,81 @@
   },
   "Warstaves": {
     "bases": [
-      "Aegis Quarterstaff",
-      "Arcing Quarterstaff",
-      "Barbarous Quarterstaff",
-      "Barrier Quarterstaff",
-      "Bladed Quarterstaff",
-      "Bolting Quarterstaff",
-      "Crackling Quarterstaff",
-      "Crescent Quarterstaff",
-      "Dreaming Quarterstaff",
-      "Gothic Quarterstaff",
-      "Guardian Quarterstaff",
-      "Hefty Quarterstaff",
-      "Long Quarterstaff",
-      "Lunar Quarterstaff",
-      "Razor Quarterstaff",
-      "Reaching Quarterstaff",
-      "Sinister Quarterstaff",
-      "Skullcrusher Quarterstaff",
-      "Slicing Quarterstaff",
-      "Smooth Quarterstaff",
-      "Steelpoint Quarterstaff",
-      "Striking Quarterstaff",
-      "Waxing Quarterstaff",
-      "Wrapped Quarterstaff",
-      "Wyrm Quarterstaff"
+      {
+        "name": "Aegis Quarterstaff"
+      },
+      {
+        "name": "Arcing Quarterstaff"
+      },
+      {
+        "name": "Barbarous Quarterstaff"
+      },
+      {
+        "name": "Barrier Quarterstaff"
+      },
+      {
+        "name": "Bladed Quarterstaff"
+      },
+      {
+        "name": "Bolting Quarterstaff"
+      },
+      {
+        "name": "Crackling Quarterstaff"
+      },
+      {
+        "name": "Crescent Quarterstaff"
+      },
+      {
+        "name": "Dreaming Quarterstaff"
+      },
+      {
+        "name": "Gothic Quarterstaff"
+      },
+      {
+        "name": "Guardian Quarterstaff"
+      },
+      {
+        "name": "Hefty Quarterstaff"
+      },
+      {
+        "name": "Long Quarterstaff"
+      },
+      {
+        "name": "Lunar Quarterstaff"
+      },
+      {
+        "name": "Razor Quarterstaff"
+      },
+      {
+        "name": "Reaching Quarterstaff"
+      },
+      {
+        "name": "Sinister Quarterstaff"
+      },
+      {
+        "name": "Skullcrusher Quarterstaff"
+      },
+      {
+        "name": "Slicing Quarterstaff"
+      },
+      {
+        "name": "Smooth Quarterstaff"
+      },
+      {
+        "name": "Steelpoint Quarterstaff"
+      },
+      {
+        "name": "Striking Quarterstaff"
+      },
+      {
+        "name": "Waxing Quarterstaff"
+      },
+      {
+        "name": "Wrapped Quarterstaff"
+      },
+      {
+        "name": "Wyrm Quarterstaff"
+      }
     ],
     "size": [
       2,

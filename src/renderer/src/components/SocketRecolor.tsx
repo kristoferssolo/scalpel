@@ -7,11 +7,23 @@ import socketBlue from '../assets/sockets/socket-blue.png'
 import socketWhite from '../assets/sockets/socket-white.png'
 import socketLink from '../assets/sockets/socket-link.png'
 import { MAX_SOCKETS_BY_CLASS_POE1 } from '../../../shared/data/items/max-sockets'
+import { getItemClasses } from '../../../shared/data/items/item-classes'
 import { chaosIcon } from '../shared/icons'
 // Socket recolor is a PoE1-only feature (gated via features.socketRecolor), so we
 // pull its icons directly from the PoE1 sheet rather than going through the shared
 // iconMap -- these are module-load-time constants evaluated before initIconMap runs.
 import itemIcons from '../../../shared/data/items/item-icons-poe1.json'
+
+// Flatten the PoE1 per-class basetype lists into a name -> reqs lookup.
+// SocketRecolor is gated on features.socketRecolor (PoE1-only), so we pin the
+// PoE1 sheet explicitly via getItemClasses(1) -- module-load-time means we
+// can't read the live poeVersion yet.
+const BASE_ITEM_REQS: Record<string, [number, number, number]> = {}
+for (const { bases } of Object.values(getItemClasses(1))) {
+  for (const b of bases) {
+    if (b.reqs) BASE_ITEM_REQS[b.name] = b.reqs
+  }
+}
 
 const icons = itemIcons as Record<string, string>
 const chromIcon = icons['Chromatic Orb']
@@ -287,10 +299,15 @@ export function SocketRecolor({ item, priceInfo }: Props): JSX.Element {
   const wantR = colors.filter((c) => c === 'R').length
   const wantG = colors.filter((c) => c === 'G').length
   const wantB = colors.filter((c) => c === 'B').length
-  const hasReqs = item.reqStr > 0 || item.reqDex > 0 || item.reqInt > 0
+  // Use the base item's pristine attribute requirements when we know the base.
+  // The clipboard's reqStr/Dex/Int includes contributions from socketed gems
+  // (e.g. a high-level Awakened gem inflates Int), and Vorici math wants the
+  // base's intrinsic colour weights.
+  const [reqStr, reqDex, reqInt] = BASE_ITEM_REQS[item.baseType] ?? [item.reqStr, item.reqDex, item.reqInt]
+  const hasReqs = reqStr > 0 || reqDex > 0 || reqInt > 0
 
   const results = hasReqs
-    ? calculateMethods(item.reqStr, item.reqDex, item.reqInt, maxSockets, wantR, wantG, wantB, rates, isLinked6)
+    ? calculateMethods(reqStr, reqDex, reqInt, maxSockets, wantR, wantG, wantB, rates, isLinked6)
     : []
 
   const best = results[0]
@@ -307,7 +324,7 @@ export function SocketRecolor({ item, priceInfo }: Props): JSX.Element {
 
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-3">
-      <ItemSummary item={item} priceInfo={priceInfo} hideSockets />
+      <ItemSummary item={{ ...item, reqStr, reqDex, reqInt }} priceInfo={priceInfo} hideSockets />
 
       {/* Socket picker + results */}
       <div className="flex flex-col flex-1 min-h-0 rounded-t-lg overflow-hidden">

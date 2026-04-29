@@ -3,6 +3,7 @@ import itemIconsPoe1 from '../../../shared/data/items/item-icons-poe1.json'
 import itemIconsPoe2 from '../../../shared/data/items/item-icons-poe2.json'
 import uniqueInfoPoe1 from '../../../shared/data/items/unique-info.json'
 import uniqueInfoPoe2 from '../../../shared/data/items/unique-info-poe2.json'
+import { getItemClasses } from '../../../shared/data/items/item-classes'
 
 export const RARITY_COLORS: Record<string, string> = {
   Normal: '#c8c8c8',
@@ -65,6 +66,30 @@ export function setUniquesByBase(source: Record<string, string[]>): void {
 
 export function initUniquesByBase(version: 1 | 2): void {
   setUniquesByBase(UNIQUES_BY_VERSION[version])
+}
+
+/** baseType -> item-class lookup. Same init-on-version-known pattern as iconMap;
+ *  populated by initItemClassMaps(). PoE1 and PoE2 share class names ("Body
+ *  Armours" etc.) but enumerate different bases, so this MUST be rebuilt from
+ *  the active game's class sheet to avoid PoE2 entries shadowing PoE1 bases
+ *  (or vice versa). */
+export const baseToClass: Record<string, string> = {}
+
+/** Item-class -> [width, height] inventory size. Populated by initItemClassMaps()
+ *  alongside baseToClass. Sizes are mostly stable across games but some PoE2
+ *  classes redefine the slot footprint, so this dispatches on version too. */
+export const classSizes: Record<string, [number, number]> = {}
+
+export function initItemClassMaps(version: 1 | 2): void {
+  const classes = getItemClasses(version)
+  const nextBaseToClass: Record<string, string> = {}
+  const nextClassSizes: Record<string, [number, number]> = {}
+  for (const [cls, info] of Object.entries(classes)) {
+    nextClassSizes[cls] = info.size
+    for (const b of info.bases) nextBaseToClass[b.name] = cls
+  }
+  replaceMap(baseToClass, nextBaseToClass)
+  replaceMap(classSizes, nextClassSizes)
 }
 
 /** Resolve an icon for an item row. Tries the item's own name first (the

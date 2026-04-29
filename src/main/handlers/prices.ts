@@ -16,7 +16,7 @@ import { getPoeVersion } from '../game-state'
 import type { AppSettings, FilterBlock, FilterFile, PoeItem, SearchableItem } from '../../shared/types'
 import { defaultPoeItem } from '../../shared/poe-item'
 import uniqueInfoData from '../../shared/data/items/unique-info.json'
-import { ITEM_CLASSES_ALL } from '../../shared/data/items/item-classes'
+import { getItemClasses } from '../../shared/data/items/item-classes'
 import divCardsData from '../../shared/data/economy/div-cards.json'
 import { TRANSFIGURED_GEM_DISC } from '../../shared/data/trade/transfigured-gems'
 
@@ -39,14 +39,20 @@ const STACKABLE_CLASSES = new Set([
   'Misc Map Items',
 ])
 
-/** Reverse map: base type -> item class, built once from static item-classes data. */
-const BASE_TO_CLASS: Record<string, string> = (() => {
-  const map: Record<string, string> = {}
-  for (const [cls, { bases }] of Object.entries(ITEM_CLASSES_ALL)) {
-    for (const b of bases) map[b] = cls
+/** Reverse map: base type -> item class, built lazily from the active game's
+ *  class sheet. Lazy because getPoeVersion() isn't meaningful at module load
+ *  time -- we resolve on first use, by which point game-state has been set. */
+let _baseToClass: Record<string, string> | null = null
+function getBaseToClass(): Record<string, string> {
+  if (_baseToClass === null) {
+    const map: Record<string, string> = {}
+    for (const [cls, { bases }] of Object.entries(getItemClasses(getPoeVersion()))) {
+      for (const b of bases) map[b.name] = cls
+    }
+    _baseToClass = map
   }
-  return map
-})()
+  return _baseToClass
+}
 
 /** Div card name -> reward text, built once from static economy data. */
 const DIV_CARD_REWARDS: Record<string, string> = (() => {
@@ -198,8 +204,9 @@ function collectMaps(filter: FilterFile): SearchableItem[] {
 /** Uniques from `unique-info.json`, evaluated against the filter for LootLabel styling. */
 function collectUniques(filter: FilterFile): SearchableItem[] {
   const rows: SearchableItem[] = []
+  const baseToClass = getBaseToClass()
   for (const [baseType, names] of Object.entries(uniqueInfoData as Record<string, string[]>)) {
-    const itemClass = BASE_TO_CLASS[baseType] ?? ''
+    const itemClass = baseToClass[baseType] ?? ''
     for (const name of names) {
       rows.push(
         buildSearchableRow(

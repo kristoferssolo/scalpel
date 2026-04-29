@@ -5,9 +5,19 @@ import poe2Raw from './item-classes-poe2.json'
 export interface ItemClassInfo {
   /** Full list of basetypes that belong to this class. May be empty when the PoE2
    *  file doesn't yet enumerate bases for a class we just need size info on. */
-  bases: string[]
+  bases: BaseItemInfo[]
   /** Inventory slot size as `[width, height]`. */
   size: [number, number]
+}
+
+/** Per-basetype data. Carries the displayed name plus any base-specific
+ *  metadata we've harvested (e.g. attribute requirements for SocketRecolor's
+ *  Vorici math, sourced from repoe-fork via fetch-base-item-requirements.js). */
+export interface BaseItemInfo {
+  name: string
+  /** [strength, dexterity, intelligence] requirements at the base item's intrinsic
+   *  level. Optional because PoE2 entries and accessory/jewel classes have none. */
+  reqs?: [number, number, number]
 }
 
 // JSON imports widen tuple literals to `number[]`, so cast through `unknown`
@@ -21,16 +31,13 @@ const POE2_RAW = poe2Raw as unknown as Record<string, ItemClassInfo>
 // keys, so the per-version lookup below returns each game's own bases.
 const POE2 = { ...POE1, ...POE2_RAW }
 
-/** Per-version lookup. Use this wherever the caller knows the active PoE version
- *  (IPC handlers, version-aware renderers). Class names that don't exist in the
- *  requested version simply aren't in the map. */
+/** Per-version lookup. The only public accessor for class data -- always go
+ *  through this so PoE1 callers see pure PoE1 bases (no PoE2 shadowing) and
+ *  PoE2 callers see PoE2's overrides on top of PoE1 fallback for classes PoE2
+ *  hasn't enumerated yet. There is intentionally no merged-across-games map:
+ *  module-level consumers in the renderer init via initItemClassMaps(version)
+ *  once poeVersion is known; main-process consumers call this lazily at use
+ *  sites since getPoeVersion() is reliable by then. */
 export function getItemClasses(version: 1 | 2): Record<string, ItemClassInfo> {
   return version === 2 ? POE2 : POE1
 }
-
-/** Union of every class we know about across both games. Use this from module-
- *  level static map builds (e.g. base-to-class reverse maps assembled at import
- *  time, before the renderer learns its game version). For shared class names
- *  the PoE2 entry wins, so prefer `getItemClasses(version)` when the caller
- *  knows which game it's serving. */
-export const ITEM_CLASSES_ALL: Record<string, ItemClassInfo> = POE2

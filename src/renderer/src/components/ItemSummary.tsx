@@ -3,7 +3,7 @@ import { ArrowRight } from '@icon-park/react'
 import { PriceChip, InfoChip } from '../shared/PriceChip'
 import { ExternalLinkButton } from '../shared/ExternalLinkButton'
 import { INFLUENCE_ICONS_BY_NAME } from './price-check/constants'
-import { iconMap, divCardArtMap, RARITY_COLORS } from '../shared/constants'
+import { iconMap, divCardArtMap, RARITY_COLORS, baseToClass, classSizes } from '../shared/constants'
 import { getItemIcon } from '../shared/utils'
 import { getDustInfo } from '../shared/dust'
 import dustIcon from '../assets/currency/thaumaturgic-dust.png'
@@ -16,7 +16,6 @@ import { usePoeVersion } from '../shared/poe-version-context'
 import { getGameFeatures } from '../../../shared/game-features'
 import divCardsData from '../../../shared/data/economy/div-cards.json'
 import baseToUniques from '../../../shared/data/items/unique-info.json'
-import { ITEM_CLASSES_ALL } from '../../../shared/data/items/item-classes'
 import { ItemChip } from './ItemChip'
 import { IconGlow } from '../shared/IconGlow'
 import mapFrameIcon from '../assets/other/map-frame.png'
@@ -31,27 +30,18 @@ const uniqueToBase: Record<string, string> = {}
 for (const [base, uniques] of Object.entries(_baseToUniques)) {
   for (const name of uniques) uniqueToBase[name] = base
 }
-const classMap: Record<string, string> = {}
-for (const [cls, { bases }] of Object.entries(ITEM_CLASSES_ALL)) {
-  for (const base of bases) classMap[base] = cls
-}
 
 function getUniqueItemClass(uniqueName: string): string {
   const base = uniqueToBase[uniqueName]
   if (!base) return ''
-  return classMap[base] ?? ''
+  return baseToClass[base] ?? ''
 }
 import socketLink from '../assets/sockets/socket-link.png'
-const classSizes: Record<string, [number, number]> = Object.fromEntries(
-  Object.entries(ITEM_CLASSES_ALL).map(([k, v]) => [k, v.size]),
-)
 
-// Build dimensions map from item-classes
 function getDims(baseType: string, itemClass: string): { w: number; h: number } | undefined {
   const cs = classSizes[itemClass]
   if (cs) return { w: cs[0], h: cs[1] }
-  // Fall back: find item class for this base type
-  const cls = classMap[baseType]
+  const cls = baseToClass[baseType]
   if (cls) {
     const s = classSizes[cls]
     if (s) return { w: s[0], h: s[1] }
