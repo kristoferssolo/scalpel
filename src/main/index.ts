@@ -285,6 +285,10 @@ app.whenReady().then(() => {
     if (action === 'openAudit') {
       onHotkeyFired()
       overlayWin.webContents.send('open-view', 'audit')
+    } else if (action === 'openWiki' || action === 'openPoeDb') {
+      onHotkeyFired()
+      const target = action === 'openWiki' ? 'wiki' : 'poedb'
+      overlayWin.webContents.send('open-link-pending', target)
     } else {
       const view = APP_MACRO_VIEWS[action] ?? 'setup'
       overlayWin.webContents.send('open-view', view)

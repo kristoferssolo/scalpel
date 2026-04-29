@@ -5,6 +5,7 @@ import { getGameFeatures } from '../../../../shared/game-features'
 import { usePoeVersion } from '../../shared/poe-version-context'
 import { IconGlow } from '../../shared/IconGlow'
 import { PriceChip, InfoChip } from '../../shared/PriceChip'
+import { ExternalLinkButton } from '../../shared/ExternalLinkButton'
 import dustIcon from '../../assets/currency/thaumaturgic-dust.png'
 
 export function ItemHeader({
@@ -20,6 +21,8 @@ export function ItemHeader({
   dustInfo,
   areaLevel,
   heistJob,
+  onOpenWiki,
+  onOpenPoeDb,
 }: {
   heroIcon: string | null
   heroName: string
@@ -33,6 +36,8 @@ export function ItemHeader({
   dustInfo?: { value: number; upTo?: boolean } | null
   areaLevel?: number
   heistJob?: { skill: string; level: number }
+  onOpenWiki?: () => void
+  onOpenPoeDb?: () => void
 }): JSX.Element {
   const version = usePoeVersion()
   const icons = getCurrencyIcons(version)
@@ -51,7 +56,7 @@ export function ItemHeader({
         />
       )}
       <div className="flex-1 min-w-0">
-        <div className="font-bold text-sm" style={{ color }}>
+        <div className="font-bold text-sm truncate" style={{ color }}>
           {heroName}
         </div>
         {heroName !== baseType && <div className="text-text-dim text-[11px]">{baseType}</div>}
@@ -102,57 +107,71 @@ export function ItemHeader({
             )}
           </div>
         )}
-        {/* Exchange rate chip */}
-        {chaosPerDivine != null && chaosPerDivine > 0 && (
-          <div className="exchange-rate-chip flex items-center gap-[3px] bg-black/30 rounded-full px-2 py-[3px] text-[11px] font-[inherit] relative cursor-default">
-            <img src={icons.baseline} alt="" className="w-3 h-3" />
-            <span className="font-semibold">{Math.round(chaosPerDivine)}</span>
-            <span className="text-text-dim">=</span>
-            <span className="font-semibold">1</span>
-            <img src={icons.divine} alt="" className="w-3 h-3" />
-            <div
-              className="exchange-rate-tooltip"
-              style={{
-                position: 'absolute',
-                top: '100%',
-                right: 0,
-                marginTop: 6,
-                padding: '8px 10px',
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                borderRadius: 4,
-                fontSize: 10,
-                whiteSpace: 'nowrap',
-                pointerEvents: 'none',
-                opacity: 0,
-                transition: 'opacity 0.15s ease',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-                zIndex: 10,
-              }}
-            >
-              {Array.from({ length: 10 }, (_, i) => {
-                const div = (i + 1) / 10
-                const chaos = Math.round(chaosPerDivine * div)
-                return (
-                  <div
-                    key={i}
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'space-between' }}
-                  >
-                    <span style={{ color: 'var(--text-dim)', minWidth: 28, textAlign: 'right' }}>{div.toFixed(1)}</span>
-                    <img src={icons.divine} alt="" style={{ width: 10, height: 10 }} />
-                    <span style={{ color: 'var(--text-dim)', margin: '0 2px' }}>=</span>
-                    <span style={{ color: 'var(--text)', fontWeight: 600, minWidth: 24, textAlign: 'right' }}>
-                      {chaos}
-                    </span>
-                    <img src={icons.baseline} alt="" style={{ width: 10, height: 10 }} />
-                  </div>
-                )
-              })}
+        {/* Exchange rate row -- "Open in" chip sits to the left of the chaos/divine rate */}
+        <div className="flex items-center gap-1 justify-end">
+          {(onOpenWiki || onOpenPoeDb) && (
+            <InfoChip label="Open in">
+              {onOpenWiki && (
+                <ExternalLinkButton label="Wiki" title="Open the wiki page in your browser" onClick={onOpenWiki} />
+              )}
+              {onOpenPoeDb && (
+                <ExternalLinkButton label="PoEDB" title="Open the PoEDB page in your browser" onClick={onOpenPoeDb} />
+              )}
+            </InfoChip>
+          )}
+          {chaosPerDivine != null && chaosPerDivine > 0 && (
+            <div className="exchange-rate-chip flex items-center gap-[3px] bg-black/30 rounded-full px-2 py-[3px] text-[11px] font-[inherit] relative cursor-default">
+              <img src={icons.baseline} alt="" className="w-3 h-3" />
+              <span className="font-semibold">{Math.round(chaosPerDivine)}</span>
+              <span className="text-text-dim">=</span>
+              <span className="font-semibold">1</span>
+              <img src={icons.divine} alt="" className="w-3 h-3" />
+              <div
+                className="exchange-rate-tooltip"
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: 6,
+                  padding: '8px 10px',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 4,
+                  fontSize: 10,
+                  whiteSpace: 'nowrap',
+                  pointerEvents: 'none',
+                  opacity: 0,
+                  transition: 'opacity 0.15s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                  zIndex: 10,
+                }}
+              >
+                {Array.from({ length: 10 }, (_, i) => {
+                  const div = (i + 1) / 10
+                  const chaos = Math.round(chaosPerDivine * div)
+                  return (
+                    <div
+                      key={i}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'space-between' }}
+                    >
+                      <span style={{ color: 'var(--text-dim)', minWidth: 28, textAlign: 'right' }}>
+                        {div.toFixed(1)}
+                      </span>
+                      <img src={icons.divine} alt="" style={{ width: 10, height: 10 }} />
+                      <span style={{ color: 'var(--text-dim)', margin: '0 2px' }}>=</span>
+                      <span style={{ color: 'var(--text)', fontWeight: 600, minWidth: 24, textAlign: 'right' }}>
+                        {chaos}
+                      </span>
+                      <img src={icons.baseline} alt="" style={{ width: 10, height: 10 }} />
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )

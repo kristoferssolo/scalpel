@@ -39,6 +39,8 @@ export function PriceCheck({
   chaosPerDivine,
   unidCandidates,
   onClose: _onClose,
+  onOpenWiki,
+  onOpenPoeDb,
 }: PriceCheckProps): JSX.Element {
   const tradeUrls = getTradeUrls(poeVersion)
   const currencyIcons = getCurrencyIcons(poeVersion)
@@ -306,6 +308,8 @@ export function PriceCheck({
         dustInfo={getDustInfo(item)}
         areaLevel={item.monsterLevel}
         heistJob={item.heistJob}
+        onOpenWiki={onOpenWiki}
+        onOpenPoeDb={onOpenPoeDb}
       />
 
       <div className="flex-1 overflow-y-auto px-[14px] py-[10px] flex flex-col gap-[10px]">

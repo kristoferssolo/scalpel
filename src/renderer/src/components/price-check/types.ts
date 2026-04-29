@@ -78,4 +78,6 @@ export interface PriceCheckProps {
   chaosPerDivine?: number
   unidCandidates?: Array<{ name: string; chaosValue: number }>
   onClose: () => void
+  onOpenWiki?: () => void
+  onOpenPoeDb?: () => void
 }

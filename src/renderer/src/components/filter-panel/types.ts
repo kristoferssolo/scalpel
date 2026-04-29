@@ -13,6 +13,8 @@ export interface FilterPanelProps {
   onOpenTools?: () => void
   onOpenDustExplore?: () => void
   onOpenDivExplore?: () => void
+  onOpenWiki?: () => void
+  onOpenPoeDb?: () => void
   /** True when the filter-page sister overlay (tier base-types list) is visible. */
   tierSisterOpen?: boolean
   /** Flip tierSisterOpen -- button handler. */

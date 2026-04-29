@@ -7,6 +7,7 @@ import type {
   HistoryEntry,
   OverlayData,
 } from '../shared/types'
+import type { ExternalLinkTarget } from '../shared/external-link'
 
 export const api = {
   // Settings
@@ -193,6 +194,11 @@ export const api = {
     const handler = (_: Electron.IpcRendererEvent, view: string): void => cb(view)
     ipcRenderer.on('open-view', handler)
     return () => ipcRenderer.removeListener('open-view', handler)
+  },
+  onOpenLinkPending: (cb: (target: ExternalLinkTarget) => void): (() => void) => {
+    const handler = (_e: unknown, target: ExternalLinkTarget): void => cb(target)
+    ipcRenderer.on('open-link-pending', handler)
+    return () => ipcRenderer.removeListener('open-link-pending', handler)
   },
   onOverlayHide: (cb: () => void): (() => void) => {
     const handler = (): void => cb()

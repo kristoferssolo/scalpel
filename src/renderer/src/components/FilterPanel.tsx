@@ -23,6 +23,8 @@ export function FilterPanel({
   onOpenTools,
   onOpenDustExplore,
   onOpenDivExplore,
+  onOpenWiki,
+  onOpenPoeDb,
   tierSisterOpen,
   onToggleTierSister,
   tierSisterSide,
@@ -158,6 +160,8 @@ export function FilterPanel({
           onRecolor={onOpenTools}
           onDustExplore={onOpenDustExplore}
           onDivExplore={onOpenDivExplore}
+          onOpenWiki={onOpenWiki}
+          onOpenPoeDb={onOpenPoeDb}
           rightSlot={<SaveButton isDirty={isDirty} isSaving={isSaving} isSaved={isSaved} onSave={handleSave} />}
           flush
         />

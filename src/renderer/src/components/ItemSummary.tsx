@@ -1,6 +1,7 @@
 import type { PoeItem, PriceInfo } from '../../../shared/types'
 import { ArrowRight } from '@icon-park/react'
 import { PriceChip, InfoChip } from '../shared/PriceChip'
+import { ExternalLinkButton } from '../shared/ExternalLinkButton'
 import { INFLUENCE_ICONS_BY_NAME } from './price-check/constants'
 import { iconMap, divCardArtMap, RARITY_COLORS } from '../shared/constants'
 import { getItemIcon } from '../shared/utils'
@@ -82,6 +83,8 @@ interface Props {
   onRecolor?: () => void
   onDustExplore?: () => void
   onDivExplore?: () => void
+  onOpenWiki?: () => void
+  onOpenPoeDb?: () => void
   hideSockets?: boolean
   /** When true, no negative margin - for use inside scroll containers */
   flush?: boolean
@@ -103,6 +106,8 @@ export function ItemSummary({
   onRecolor,
   onDustExplore,
   onDivExplore,
+  onOpenWiki,
+  onOpenPoeDb,
   hideSockets,
   flush,
 }: Props): JSX.Element {
@@ -209,7 +214,7 @@ export function ItemSummary({
         {(() => {
           const dustInfo = features.dustExplorer ? getDustInfo(item) : null
           const hasPrice = priceInfo && priceInfo.chaosValue > 0
-          if (!hasPrice && !dustInfo) return null
+          if (!hasPrice && !dustInfo && !onOpenWiki && !onOpenPoeDb) return null
           return (
             <div className="flex gap-[6px] items-center">
               {hasPrice && (
@@ -233,6 +238,20 @@ export function ItemSummary({
                     >
                       Explore
                     </button>
+                  )}
+                </InfoChip>
+              )}
+              {(onOpenWiki || onOpenPoeDb) && (
+                <InfoChip label="Open in">
+                  {onOpenWiki && (
+                    <ExternalLinkButton label="Wiki" title="Open the wiki page in your browser" onClick={onOpenWiki} />
+                  )}
+                  {onOpenPoeDb && (
+                    <ExternalLinkButton
+                      label="PoEDB"
+                      title="Open the PoEDB page in your browser"
+                      onClick={onOpenPoeDb}
+                    />
                   )}
                 </InfoChip>
               )}

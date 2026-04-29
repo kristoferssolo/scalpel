@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { AppSettings, OverlayData, PoeItem } from '../../../shared/types'
+import type { ExternalLinkTarget } from '../../../shared/external-link'
+import { externalLinkUrl } from '../../../shared/external-link'
 import { getGameFeatures } from '../../../shared/game-features'
 import { PoeVersionProvider } from '../shared/poe-version-context'
 import { FilterPanel } from '../components/FilterPanel'
@@ -41,6 +43,12 @@ type View =
 const PANEL_WIDTH = 540
 const PANEL_TOP = 8
 
+/** How long the macro's pending-target ref stays armed before we drop it.
+ *  Without this, a failed price-check (no overlay-data ever arrives) would
+ *  leave the ref true and fire the wiki/poedb open on the user's NEXT
+ *  unrelated price-check. 5s is well past a normal round-trip. */
+const EXTERNAL_LINK_PENDING_TTL_MS = 5000
+
 export default function App(): JSX.Element {
   const [view, setView] = useState<View>('idle')
   const [closing, setClosing] = useState(false)
@@ -74,12 +82,17 @@ export default function App(): JSX.Element {
   const priceCheckPending = useRef(false)
   const auditPending = useRef(false)
   const filterHotkeyPending = useRef(false)
+  const externalLinkPendingRef = useRef<ExternalLinkTarget | null>(null)
+  const externalLinkPendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Mirror of poeVersion state for IPC listeners that capture a stale closure.
+  const poeVersionRef = useRef<1 | 2 | null>(null)
   const [auditBlockIndex, setAuditBlockIndex] = useState<number | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
   // PoE version detection. `features` is the single source of truth for UI
   // divergence between PoE1 and PoE2 -- prefer it over branching on poeVersion.
   const [poeVersion, setPoeVersion] = useState<1 | 2 | null>(null)
+  poeVersionRef.current = poeVersion
   const features = getGameFeatures(poeVersion)
 
   // Swap the per-version icon CDN sheet into the shared iconMap whenever the
@@ -226,6 +239,26 @@ export default function App(): JSX.Element {
           // ('no-item', 'no-filter') since the user explicitly surfaced an item.
           setView((prev) => (prev === 'idle' || prev === 'no-item' || prev === 'no-filter' ? 'item' : prev))
         }
+
+        // Wiki / PoEDB app-macro: hotkey set this flag, then triggered a price-check.
+        // Now that we have item context, open the requested target in the system browser.
+        const pending = externalLinkPendingRef.current
+        if (pending) {
+          externalLinkPendingRef.current = null
+          if (externalLinkPendingTimerRef.current) clearTimeout(externalLinkPendingTimerRef.current)
+          const v = poeVersionRef.current
+          if (data.item?.name && v) window.api.openExternal(externalLinkUrl(pending, data.item, v))
+        }
+      }),
+      window.api.onOpenLinkPending((target) => {
+        externalLinkPendingRef.current = target
+        // TTL guard: drop the flag if no overlay-data arrives in time so a failed
+        // price-check doesn't open the link on the user's next unrelated price-check.
+        if (externalLinkPendingTimerRef.current) clearTimeout(externalLinkPendingTimerRef.current)
+        externalLinkPendingTimerRef.current = setTimeout(() => {
+          externalLinkPendingRef.current = null
+          externalLinkPendingTimerRef.current = null
+        }, EXTERNAL_LINK_PENDING_TTL_MS)
       }),
       window.api.onPriceCheck((data) => {
         setPriceCheckData({ ...data, _key: Date.now() } as typeof data & { _key: number })
@@ -285,6 +318,7 @@ export default function App(): JSX.Element {
     return () => {
       unsubs.forEach((fn) => fn())
       unsubElevation()
+      if (externalLinkPendingTimerRef.current) clearTimeout(externalLinkPendingTimerRef.current)
     }
   }, [])
 
@@ -569,6 +603,14 @@ export default function App(): JSX.Element {
   wasTierSisterOpenRef.current = tierSisterOpen
   const tierSisterData = frozenTierSisterDataRef.current ?? liveTierSisterData
 
+  // Build the click handler for a Wiki/PoEDB button. Returns undefined when
+  // there's no item context or no known game version so the parent component
+  // hides the button. Wiki and PoEDB both have PoE1 and PoE2 sites.
+  const externalLinkHandler = (target: ExternalLinkTarget, item: PoeItem | undefined): (() => void) | undefined => {
+    if (!item || !poeVersion) return undefined
+    return () => window.api.openExternal(externalLinkUrl(target, item, poeVersion))
+  }
+
   return (
     <PoeVersionProvider version={poeVersion}>
       {view === 'item' && tierSisterOpen && overlayData && !isHidden && (
@@ -781,6 +823,8 @@ export default function App(): JSX.Element {
                   onOpenTools={features.socketRecolor ? () => setView('tools') : undefined}
                   onOpenDustExplore={features.dustExplorer ? () => setView('dust') : undefined}
                   onOpenDivExplore={features.divCards ? () => setView('divcards') : undefined}
+                  onOpenWiki={externalLinkHandler('wiki', overlayData?.item)}
+                  onOpenPoeDb={externalLinkHandler('poedb', overlayData?.item)}
                   tierSisterOpen={tierSisterOpen}
                   onToggleTierSister={() => setTierSisterOpen((v) => !v)}
                   tierSisterSide={cursorSide === 'left' ? 'right' : 'left'}
@@ -801,6 +845,8 @@ export default function App(): JSX.Element {
                     chaosPerDivine={priceCheckData.chaosPerDivine}
                     unidCandidates={priceCheckData.unidCandidates}
                     onClose={close}
+                    onOpenWiki={externalLinkHandler('wiki', priceCheckData?.item)}
+                    onOpenPoeDb={externalLinkHandler('poedb', priceCheckData?.item)}
                   />
                 ) : (
                   <PriceCheckSkeleton />
