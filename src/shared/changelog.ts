@@ -1,5 +1,19 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.7-rc4',
+    notes: [
+      'Added pseudos for ele damage to x for non-weapons',
+      'Fixed str and int not applying to pseudos for life and mana respectively',
+      'Fixed Vorici socket recolor using clipboard attributes instead of base type attributes',
+      'Fixed "Open in" links using rare names instead of base type',
+      'Fixed fractured mods not contributing to pseudo totals',
+      'Fixed more affixes for price checker',
+      'Fixed cluster jewel pricing',
+      'Fixed price checker pricing Divine Orbs in Divine Orbs.',
+      'Fixed scaling issue with the API timeout modal.',
+    ],
+  },
+  {
     version: '0.9.7-rc3',
     notes: ['Added ability to open items in Wiki(2) and PoEDB(2)', 'Added more support for uniques in PoE2'],
   },
