@@ -12,6 +12,7 @@ import { InfoChip } from '../../shared/PriceChip'
 import { CUSTOM_TAG_COLOR } from './preset-tags'
 import { MapsGenerator } from './MapsGenerator'
 import { CustomGenerator } from './CustomGenerator'
+import { FlaskGenerator } from './FlaskGenerator'
 import type { GeneratorConfig, GeneratorHandle } from './generator-types'
 import type { RegexPreset, RegexPresetTag } from '../../../../shared/types'
 
@@ -22,6 +23,7 @@ import type { RegexPreset, RegexPresetTag } from '../../../../shared/types'
  *  The registry drives the tab strip, localStorage key, and preset scoping. */
 const GENERATORS = [
   { key: 'maps', label: 'Maps' },
+  { key: 'flasks', label: 'Flasks' },
   { key: 'custom', label: 'Custom' },
 ] as const satisfies readonly GeneratorConfig[]
 
@@ -77,8 +79,9 @@ export function RegexGenerator(): JSX.Element {
   const [autoTags, setAutoTags] = useState<RegexPresetTag[] | null>(null)
 
   const mapsRef = useRef<GeneratorHandle>(null)
+  const flasksRef = useRef<GeneratorHandle>(null)
   const customRef = useRef<GeneratorHandle>(null)
-  const activeHandleRef = generator === 'maps' ? mapsRef : customRef
+  const activeHandleRef = generator === 'maps' ? mapsRef : generator === 'flasks' ? flasksRef : customRef
 
   const setGenerator = (g: GeneratorKey): void => {
     // Stash current tags, restore target's.
@@ -227,7 +230,7 @@ export function RegexGenerator(): JSX.Element {
     if (targetGenerator !== generator) _setGenerator(targetGenerator)
     // Let the target generator mount before hydrating via its ref.
     requestAnimationFrame(() => {
-      const ref = targetGenerator === 'maps' ? mapsRef : customRef
+      const ref = targetGenerator === 'maps' ? mapsRef : targetGenerator === 'flasks' ? flasksRef : customRef
       ref.current?.applyPreset(preset)
     })
   }
@@ -373,6 +376,8 @@ export function RegexGenerator(): JSX.Element {
     switch (generator) {
       case 'maps':
         return <MapsGenerator ref={mapsRef} {...sharedProps} />
+      case 'flasks':
+        return <FlaskGenerator ref={flasksRef} {...sharedProps} />
       case 'custom':
         return <CustomGenerator ref={customRef} {...sharedProps} />
     }

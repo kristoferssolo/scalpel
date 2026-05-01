@@ -10,7 +10,7 @@ interface SavedPresetsProps {
   presets: RegexPreset[]
   setPresets: (presets: RegexPreset[]) => void
   /** Active generator tab. Presets with no generator are treated as 'maps'. */
-  generator: 'maps' | 'custom'
+  generator: 'maps' | 'custom' | 'flasks'
   loadPreset: (preset: RegexPreset) => void
   deletePreset: (id: string) => void
 }

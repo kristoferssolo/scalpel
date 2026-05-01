@@ -28,9 +28,10 @@ export function loadStorage<T>(key: string, fallback: T, parse: (s: string) => T
   }
 }
 
-/** Read an array-of-numbers value and rehydrate it as a Set. */
-export function loadSet(key: string): Set<number> {
-  return new Set(loadStorage<number[]>(key, []))
+/** Read an array value from localStorage and rehydrate it as a Set. Defaults to
+ *  numeric ids (used by maps) but generic so flask state can rehydrate string sets. */
+export function loadSet<T = number>(key: string): Set<T> {
+  return new Set(loadStorage<T[]>(key, []))
 }
 
 const CUSTOM_TAG_TEXT = '#E40000'

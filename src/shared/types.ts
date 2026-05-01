@@ -259,7 +259,7 @@ export interface InstallManifest {
 export interface RegexPresetTag {
   text: string
   color: string
-  source?: 'qualifier' | 'avoid' | 'want' | 'custom'
+  source?: 'qualifier' | 'avoid' | 'want' | 'custom' | 'flask'
   sourceId?: string | number
 }
 
@@ -275,6 +275,13 @@ export interface RegexPreset {
   customRegex?: string
   /** Computed regex string (stored so main process can paste without rebuilding) */
   regex?: string
+  selectedPrefix?: string[]
+  selectedSuffix?: string[]
+  flaskIlevel?: number
+  flaskHighestOnly?: boolean
+  flaskMatchBoth?: boolean
+  flaskMatchOpen?: boolean
+  flaskIgnoreEffectTiers?: boolean
 }
 
 export interface AppSettings {

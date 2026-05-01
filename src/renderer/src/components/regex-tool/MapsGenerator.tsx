@@ -292,11 +292,12 @@ export const MapsGenerator = forwardRef<GeneratorHandle, GeneratorProps>(functio
       return next
     })
   }
-  const toggle = (id: number): void => {
+  const toggle = (id: string | number): void => {
+    const numId = typeof id === 'string' ? Number(id) : id
     setSelected((prev) => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+      if (next.has(numId)) next.delete(numId)
+      else next.add(numId)
       return next
     })
   }
@@ -461,7 +462,7 @@ interface MapsGeneratorBodyProps {
   grouped: Array<{ mods: typeof MAP_MODS; label: string; color: string; key: string; danger: Danger }>
   selected: Set<number>
   collapsed: Set<string>
-  toggle: (id: number) => void
+  toggle: (id: string | number) => void
   toggleCollapse: (key: string) => void
   tradeProps: React.ComponentProps<typeof TradeResults>
 }
@@ -723,10 +724,20 @@ function MapsGeneratorBody({
 
       {!showTradeResults && (tab === 'avoid' || tab === 'want') && (
         <ModList
-          grouped={grouped}
-          selected={selected}
+          grouped={grouped.map(({ mods, label, color, key }) => ({
+            label,
+            color,
+            key,
+            mods: mods.map((m) => ({
+              id: m.id,
+              text: m.text,
+              badge: m.nightmare ? { label: 'NM', color: TAB_COLORS.avoid } : undefined,
+            })),
+          }))}
+          selected={selected as Set<string | number>}
           collapsed={collapsed}
-          tab={tab}
+          tabColor={tab === 'avoid' ? TAB_COLORS.avoid : TAB_COLORS.want}
+          selectedTint={tab === 'avoid' ? 'rgba(239,83,80,0.08)' : 'rgba(129,199,132,0.08)'}
           toggle={toggle}
           toggleCollapse={toggleCollapse}
         />

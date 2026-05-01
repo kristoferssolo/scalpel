@@ -30,6 +30,8 @@ const FILES = [
   'mapmods/Generated.MapModsV3.SPANISH.ts',
   'mapmods/Generated.MapModsV3.THAI.ts',
   'mapmods/GeneratedTypes.ts',
+  // Re-mapped on save: upstream stores it in src/generated/, we put it under flaskmods/.
+  { from: 'GeneratedFlaskMods.ts', to: 'flaskmods/GeneratedFlaskMods.ts' },
 ]
 
 const ATTRIBUTION = `// Data sourced from poe-vendor-string (https://github.com/${REPO})
@@ -83,12 +85,15 @@ async function sync() {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true })
   }
 
-  // Download files
+  // Download files. Entries can be a plain path (same path upstream and locally) or
+  // { from, to } when the upstream layout differs from where we store it.
   let updated = 0
-  for (const file of FILES) {
+  for (const entry of FILES) {
+    const fromPath = typeof entry === 'string' ? entry : entry.from
+    const toPath = typeof entry === 'string' ? entry : entry.to
     try {
-      const content = await fetch(`${BASE_URL}/${file}`)
-      const outputPath = path.join(OUTPUT_DIR, file)
+      const content = await fetch(`${BASE_URL}/${fromPath}`)
+      const outputPath = path.join(OUTPUT_DIR, toPath)
       const outputDir = path.dirname(outputPath)
       if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true })
       const attributed = ATTRIBUTION + content
@@ -96,10 +101,10 @@ async function sync() {
       if (existing !== attributed) {
         fs.writeFileSync(outputPath, attributed)
         updated++
-        console.log(`[sync-regex]   Updated ${file}`)
+        console.log(`[sync-regex]   Updated ${toPath}`)
       }
     } catch (err) {
-      console.warn(`[sync-regex]   Failed to fetch ${file}: ${err.message}`)
+      console.warn(`[sync-regex]   Failed to fetch ${fromPath}: ${err.message}`)
     }
   }
 

@@ -1,11 +1,16 @@
 import { Down, Right } from '@icon-park/react'
 import { InfoChip } from '../../shared/PriceChip'
-import type { MapMod, Danger } from '../../../../shared/data/regex/map-mods'
-import { TAB_COLORS, formatModText } from './mapmods-helpers'
+import { formatModText } from './mapmods-helpers'
+
+export interface ModListMod {
+  id: string | number
+  text: string
+  /** Optional badge label rendered on the right (e.g. "NM" for nightmare on maps). */
+  badge?: { label: string; color: string }
+}
 
 export interface ModGroup {
-  danger: Danger
-  mods: MapMod[]
+  mods: ModListMod[]
   label: string
   color: string
   /** Stable key for collapse-state lookup. */
@@ -13,25 +18,31 @@ export interface ModGroup {
 }
 
 interface ModListProps {
-  /** Pre-grouped + sorted mod groups. MapMods computes this based on the active tab,
-   *  search query, and nightmare toggle. */
+  /** Pre-grouped + sorted mod groups. */
   grouped: ModGroup[]
-  /** Mods currently checked in the active tab. */
-  selected: Set<number>
-  /** Group keys that are collapsed in the active tab. */
+  /** Mods currently checked. */
+  selected: Set<string | number>
+  /** Group keys that are collapsed. */
   collapsed: Set<string>
-  /** Which tab is active -- drives checkbox / highlight color. */
-  tab: 'avoid' | 'want'
-  toggle: (id: number) => void
+  /** Color used for checkbox fill when selected. */
+  tabColor: string
+  /** Row background tint when selected. */
+  selectedTint: string
+  toggle: (id: string | number) => void
   toggleCollapse: (key: string) => void
 }
 
-/** The checkbox list of map mods underneath the Avoid / Want tabs. Groups by danger
- *  with sticky headers + collapse state; selected rows tint according to tab. */
-export function ModList({ grouped, selected, collapsed, tab, toggle, toggleCollapse }: ModListProps): JSX.Element {
-  const tabColor = tab === 'avoid' ? TAB_COLORS.avoid : TAB_COLORS.want
-  const selectedTint = tab === 'avoid' ? 'rgba(239,83,80,0.08)' : 'rgba(129,199,132,0.08)'
-
+/** The checkbox list of mods underneath a tab. Groups by category with sticky headers +
+ *  collapse state; selected rows tint according to the caller-provided selectedTint. */
+export function ModList({
+  grouped,
+  selected,
+  collapsed,
+  tabColor,
+  selectedTint,
+  toggle,
+  toggleCollapse,
+}: ModListProps): JSX.Element {
   return (
     <div className="flex-1 overflow-y-auto bg-bg-card">
       {grouped.map(({ mods, label, color, key }) => {
@@ -85,9 +96,9 @@ export function ModList({ grouped, selected, collapsed, tab, toggle, toggleColla
                     >
                       {formatModText(m.text)}
                     </span>
-                    {m.nightmare && (
-                      <span className="text-[8px] font-semibold shrink-0" style={{ color: TAB_COLORS.avoid }}>
-                        NM
+                    {m.badge && (
+                      <span className="text-[8px] font-semibold shrink-0" style={{ color: m.badge.color }}>
+                        {m.badge.label}
                       </span>
                     )}
                   </div>
