@@ -26,7 +26,7 @@ export function applyBaseModeToFilters(filters: StatFilter[], rarity: string, co
   const isUnique = rarity === 'Unique'
   return filters.map((f) => {
     if (f.id === 'misc.basetype') return { ...f, enabled: true }
-    if (f.id === 'misc.ilvl') return { ...f, enabled: !isUnique }
+    if (f.id === 'misc.ilvl') return { ...f, enabled: !isUnique, chipState: isUnique ? undefined : ('min' as const) }
     // Memory strands are an intrinsic property of the item base (like ilvl), so
     // preserve them in Base mode -- otherwise a base-search on a 40-strand chest
     // returns every Astral Plate regardless of strand count.

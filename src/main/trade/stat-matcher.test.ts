@@ -823,6 +823,17 @@ describe('matchItemMods', () => {
       expect(areaLevel).toBeUndefined()
     })
 
+    it('does not generate area level chip for forbidden tomes (sanctum research)', () => {
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({ itemClass: 'Sanctum Research', sockets: '', monsterLevel: 83 }),
+      )
+      const areaLevel = filters.find((f) => f.id === 'misc.area_level')
+      expect(areaLevel).toBeUndefined()
+    })
+
     it('generates wings revealed/total chips for heist blueprints with correct trade keys', () => {
       const filters = matchItemMods(
         [],
@@ -874,6 +885,26 @@ describe('matchItemMods', () => {
           f.id !== 'heist.heist_max_wings',
       )
       expect(jobFilter).toBeUndefined()
+    })
+  })
+
+  describe('ilvl chip defaults', () => {
+    it('generates ilvl chip with enabled=true and chipState=max for Forbidden Tomes (Sanctum Research)', () => {
+      const filters = matchItemMods([], [], undefined, makeItemInfo({ itemClass: 'Sanctum Research', itemLevel: 83 }))
+      const ilvl = filters.find((f) => f.id === 'misc.ilvl')
+      expect(ilvl).toBeDefined()
+      expect(ilvl!.enabled).toBe(true)
+      expect(ilvl!.chipState).toBe('max')
+      expect(ilvl!.min).toBeNull()
+      expect(ilvl!.max).toBe(83)
+    })
+
+    it('generates ilvl chip with enabled=false and no chipState for regular rares', () => {
+      const filters = matchItemMods([], [], undefined, makeItemInfo({ itemClass: 'Body Armours', itemLevel: 86 }))
+      const ilvl = filters.find((f) => f.id === 'misc.ilvl')
+      expect(ilvl).toBeDefined()
+      expect(ilvl!.enabled).toBe(false)
+      expect(ilvl!.chipState).toBeUndefined()
     })
   })
 
@@ -1176,6 +1207,43 @@ describe('matchItemMods', () => {
       const fracturedRow = filters.find((f) => f.id === 'fractured.stat_3261801346')
       expect(fracturedRow).toBeDefined()
       expect(fracturedRow!.type).toBe('fractured')
+    })
+  })
+
+  describe('elemental + chaos hybrid pseudo contribution', () => {
+    it('master crafted "Lightning and Chaos Resistances" feeds both Total Ele Res and Total Chaos Res', () => {
+      _setStatEntriesForTests([
+        { id: 'crafted.stat_lightning_chaos', text: '+#% to Lightning and Chaos Resistances', type: 'crafted' },
+      ])
+      // Crafted mods arrive from the clipboard with a "(crafted)" suffix
+      const filters = matchItemMods(
+        ['+14% to Lightning and Chaos Resistances (crafted)'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare' }),
+      )
+      const ele = filters.find((f) => f.id === 'pseudo.pseudo_total_elemental_resistance')
+      const chaos = filters.find((f) => f.id === 'pseudo.pseudo_total_chaos_resistance')
+      expect(ele).toBeDefined()
+      expect(ele!.value).toBe(14)
+      expect(chaos).toBeDefined()
+      expect(chaos!.value).toBe(14)
+    })
+
+    it('fire+chaos and cold+chaos hybrids also feed both pseudos', () => {
+      _setStatEntriesForTests([
+        { id: 'crafted.stat_fire_chaos', text: '+#% to Fire and Chaos Resistances', type: 'crafted' },
+        { id: 'crafted.stat_cold_chaos', text: '+#% to Cold and Chaos Resistances', type: 'crafted' },
+      ])
+      // Crafted mods arrive from the clipboard with a "(crafted)" suffix
+      const filters = matchItemMods(
+        ['+10% to Fire and Chaos Resistances (crafted)', '+12% to Cold and Chaos Resistances (crafted)'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare' }),
+      )
+      expect(filters.find((f) => f.id === 'pseudo.pseudo_total_elemental_resistance')!.value).toBe(22)
+      expect(filters.find((f) => f.id === 'pseudo.pseudo_total_chaos_resistance')!.value).toBe(22)
     })
   })
 

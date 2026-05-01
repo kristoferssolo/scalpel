@@ -546,6 +546,18 @@ function buildPseudoMap(): void {
     ],
     [/to all elemental resistances/i, 'pseudo.pseudo_total_elemental_resistance', 'Total Elemental Resistance', 3],
     [/to chaos resistance/i, 'pseudo.pseudo_total_chaos_resistance', 'Total Chaos Resistance'],
+    // Hybrid elemental + chaos master crafted ("of Craft"). The same rolled value
+    // feeds both pseudos: total ele res (one elemental color) and total chaos res.
+    [
+      /to (?:fire|cold|lightning) and chaos resistances/i,
+      'pseudo.pseudo_total_elemental_resistance',
+      'Total Elemental Resistance',
+    ],
+    [
+      /to (?:fire|cold|lightning) and chaos resistances/i,
+      'pseudo.pseudo_total_chaos_resistance',
+      'Total Chaos Resistance',
+    ],
     [/to maximum life/i, 'pseudo.pseudo_total_life', 'Total Life'],
     [/to maximum mana/i, 'pseudo.pseudo_total_mana', 'Total Mana'],
     // Strength: +# Str alone, +# Str+Dex hybrid, +# Str+Int hybrid, +# all Attrs
@@ -1327,14 +1339,16 @@ export function matchItemMods(
       }
     }
     if (itemInfo.itemLevel > 0 && !itemInfo.isSynthetic) {
+      const isForbiddenTome = itemInfo.itemClass === 'Sanctum Research'
       miscFilters.push({
         id: 'misc.ilvl',
         text: `ilvl: ${itemInfo.itemLevel}`,
         value: itemInfo.itemLevel,
-        min: itemInfo.itemLevel,
-        max: null,
-        enabled: false,
+        min: isForbiddenTome ? null : itemInfo.itemLevel,
+        max: isForbiddenTome ? itemInfo.itemLevel : null,
+        enabled: isForbiddenTome,
         type: 'misc',
+        ...(isForbiddenTome ? { chipState: 'max' as const } : {}),
       })
     } else if (itemInfo.isSynthetic) {
       // Synthetic items have a placeholder ilvl that's meaningless. Render as an
@@ -1528,7 +1542,7 @@ export function matchItemMods(
   }
 
   // Area level chip (for heist contracts/blueprints)
-  if (itemInfo?.monsterLevel && itemInfo.itemClass !== 'Maps') {
+  if (itemInfo?.monsterLevel && itemInfo.itemClass !== 'Maps' && itemInfo.itemClass !== 'Sanctum Research') {
     miscFilters.push({
       id: 'misc.area_level',
       text: `Area Level: ${itemInfo.monsterLevel}`,

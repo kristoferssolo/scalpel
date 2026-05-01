@@ -155,8 +155,9 @@ export interface StatFilter {
   foulborn?: boolean
   modTier?: number // mod tier if known (from advanced mod data)
   modRange?: { min: number; max: number } // possible roll range for this mod
-  /** Ternary chip state: 'yes' | 'no' | undefined (= any). */
-  chipState?: 'yes' | 'no'
+  /** Ternary chip state: 'yes' | 'no' | undefined (= any). Also used by
+   *  minmax chips: 'min' | 'max' | undefined (= off). */
+  chipState?: 'yes' | 'no' | 'min' | 'max'
 }
 
 const ynToOption = (s: 'yes' | 'no'): 'true' | 'false' => (s === 'yes' ? 'true' : 'false')
@@ -627,8 +628,10 @@ export async function searchTrade(
     if (f.id === 'misc.gem_level' && f.enabled)
       miscQuery.gem_level = { ...(f.min != null ? { min: f.min } : {}), ...(f.max != null ? { max: f.max } : {}) }
     if (f.id === 'misc.gem_transfigured') miscQuery.gem_transfigured = { option: f.enabled ? 'true' : 'false' }
-    if (f.id === 'misc.corrupted' && f.chipState) miscQuery.corrupted = { option: ynToOption(f.chipState) }
-    if (f.id === 'misc.mirrored' && f.chipState) miscQuery.mirrored = { option: ynToOption(f.chipState) }
+    if (f.id === 'misc.corrupted' && (f.chipState === 'yes' || f.chipState === 'no'))
+      miscQuery.corrupted = { option: ynToOption(f.chipState) }
+    if (f.id === 'misc.mirrored' && (f.chipState === 'yes' || f.chipState === 'no'))
+      miscQuery.mirrored = { option: ynToOption(f.chipState) }
     if (f.id === 'misc.identified') miscQuery.identified = { option: f.enabled ? 'false' : 'true' }
     if (f.id === 'misc.memory_level' && f.enabled)
       miscQuery.memory_level = { ...(f.min != null ? { min: f.min } : {}), ...(f.max != null ? { max: f.max } : {}) }
@@ -657,7 +660,7 @@ export async function searchTrade(
     }
   }
   const fracturedFilter = miscFiltersAll.find((f) => f.id === 'misc.fractured')
-  if (fracturedFilter?.chipState) {
+  if (fracturedFilter?.chipState === 'yes' || fracturedFilter?.chipState === 'no') {
     miscQuery.fractured_item = { option: ynToOption(fracturedFilter.chipState) }
   }
   if (Object.keys(miscQuery).length > 0) {

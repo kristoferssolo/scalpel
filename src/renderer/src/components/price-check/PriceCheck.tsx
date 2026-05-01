@@ -12,6 +12,7 @@ import {
   getItemSize,
   getChipColor,
   TERNARY_CHIP_IDS,
+  MINMAX_CHIP_IDS,
 } from './constants'
 import { FilterChip } from './FilterChip'
 import { PriceChip } from '../../shared/PriceChip'
@@ -269,9 +270,9 @@ export function PriceCheck({
   const toggleFilter = (idx: number): void => {
     setFilters((prev) => {
       const target = prev[idx]
-      // Ternary chips are driven via chipState through the FilterChip's onChange path;
+      // Ternary and minmax chips are driven via chipState through the FilterChip's onChange path;
       // toggling them via this binary path would silently desync state.
-      if (TERNARY_CHIP_IDS.has(target.id)) return prev
+      if (TERNARY_CHIP_IDS.has(target.id) || MINMAX_CHIP_IDS.has(target.id)) return prev
       const toggling = !target.enabled
       return prev.map((f, i) => {
         if (i === idx) {
@@ -488,6 +489,7 @@ export function PriceCheck({
               {filters.map((f, i) => {
                 if (f.type !== 'socket' && f.type !== 'misc') return null
                 if (TERNARY_CHIP_IDS.has(f.id)) return null
+                if (MINMAX_CHIP_IDS.has(f.id)) return null
                 return (
                   <FilterChip
                     key={i}
@@ -513,6 +515,27 @@ export function PriceCheck({
                     state={f.chipState}
                     onChange={(next) =>
                       setFilters((prev) => prev.map((g, j) => (j === i ? { ...g, chipState: next } : g)))
+                    }
+                  />
+                ) : null,
+              )}
+              {/* Minmax chips (ilvl) */}
+              {filters.map((f, i) =>
+                MINMAX_CHIP_IDS.has(f.id) ? (
+                  <FilterChip
+                    key={i}
+                    label={f.text}
+                    mode="minmax"
+                    state={f.chipState}
+                    onChange={(next) =>
+                      setFilters((prev) =>
+                        prev.map((g, j) => {
+                          if (j !== i) return g
+                          if (next === 'min') return { ...g, chipState: next, enabled: true, min: g.value, max: null }
+                          if (next === 'max') return { ...g, chipState: next, enabled: true, min: null, max: g.value }
+                          return { ...g, chipState: undefined, enabled: false }
+                        }),
+                      )
                     }
                   />
                 ) : null,

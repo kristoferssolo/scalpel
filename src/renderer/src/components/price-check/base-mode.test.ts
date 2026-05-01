@@ -52,7 +52,9 @@ describe('applyBaseModeToFilters', () => {
     ]
     const result = applyBaseModeToFilters(input, 'Rare', false)
     expect(result.find((x) => x.id === 'misc.basetype')!.enabled).toBe(true)
-    expect(result.find((x) => x.id === 'misc.ilvl')!.enabled).toBe(true)
+    const ilvl = result.find((x) => x.id === 'misc.ilvl')!
+    expect(ilvl.enabled).toBe(true)
+    expect(ilvl.chipState).toBe('min')
   })
 
   it('enables basetype but leaves ilvl off for uniques', () => {
@@ -64,7 +66,9 @@ describe('applyBaseModeToFilters', () => {
     ]
     const result = applyBaseModeToFilters(input, 'Unique', false)
     expect(result.find((x) => x.id === 'misc.basetype')!.enabled).toBe(true)
-    expect(result.find((x) => x.id === 'misc.ilvl')!.enabled).toBe(false)
+    const ilvl = result.find((x) => x.id === 'misc.ilvl')!
+    expect(ilvl.enabled).toBe(false)
+    expect(ilvl.chipState).toBeUndefined()
   })
 
   it('disables explicit and pseudo filters', () => {

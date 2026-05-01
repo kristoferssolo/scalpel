@@ -2,22 +2,38 @@ interface FilterChipProps {
   label: React.ReactNode
   /** Binary mode: chip is on/off. Required when `state` is not provided. */
   active?: boolean
-  /** Ternary mode: 'yes' / 'no' / undefined (= any). When provided, the chip
-   *  cycles through the three states on click and renders a Yes/No badge. */
-  state?: 'yes' | 'no' | undefined
+  /** Ternary/minmax mode: 'yes' | 'no' | 'min' | 'max' | undefined (= any).
+   *  When provided, the chip cycles through states on click and renders a badge. */
+  state?: 'yes' | 'no' | 'min' | 'max' | undefined
   onClick?: () => void
-  onChange?: (next: 'yes' | 'no' | undefined) => void
+  onChange?: (next: 'yes' | 'no' | 'min' | 'max' | undefined) => void
   color?: string
   icon?: string
+  /** Controls cycle behavior and badge labels. Defaults to 'yesno'. */
+  mode?: 'yesno' | 'minmax'
 }
 
 const TERNARY_GREEN = '#5ba85b'
 const TERNARY_RED = '#c95a4f'
 
-function nextTernary(current: 'yes' | 'no' | undefined): 'yes' | 'no' | undefined {
+function nextTernary(
+  current: 'yes' | 'no' | 'min' | 'max' | undefined,
+  mode: 'yesno' | 'minmax',
+): 'yes' | 'no' | 'min' | 'max' | undefined {
+  if (mode === 'minmax') {
+    if (current === undefined) return 'min'
+    if (current === 'min') return 'max'
+    return undefined
+  }
+  // yesno cycle
   if (current === undefined) return 'yes'
   if (current === 'yes') return 'no'
   return undefined
+}
+
+function badgeLabel(state: 'yes' | 'no' | 'min' | 'max', mode: 'yesno' | 'minmax'): string {
+  if (mode === 'minmax') return state === 'min' ? 'Min' : 'Max'
+  return state === 'yes' ? 'Yes' : 'No'
 }
 
 export function FilterChip({
@@ -28,18 +44,23 @@ export function FilterChip({
   onChange,
   color = 'var(--accent)',
   icon,
+  mode = 'yesno',
 }: FilterChipProps): JSX.Element {
-  // Ternary mode is enabled when an `onChange` handler is provided -- this lets
+  // Ternary/minmax mode is enabled when an `onChange` handler is provided -- this lets
   // us distinguish "ternary chip with current state = any" from "binary chip"
   // even though both can have undefined visual state.
   const ternary = onChange != null
-  const ternaryColor = state === 'yes' ? TERNARY_GREEN : state === 'no' ? TERNARY_RED : color
+
+  // For yesno mode: green for yes, red for no. For minmax mode: accent color
+  // for both min and max (the badge label is the discriminator).
+  const ternaryColor =
+    mode === 'minmax' ? color : state === 'yes' ? TERNARY_GREEN : state === 'no' ? TERNARY_RED : color
   const effectiveColor = ternary ? ternaryColor : color
   const effectiveActive = ternary ? state !== undefined : !!active
   const isAccent = effectiveColor === 'var(--accent)'
 
   const handleClick = (): void => {
-    if (ternary) onChange?.(nextTernary(state))
+    if (ternary) onChange?.(nextTernary(state, mode))
     else onClick?.()
   }
 
@@ -83,7 +104,7 @@ export function FilterChip({
             textAlign: 'center',
           }}
         >
-          {state === 'yes' ? 'Yes' : 'No'}
+          {badgeLabel(state, mode)}
         </span>
       )}
     </div>
