@@ -81,4 +81,5 @@ export interface PriceCheckProps {
   onClose: () => void
   onOpenWiki?: () => void
   onOpenPoeDb?: () => void
+  onOpenNinja?: () => void
 }

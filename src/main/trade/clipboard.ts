@@ -2,6 +2,7 @@ import { clipboard } from 'electron'
 import type { PoeItem, ItemRarity, AdvancedMod } from '../../shared/types'
 import { getItemClasses } from '../../shared/data/items/item-classes'
 import { getPoeVersion } from '../game-state'
+import { SKILL_GEM_CLASSES } from '../../shared/poe-item'
 
 // Both base-name and class-size lookups seed lazily from the active game's
 // class sheet -- getPoeVersion() isn't reliable at module load (game-state
@@ -202,9 +203,7 @@ export function parseItemText(text: string): PoeItem | null {
       magicAffixNames,
     )
 
-  const isGemClass = ['Gems', 'Support Gems', 'Skill Gems', 'Active Skill Gems', 'Support Skill Gems'].includes(
-    itemClass,
-  )
+  const isGemClass = SKILL_GEM_CLASSES.has(itemClass)
   const isVaalGem =
     isGemClass &&
     rarity === 'Gem' &&

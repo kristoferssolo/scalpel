@@ -15,7 +15,7 @@ import { getPoeVersion } from './game-state'
 import { sendCtrlCToPoE } from './hotkeys'
 import { focusGameWindow } from './overlay'
 import { snapshotClipboard } from './clipboard-preserve'
-import { refreshPrices, lookupPrice, lookupBestUniquePrice, getUniquesByBase } from './trade/prices'
+import { refreshPrices, lookupPrice, lookupPriceForItem, lookupBestUniquePrice, getUniquesByBase } from './trade/prices'
 import { ensureStatsLoaded, matchItemMods } from './trade/trade'
 import { detectFocusedPoeVersion } from './game-detector'
 import { requestGameSwitch } from './game-switch'
@@ -144,7 +144,7 @@ export function evaluateAndSend(item: PoeItem): void {
   }
   const activeMatch = matches.find((m) => m.isFirstMatch)
   const tierGroup = activeMatch ? buildTierGroup(currentFilter, activeMatch, item) : undefined
-  const priceInfo = lookupPrice(item.name, item.baseType)
+  const priceInfo = lookupPriceForItem(item)
   const payload: OverlayData = {
     item,
     matches,
@@ -176,8 +176,8 @@ export async function preloadPriceCheck(item: PoeItem, store: Store<AppSettings>
   await refreshPrices(league)
   const priceInfo =
     item.rarity === 'Unique'
-      ? (lookupBestUniquePrice(item.baseType) ?? lookupPrice(item.name, item.baseType))
-      : lookupPrice(item.name, item.baseType)
+      ? (lookupBestUniquePrice(item.baseType) ?? lookupPriceForItem(item))
+      : lookupPriceForItem(item)
 
   // For unidentified uniques, find all possible uniques for this base type
   const unidCandidates: Array<{ name: string; chaosValue: number }> = []

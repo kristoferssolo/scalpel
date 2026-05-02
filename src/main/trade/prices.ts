@@ -4,6 +4,8 @@ import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import type { PriceInfo } from '../../shared/types'
 import { POE_NINJA_API } from '../../shared/endpoints'
+import { deriveItemVariant } from '../../shared/external-link'
+import type { NinjaItemRef } from '../../shared/external-link'
 import { getPoeVersion } from '../game-state'
 import { fetchAndBuildPoe2PriceMap } from './prices.poe2'
 import uniqueInfoPoe1 from '../../shared/data/items/unique-info.json'
@@ -50,6 +52,12 @@ function saveCachedUniquesByBase(data: Record<string, string[]>): void {
 // but the cost of the discriminator is one string concat per refresh).
 let cachedKey = ''
 let priceMap = new Map<string, PriceInfo>()
+// Variant-keyed prices for items that ninja's dense API splits across multiple
+// lines (skill gems by level/quality/corruption, multi-link uniques by link count).
+// Key shape: `${name.toLowerCase()}|${variant}`. Fallback to name-only priceMap is
+// handled by lookupPriceForItem below. PoE2 leaves this empty -- its pricing fetch
+// in prices.poe2.ts only populates name-keyed priceMap.
+let pricesByVariant = new Map<string, PriceInfo>()
 let lastFetchTime = 0
 // PoE2 fires 13 parallel requests per refresh (one per exchange category) while
 // PoE1 aggregates everything into a single dense endpoint call. Doubling the TTL
@@ -200,15 +208,26 @@ function processDenseResponse(resp: DenseResponse): void {
         divineValue: divineRate > 0 ? chaos / divineRate : undefined,
       }
       priceMap.set(name.toLowerCase(), info)
+      // Variant-keyed entry too (with empty-string variant for items that don't
+      // have one). Lets lookupPriceForItem hit the exact gem/link variant when
+      // the caller has full item context.
+      pricesByVariant.set(`${name.toLowerCase()}|${line.variant ?? ''}`, info)
       if (isDivCards) divCardPriceMap.set(name.toLowerCase(), info)
     }
   }
 
-  // Second pass to fill in divine values for items processed before Divine Orb was found
+  // Second pass to fill in divine values for items processed before Divine Orb was found.
+  // Mirrored below for the variant-keyed map; both maps need backfill since they hold
+  // distinct PriceInfo objects.
   if (divineRate > 0) {
     for (const [key, info] of priceMap) {
       if (info.divineValue == null) {
         priceMap.set(key, { ...info, divineValue: info.chaosValue / divineRate })
+      }
+    }
+    for (const [key, info] of pricesByVariant) {
+      if (info.divineValue == null) {
+        pricesByVariant.set(key, { ...info, divineValue: info.chaosValue / divineRate })
       }
     }
   }
@@ -224,6 +243,7 @@ function cacheKeyFor(league: string): string {
 function resetCache(league: string, now: number): void {
   cachedKey = cacheKeyFor(league)
   priceMap = new Map()
+  pricesByVariant = new Map()
   divCardPriceMap = new Map()
   gemNames = new Set()
   lastFetchTime = now
@@ -262,6 +282,33 @@ export function invalidatePriceCache(): void {
 export function lookupPrice(itemName: string, baseType: string): PriceInfo | undefined {
   // Try exact name first (for uniques), then base type (for currency/fragments)
   return priceMap.get(itemName.toLowerCase()) ?? priceMap.get(baseType.toLowerCase())
+}
+
+/** Variant-aware price lookup. Tries the exact variant key first (e.g. "hatred|21 20c"
+ *  hits the corrupt 21/20 entry), falls back to the legacy name-only lookup. The
+ *  variant string comes from the shared `deriveItemVariant` helper so URL slug and
+ *  price lookup always agree -- when we link a user to /skill-gems/hatred-21-20c,
+ *  the price chip we show is the price ninja actually has for that page. */
+export function lookupPriceForItem(item: NinjaItemRef): PriceInfo | undefined {
+  const variant = deriveItemVariant(item)
+  if (variant != null) {
+    const exact = pricesByVariant.get(`${item.name.toLowerCase()}|${variant}`)
+    if (exact) return exact
+  }
+  return lookupPrice(item.name, item.baseType)
+}
+
+/** Test hook: seed both maps without making network calls. The variant entry
+ *  also writes into the legacy name-keyed map (last write wins) so name-only
+ *  fallbacks behave the same as in production. */
+export function _setPricesForTests(entries: Array<{ name: string; variant?: string; chaos: number }>): void {
+  priceMap = new Map()
+  pricesByVariant = new Map()
+  for (const e of entries) {
+    const info = { chaosValue: e.chaos, divineValue: undefined }
+    priceMap.set(e.name.toLowerCase(), info)
+    pricesByVariant.set(`${e.name.toLowerCase()}|${e.variant ?? ''}`, info)
+  }
 }
 
 /** Look up a divination card price specifically (avoids name collisions with other item types) */

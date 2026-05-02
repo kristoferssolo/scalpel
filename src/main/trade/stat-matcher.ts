@@ -5,7 +5,7 @@ import { getPoeVersion } from '../game-state'
 import { ATZOATL_ROOMS, ATZOATL_KEY_ROOMS } from '../../shared/data/trade/atzoatl'
 import { BENEFICIAL_NEGATIVE_KEYWORDS } from '../../shared/data/trade/beneficial-negatives'
 import { STAT_ID_REMAPS } from './stat-exceptions'
-import { isClusterJewel } from '../../shared/poe-item'
+import { isClusterJewel, SKILL_GEM_CLASSES } from '../../shared/poe-item'
 import type { StatFilter } from './trade'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -794,9 +794,7 @@ export function matchItemMods(
   }
 
   const hasLocalMods = itemInfo && (ARMOUR_CLASSES.has(itemInfo.itemClass) || WEAPON_CLASSES.has(itemInfo.itemClass))
-  const isGemItem =
-    itemInfo &&
-    ['Gems', 'Support Gems', 'Skill Gems', 'Active Skill Gems', 'Support Skill Gems'].includes(itemInfo.itemClass)
+  const isGemItem = itemInfo && SKILL_GEM_CLASSES.has(itemInfo.itemClass)
   const isTimelessJewel = itemInfo?.baseType === 'Timeless Jewel'
 
   for (const mod of isGemItem ? [] : explicits) {
@@ -1298,9 +1296,7 @@ export function matchItemMods(
         type: 'misc',
       })
     }
-    const isGem = ['Gems', 'Support Gems', 'Skill Gems', 'Active Skill Gems', 'Support Skill Gems'].includes(
-      itemInfo.itemClass,
-    )
+    const isGem = SKILL_GEM_CLASSES.has(itemInfo.itemClass)
     if (isGem && itemInfo.gemLevel > 0) {
       // Gem level as adjustable row with exact min/max
       miscFilters.push({

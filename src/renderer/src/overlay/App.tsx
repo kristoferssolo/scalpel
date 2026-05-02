@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { AppSettings, OverlayData, PoeItem } from '../../../shared/types'
 import { isHideableTabKey } from '../../../shared/types'
 import type { ExternalLinkTarget } from '../../../shared/external-link'
-import { externalLinkUrl } from '../../../shared/external-link'
+import { externalLinkUrl, ninjaLinkUrl } from '../../../shared/external-link'
 import { getGameFeatures } from '../../../shared/game-features'
 import { PoeVersionProvider } from '../shared/poe-version-context'
 import { FilterPanel } from '../components/FilterPanel'
@@ -618,6 +618,17 @@ export default function App(): JSX.Element {
     return () => window.api.openExternal(externalLinkUrl(target, item, poeVersion))
   }
 
+  // poe.ninja deep-link handler. Returns undefined when there's no item, no league
+  // resolved, or the item type isn't priced on ninja (covered by ninjaLinkUrl). The
+  // active trade league is also the league we use for ninja price fetches, so the
+  // deep link always lands on the same league the user is shopping in.
+  const ninjaLinkHandler = (item: PoeItem | undefined): (() => void) | undefined => {
+    if (!item || !poeVersion || !settings?.league) return undefined
+    const url = ninjaLinkUrl(item, poeVersion, settings.league)
+    if (!url) return undefined
+    return () => window.api.openExternal(url)
+  }
+
   return (
     <PoeVersionProvider version={poeVersion}>
       {view === 'item' && tierSisterOpen && overlayData && !isHidden && (
@@ -832,6 +843,7 @@ export default function App(): JSX.Element {
                   onOpenDivExplore={features.divCards ? () => setView('divcards') : undefined}
                   onOpenWiki={externalLinkHandler('wiki', overlayData?.item)}
                   onOpenPoeDb={externalLinkHandler('poedb', overlayData?.item)}
+                  onOpenNinja={ninjaLinkHandler(overlayData?.item)}
                   tierSisterOpen={tierSisterOpen}
                   onToggleTierSister={() => setTierSisterOpen((v) => !v)}
                   tierSisterSide={cursorSide === 'left' ? 'right' : 'left'}
@@ -854,6 +866,7 @@ export default function App(): JSX.Element {
                     onClose={close}
                     onOpenWiki={externalLinkHandler('wiki', priceCheckData?.item)}
                     onOpenPoeDb={externalLinkHandler('poedb', priceCheckData?.item)}
+                    onOpenNinja={ninjaLinkHandler(priceCheckData?.item)}
                   />
                 ) : (
                   <PriceCheckSkeleton />

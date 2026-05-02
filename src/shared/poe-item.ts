@@ -8,6 +8,24 @@ export function isClusterJewel(item: { itemClass: string; baseType: string }): b
   return item.itemClass === 'Jewels' && item.baseType.endsWith('Cluster Jewel')
 }
 
+/** All item-class strings that identify skill gems, across PoE1 and PoE2. The
+ *  PoE1 clipboard emits "Gems"; PoE2 uses the more granular "Active Skill Gems"
+ *  / "Support Skill Gems" strings. "Skill Gems" and "Support Gems" appear in
+ *  filter files and trade data. Centralised here to avoid duplication -- see
+ *  isClusterJewel for the precedent. */
+export const SKILL_GEM_CLASSES = new Set([
+  'Gems',
+  'Skill Gems',
+  'Active Skill Gems',
+  'Support Gems',
+  'Support Skill Gems',
+])
+
+/** Returns true when the item's class is any known gem class. */
+export function isSkillGem(item: { itemClass: string }): boolean {
+  return SKILL_GEM_CLASSES.has(item.itemClass)
+}
+
 /** Build a synthetic `PoeItem` with sensible defaults. Used by any code path that needs
  *  to evaluate a filter or run a trade lookup without a real clipboard-parsed item --
  *  e.g. the item-search combobox, sister-overlay click-throughs, tier previews.

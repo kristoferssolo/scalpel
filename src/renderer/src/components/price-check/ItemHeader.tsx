@@ -23,6 +23,7 @@ export function ItemHeader({
   heistJob,
   onOpenWiki,
   onOpenPoeDb,
+  onOpenNinja,
 }: {
   heroIcon: string | null
   heroName: string
@@ -38,6 +39,7 @@ export function ItemHeader({
   heistJob?: { skill: string; level: number }
   onOpenWiki?: () => void
   onOpenPoeDb?: () => void
+  onOpenNinja?: () => void
 }): JSX.Element {
   const version = usePoeVersion()
   const icons = getCurrencyIcons(version)
@@ -109,13 +111,20 @@ export function ItemHeader({
         )}
         {/* Exchange rate row -- "Open in" chip sits to the left of the chaos/divine rate */}
         <div className="flex items-center gap-1 justify-end">
-          {(onOpenWiki || onOpenPoeDb) && (
-            <InfoChip label="Open in">
+          {(onOpenWiki || onOpenPoeDb || onOpenNinja) && (
+            <InfoChip className="!px-[3px]">
               {onOpenWiki && (
                 <ExternalLinkButton label="Wiki" title="Open the wiki page in your browser" onClick={onOpenWiki} />
               )}
               {onOpenPoeDb && (
                 <ExternalLinkButton label="PoEDB" title="Open the PoEDB page in your browser" onClick={onOpenPoeDb} />
+              )}
+              {onOpenNinja && (
+                <ExternalLinkButton
+                  label="Ninja"
+                  title="Open the poe.ninja page for this item in your browser"
+                  onClick={onOpenNinja}
+                />
               )}
             </InfoChip>
           )}

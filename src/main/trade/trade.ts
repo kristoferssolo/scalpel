@@ -4,7 +4,7 @@ import { getPoeVersion } from '../game-state'
 import { harvestIcons } from './icon-cache'
 import { getOverlayWindow } from '../overlay'
 import { TRANSFIGURED_GEM_DISC } from '../../shared/data/trade/transfigured-gems'
-import { isClusterJewel } from '../../shared/poe-item'
+import { isClusterJewel, isSkillGem } from '../../shared/poe-item'
 import { RateLimiter, adjustRateLimits } from './rate-limiter'
 
 /** Forward any newly-harvested name->icon pairs to the overlay so it can merge
@@ -473,13 +473,7 @@ export async function searchTrade(
     }
   } else if (item.itemClass === 'Divination Cards') {
     query.type = item.baseType
-  } else if (
-    item.itemClass === 'Gems' ||
-    item.itemClass === 'Support Gems' ||
-    item.itemClass === 'Skill Gems' ||
-    item.itemClass === 'Active Skill Gems' ||
-    item.itemClass === 'Support Skill Gems'
-  ) {
+  } else if (isSkillGem(item)) {
     query.type = buildGemTypeField(item.baseType, item.vaalGem)
   } else {
     // Non-uniques: search by item class, not base type. The implicit covers the base.

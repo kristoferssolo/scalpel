@@ -25,6 +25,7 @@ export function FilterPanel({
   onOpenDivExplore,
   onOpenWiki,
   onOpenPoeDb,
+  onOpenNinja,
   tierSisterOpen,
   onToggleTierSister,
   tierSisterSide,
@@ -162,6 +163,7 @@ export function FilterPanel({
           onDivExplore={onOpenDivExplore}
           onOpenWiki={onOpenWiki}
           onOpenPoeDb={onOpenPoeDb}
+          onOpenNinja={onOpenNinja}
           rightSlot={<SaveButton isDirty={isDirty} isSaving={isSaving} isSaved={isSaved} onSave={handleSave} />}
           flush
         />

@@ -75,6 +75,7 @@ interface Props {
   onDivExplore?: () => void
   onOpenWiki?: () => void
   onOpenPoeDb?: () => void
+  onOpenNinja?: () => void
   hideSockets?: boolean
   /** When true, no negative margin - for use inside scroll containers */
   flush?: boolean
@@ -98,6 +99,7 @@ export function ItemSummary({
   onDivExplore,
   onOpenWiki,
   onOpenPoeDb,
+  onOpenNinja,
   hideSockets,
   flush,
 }: Props): JSX.Element {
@@ -204,21 +206,21 @@ export function ItemSummary({
         {(() => {
           const dustInfo = features.dustExplorer ? getDustInfo(item) : null
           const hasPrice = priceInfo && priceInfo.chaosValue > 0
-          if (!hasPrice && !dustInfo && !onOpenWiki && !onOpenPoeDb) return null
+          if (!hasPrice && !dustInfo && !onOpenWiki && !onOpenPoeDb && !onOpenNinja) return null
           return (
             <div className="flex gap-[6px] items-center">
               {hasPrice && (
                 <PriceChip chaosValue={priceInfo.chaosValue} divineValue={priceInfo.divineValue} showNinja />
               )}
               {dustInfo != null && (
-                <InfoChip icon={dustIcon}>
+                <InfoChip icon={dustIcon} className={onDustExplore ? '!pr-[3px]' : undefined}>
                   <span className="text-white font-semibold">
                     {dustInfo.upTo ? `Up to: ${dustInfo.value.toLocaleString()}` : dustInfo.value.toLocaleString()}
                   </span>
                   {onDustExplore && (
                     <button
                       onClick={onDustExplore}
-                      className="text-[9px] font-semibold text-accent border-none rounded-full cursor-pointer ml-0.5 px-2 py-[2px] bg-white/[0.08]"
+                      className="text-[9px] font-semibold text-accent border-none rounded-full cursor-pointer px-2 py-[2px] bg-white/[0.08]"
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = 'rgba(255,255,255,0.15)'
                       }}
@@ -231,8 +233,8 @@ export function ItemSummary({
                   )}
                 </InfoChip>
               )}
-              {(onOpenWiki || onOpenPoeDb) && (
-                <InfoChip label="Open in">
+              {(onOpenWiki || onOpenPoeDb || onOpenNinja) && (
+                <InfoChip className="!px-[3px]">
                   {onOpenWiki && (
                     <ExternalLinkButton label="Wiki" title="Open the wiki page in your browser" onClick={onOpenWiki} />
                   )}
@@ -241,6 +243,13 @@ export function ItemSummary({
                       label="PoEDB"
                       title="Open the PoEDB page in your browser"
                       onClick={onOpenPoeDb}
+                    />
+                  )}
+                  {onOpenNinja && (
+                    <ExternalLinkButton
+                      label="Ninja"
+                      title="Open the poe.ninja page for this item in your browser"
+                      onClick={onOpenNinja}
                     />
                   )}
                 </InfoChip>
@@ -257,7 +266,7 @@ export function ItemSummary({
             if (mapNames.length === 0) return null
             return (
               <div className="flex gap-[6px] flex-wrap mt-0.5 items-center">
-                <InfoChip label="Drops in">
+                <InfoChip label="Drops in" className={onDivExplore ? '!pr-[3px]' : undefined}>
                   {mapNames.slice(0, 2).map((name) => (
                     <span key={name} className="text-white font-semibold inline-flex items-center gap-[3px]">
                       <span className="relative w-[10px] h-[10px] shrink-0">
@@ -273,7 +282,7 @@ export function ItemSummary({
                   {onDivExplore && (
                     <button
                       onClick={onDivExplore}
-                      className="text-[9px] font-semibold text-accent border-none rounded-full cursor-pointer ml-0.5 px-2 py-[2px] bg-white/[0.08]"
+                      className="text-[9px] font-semibold text-accent border-none rounded-full cursor-pointer px-2 py-[2px] bg-white/[0.08]"
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = 'rgba(255,255,255,0.15)'
                       }}
@@ -403,7 +412,9 @@ function SocketDisplay({ sockets, onRecolor }: { sockets: string; onRecolor?: ()
   const groups = sockets.split(' ').filter(Boolean)
 
   return (
-    <div className="inline-flex items-center gap-[6px] rounded-full bg-black/25 px-1.5 py-[3px]">
+    <div
+      className={`inline-flex items-center gap-[6px] rounded-full bg-black/25 py-[3px] ${onRecolor ? 'pl-1.5 pr-[3px]' : 'px-1.5'}`}
+    >
       {groups.map((group, gi) => {
         const colors = group.split('-')
         return (
@@ -443,7 +454,7 @@ function SocketDisplay({ sockets, onRecolor }: { sockets: string; onRecolor?: ()
       })}
       <button
         onClick={onRecolor}
-        className="text-[9px] font-semibold text-accent border-none rounded-full cursor-pointer ml-0.5 px-2 py-[2px] bg-white/[0.08]"
+        className="text-[9px] font-semibold text-accent border-none rounded-full cursor-pointer px-2 py-[2px] bg-white/[0.08]"
         onMouseEnter={(e) => {
           e.currentTarget.style.background = 'rgba(255,255,255,0.15)'
         }}
