@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { AppSettings, OverlayData, PoeItem } from '../../../shared/types'
+import { isHideableTabKey } from '../../../shared/types'
 import type { ExternalLinkTarget } from '../../../shared/external-link'
 import { externalLinkUrl } from '../../../shared/external-link'
 import { getGameFeatures } from '../../../shared/game-features'
@@ -718,10 +719,9 @@ export default function App(): JSX.Element {
               poeVersion={poeVersion}
               features={features}
               hasPriceCheckData={!!priceCheckData}
-              hiddenTabs={new Set(settings?.hiddenTabs ?? [])}
+              hiddenTabs={new Set((settings?.hiddenTabs ?? []).filter(isHideableTabKey))}
               onSetView={setView}
               onClose={close}
-              onSetAuditBlockIndex={setAuditBlockIndex}
               onMouseDown={handleTitleBarMouseDown}
             />
 

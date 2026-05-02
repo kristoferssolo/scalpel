@@ -354,11 +354,19 @@ export interface AppSettings {
   hiddenTabs?: HideableTabKey[]
 }
 
-/** Title-bar tab keys the user is allowed to hide via View settings. Narrowing
- *  this to a union (instead of bare `string`) makes a typo in either the View
- *  settings UI or the TitleBar conditional a compile error rather than a silent
- *  no-op hide. Settings + Close intentionally aren't here -- they're not hideable. */
-export type HideableTabKey = 'item' | 'pricecheck' | 'audit' | 'dust' | 'divcards' | 'regex'
+/** Title-bar tab keys the user is allowed to hide via View settings. Settings + Close
+ *  intentionally aren't here (always-on); Audit + Tools also aren't here (temp tabs
+ *  that only render when actively viewed). The tuple is the runtime source of truth;
+ *  the union type is derived from it so the two can never drift. */
+export const HIDEABLE_TAB_KEYS = ['item', 'pricecheck', 'dust', 'divcards', 'regex'] as const
+export type HideableTabKey = (typeof HIDEABLE_TAB_KEYS)[number]
+
+/** Type guard for filtering persisted-settings input. Existing users may have stale
+ *  values in `hiddenTabs` (e.g. `'audit'` from before that became a temp tab); filter
+ *  through this so consumers downstream never see a phantom key. */
+export function isHideableTabKey(k: string): k is HideableTabKey {
+  return (HIDEABLE_TAB_KEYS as readonly string[]).includes(k)
+}
 
 export interface FilterListEntry {
   /** Full path to the .filter file */

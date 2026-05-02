@@ -29,7 +29,6 @@ interface TitleBarProps {
   hiddenTabs: Set<HideableTabKey>
   onSetView: (view: View | ((prev: View) => View)) => void
   onClose: () => void
-  onSetAuditBlockIndex: (v: number | null) => void
   onMouseDown: (e: React.MouseEvent) => void
 }
 
@@ -42,7 +41,6 @@ export function TitleBar({
   hiddenTabs,
   onSetView,
   onClose,
-  onSetAuditBlockIndex,
   onMouseDown,
 }: TitleBarProps): JSX.Element {
   const fallbackIcon = getCurrencyIcons(poeVersion ?? 1).baseline
@@ -68,6 +66,18 @@ export function TitleBar({
             className="w-[30px] h-[30px] flex items-center justify-center bg-accent text-[#171821]"
           >
             <Flask size={16} {...IP} />
+          </button>
+        )}
+        {/* Audit tab -- only visible when active. Procced by the audit-tier button in the
+            filter editor or the openAudit hotkey, never user-toggleable. Click is a no-op
+            re-affirm (matches Tools); navigation away clears it. */}
+        {view === 'audit' && (
+          <button
+            onClick={() => onSetView('audit')}
+            title="Price Audit"
+            className="w-[30px] h-[30px] flex items-center justify-center bg-accent text-[#171821]"
+          >
+            <ChartHistogram size={16} {...IP} />
           </button>
         )}
         {/* Item icon -- always navigates back to search results */}
@@ -124,35 +134,6 @@ export function TitleBar({
             <Buy size={16} {...IP} />
           </button>
         )}
-        {!hiddenTabs.has('audit') &&
-          (() => {
-            const auditMatch = overlayData?.matches.find((m) => m.isFirstMatch) ?? overlayData?.matches[0]
-            const hasBaseTypes =
-              auditMatch?.block.conditions.some((c) => c.type === 'BaseType' && c.values.length > 0) ?? false
-            const tierStr = auditMatch?.block.tierTag?.tier ?? ''
-            const isExTier = /^(ex\d*|exhide|exshow|2x\d*)$/.test(tierStr) || tierStr.startsWith('exotic')
-            const canAudit = overlayData && hasBaseTypes && !isExTier
-            return (
-              <button
-                onClick={() => {
-                  if (canAudit) {
-                    onSetAuditBlockIndex(null)
-                    onSetView('audit')
-                  }
-                }}
-                title={canAudit ? 'Price Audit' : 'No base types to audit'}
-                className="w-[30px] h-[30px] flex items-center justify-center"
-                style={{
-                  background: view === 'audit' ? 'var(--accent)' : undefined,
-                  color: view === 'audit' ? '#171821' : undefined,
-                  opacity: canAudit ? 1 : 0.35,
-                  cursor: canAudit ? 'pointer' : 'default',
-                }}
-              >
-                <ChartHistogram size={16} {...IP} />
-              </button>
-            )
-          })()}
         {features.dustExplorer && !hiddenTabs.has('dust') && (
           <button
             onClick={() => onSetView('dust')}

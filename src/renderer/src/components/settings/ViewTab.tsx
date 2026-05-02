@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { AppSettings, HideableTabKey } from '../../../../shared/types'
 import { ScrubInput } from '../regex-tool/ScrubInput'
 import { SettingToggleBox } from './SettingToggleBox'
-import { Setting, CloseSmall, ChartHistogram, Buy, Filter } from '@icon-park/react'
+import { Setting, CloseSmall, Buy, Filter } from '@icon-park/react'
 import { getGameFeatures } from '../../../../shared/game-features'
 import { DIV_CARD_ICON_URL, IP } from '../../shared/constants'
 import dustIconAsset from '../../assets/currency/thaumaturgic-dust.png'
@@ -45,7 +45,6 @@ export function ViewTab({ settings, update }: Props): JSX.Element {
   const TOGGLEABLE: Array<{ key: HideableTabKey; icon: React.ReactNode; title: string; show: boolean }> = [
     { key: 'item', icon: <Filter size={16} {...IP} />, title: 'Filter Editor', show: true },
     { key: 'pricecheck', icon: <Buy size={16} {...IP} />, title: 'Price Checker', show: true },
-    { key: 'audit', icon: <ChartHistogram size={16} {...IP} />, title: 'Price Audit', show: true },
     {
       key: 'dust',
       icon: <img src={dustIconAsset} alt="" className="w-[18px] h-[18px] object-contain" />,

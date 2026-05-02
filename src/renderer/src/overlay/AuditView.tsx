@@ -1,8 +1,10 @@
 import { useMemo } from 'react'
+import { ChartHistogram } from '@icon-park/react'
 import type { OverlayData, FilterBlock, TierGroup } from '../../../shared/types'
-import { iconMap } from '../shared/constants'
+import { iconMap, IP } from '../shared/constants'
 import { PriceAudit, AuditTierControls, useAuditState } from '../components/price-audit'
 import { getActiveMatch } from '../shared/activeMatch'
+import { Notice } from './Notice'
 
 interface AuditViewProps {
   overlayData: OverlayData
@@ -41,7 +43,17 @@ export function AuditView({
     selectedQualityBpIndex,
     selectedStrandBpIndex,
   )
-  if (!activeMatch) return null
+
+  // The audit hotkey (`openAudit` app macro) and the FilterBlockEditor "Audit Tier"
+  // button both flip view to 'audit' regardless of whether the active match actually
+  // has anything to audit. Render an explanatory panel instead of a blank view when
+  // we can't do anything useful.
+  if (!activeMatch) return <AuditUnavailable reason="no-match" />
+  const baseTypeConds = activeMatch.block.conditions.filter((c) => c.type === 'BaseType')
+  const hasBaseTypes = baseTypeConds.some((c) => c.values.length > 0)
+  const tierStr = activeMatch.block.tierTag?.tier ?? ''
+  if (!hasBaseTypes) return <AuditUnavailable reason="no-basetypes" />
+  if (isExTier(tierStr)) return <AuditUnavailable reason="ex-tier" />
 
   const selectedSib =
     auditBlockIndex !== null ? activeTierGroup?.siblings.find((s) => s.blockIndex === auditBlockIndex) : null
@@ -185,4 +197,24 @@ function AuditViewInner({
       </div>
     </div>
   )
+}
+
+const UNAVAILABLE_COPY: Record<'no-match' | 'no-basetypes' | 'ex-tier', { title: string; body: string }> = {
+  'no-match': {
+    title: 'Nothing to audit',
+    body: "This item doesn't match any block in your filter.",
+  },
+  'no-basetypes': {
+    title: 'Nothing to audit',
+    body: "The matched block doesn't list any base types.",
+  },
+  'ex-tier': {
+    title: 'Nothing to audit',
+    body: "Exotic tiers don't list base types in the rule.",
+  },
+}
+
+function AuditUnavailable({ reason }: { reason: 'no-match' | 'no-basetypes' | 'ex-tier' }): JSX.Element {
+  const copy = UNAVAILABLE_COPY[reason]
+  return <Notice icon={<ChartHistogram size={32} {...IP} />} title={copy.title} body={copy.body} />
 }
