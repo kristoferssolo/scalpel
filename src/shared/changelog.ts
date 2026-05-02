@@ -1,5 +1,17 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.7-rc5',
+    notes: [
+      'Added a View tab in settings and put the new hide tab feature in there',
+      "Added a Flasks regex tab between Maps and Custom (matches poe.re's flask logic)",
+      'Added a min/max ternary to ilvl chip in price checker',
+      'Added immediate update check when switching to beta channel; previously required an app restart',
+      'Fixed unique beasts not price checking',
+      'Fixed hybrid resistance mods (e.g. +X% to Lightning and Chaos Resistances) not contributing to pseudo rolls',
+      'Made audit tier a temporary tab, as I think it cleans up the general UX',
+    ],
+  },
+  {
     version: '0.9.7-rc4',
     notes: [
       'Added pseudos for ele damage to x for non-weapons',
