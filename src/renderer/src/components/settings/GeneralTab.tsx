@@ -14,34 +14,66 @@ export function GeneralTab({ settings, update }: Props): JSX.Element {
       <div className="settings-section-title mt-3">General</div>
 
       {/* League */}
-      <section>
-        <label>League</label>
-        <div className="setting-box mt-[6px] relative">
-          <span className="value">{settings.league}</span>
-          <button
-            className="primary"
-            onClick={() => {
-              const sel = document.getElementById('league-select-unified') as HTMLSelectElement | null
-              sel?.showPicker?.()
-              sel?.focus()
-            }}
-          >
-            Change
-          </button>
-          <select
-            id="league-select-unified"
-            value={settings.league}
-            onChange={(e) => update('league', e.target.value)}
-            className="absolute inset-0 opacity-0 cursor-pointer"
-          >
-            {features.leagues.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </div>
-      </section>
+      {(() => {
+        // "Private League" is a sentinel option in the dropdown (matches APT's
+        // pattern). When selected, an input below lets the user type the actual
+        // private league name (e.g. "MyPL (PL12345)") which is what gets persisted
+        // to settings.league and sent to the trade API verbatim. We detect "private
+        // mode" by absence from the standard league list rather than a separate flag,
+        // so a typed value that happens to match a standard league cleanly switches
+        // back to dropdown mode.
+        const PRIVATE_LEAGUE_LABEL = 'Private League'
+        const isPrivate = !features.leagues.includes(settings.league)
+        return (
+          <section>
+            <label>League</label>
+            <div className="setting-box mt-[6px] relative">
+              <span className="value">{settings.league || PRIVATE_LEAGUE_LABEL}</span>
+              <button
+                className="primary"
+                onClick={() => {
+                  const sel = document.getElementById('league-select-unified') as HTMLSelectElement | null
+                  sel?.showPicker?.()
+                  sel?.focus()
+                }}
+              >
+                Change
+              </button>
+              <select
+                id="league-select-unified"
+                value={isPrivate ? PRIVATE_LEAGUE_LABEL : settings.league}
+                onChange={(e) => {
+                  if (e.target.value === PRIVATE_LEAGUE_LABEL) {
+                    // First-time switch into private mode: clear so the input below
+                    // shows empty + placeholder. Re-selecting while already private
+                    // is a no-op (the typed value stays).
+                    if (!isPrivate) update('league', '')
+                  } else {
+                    update('league', e.target.value)
+                  }
+                }}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              >
+                {features.leagues.map((l) => (
+                  <option key={l} value={l}>
+                    {l}
+                  </option>
+                ))}
+                <option value={PRIVATE_LEAGUE_LABEL}>{PRIVATE_LEAGUE_LABEL}</option>
+              </select>
+            </div>
+            {isPrivate && (
+              <input
+                type="text"
+                value={settings.league}
+                onChange={(e) => update('league', e.target.value)}
+                placeholder="Enter Private League - Full name including (PL#####)"
+                className="mt-[6px] w-full text-[11px] bg-black/30 rounded px-2 py-[5px] border-none"
+              />
+            )}
+          </section>
+        )
+      })()}
 
       {/* Update channel */}
       <section>
