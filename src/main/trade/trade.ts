@@ -447,6 +447,11 @@ export async function searchTrade(
   if (item.rarity === 'Unique' && item.itemClass === 'Maps') {
     // Unique maps: search by name only (type "Map" doesn't work with name)
     query.name = item.name
+  } else if (item.rarity === 'Unique' && item.itemClass === 'Stackable Currency') {
+    // Captured beasts: a beast IS its own base, so the trade listing's typeLine is
+    // the beast name and the name field is empty. Setting query.name would AND-filter
+    // every listing out. Match APT's behavior and search by type only.
+    query.type = item.baseType
   } else if (item.rarity === 'Unique') {
     query.name = item.name.replace(/^Foulborn\s+/i, '')
     query.type = item.baseType

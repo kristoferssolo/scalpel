@@ -204,6 +204,26 @@ describe('searchTrade filter-group dispatch', () => {
     expect(body.query.filters.type_filters.filters.category).toEqual({ option: 'jewel.cluster' })
   })
 
+  it('unique captured beast searches by type only (no name field)', async () => {
+    setPoeVersion(1)
+    // Beasts arrive from clipboard with rarity Unique, itemClass Stackable Currency,
+    // and name == baseType (no separate base-type line in the clipboard text). The
+    // trade API's beast listings have an empty name field, so adding query.name
+    // AND-filters every result out -- match APT and search by type only.
+    const beast = {
+      name: 'Craiceann, First of the Deep',
+      baseType: 'Craiceann, First of the Deep',
+      itemClass: 'Stackable Currency',
+      rarity: 'Unique',
+    }
+    await searchTrade('Mirage', beast, [], 'any', 'chaos_divine')
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    expect(req).toBeDefined()
+    const body = JSON.parse(req!.body!)
+    expect(body.query.type).toBe('Craiceann, First of the Deep')
+    expect(body.query.name).toBeUndefined()
+  })
+
   it('unidentified item still sends enchant filters (cluster jewel passive count survives id)', async () => {
     setPoeVersion(1)
     const unidCluster = {
