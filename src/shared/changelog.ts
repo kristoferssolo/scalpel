@@ -1,5 +1,12 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.7-rc6',
+    notes: [
+      'Added private league support in settings',
+      'Fixed price check line for "Bow Attacks fire an additional Arrow"',
+    ],
+  },
+  {
     version: '0.9.7-rc5',
     notes: [
       'Added a View tab in settings and put the new hide tab feature in there',
