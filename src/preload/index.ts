@@ -173,6 +173,15 @@ export const api = {
     ipcRenderer.invoke('cheat-sheet:remove', categoryId, sheetId, ext),
   removeCheatSheetCategory: (categoryId: string): Promise<void> =>
     ipcRenderer.invoke('cheat-sheet:remove-category', categoryId),
+  closeCheatSheets: (): void => ipcRenderer.send('cheat-sheet:close'),
+  showCheatSheetPreview: (src: string, anchor: { x: number; y: number; width: number; height: number }): void =>
+    ipcRenderer.send('cheat-sheet-preview:show', src, anchor),
+  hideCheatSheetPreview: (): void => ipcRenderer.send('cheat-sheet-preview:hide'),
+  onCheatSheetFocusCategory: (cb: (categoryId: string | undefined) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, categoryId: string | undefined): void => cb(categoryId)
+    ipcRenderer.on('cheat-sheet:focus-category', handler)
+    return () => ipcRenderer.removeListener('cheat-sheet:focus-category', handler)
+  },
 
   // Event subscriptions
   onOverlayData: (cb: (data: OverlayData) => void): (() => void) => {

@@ -19,7 +19,8 @@ export default defineConfig({
       rollupOptions: {
         input: {
           overlay: resolve(__dirname, 'src/renderer/index.html'),
-          app: resolve(__dirname, 'src/renderer/app.html')
+          app: resolve(__dirname, 'src/renderer/app.html'),
+          cheatSheetsGrid: resolve(__dirname, 'src/renderer/cheat-sheets-grid.html'),
         }
       }
     }
