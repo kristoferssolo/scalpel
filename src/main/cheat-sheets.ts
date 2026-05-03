@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut } from 'electron'
+import { app, BrowserWindow, globalShortcut, screen } from 'electron'
 import { existsSync, mkdirSync, writeFileSync, unlinkSync, rmSync } from 'fs'
 import { join } from 'path'
 import { randomBytes } from 'crypto'
@@ -161,4 +161,52 @@ export function setCheatSheetHotkeys(cs: AppSettings['cheatSheets']): void {
       }
     }
   }
+}
+
+// ---- Preview window lifecycle -----------------------------------------------
+
+let previewWin: BrowserWindow | null = null
+
+function ensurePreviewWindow(): BrowserWindow {
+  if (previewWin && !previewWin.isDestroyed()) return previewWin
+  const display = screen.getPrimaryDisplay()
+  previewWin = new BrowserWindow({
+    width: display.workAreaSize.width,
+    height: display.workAreaSize.height,
+    x: 0,
+    y: 0,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    focusable: false,
+    show: false,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  })
+  previewWin.setIgnoreMouseEvents(true)
+  if (process.env['ELECTRON_RENDERER_URL']) {
+    void previewWin.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/cheat-sheets-preview.html`)
+  } else {
+    void previewWin.loadFile(join(__dirname, '../renderer/cheat-sheets-preview.html'))
+  }
+  return previewWin
+}
+
+export function showPreview(src: string, anchor: { x: number; y: number; width: number; height: number }): void {
+  const win = ensurePreviewWindow()
+  win.show()
+  const display = screen.getPrimaryDisplay()
+  win.webContents.send('cheat-sheet-preview:render', {
+    src,
+    anchor,
+    screen: display.workAreaSize,
+  })
+}
+
+export function hidePreview(): void {
+  previewWin?.hide()
 }

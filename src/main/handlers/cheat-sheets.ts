@@ -8,6 +8,8 @@ import {
   generateSheetId,
   fetchImageBuffer,
   hideGridWindow,
+  showPreview,
+  hidePreview,
 } from '../cheat-sheets'
 
 const ALLOWED_EXTS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif'])
@@ -54,4 +56,13 @@ export function register(): void {
   })
 
   ipcMain.on('cheat-sheet:close', () => hideGridWindow())
+
+  ipcMain.on(
+    'cheat-sheet-preview:show',
+    (_e, src: string, anchor: { x: number; y: number; width: number; height: number }) => {
+      showPreview(src, anchor)
+    },
+  )
+
+  ipcMain.on('cheat-sheet-preview:hide', () => hidePreview())
 }
