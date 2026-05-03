@@ -37,7 +37,7 @@ const TAB_LABELS: Record<TabKey, string> = {
   general: 'General',
   view: 'View',
   macros: 'Macros',
-  cheatsheets: 'Cheat Sheets',
+  cheatsheets: 'Sheets',
   filter: 'Filter',
   pricecheck: 'Trade',
   history: 'History',

@@ -3,11 +3,11 @@ import Store from 'electron-store'
 import { loadFilter, getColorFrequencies } from '../filter-state'
 import { getOverlayWindow, setCloseOnClickOutside } from '../overlay'
 import { getAppWindow } from '../app-window'
+import { applyCheatSheetHotkeys, getCheatSheetsOverlay } from '../cheat-sheets'
 import { setHotkey, setPriceCheckHotkey, setChatCommands, setAppMacros, setStashScrollEnabled } from '../hotkeys'
 import { setOpenSide } from '../evaluation'
 import { refreshPrices } from '../trade/prices'
 import { setUpdateChannel } from '../update/updater'
-import { setCheatSheetHotkeys } from '../cheat-sheets'
 import type { AppSettings, RegexPreset } from '../../shared/types'
 
 export function register(store: Store<AppSettings>): void {
@@ -57,11 +57,12 @@ export function register(store: Store<AppSettings>): void {
     if (key === 'stashScrollEnabled') setStashScrollEnabled(value as boolean)
     if (key === 'openSide') setOpenSide(value as AppSettings['openSide'])
     if (key === 'updateChannel') setUpdateChannel(value as string)
-    if (key === 'cheatSheets') setCheatSheetHotkeys(value as AppSettings['cheatSheets'])
+    if (key === 'cheatSheets') applyCheatSheetHotkeys(value as AppSettings['cheatSheets'])
 
     // Broadcast setting change to all windows except the sender
     const sender = event.sender
-    for (const win of [getOverlayWindow(), getAppWindow()]) {
+    const csWin = getCheatSheetsOverlay()?.getWindow() ?? null
+    for (const win of [getOverlayWindow(), getAppWindow(), csWin]) {
       if (win && win.webContents !== sender) {
         win.webContents.send('setting-updated', key, value)
       }

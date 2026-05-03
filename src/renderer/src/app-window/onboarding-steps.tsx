@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { AppSettings } from '../../../shared/types'
 import poeFilterSettingImg from '../assets/other/poe-filter-setting.png'
 import { FilterPicker } from '../components/FilterPicker'
 import { Toggle } from '../components/Toggle'
-import { keyEventToAccelerator, prettyHotkey } from '../components/settings'
+import { HotkeyField } from '../components/settings'
 import appIcon from '../../../../resources/icon.png'
 import { IconGlow } from '../shared/IconGlow'
 import { TOTAL_ONBOARDING_STEPS } from './constants'
@@ -144,32 +144,6 @@ export function HotkeyStep({
   onNext: () => void
   onBack: () => void
 }): JSX.Element {
-  const [recording, setRecording] = useState(false)
-  const recRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!recording) return
-    const handler = (e: KeyboardEvent): void => {
-      e.preventDefault()
-      e.stopPropagation()
-      const acc = keyEventToAccelerator(e)
-      if (!acc) return
-      onUpdate('hotkey', acc)
-      setRecording(false)
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [recording, onUpdate])
-
-  useEffect(() => {
-    if (!recording) return
-    const handler = (e: MouseEvent): void => {
-      if (recRef.current && !recRef.current.contains(e.target as Node)) setRecording(false)
-    }
-    window.addEventListener('mousedown', handler)
-    return () => window.removeEventListener('mousedown', handler)
-  }, [recording])
-
   return (
     <div>
       <StepHeader
@@ -178,24 +152,7 @@ export function HotkeyStep({
         title="Set your filter hotkey"
         subtitle="This key combo activates the overlay while you're in game. Hover an item and press it to analyze your filter."
       />
-      <div ref={recRef}>
-        <div className="setting-box" onClick={() => setRecording(true)}>
-          <span className={`value ${recording ? 'recording' : ''}`}>
-            {recording ? 'Press your desired key combo...' : prettyHotkey(settings.hotkey) || '(none set)'}
-          </span>
-          {!recording && (
-            <button
-              className="primary"
-              onClick={(e) => {
-                e.stopPropagation()
-                setRecording(true)
-              }}
-            >
-              Change
-            </button>
-          )}
-        </div>
-      </div>
+      <HotkeyField value={settings.hotkey} onChange={(acc) => onUpdate('hotkey', acc)} />
       <NavButtons onBack={onBack} onNext={onNext} />
     </div>
   )
@@ -212,32 +169,6 @@ export function PriceCheckHotkeyStep({
   onNext: () => void
   onBack: () => void
 }): JSX.Element {
-  const [recording, setRecording] = useState(false)
-  const recRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!recording) return
-    const handler = (e: KeyboardEvent): void => {
-      e.preventDefault()
-      e.stopPropagation()
-      const acc = keyEventToAccelerator(e)
-      if (!acc) return
-      onUpdate('priceCheckHotkey', acc)
-      setRecording(false)
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [recording, onUpdate])
-
-  useEffect(() => {
-    if (!recording) return
-    const handler = (e: MouseEvent): void => {
-      if (recRef.current && !recRef.current.contains(e.target as Node)) setRecording(false)
-    }
-    window.addEventListener('mousedown', handler)
-    return () => window.removeEventListener('mousedown', handler)
-  }, [recording])
-
   return (
     <div>
       <StepHeader
@@ -246,24 +177,7 @@ export function PriceCheckHotkeyStep({
         title="Set your price check hotkey"
         subtitle="This key combo is used to... price check items. You should know how to use this one."
       />
-      <div ref={recRef}>
-        <div className="setting-box" onClick={() => setRecording(true)}>
-          <span className={`value ${recording ? 'recording' : ''}`}>
-            {recording ? 'Press your desired key combo...' : prettyHotkey(settings.priceCheckHotkey) || '(none set)'}
-          </span>
-          {!recording && (
-            <button
-              className="primary"
-              onClick={(e) => {
-                e.stopPropagation()
-                setRecording(true)
-              }}
-            >
-              Change
-            </button>
-          )}
-        </div>
-      </div>
+      <HotkeyField value={settings.priceCheckHotkey} onChange={(acc) => onUpdate('priceCheckHotkey', acc)} />
       <NavButtons onBack={onBack} onNext={onNext} />
     </div>
   )

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { ReactSortable } from 'react-sortablejs'
-import { CloseSmall, AddOne } from '@icon-park/react'
+import { CloseSmall, AddOne, Drag, AddPicture, Link } from '@icon-park/react'
 import type { AppSettings, CheatSheetCategory } from '../../../../shared/types'
-import { HotkeyRecorder } from './HotkeyRecorder'
+import { RemoveButton } from '../RemoveButton'
+import { HotkeyField } from './HotkeyField'
 import { generateClientCategoryId } from './utils'
 import type { HotkeySlot } from './hotkey-collisions'
 
@@ -24,9 +25,9 @@ export function CheatSheetsTab({ settings, update, tryHotkey }: Props): JSX.Elem
 
       {/* Global hotkey */}
       <section>
-        <label>Show cheat sheet overlay</label>
+        <label>Cheat Sheet Hotkey</label>
         <div className="mt-[6px]">
-          <HotkeyRecorder
+          <HotkeyField
             value={cheatSheets.globalHotkey}
             onChange={(hotkey) => {
               if (!tryHotkey(hotkey, { kind: 'cheatsheet-global' })) return
@@ -47,7 +48,9 @@ export function CheatSheetsTab({ settings, update, tryHotkey }: Props): JSX.Elem
               list={cheatSheets.categories.map((c) => ({ ...c }))}
               setList={setCategories}
               animation={150}
-              handle=".category-drag-handle"
+              // Restrict drag to the explicit grip icon so text selection in
+              // the name input and other interactions stay normal.
+              handle=".category-grab"
               className="flex flex-col gap-2"
             >
               {cheatSheets.categories.map((cat, i) => (
@@ -145,70 +148,84 @@ function CategoryCard({ category, index, tryHotkey, onUpdate, onRemove }: Catego
   }
 
   return (
-    <div className="bg-black/15 rounded p-[8px] flex flex-col gap-2 category-drag-handle cursor-grab">
+    <div className="bg-black/15 rounded p-[5px] flex flex-col gap-1.5">
       {/* Name + remove */}
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-[6px] items-center">
+        <div
+          className="category-grab cursor-grab text-text-dim hover:text-text shrink-0 flex items-center justify-center w-5 h-5"
+          title="Drag to reorder"
+        >
+          <Drag size={14} theme="outline" fill="currentColor" />
+        </div>
         <input
           type="text"
           value={category.name}
           onChange={(e) => onUpdate({ ...category, name: e.target.value })}
-          className="flex-1 text-[11px] bg-black/30 rounded px-2 py-[5px] border-none"
+          className="flex-1 text-xs h-[34px] box-border px-3 py-2 bg-black/30"
         />
-        <button onClick={() => setConfirming(true)} className="text-text-dim hover:text-danger no-drag">
-          <CloseSmall size={14} theme="outline" fill="currentColor" />
-        </button>
+        <RemoveButton onClick={() => setConfirming(true)} />
       </div>
 
       {/* Thumbnail strip */}
       <div className="flex flex-wrap gap-2 no-drag" onClick={(e) => e.stopPropagation()}>
-        {category.sheets.map((sheet) => (
-          <ThumbnailTile
-            key={sheet.id}
-            categoryId={category.id}
-            sheet={sheet}
-            onRemove={() => {
-              void window.api.removeCheatSheet(category.id, sheet.id, sheet.ext)
-              onUpdate({ ...category, sheets: category.sheets.filter((s) => s.id !== sheet.id) })
-            }}
-          />
-        ))}
-        <PlaceholderTile
-          onClickFile={addFromFile}
-          onClickUrl={() => setUrlInput('')}
-          urlInputValue={urlInput}
-          onUrlChange={setUrlInput}
-          onUrlSubmit={() => addFromUrl(urlInput ?? '')}
-          onUrlCancel={() => setUrlInput(null)}
-        />
+        <ReactSortable
+          list={category.sheets.map((s) => ({ ...s }))}
+          setList={(next) => onUpdate({ ...category, sheets: next.map((s) => ({ id: s.id, ext: s.ext })) })}
+          animation={150}
+          handle=".sheet-grab"
+          className="contents"
+        >
+          {category.sheets.map((sheet) => (
+            <ThumbnailTile
+              key={sheet.id}
+              categoryId={category.id}
+              sheet={sheet}
+              onRemove={() => {
+                void window.api.removeCheatSheet(category.id, sheet.id, sheet.ext)
+                onUpdate({ ...category, sheets: category.sheets.filter((s) => s.id !== sheet.id) })
+              }}
+            />
+          ))}
+        </ReactSortable>
+        <PlaceholderTile onClickFile={addFromFile} onClickUrl={() => setUrlInput('')} />
       </div>
+
+      {/* URL paste row - shown under the thumbnail strip when the user clicks
+          the link half of the placeholder tile. Same setting-box chrome as the
+          hotkey rows for visual consistency. */}
+      {urlInput !== null && (
+        <UrlPasteRow
+          value={urlInput}
+          onChange={setUrlInput}
+          onSubmit={() => addFromUrl(urlInput ?? '')}
+          onCancel={() => setUrlInput(null)}
+        />
+      )}
 
       {/* Per-category hotkey (optional) */}
       <div className="no-drag">
         {showHotkey || category.hotkey !== '' ? (
-          <div className="flex items-center gap-2 text-[10px] text-text-dim">
-            <span>Hotkey:</span>
-            <HotkeyRecorder
-              value={category.hotkey}
-              onChange={(hotkey) => {
-                if (!tryHotkey(hotkey, { kind: 'cheatsheet-category', index })) return
-                onUpdate({ ...category, hotkey })
-              }}
-            />
-            {category.hotkey !== '' && (
-              <button
-                onClick={() => {
-                  onUpdate({ ...category, hotkey: '' })
-                  setShowHotkey(false)
-                }}
-                className="text-text-dim hover:text-danger"
-              >
-                <CloseSmall size={12} theme="outline" fill="currentColor" />
-              </button>
-            )}
-          </div>
+          <HotkeyField
+            value={category.hotkey}
+            onChange={(hotkey) => {
+              if (hotkey === '') {
+                // User cleared via the field's built-in X - collapse the row
+                // back to the "Add hotkey" button.
+                onUpdate({ ...category, hotkey: '' })
+                setShowHotkey(false)
+                return
+              }
+              if (!tryHotkey(hotkey, { kind: 'cheatsheet-category', index })) return
+              onUpdate({ ...category, hotkey })
+            }}
+          />
         ) : (
-          <button onClick={() => setShowHotkey(true)} className="text-[10px] text-text-dim px-2 py-1">
-            <AddOne size={10} theme="outline" fill="currentColor" /> Add hotkey (optional)
+          <button
+            onClick={() => setShowHotkey(true)}
+            className="inline-flex items-center gap-1 leading-none text-[10px] text-text-dim px-2 py-1"
+          >
+            <AddOne size={10} theme="outline" fill="currentColor" className="flex" />
+            <span className="leading-none relative -top-px">Add hotkey (optional)</span>
           </button>
         )}
       </div>
@@ -225,10 +242,16 @@ function ThumbnailTile({
   sheet: { id: string; ext: string }
   onRemove: () => void
 }): JSX.Element {
-  const src = `cheatsheet://${categoryId}/${sheet.id}.${sheet.ext}`
+  const src = `cheatsheet://${categoryId}/${sheet.id}.${sheet.ext}?thumb=1`
   return (
     <div className="relative group rounded overflow-hidden bg-black/30" style={{ width: 80, height: 60 }}>
       <img src={src} alt="" className="w-full h-full object-cover" />
+      <div
+        className="sheet-grab cursor-grab absolute top-0.5 left-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 rounded-full p-0.5 text-text-dim hover:text-text"
+        title="Drag to reorder"
+      >
+        <Drag size={10} theme="outline" fill="currentColor" />
+      </div>
       <button
         onClick={onRemove}
         className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 rounded-full p-0.5"
@@ -243,62 +266,81 @@ function ThumbnailTile({
 function PlaceholderTile({
   onClickFile,
   onClickUrl,
-  urlInputValue,
-  onUrlChange,
-  onUrlSubmit,
-  onUrlCancel,
 }: {
   onClickFile: () => void
   onClickUrl: () => void
-  urlInputValue: string | null
-  onUrlChange: (v: string) => void
-  onUrlSubmit: () => void
-  onUrlCancel: () => void
 }): JSX.Element {
-  if (urlInputValue !== null) {
-    return (
-      <div className="flex items-center gap-1" style={{ height: 60 }}>
+  return (
+    <div
+      className="flex rounded border-2 border-dashed border-text-dim/40 bg-white/[0.04] overflow-hidden"
+      style={{ width: 80, height: 60 }}
+    >
+      <button
+        onClick={onClickFile}
+        title="Add from file"
+        className="flex-1 flex items-center justify-center text-text-dim hover:bg-white/[0.06] hover:text-accent transition-colors border-none bg-transparent rounded-none cursor-pointer"
+      >
+        <AddPicture size={18} theme="outline" fill="currentColor" />
+      </button>
+      <div className="w-px bg-text-dim/30 self-stretch" />
+      <button
+        onClick={onClickUrl}
+        title="Add from URL"
+        className="flex-1 flex items-center justify-center text-text-dim hover:bg-white/[0.06] hover:text-accent transition-colors border-none bg-transparent rounded-none cursor-pointer"
+      >
+        <Link size={16} theme="outline" fill="currentColor" />
+      </button>
+    </div>
+  )
+}
+
+/** Full-width URL paste row that appears under the thumbnails when the user
+ *  clicks the link half of the placeholder tile. Mirrors the HotkeyField
+ *  chrome (same setting-box height + right-cluster of buttons) so the form
+ *  affordance reads the same across cheat-sheet rows. */
+function UrlPasteRow({
+  value,
+  onChange,
+  onSubmit,
+  onCancel,
+}: {
+  value: string
+  onChange: (v: string) => void
+  onSubmit: () => void
+  onCancel: () => void
+}): JSX.Element {
+  const isError = value.startsWith('error: ')
+  const display = isError ? '' : value
+  const errorMsg = isError ? value.slice(7) : null
+  return (
+    <div>
+      <div className="setting-box" style={{ cursor: 'auto' }}>
         <input
           autoFocus
           type="text"
           placeholder="Paste image URL"
-          value={urlInputValue.startsWith('error: ') ? '' : urlInputValue}
-          onChange={(e) => onUrlChange(e.target.value)}
+          value={display}
+          onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') onUrlSubmit()
-            if (e.key === 'Escape') onUrlCancel()
+            if (e.key === 'Enter') onSubmit()
+            if (e.key === 'Escape') onCancel()
           }}
-          className="text-[11px] bg-black/30 rounded px-2 py-[5px] border-none w-[200px]"
+          className="value flex-1 bg-transparent border-none outline-none p-0 m-0 min-w-0"
         />
-        <button onClick={onUrlSubmit} className="text-[11px] px-2 py-1">
-          Add
-        </button>
-        <button onClick={onUrlCancel} className="text-[11px] px-2 py-1 text-text-dim">
-          Cancel
-        </button>
-        {urlInputValue.startsWith('error: ') && (
-          <span className="text-[9px] text-danger">{urlInputValue.slice(7)}</span>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={onCancel}
+            title="Cancel"
+            className="flex items-center justify-center w-5 h-5 shrink-0 rounded bg-white/[0.06] border-none cursor-pointer text-text-dim p-0 hover:bg-[rgba(239,83,80,0.2)] hover:text-white"
+          >
+            <CloseSmall size={14} theme="outline" fill="currentColor" className="flex" />
+          </button>
+          <button onClick={onSubmit} className="primary">
+            Add
+          </button>
+        </div>
       </div>
-    )
-  }
-  return (
-    <div
-      className="flex flex-col items-center justify-center rounded border border-dashed border-text-dim/40 cursor-pointer hover:border-accent text-text-dim hover:text-accent transition-colors"
-      style={{ width: 80, height: 60 }}
-      onClick={onClickFile}
-      title="Click to add image"
-    >
-      <AddOne size={20} theme="outline" fill="currentColor" />
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onClickUrl()
-        }}
-        className="text-[8px] text-text-dim hover:text-accent"
-      >
-        or URL
-      </button>
+      {errorMsg && <div className="text-[10px] text-danger mt-1 px-2">{errorMsg}</div>}
     </div>
   )
 }

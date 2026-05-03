@@ -3,6 +3,7 @@ import { join } from 'path'
 import { OverlayController, OVERLAY_WINDOW_OPTS } from 'electron-overlay-window'
 import { uIOhook } from 'uiohook-napi'
 import { getPoeVersion, setPoeVersion } from './game-state'
+import { isInsideAnySecondaryOverlay, isAnyScalpelWindowFocused } from './secondary-overlay'
 
 let overlayWindow: BrowserWindow | null = null
 let overlayVisible = false
@@ -144,6 +145,9 @@ uIOhook.on('mousedown', (e) => {
   // Only process clicks if the overlay window is actually visible on screen
   if (!overlayWindow || overlayWindow.isDestroyed() || !overlayWindow.isVisible()) return
   if (!isInsidePanel(e.x, e.y)) {
+    // A click on any visible Scalpel secondary overlay (cheat sheets etc.) is
+    // an interaction with our app, not a "click outside" - don't hide.
+    if (isInsideAnySecondaryOverlay(e.x, e.y)) return
     // A native <select> dropdown is open -- its option list lives outside our reported
     // panel rect, so every click on it looks like a click "outside". Bail so we don't
     // disable interactivity (click-through to PoE) or close the overlay.
@@ -197,6 +201,11 @@ export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
 
   overlayWindow.hide = () => {
     if (Date.now() - lastShowTime < 100) return
+
+    // electron-overlay-window's native code calls .hide() on PoE blur. Skip
+    // the hide when focus actually moved to another Scalpel window (cheat
+    // sheets etc.) - that's an in-app interaction, not "user left the app".
+    if (isAnyScalpelWindowFocused()) return
 
     // Make it invisible and click-through - don't actually hide from OS to avoid animation
     overlayWindow!.setOpacity(0)

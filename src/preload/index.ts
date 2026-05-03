@@ -180,27 +180,34 @@ export const api = {
     ipcRenderer.on('focus-settings-tab', handler)
     return () => ipcRenderer.removeListener('focus-settings-tab', handler)
   },
-  showCheatSheetPreview: (src: string, anchor: { x: number; y: number; width: number; height: number }): void =>
-    ipcRenderer.send('cheat-sheet-preview:show', src, anchor),
+  showCheatSheetPreview: (src: string): void => ipcRenderer.send('cheat-sheet-preview:show', src),
   hideCheatSheetPreview: (): void => ipcRenderer.send('cheat-sheet-preview:hide'),
   onCheatSheetFocusCategory: (cb: (categoryId: string | undefined) => void): (() => void) => {
     const handler = (_: Electron.IpcRendererEvent, categoryId: string | undefined): void => cb(categoryId)
     ipcRenderer.on('cheat-sheet:focus-category', handler)
     return () => ipcRenderer.removeListener('cheat-sheet:focus-category', handler)
   },
+  onSecondaryOverlaySnapGhost: (
+    cb: (rect: { x: number; y: number; width: number; height: number } | null) => void,
+  ): (() => void) => {
+    const handler = (
+      _: Electron.IpcRendererEvent,
+      rect: { x: number; y: number; width: number; height: number } | null,
+    ): void => cb(rect)
+    ipcRenderer.on('secondary-overlay-canvas:snap-ghost', handler)
+    return () => ipcRenderer.removeListener('secondary-overlay-canvas:snap-ghost', handler)
+  },
   onCheatSheetPreview: (
     cb: (state: {
-      src: string
-      anchor: { x: number; y: number; width: number; height: number }
-      screen: { width: number; height: number }
+      src: string | null
+      gameBounds: { x: number; y: number; width: number; height: number } | null
     }) => void,
   ): (() => void) => {
     const handler = (
       _: Electron.IpcRendererEvent,
       state: {
-        src: string
-        anchor: { x: number; y: number; width: number; height: number }
-        screen: { width: number; height: number }
+        src: string | null
+        gameBounds: { x: number; y: number; width: number; height: number } | null
       },
     ): void => cb(state)
     ipcRenderer.on('cheat-sheet-preview:render', handler)

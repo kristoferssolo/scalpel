@@ -3,6 +3,7 @@ import { clipboard, globalShortcut } from 'electron'
 import { snapshotClipboard } from './clipboard-preserve'
 import { OverlayController } from 'electron-overlay-window'
 import { focusGameWindow, getOverlayWindow } from './overlay'
+import { hideFocusedOrAnyVisibleSecondaryOverlay } from './secondary-overlay'
 
 // ─── Accelerator → uiohook keycode mapping ────────────────────────────────────
 
@@ -62,6 +63,16 @@ let chatCommandHotkeys: Array<{ accelerator: string; command: string; autoSubmit
 let appMacroAccelerators: string[] = []
 let lastAppMacros: Array<{ action: string; hotkey: string; tag?: string }> = []
 let onAppMacro: ((action: string, tag?: string) => void) | null = null
+// Secondary-overlay hotkeys (cheat-sheets today, more later). Stored as a
+// flat list of (accelerator, handler) pairs so each consumer composes its own
+// shape (e.g. cheat-sheet sends one for the global toggle and one per
+// category) without baking that shape into the hotkey layer.
+interface OverlayHotkey {
+  accelerator: string
+  handler: () => void
+}
+let secondaryOverlayHotkeys: OverlayHotkey[] = []
+let registeredOverlayAccelerators: string[] = []
 let onTrigger: (() => void) | null = null
 let onPriceCheck: (() => void) | null = null
 let onEscape: (() => void) | null = null
@@ -125,10 +136,19 @@ export function startHotkeyListener(handler: () => void): void {
     // Only respond to Escape when PoE or the overlay itself has focus -- otherwise
     // pressing Esc in another app (browser, Discord, etc.) would silently hide the
     // overlay here in the background.
-    if (e.keycode === UiohookKey.Escape && onEscape) {
-      const overlayWin = getOverlayWindow()
-      const overlayFocused = !!overlayWin && !overlayWin.isDestroyed() && overlayWin.isFocused()
-      if (OverlayController.targetHasFocus || overlayFocused) onEscape()
+    if (e.keycode === UiohookKey.Escape) {
+      // Secondary overlays (cheat sheets etc.) own Esc when visible. The
+      // renderer keydown listener doesn't fire reliably because Windows
+      // often denies focus stealing from PoE, so handle it kernel-side here.
+      if (hideFocusedOrAnyVisibleSecondaryOverlay()) return
+      // Only respond to Escape when PoE or the overlay itself has focus -- otherwise
+      // pressing Esc in another app (browser, Discord, etc.) would silently hide the
+      // overlay here in the background.
+      if (onEscape) {
+        const overlayWin = getOverlayWindow()
+        const overlayFocused = !!overlayWin && !overlayWin.isDestroyed() && overlayWin.isFocused()
+        if (OverlayController.targetHasFocus || overlayFocused) onEscape()
+      }
     }
     // Trigger + price-check via uIOhook so the combo fires in BOTH PoE1 and PoE2,
     // not just whichever game electron-overlay-window is attached to. The handlers
@@ -171,6 +191,7 @@ export function resumeHotkeys(): void {
   const cmds = chatCommandHotkeys.map((c) => ({ hotkey: c.accelerator, command: c.command, autoSubmit: c.autoSubmit }))
   setChatCommands(cmds)
   setAppMacros(lastAppMacros)
+  setSecondaryOverlayHotkeys(secondaryOverlayHotkeys)
 }
 
 /** Update the active hotkey. Registered with both globalShortcut (swallows the key
@@ -240,6 +261,30 @@ export function setChatCommands(commands: Array<{ hotkey: string; command: strin
 
 export function setAppMacroHandler(handler: (action: string, tag?: string) => void): void {
   onAppMacro = handler
+}
+
+/** Replace the set of secondary-overlay hotkeys (cheat-sheet global + per
+ *  category, future overlays' triggers, etc.). Each entry is just an
+ *  accelerator + handler pair - this layer doesn't care which overlay it
+ *  belongs to. Re-applied automatically by resumeHotkeys. */
+export function setSecondaryOverlayHotkeys(hotkeys: OverlayHotkey[]): void {
+  secondaryOverlayHotkeys = hotkeys
+  for (const acc of registeredOverlayAccelerators) {
+    try {
+      globalShortcut.unregister(acc)
+    } catch {}
+  }
+  registeredOverlayAccelerators = []
+  for (const { accelerator, handler } of hotkeys) {
+    if (!accelerator) continue
+    try {
+      if (globalShortcut.register(accelerator, () => handler())) {
+        registeredOverlayAccelerators.push(accelerator)
+      }
+    } catch (e) {
+      console.error(`[hotkeys] Failed to register secondary-overlay hotkey "${accelerator}":`, e)
+    }
+  }
 }
 
 export function setAppMacros(macros: Array<{ action: string; hotkey: string; tag?: string }>): void {

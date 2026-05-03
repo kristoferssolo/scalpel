@@ -7,7 +7,9 @@ module.exports = {
         bg: {
           DEFAULT: 'var(--bg)',
           solid: 'var(--bg-solid)',
+          'solid-translucent': 'var(--bg-solid-translucent)',
           card: 'var(--bg-card)',
+          'card-translucent': 'var(--bg-card-translucent)',
           hover: 'var(--bg-hover)',
         },
         border: 'var(--border)',

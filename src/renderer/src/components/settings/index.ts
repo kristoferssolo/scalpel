@@ -1,4 +1,5 @@
 export { HotkeyRecorder } from './HotkeyRecorder'
+export { HotkeyField } from './HotkeyField'
 export { CommandInput } from './CommandInput'
 export { FaqItem } from './FaqItem'
 export { PoeLoginButton } from './PoeLoginButton'

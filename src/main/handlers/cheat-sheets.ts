@@ -7,7 +7,7 @@ import {
   removeCategoryDir,
   generateSheetId,
   fetchImageBuffer,
-  hideGridWindow,
+  getCheatSheetsOverlay,
   showPreview,
   hidePreview,
 } from '../cheat-sheets'
@@ -56,7 +56,7 @@ export function register(): void {
     removeCategoryDir(categoryId)
   })
 
-  ipcMain.on('cheat-sheet:close', () => hideGridWindow())
+  ipcMain.on('cheat-sheet:close', () => getCheatSheetsOverlay()?.hide())
 
   ipcMain.on('open-settings-tab', (_e, tab: string) => {
     const overlay = getOverlayWindow()
@@ -66,12 +66,7 @@ export function register(): void {
     overlay.webContents.send('focus-settings-tab', tab)
   })
 
-  ipcMain.on(
-    'cheat-sheet-preview:show',
-    (_e, src: string, anchor: { x: number; y: number; width: number; height: number }) => {
-      showPreview(src, anchor)
-    },
-  )
+  ipcMain.on('cheat-sheet-preview:show', (_e, src: string) => showPreview(src))
 
   ipcMain.on('cheat-sheet-preview:hide', () => hidePreview())
 }

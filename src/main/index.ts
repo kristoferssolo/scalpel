@@ -55,12 +55,17 @@ import * as pricesHandlers from './handlers/prices'
 import { register as registerCheatSheets } from './handlers/cheat-sheets'
 import {
   categoryDir,
-  setLastBounds,
-  onBoundsChanged,
-  setCheatSheetHotkeys,
-  hideOnPoeBlur,
-  restoreOnPoeFocus,
+  ensureThumb,
+  registerCheatSheetsOverlay,
+  applyCheatSheetHotkeys,
+  setCheatSheetsBeforeShow,
 } from './cheat-sheets'
+import {
+  hideAllOnPoeBlur,
+  restoreAllOnPoeFocus,
+  isAnyScalpelWindowFocused,
+  setMainOverlayGetter,
+} from './secondary-overlay'
 import type { AppSettings } from '../shared/types'
 
 // ---- Elevation detection ---------------------------------------------------
@@ -227,14 +232,28 @@ app.whenReady().then(() => {
   // that window. The hotkey handler re-detects the focused PoE on every fire and
   // relaunches to swap versions if needed (ensureCorrectGameForHotkey).
   createOverlayWindow(store.get('poeVersion') ?? 1)
+  // Let the secondary-overlay system know about the main overlay window so its
+  // isAnyScalpelWindowFocused predicate can include it.
+  setMainOverlayGetter(getOverlayWindow)
   createAppWindow()
   createTray()
 
-  // Serve cheat sheet images via a custom protocol so the renderer can load local files
+  // Serve cheat sheet images via a custom protocol so the renderer can load local files.
+  // Append ?thumb=1 to get a 360px-max JPEG thumbnail (lazily generated + cached
+  // by ensureThumb) instead of the full-resolution original.
   protocol.handle('cheatsheet', (request) => {
-    const url = request.url.replace('cheatsheet://', '')
-    const [categoryId, file] = url.split('/')
-    const filePath = join(categoryDir(categoryId), file ?? '')
+    const raw = request.url.replace('cheatsheet://', '')
+    const [pathPart, queryPart = ''] = raw.split('?')
+    const [categoryId, file = ''] = pathPart.split('/')
+    let filePath: string
+    if (queryPart.includes('thumb=1') && file) {
+      const dot = file.lastIndexOf('.')
+      const sheetId = dot >= 0 ? file.slice(0, dot) : file
+      const ext = dot >= 0 ? file.slice(dot + 1) : ''
+      filePath = ensureThumb(categoryId, sheetId, ext)
+    } else {
+      filePath = join(categoryDir(categoryId), file)
+    }
     return new Response(require('fs').createReadStream(filePath) as unknown as ReadableStream)
   })
 
@@ -315,12 +334,21 @@ app.whenReady().then(() => {
     }
   })
   setAppMacros(store.get('appMacros') ?? [])
-  setLastBounds(store.get('cheatSheets')?.windowBounds)
-  onBoundsChanged((bounds) => {
-    const cs = store.get('cheatSheets') ?? { globalHotkey: '', categories: [] }
-    store.set('cheatSheets', { ...cs, windowBounds: bounds })
+  // Register the cheat-sheets overlay with the secondary-overlay system. Bounds
+  // persist into settings.cheatSheets.windowBounds; the system handles window
+  // lifecycle, snap, alt-tab guard, etc. and the wireCheatSheetHotkeys helper
+  // below feeds the global + per-category hotkeys into the shared system.
+  registerCheatSheetsOverlay({
+    storedBounds: () => store.get('cheatSheets')?.windowBounds,
+    onBoundsChanged: (bounds) => {
+      const cs = store.get('cheatSheets') ?? { globalHotkey: '', categories: [] }
+      store.set('cheatSheets', { ...cs, windowBounds: bounds })
+    },
   })
-  setCheatSheetHotkeys(store.get('cheatSheets'))
+  // Hide the main overlay before showing the cheat sheet (keeps things tidy if
+  // the user hotkeys the cheat sheet while the main overlay was open).
+  setCheatSheetsBeforeShow(() => hideOverlay())
+  applyCheatSheetHotkeys(store.get('cheatSheets'))
   setStashScrollEnabled(store.get('stashScrollEnabled') ?? false)
   setOpenSide(store.get('openSide') ?? 'both')
 
@@ -333,11 +361,15 @@ app.whenReady().then(() => {
   setGameFocusHandlers(
     () => {
       resumeHotkeys()
-      restoreOnPoeFocus()
+      restoreAllOnPoeFocus()
     },
     () => {
+      // PoE blurred. If focus moved to any Scalpel window (main or secondary),
+      // it's an in-app interaction - keep hotkeys armed and leave overlays up.
+      // Only treat it as "user left the app" when focus is somewhere else.
+      if (isAnyScalpelWindowFocused()) return
       suspendHotkeys()
-      hideOnPoeBlur()
+      hideAllOnPoeBlur()
     },
   )
 

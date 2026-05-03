@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
 import type { AppSettings } from '../../../../shared/types'
 import { PoeLoginButton } from './PoeLoginButton'
-import { keyEventToAccelerator, prettyHotkey } from './utils'
+import { HotkeyField } from './HotkeyField'
 import {
   LISTED_TIME_OPTIONS,
   getPriceOptions,
@@ -18,36 +17,6 @@ interface Props {
 }
 
 export function PriceCheckTab({ settings, update, tryHotkey }: Props): JSX.Element {
-  const [recording, setRecording] = useState(false)
-  const recRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!recording) return
-    window.api.suspendHotkeys()
-    const onKey = (e: KeyboardEvent): void => {
-      e.preventDefault()
-      e.stopPropagation()
-      const acc = keyEventToAccelerator(e)
-      if (!acc) return
-      if (!tryHotkey(acc, { kind: 'pricecheck' })) {
-        setRecording(false)
-        return
-      }
-      update('priceCheckHotkey', acc)
-      setRecording(false)
-    }
-    const onClick = (e: MouseEvent): void => {
-      if (recRef.current && !recRef.current.contains(e.target as Node)) setRecording(false)
-    }
-    window.addEventListener('keydown', onKey)
-    window.addEventListener('mousedown', onClick)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      window.removeEventListener('mousedown', onClick)
-      window.api.resumeHotkeys()
-    }
-  }, [recording, update, tryHotkey])
-
   return (
     <>
       <div className="settings-section-title mt-3">Trade Settings</div>
@@ -55,25 +24,14 @@ export function PriceCheckTab({ settings, update, tryHotkey }: Props): JSX.Eleme
       <div className="flex flex-col gap-[10px]">
         <section>
           <label>Price check hotkey</label>
-          <div ref={recRef} className="mt-[2px]">
-            <div className="setting-box" onClick={() => setRecording(true)}>
-              <span className={`value ${recording ? 'recording' : ''}`}>
-                {recording
-                  ? 'Press your desired key combo...'
-                  : prettyHotkey(settings.priceCheckHotkey) || '(none set)'}
-              </span>
-              {!recording && (
-                <button
-                  className="primary"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setRecording(true)
-                  }}
-                >
-                  Change
-                </button>
-              )}
-            </div>
+          <div className="mt-[2px]">
+            <HotkeyField
+              value={settings.priceCheckHotkey}
+              onChange={(acc) => {
+                if (!tryHotkey(acc, { kind: 'pricecheck' })) return
+                update('priceCheckHotkey', acc)
+              }}
+            />
           </div>
         </section>
 
