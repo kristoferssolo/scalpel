@@ -140,6 +140,24 @@ export function hideGridWindow(): void {
   gridWin?.hide()
 }
 
+let wasVisibleBeforeFocusLoss = false
+
+export function hideOnPoeBlur(): void {
+  if (!gridWin || gridWin.isDestroyed()) {
+    wasVisibleBeforeFocusLoss = false
+    return
+  }
+  wasVisibleBeforeFocusLoss = gridWin.isVisible()
+  if (wasVisibleBeforeFocusLoss) gridWin.hide()
+  hidePreview()
+}
+
+export function restoreOnPoeFocus(): void {
+  if (wasVisibleBeforeFocusLoss && gridWin && !gridWin.isDestroyed()) {
+    gridWin.show()
+  }
+}
+
 // ---- Hotkey registration ---------------------------------------------------
 
 let registered: string[] = []

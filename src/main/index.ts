@@ -53,7 +53,14 @@ import * as versionsHandlers from './handlers/versions'
 import * as onlineSyncHandlers from './handlers/online-sync'
 import * as pricesHandlers from './handlers/prices'
 import { register as registerCheatSheets } from './handlers/cheat-sheets'
-import { categoryDir, setLastBounds, onBoundsChanged, setCheatSheetHotkeys } from './cheat-sheets'
+import {
+  categoryDir,
+  setLastBounds,
+  onBoundsChanged,
+  setCheatSheetHotkeys,
+  hideOnPoeBlur,
+  restoreOnPoeFocus,
+} from './cheat-sheets'
 import type { AppSettings } from '../shared/types'
 
 // ---- Elevation detection ---------------------------------------------------
@@ -324,8 +331,14 @@ app.whenReady().then(() => {
   // Apply close-on-click-outside setting
   setCloseOnClickOutside(store.get('closeOnClickOutside'))
   setGameFocusHandlers(
-    () => resumeHotkeys(),
-    () => suspendHotkeys(),
+    () => {
+      resumeHotkeys()
+      restoreOnPoeFocus()
+    },
+    () => {
+      suspendHotkeys()
+      hideOnPoeBlur()
+    },
   )
 
   // Start with hotkeys suspended until PoE actually gains focus.
