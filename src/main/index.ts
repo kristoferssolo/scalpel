@@ -53,7 +53,7 @@ import * as versionsHandlers from './handlers/versions'
 import * as onlineSyncHandlers from './handlers/online-sync'
 import * as pricesHandlers from './handlers/prices'
 import { register as registerCheatSheets } from './handlers/cheat-sheets'
-import { categoryDir } from './cheat-sheets'
+import { categoryDir, setLastBounds, onBoundsChanged, setCheatSheetHotkeys } from './cheat-sheets'
 import type { AppSettings } from '../shared/types'
 
 // ---- Elevation detection ---------------------------------------------------
@@ -308,6 +308,12 @@ app.whenReady().then(() => {
     }
   })
   setAppMacros(store.get('appMacros') ?? [])
+  setLastBounds(store.get('cheatSheets')?.windowBounds)
+  onBoundsChanged((bounds) => {
+    const cs = store.get('cheatSheets') ?? { globalHotkey: '', categories: [] }
+    store.set('cheatSheets', { ...cs, windowBounds: bounds })
+  })
+  setCheatSheetHotkeys(store.get('cheatSheets'))
   setStashScrollEnabled(store.get('stashScrollEnabled') ?? false)
   setOpenSide(store.get('openSide') ?? 'both')
 

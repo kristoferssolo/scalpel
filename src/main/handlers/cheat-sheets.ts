@@ -1,7 +1,14 @@
 import { ipcMain, dialog } from 'electron'
 import { readFileSync } from 'fs'
 import { extname } from 'path'
-import { saveSheetBuffer, removeSheetFile, removeCategoryDir, generateSheetId, fetchImageBuffer } from '../cheat-sheets'
+import {
+  saveSheetBuffer,
+  removeSheetFile,
+  removeCategoryDir,
+  generateSheetId,
+  fetchImageBuffer,
+  hideGridWindow,
+} from '../cheat-sheets'
 
 const ALLOWED_EXTS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif'])
 
@@ -45,4 +52,6 @@ export function register(): void {
   ipcMain.handle('cheat-sheet:remove-category', (_event, categoryId: string): void => {
     removeCategoryDir(categoryId)
   })
+
+  ipcMain.on('cheat-sheet:close', () => hideGridWindow())
 }

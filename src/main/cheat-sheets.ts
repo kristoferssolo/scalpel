@@ -1,7 +1,8 @@
-import { app } from 'electron'
+import { app, BrowserWindow, globalShortcut } from 'electron'
 import { existsSync, mkdirSync, writeFileSync, unlinkSync, rmSync } from 'fs'
 import { join } from 'path'
 import { randomBytes } from 'crypto'
+import type { AppSettings } from '../shared/types'
 
 function rootDir(): string {
   return join(app.getPath('userData'), 'cheat-sheets')
@@ -69,4 +70,95 @@ export async function fetchImageBuffer(url: string): Promise<{ buffer: Buffer; e
   const arr = await res.arrayBuffer()
   if (arr.byteLength > MAX_IMAGE_BYTES) throw new Error('Image exceeds 10MB')
   return { buffer: Buffer.from(arr), ext }
+}
+
+// ---- Grid window lifecycle --------------------------------------------------
+
+let gridWin: BrowserWindow | null = null
+let lastBounds: { x: number; y: number; width: number; height: number } | null = null
+
+export function setLastBounds(bounds: { x: number; y: number; width: number; height: number } | undefined): void {
+  if (bounds) lastBounds = bounds
+}
+
+let boundsListener: ((b: { x: number; y: number; width: number; height: number }) => void) | null = null
+
+export function onBoundsChanged(cb: (b: { x: number; y: number; width: number; height: number }) => void): void {
+  boundsListener = cb
+}
+
+function persistBounds(): void {
+  if (!gridWin || gridWin.isDestroyed()) return
+  const b = gridWin.getBounds()
+  lastBounds = b
+  boundsListener?.(b)
+}
+
+export function showGridWindow(focusCategoryId?: string): void {
+  if (gridWin && !gridWin.isDestroyed()) {
+    if (gridWin.isVisible()) {
+      gridWin.hide()
+    } else {
+      gridWin.show()
+      gridWin.webContents.send('cheat-sheet:focus-category', focusCategoryId)
+    }
+    return
+  }
+  gridWin = new BrowserWindow({
+    width: lastBounds?.width ?? 400,
+    height: lastBounds?.height ?? 300,
+    x: lastBounds?.x,
+    y: lastBounds?.y,
+    frame: false,
+    transparent: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  })
+  if (process.env['ELECTRON_RENDERER_URL']) {
+    void gridWin.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/cheat-sheets-grid.html`)
+  } else {
+    void gridWin.loadFile(join(__dirname, '../renderer/cheat-sheets-grid.html'))
+  }
+  // Send the focus category once the window is ready (loadURL is async).
+  gridWin.webContents.once('did-finish-load', () => {
+    gridWin?.webContents.send('cheat-sheet:focus-category', focusCategoryId)
+  })
+  gridWin.on('close', (e) => {
+    e.preventDefault()
+    gridWin?.hide()
+  })
+  gridWin.on('moved', () => persistBounds())
+  gridWin.on('resized', () => persistBounds())
+}
+
+export function hideGridWindow(): void {
+  gridWin?.hide()
+}
+
+// ---- Hotkey registration ---------------------------------------------------
+
+let registered: string[] = []
+
+export function setCheatSheetHotkeys(cs: AppSettings['cheatSheets']): void {
+  for (const acc of registered) globalShortcut.unregister(acc)
+  registered = []
+  if (!cs) return
+  if (cs.globalHotkey) {
+    if (globalShortcut.register(cs.globalHotkey, () => showGridWindow())) {
+      registered.push(cs.globalHotkey)
+    }
+  }
+  for (const cat of cs.categories) {
+    if (cat.hotkey) {
+      const id = cat.id
+      if (globalShortcut.register(cat.hotkey, () => showGridWindow(id))) {
+        registered.push(cat.hotkey)
+      }
+    }
+  }
 }
