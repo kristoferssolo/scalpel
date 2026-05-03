@@ -52,6 +52,7 @@ import * as editingHandlers from './handlers/editing'
 import * as versionsHandlers from './handlers/versions'
 import * as onlineSyncHandlers from './handlers/online-sync'
 import * as pricesHandlers from './handlers/prices'
+import { register as registerCheatSheets } from './handlers/cheat-sheets'
 import type { AppSettings } from '../shared/types'
 
 // ---- Elevation detection ---------------------------------------------------
@@ -158,6 +159,7 @@ editingHandlers.register(store)
 versionsHandlers.register(store)
 onlineSyncHandlers.register(store)
 pricesHandlers.register(store)
+registerCheatSheets()
 
 ipcMain.on('close-overlay', () => hideOverlay())
 ipcMain.on('open-devtools', (event) => {

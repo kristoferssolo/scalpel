@@ -164,6 +164,16 @@ export const api = {
   reorderRegexPresets: (ids: string[]): Promise<import('../shared/types').RegexPreset[]> =>
     ipcRenderer.invoke('reorder-regex-presets', ids),
 
+  // Cheat sheets
+  addCheatSheetFromFile: (categoryId: string): Promise<Array<{ id: string; ext: string }>> =>
+    ipcRenderer.invoke('cheat-sheet:add-from-file', categoryId),
+  addCheatSheetFromUrl: (categoryId: string, url: string): Promise<{ id: string; ext: string }> =>
+    ipcRenderer.invoke('cheat-sheet:add-from-url', categoryId, url),
+  removeCheatSheet: (categoryId: string, sheetId: string, ext: string): Promise<void> =>
+    ipcRenderer.invoke('cheat-sheet:remove', categoryId, sheetId, ext),
+  removeCheatSheetCategory: (categoryId: string): Promise<void> =>
+    ipcRenderer.invoke('cheat-sheet:remove-category', categoryId),
+
   // Event subscriptions
   onOverlayData: (cb: (data: OverlayData) => void): (() => void) => {
     const handler = (_: Electron.IpcRendererEvent, data: OverlayData): void => cb(data)
