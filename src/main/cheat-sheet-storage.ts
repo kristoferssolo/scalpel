@@ -95,20 +95,39 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB
 export async function fetchImageBuffer(url: string): Promise<{ buffer: Buffer; ext: string }> {
   if (url.startsWith('data:')) {
     const m = url.match(/^data:([^;]+);base64,(.+)$/)
-    if (!m) throw new Error('Invalid data URL')
+    if (!m) throw new Error("That isn't a valid image URL")
     const mime = m[1].toLowerCase()
     const ext = ALLOWED_EXT_BY_MIME[mime]
-    if (!ext) throw new Error(`URL is not an image (mime: ${mime})`)
+    if (!ext) throw new Error("That isn't an image, silly")
     const buffer = Buffer.from(m[2], 'base64')
-    if (buffer.byteLength > MAX_IMAGE_BYTES) throw new Error('Image exceeds 10MB')
+    if (buffer.byteLength > MAX_IMAGE_BYTES) throw new Error('That image is too big (10MB max)')
     return { buffer, ext }
   }
-  const res = await fetch(url, { headers: { 'User-Agent': 'Scalpel-CheatSheet' } })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  // Validate up front so the unfriendly fetch error ("Failed to parse URL
+  // from ...") doesn't leak. Catches missing scheme ("google.com"), pasted
+  // random text, etc. Rejects anything that isn't http(s).
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    throw new Error("That isn't a valid URL")
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error("That isn't a valid URL")
+  }
+  let res: Response
+  try {
+    res = await fetch(url, { headers: { 'User-Agent': 'Scalpel-CheatSheet' } })
+  } catch {
+    // Network error, DNS failure, refused connection, etc.
+    throw new Error("Couldn't reach that URL")
+  }
+  if (!res.ok)
+    throw new Error(res.status === 404 ? "Couldn't find that image (404)" : `Server error (HTTP ${res.status})`)
   const mime = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
   const ext = ALLOWED_EXT_BY_MIME[mime]
-  if (!ext) throw new Error(`URL is not an image (mime: ${mime || 'unknown'})`)
+  if (!ext) throw new Error("That isn't an image, silly")
   const arr = await res.arrayBuffer()
-  if (arr.byteLength > MAX_IMAGE_BYTES) throw new Error('Image exceeds 10MB')
+  if (arr.byteLength > MAX_IMAGE_BYTES) throw new Error('That image is too big (10MB max)')
   return { buffer: Buffer.from(arr), ext }
 }

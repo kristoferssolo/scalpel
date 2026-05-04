@@ -14,6 +14,7 @@ interface CategoryCardProps {
   category: CheatSheetCategory
   index: number
   tryHotkey: (hotkey: string, slot: HotkeySlot) => boolean
+  onError: (message: string, tone?: 'error' | 'warn') => void
   onUpdate: (next: CheatSheetCategory) => void
   onRemove: () => void
 }
@@ -24,7 +25,14 @@ interface CategoryCardProps {
  *  handle on the left is the only piece that initiates a card-reorder drag;
  *  text selection in the input and clicks on every interactive child work
  *  normally. */
-export function CategoryCard({ category, index, tryHotkey, onUpdate, onRemove }: CategoryCardProps): JSX.Element {
+export function CategoryCard({
+  category,
+  index,
+  tryHotkey,
+  onError,
+  onUpdate,
+  onRemove,
+}: CategoryCardProps): JSX.Element {
   const [confirming, setConfirming] = useState(false)
   const [showHotkey, setShowHotkey] = useState(category.hotkey !== '')
   const [urlInput, setUrlInput] = useState<string | null>(null)
@@ -58,8 +66,11 @@ export function CategoryCard({ category, index, tryHotkey, onUpdate, onRemove }:
       onUpdate({ ...category, sheets: [{ id: added.id, ext: added.ext }, ...category.sheets] })
       setUrlInput(null)
     } catch (e) {
-      const err = e instanceof Error ? e.message : String(e)
-      setUrlInput(`error: ${err}`)
+      // Strip Electron's IPC rejection wrapper ("Error invoking remote
+      // method 'foo': Error: <our message>") so the user sees just our
+      // friendly copy in the banner.
+      const raw = e instanceof Error ? e.message : String(e)
+      onError(raw.replace(/^Error invoking remote method '[^']+': Error: /, ''))
     }
   }
 

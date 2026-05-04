@@ -68,6 +68,6 @@ describe('fetchImageBuffer', () => {
 
   it('rejects non-image data URLs', async () => {
     const { fetchImageBuffer } = await import('./cheat-sheet-storage')
-    await expect(fetchImageBuffer('data:text/plain;base64,YWJj')).rejects.toThrow(/not an image/i)
+    await expect(fetchImageBuffer('data:text/plain;base64,YWJj')).rejects.toThrow(/isn't an image/i)
   })
 })

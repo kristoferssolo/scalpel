@@ -10,9 +10,13 @@ interface Props {
   settings: AppSettings
   update: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void
   tryHotkey: (hotkey: string, slot: HotkeySlot) => boolean
+  /** Shows a banner error message via the parent SettingsPanel. Called for
+   *  URL-paste failures and other transient operations the user should know
+   *  about but that shouldn't block the form. */
+  onError: (message: string, tone?: 'error' | 'warn') => void
 }
 
-export function CheatSheetsTab({ settings, update, tryHotkey }: Props): JSX.Element {
+export function CheatSheetsTab({ settings, update, tryHotkey, onError }: Props): JSX.Element {
   const cheatSheets = settings.cheatSheets ?? { globalHotkey: '', categories: [] }
   const setCategories = (categories: CheatSheetCategory[]): void => {
     update('cheatSheets', { ...cheatSheets, categories })
@@ -69,6 +73,7 @@ export function CheatSheetsTab({ settings, update, tryHotkey }: Props): JSX.Elem
                   category={cat}
                   index={i}
                   tryHotkey={tryHotkey}
+                  onError={onError}
                   onUpdate={(next) => {
                     const arr = [...cheatSheets.categories]
                     arr[i] = next
