@@ -851,7 +851,7 @@ export async function searchTrade(
               name: string
               tier: string
               level: number
-              magnitudes: Array<{ hash: string; min: string; max: string }>
+              magnitudes: Array<{ hash: string; min: string; max: string }> | null
             }>
           >
           hashes?: Record<string, Array<[string, number[]]>>
@@ -995,7 +995,11 @@ export async function searchTrade(
                         ? suffixMult
                         : 1
                     : 1
-                  const ranges = m.magnitudes
+                  // The trade API can return magnitudes: null for mods with no
+                  // numeric ranges (Inscribed Ultimatum challenges, certain
+                  // unique fixed mods, etc). The TS type promises an array but
+                  // runtime disagrees - guard so we don't NPE.
+                  const ranges = (m.magnitudes ?? [])
                     .map((mag) => {
                       const min = Math.trunc(parseFloat(mag.min) * mult)
                       const max = Math.trunc(parseFloat(mag.max) * mult)
