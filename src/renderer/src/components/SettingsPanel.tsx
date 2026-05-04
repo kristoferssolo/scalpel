@@ -26,6 +26,10 @@ interface Props {
   currentItem?: PoeItem
   /** Optional callback to show a short banner at the top of the overlay */
   onError?: (message: string, tone?: 'error' | 'warn') => void
+  /** External request to focus a specific tab (e.g. cheat-sheet overlay's
+   *  "Open Sheet Settings" button). The counter bumps on each request so a
+   *  re-request to the same tab still re-applies. */
+  tabRequest?: { tab: string; n: number } | null
 }
 
 /** Hotkeys PoE itself uses - warn (don't block) when the user binds one of these. */
@@ -54,16 +58,24 @@ export function SettingsPanel({
   onShowOnboarding,
   currentItem,
   onError,
+  tabRequest,
 }: Props): JSX.Element {
-  const [tab, setTab] = useState<TabKey>('general')
+  // Use the initial tab request as the seed if present, so the first-mount
+  // case (panel created in response to "Open Sheet Settings") lands on the
+  // right tab without waiting for an effect.
+  const [tab, setTab] = useState<TabKey>(() => {
+    const t = tabRequest?.tab
+    return t && (TAB_KEYS as readonly string[]).includes(t) ? (t as TabKey) : 'general'
+  })
   const [localError, setLocalError] = useState<string | null>(null)
   const [localErrorTone, setLocalErrorTone] = useState<'error' | 'warn'>('error')
 
+  // Reapply the tab whenever a *new* request arrives (counter bumped). Skips
+  // the initial mount since useState above already consumed the seed.
   useEffect(() => {
-    return window.api.onFocusSettingsTab((t) => {
-      if ((TAB_KEYS as readonly string[]).includes(t)) setTab(t as TabKey)
-    })
-  }, [])
+    if (!tabRequest) return
+    if ((TAB_KEYS as readonly string[]).includes(tabRequest.tab)) setTab(tabRequest.tab as TabKey)
+  }, [tabRequest?.n])
 
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]): void => {
     window.api.setSetting(key, value)

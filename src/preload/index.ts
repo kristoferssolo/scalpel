@@ -179,11 +179,6 @@ export const api = {
     ipcRenderer.invoke('cheat-sheet:import-prefab', slug),
   closeCheatSheets: (): void => ipcRenderer.send('cheat-sheet:close'),
   openSettingsTab: (tab: string): void => ipcRenderer.send('open-settings-tab', tab),
-  onFocusSettingsTab: (cb: (tab: string) => void): (() => void) => {
-    const handler = (_: Electron.IpcRendererEvent, tab: string): void => cb(tab)
-    ipcRenderer.on('focus-settings-tab', handler)
-    return () => ipcRenderer.removeListener('focus-settings-tab', handler)
-  },
   showCheatSheetPreview: (src: string): void => ipcRenderer.send('cheat-sheet-preview:show', src),
   hideCheatSheetPreview: (): void => ipcRenderer.send('cheat-sheet-preview:hide'),
   onCheatSheetFocusCategory: (cb: (categoryId: string | undefined) => void): (() => void) => {
@@ -244,8 +239,8 @@ export const api = {
     ipcRenderer.on('open-settings', handler)
     return () => ipcRenderer.removeListener('open-settings', handler)
   },
-  onOpenView: (cb: (view: string) => void): (() => void) => {
-    const handler = (_: Electron.IpcRendererEvent, view: string): void => cb(view)
+  onOpenView: (cb: (view: string, tab?: string) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, view: string, tab?: string): void => cb(view, tab)
     ipcRenderer.on('open-view', handler)
     return () => ipcRenderer.removeListener('open-view', handler)
   },

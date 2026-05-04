@@ -1,11 +1,24 @@
-import { BrowserWindow, screen } from 'electron'
+import { BrowserWindow } from 'electron'
 import { OverlayController } from 'electron-overlay-window'
 import { uIOhook } from 'uiohook-napi'
 import { createOverlayWindow } from './window'
-import { prewarmSnapCanvas, setSnapGhost, getSnapCanvasWindow, type Rect } from './snap-canvas'
+import { prewarmSnapCanvas, setSnapGhost, type Rect } from './snap-canvas'
+import { isAnyScalpelWindowFocused } from './focus'
+import { fireOnLeaveScalpel, overlays, type OverlayState } from './state'
 
+// Public re-exports - this module is the public face of the windowing system.
 export type { Rect }
-export { setSnapGhost, sendCanvasIpc, moveCanvasTop, prewarmSnapCanvas } from './snap-canvas'
+export { sendCanvasIpc, moveCanvasTop, prewarmSnapCanvas, setSnapGhost } from './snap-canvas'
+export {
+  aroundNativeDialog,
+  hideAllOnPoeBlur,
+  hideFocusedOrAnyVisibleSecondaryOverlay,
+  isAnyScalpelWindowFocused,
+  isInsideAnySecondaryOverlay,
+  isSecondaryOverlayWindow,
+  restoreAllOnPoeFocus,
+} from './focus'
+export { setMainOverlayGetter, setOnLeaveScalpel } from './state'
 
 interface DefaultBoundsCtx {
   /** PoE's window bounds when known, else null (no game running). The bounds
@@ -31,8 +44,10 @@ export interface OverlaySpec {
   /** Optional: fired whenever the user moves or resizes the window. Persist
    *  here. */
   onBoundsChanged?: (bounds: Rect) => void
-  /** Optional: fired right after the renderer's first paint. Use for ad-hoc
-   *  setup that needs the window to exist (e.g. send an initial IPC). */
+  /** Fired once after did-finish-load + the very first show. The earliest
+   *  safe point to deliver IPCs whose payload was known at registration time
+   *  but couldn't be sent during window creation (renderer wasn't mounted
+   *  yet, so webContents.send would silently drop them). */
   onFirstShow?: (win: BrowserWindow) => void
 }
 
@@ -48,22 +63,6 @@ export interface SecondaryOverlay {
   getWindow(): BrowserWindow | null
 }
 
-interface OverlayState {
-  spec: OverlaySpec
-  win: BrowserWindow | null
-  // Snap ghost coordination
-  snapGhostActive: boolean
-  inProgrammaticMove: boolean
-  // True between will-resize and resized. Resizing the window from the top
-  // or left edges shifts the origin, firing 'move' events that would
-  // otherwise look like a drag and trigger the snap ghost.
-  isResizing: boolean
-  // Alt-tab restore memory (PoE blur hides the window if visible; PoE focus
-  // restores it from this flag).
-  wasVisibleBeforeFocusLoss: boolean
-}
-
-const overlays = new Map<string, OverlayState>()
 const SNAP_RANGE = 80
 
 // Track left-mouse-button state globally so we only show the snap ghost when
@@ -99,12 +98,6 @@ export function registerSecondaryOverlay(spec: OverlaySpec): SecondaryOverlay {
   return makeOverlayApi(state)
 }
 
-export function getSecondaryOverlay(id: string): SecondaryOverlay | undefined {
-  const state = overlays.get(id)
-  if (!state) return undefined
-  return makeOverlayApi(state)
-}
-
 function makeOverlayApi(state: OverlayState): SecondaryOverlay {
   return {
     show: () => showState(state),
@@ -122,160 +115,6 @@ function makeOverlayApi(state: OverlayState): SecondaryOverlay {
     },
     getWindow: () => (state.win && !state.win.isDestroyed() ? state.win : null),
   }
-}
-
-/** Hide every visible secondary overlay when PoE blurs AND focus has actually
- *  left Scalpel. Records visibility on each so restoreAllOnPoeFocus can bring
- *  them back. Called from the PoE focus-blur handler in main/index.ts. */
-export function hideAllOnPoeBlur(): void {
-  // Focus going from PoE to one of our windows is not "leaving the app".
-  // Bail before recording wasVisibleBeforeFocusLoss so a later refocus
-  // doesn't decide to "restore" something we never hid.
-  if (isAnyScalpelWindowFocused()) return
-  for (const state of overlays.values()) {
-    if (!state.win || state.win.isDestroyed()) continue
-    state.wasVisibleBeforeFocusLoss = state.win.isVisible()
-    if (state.wasVisibleBeforeFocusLoss) state.win.hide()
-  }
-  setSnapGhost(null)
-}
-
-/** True if `win` is a registered secondary-overlay window. */
-export function isSecondaryOverlayWindow(win: BrowserWindow): boolean {
-  for (const state of overlays.values()) {
-    if (state.win === win) return true
-  }
-  return false
-}
-
-// The main overlay window lives in overlay.ts. We need to know about it so
-// "is any Scalpel window focused" can include it - injected at boot to avoid
-// a circular import. Callers tolerate it being null until wired.
-let mainOverlayGetter: () => BrowserWindow | null = () => null
-
-export function setMainOverlayGetter(get: () => BrowserWindow | null): void {
-  mainOverlayGetter = get
-}
-
-// Fired when our secondary-overlay blur handler detects focus has left every
-// Scalpel surface (i.e. the user alt-tabbed away while interacting with a
-// secondary overlay). main/index.ts wires this to suspendHotkeys so global
-// hotkeys don't keep firing in the user's browser. The PoE-blur path already
-// suspends in the more common "user alt-tabbed straight from PoE" case; this
-// hook covers the PoE -> overlay -> other-app path that PoE-blur misses
-// (because PoE was already blurred when focus moved into the overlay).
-let onLeaveScalpelCb: (() => void) | null = null
-
-export function setOnLeaveScalpel(cb: (() => void) | null): void {
-  onLeaveScalpelCb = cb
-}
-
-// True while a native OS dialog (file picker, etc.) is open. The dialog
-// isn't a BrowserWindow and steals focus, which would otherwise trip the
-// blur-handlers and hide whichever overlay the user opened it from. Treat
-// it as "still in Scalpel" - a dialog is part of the same logical task.
-let nativeDialogOpen = false
-
-/** Run an async block while marking a native dialog as open. While open, the
- *  isAnyScalpelWindowFocused predicate returns true so PoE-blur and Scalpel-
- *  window-blur handlers don't hide overlays mid-dialog. Also temporarily
- *  demotes every Scalpel window's alwaysOnTop level so the dialog can render
- *  above us - a screen-saver-level window otherwise occludes the file picker. */
-export async function aroundNativeDialog<T>(fn: () => Promise<T>): Promise<T> {
-  nativeDialogOpen = true
-  const demoted = collectScalpelWindows().filter((w) => w.isAlwaysOnTop())
-  for (const w of demoted) w.setAlwaysOnTop(false)
-  try {
-    return await fn()
-  } finally {
-    for (const w of demoted) {
-      if (w.isDestroyed()) continue
-      w.setAlwaysOnTop(true, 'screen-saver')
-      // setAlwaysOnTop sets the topmost *flag* but doesn't actively raise an
-      // already-buried window, so if the user clicked into PoE during the
-      // dialog the overlay would stay behind PoE even after restore. moveTop
-      // forces it to the front of the Z-order.
-      w.moveTop()
-    }
-    nativeDialogOpen = false
-  }
-}
-
-function collectScalpelWindows(): BrowserWindow[] {
-  const result: BrowserWindow[] = []
-  const main = mainOverlayGetter()
-  if (main && !main.isDestroyed()) result.push(main)
-  for (const state of overlays.values()) {
-    if (state.win && !state.win.isDestroyed()) result.push(state.win)
-  }
-  const canvas = getSnapCanvasWindow()
-  if (canvas) result.push(canvas)
-  return result
-}
-
-/** True iff focus is currently on any Scalpel-owned window: the main overlay
- *  or any registered secondary overlay. The single source of truth for "did
- *  the user actually leave the app?" - every blur/hide decision should defer
- *  to this so clicking from one Scalpel window to another doesn't trigger
- *  cross-overlay hides. */
-export function isAnyScalpelWindowFocused(): boolean {
-  if (nativeDialogOpen) return true
-  const focused = BrowserWindow.getFocusedWindow()
-  if (!focused || focused.isDestroyed()) return false
-  if (focused === mainOverlayGetter()) return true
-  return isSecondaryOverlayWindow(focused)
-}
-
-/** True if the screen point lies inside any visible secondary overlay window.
- *  Used by the main overlay's click-outside check so clicks on a Scalpel
- *  secondary window (cheat sheets etc.) don't get treated as "outside" and
- *  hide the main overlay.
- *
- *  Coordinates are in physical screen pixels (uIOhook reports them that way).
- *  BrowserWindow.getBounds() returns DIPs, so we have to scale before
- *  comparing - otherwise the check silently misfires on >100% DPI displays. */
-export function isInsideAnySecondaryOverlay(physX: number, physY: number): boolean {
-  for (const state of overlays.values()) {
-    if (!state.win || state.win.isDestroyed() || !state.win.isVisible()) continue
-    const b = state.win.getBounds()
-    const sf = screen.getDisplayNearestPoint({ x: b.x, y: b.y }).scaleFactor
-    const left = b.x * sf
-    const top = b.y * sf
-    const right = left + b.width * sf
-    const bottom = top + b.height * sf
-    if (physX >= left && physX < right && physY >= top && physY < bottom) return true
-  }
-  return false
-}
-
-/** Re-show overlays that were visible when PoE last blurred. */
-export function restoreAllOnPoeFocus(): void {
-  for (const state of overlays.values()) {
-    if (!state.wasVisibleBeforeFocusLoss) continue
-    if (!state.win || state.win.isDestroyed()) continue
-    state.win.show()
-  }
-}
-
-/** Esc handling: hide the focused overlay if any, else any visible overlay.
- *  Returns true if an overlay was hidden so the caller can short-circuit (we
- *  don't want Esc to also dismiss the main overlay when a secondary was up).
- *  Called from the kernel-level Esc handler in hotkeys.ts. */
-export function hideFocusedOrAnyVisibleSecondaryOverlay(): boolean {
-  const focused = BrowserWindow.getFocusedWindow()
-  for (const state of overlays.values()) {
-    if (state.win && state.win === focused && state.win.isVisible()) {
-      hideState(state)
-      return true
-    }
-  }
-  for (const state of overlays.values()) {
-    if (state.win && !state.win.isDestroyed() && state.win.isVisible()) {
-      hideState(state)
-      return true
-    }
-  }
-  return false
 }
 
 // ---- Internal state operations ---------------------------------------------
@@ -328,20 +167,25 @@ function wireWindowEvents(state: OverlayState, win: BrowserWindow): void {
     maybeUpdateSnap(state)
   })
   win.on('moved', () => {
-    persistBounds(state)
     if (state.inProgrammaticMove) return
     if (state.snapGhostActive) {
+      // Snap will commit: skip persisting the user's pre-snap drop position
+      // and persist the snapped position once after setBounds. The synthetic
+      // 'moved' Windows fires from setBounds-inside-a-moved-handler doesn't
+      // reliably arrive on Windows, so we have to persist explicitly.
       state.snapGhostActive = false
       setSnapGhost(null)
       state.inProgrammaticMove = true
       const cur = win.getBounds()
       const target = state.spec.defaultBounds({ poeBounds: getPoeBounds(), width: cur.width, height: cur.height })
       win.setBounds(target)
+      persistBounds(state)
       // Pad past the synthetic move/moved volley so distance=0 doesn't re-arm.
       setTimeout(() => {
         state.inProgrammaticMove = false
       }, 200)
     } else {
+      persistBounds(state)
       setSnapGhost(null)
     }
   })
@@ -368,7 +212,7 @@ function wireWindowEvents(state: OverlayState, win: BrowserWindow): void {
       // fire here because PoE was already blurred when focus moved into this
       // overlay; without this hook, hotkeys would stay armed in the
       // destination app.
-      onLeaveScalpelCb?.()
+      fireOnLeaveScalpel()
     })
   })
 }

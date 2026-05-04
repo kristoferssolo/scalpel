@@ -52,6 +52,15 @@ const EXTERNAL_LINK_PENDING_TTL_MS = 5000
 
 export default function App(): JSX.Element {
   const [view, setView] = useState<View>('idle')
+  // External requests to focus a specific settings tab (e.g. cheat-sheets
+  // overlay's "Open Sheet Settings" button). Counter bumps each time so
+  // SettingsPanel can detect re-requests for the same tab. Cleared whenever
+  // the user leaves settings so a later gear-icon open doesn't inherit a
+  // stale request from a previous cheat-sheet-driven open.
+  const [settingsTabRequest, setSettingsTabRequest] = useState<{ tab: string; n: number } | null>(null)
+  useEffect(() => {
+    if (view !== 'setup') setSettingsTabRequest(null)
+  }, [view])
   const [closing, setClosing] = useState(false)
   const showCountRef = useRef(0)
   const wasHiddenRef = useRef(true)
@@ -292,7 +301,7 @@ export default function App(): JSX.Element {
         }, 150)
       }),
       window.api.onOpenSettings(() => setView('setup')),
-      window.api.onOpenView((v) => {
+      window.api.onOpenView((v, tab) => {
         if (v === 'audit') {
           auditPending.current = true
         } else {
@@ -304,6 +313,10 @@ export default function App(): JSX.Element {
           if (v === 'divcards' && !active.divCards) return
           if (v === 'regex' && !active.regexTool) return
           setView(v as View)
+          // Optional second arg: the settings sub-tab to focus. Bump a
+          // counter alongside so re-opens to the same tab still re-trigger
+          // the switch in SettingsPanel.
+          if (v === 'setup' && tab) setSettingsTabRequest((prev) => ({ tab, n: (prev?.n ?? 0) + 1 }))
         }
       }),
       window.api.onGameBounds((bounds) => setGameBounds(bounds)),
@@ -799,6 +812,7 @@ export default function App(): JSX.Element {
                   onDone={() => setView('idle')}
                   currentItem={overlayData?.item}
                   onError={showSettingsError}
+                  tabRequest={settingsTabRequest}
                   onOnlineFilterUpdated={(name) =>
                     setUpdatedOnlineFilters((prev) => {
                       const next = new Set(prev)

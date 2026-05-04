@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import type { CheatSheetsSettings, CheatSheetCategory } from '../../../shared/types'
-import { Notice } from '../overlay/Notice'
 import { Chrome } from '../secondary-overlay/Chrome'
 
 export function App(): JSX.Element {
@@ -31,10 +30,10 @@ export function App(): JSX.Element {
   if (settings.categories.length === 0) {
     return (
       <Chrome onClose={onClose}>
-        <div className="flex-1 flex flex-col items-center justify-center gap-2">
-          <Notice icon="📋" title="No cheat sheets yet" body="Add some in Settings to start using this overlay." />
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 px-4 text-center">
+          <span className="text-[11px] text-text-dim">You didn&apos;t add any cheat sheets. Add some in Settings</span>
           <button onClick={() => window.api.openSettingsTab('cheatsheets')} className="text-[11px] px-3 py-1.5">
-            Open Settings
+            Open Sheet Settings
           </button>
         </div>
       </Chrome>

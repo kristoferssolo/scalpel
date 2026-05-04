@@ -12,7 +12,7 @@ import {
   showPreview,
   hidePreview,
 } from '../cheat-sheets'
-import { getOverlayWindow } from '../overlay'
+import { getOverlayWindow, showOverlay } from '../overlay'
 import { aroundNativeDialog } from '../windowing'
 import { PREFAB_PACKS } from '../../shared/data/cheat-sheet-prefabs'
 import { CHEAT_SHEET_PREFAB_BASE_URL } from '../../shared/endpoints'
@@ -102,9 +102,14 @@ export function register(): void {
   ipcMain.on('open-settings-tab', (_e, tab: string) => {
     const overlay = getOverlayWindow()
     if (!overlay || overlay.isDestroyed()) return
-    overlay.show()
-    overlay.webContents.send('open-view', 'setup')
-    overlay.webContents.send('focus-settings-tab', tab)
+    // Use showOverlay (not overlay.show()) so overlayVisible flips true and
+    // the uIOhook mouse-tracking starts hit-testing panel rects - otherwise
+    // the overlay shows but stays click-through. Send the tab IPC together
+    // with open-view so App.tsx can route it before SettingsPanel mounts
+    // (the panel's own focus-settings-tab listener wouldn't be registered
+    // yet on first open).
+    showOverlay()
+    overlay.webContents.send('open-view', 'setup', tab)
   })
 
   ipcMain.on('cheat-sheet-preview:show', (_e, src: string) => showPreview(src))
