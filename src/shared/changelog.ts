@@ -1,5 +1,15 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.7-rc7',
+    notes: [
+      'Added cheat sheets: hotkey-toggled overlay showing reference images organized into categories.',
+      'Added starter packs for cheat sheets (Just PoE1 leagues to start)',
+      'Added "Open in poe.ninja" buttons',
+      'Fixed poe.ninja prices to show the linked uniques and leveled/quality gems values',
+      'Fixed Inscribed Ultimatums failing to price check',
+    ],
+  },
+  {
     version: '0.9.7-rc6',
     notes: [
       'Added private league support in settings',
