@@ -58,3 +58,9 @@ export const GITHUB_RELEASES_PAGE = 'https://github.com/scalpelpoe/scalpel/relea
  *  Settings -> Sheets. */
 export const CHEAT_SHEET_PREFAB_BASE_URL =
   'https://raw.githubusercontent.com/scalpelpoe/scalpel/main/cheat-sheet-prefabs/'
+
+/** "Powered by..." attribution links shown under the regex output bar. The
+ *  underlying mod / regex data ships from these projects; we point users at the
+ *  source so they can compare against the upstream tools and contribute upstream. */
+export const POE_RE_URL = 'https://poe.re'
+export const POE2_RE_URL = 'https://poe2.re'

@@ -9,8 +9,9 @@ interface SavedPresetsProps {
    *  the active generator tab; reorder writes back to the full list. */
   presets: RegexPreset[]
   setPresets: (presets: RegexPreset[]) => void
-  /** Active generator tab. Presets with no generator are treated as 'maps'. */
-  generator: 'maps' | 'custom' | 'flasks'
+  /** Active generator tab. Presets with no generator are treated as 'maps'
+   *  (legacy default before the per-game split). */
+  generator: 'maps' | 'custom' | 'flasks' | 'waystones'
   loadPreset: (preset: RegexPreset) => void
   deletePreset: (id: string) => void
 }

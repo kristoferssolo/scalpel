@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import type { RegexPreset } from '../../../../shared/types'
-import { loadStorage } from './mapmods-helpers'
+import { loadStorage, useRegexKey } from './mapmods-helpers'
 import type { GeneratorHandle, GeneratorProps } from './generator-types'
 
 /** "Custom" regex generator: a free-form textarea. No auto-tags, no qualifier logic,
@@ -9,12 +9,13 @@ export const CustomGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
   { onRegexChange, onAutoTagsChange, sharedSaveChip, sharedLoadChip, sharedSavePanel, sharedSavedPresets },
   ref,
 ) {
-  const [value, setValue] = useState<string>(() => loadStorage('scalpel:regex:custom', '', (s) => s))
+  const key = useRegexKey()
+  const [value, setValue] = useState<string>(() => loadStorage(key('custom'), '', (s) => s))
 
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:custom', value)
+    localStorage.setItem(key('custom'), value)
     onRegexChange(value)
-  }, [value, onRegexChange])
+  }, [value, onRegexChange, key])
 
   // Custom has no auto-tags -- the user types whatever tags they want manually. Emit
   // `null` once so the container knows not to run the tag-sync effect.

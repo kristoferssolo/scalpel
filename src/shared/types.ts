@@ -389,7 +389,11 @@ export interface AppSettings {
   cheatSheetsPoe2: CheatSheetsSettings
   stashScrollEnabled: boolean
   poeVersion: 1 | 2
-  regexPresets: RegexPreset[]
+  /** Regex presets are persisted per game. Each session reads/writes the slot
+   *  matching `poeVersion` -- the relaunch-on-switch flow guarantees the active
+   *  version is stable for the lifetime of the process. */
+  regexPresetsPoe1: RegexPreset[]
+  regexPresetsPoe2: RegexPreset[]
   /** Title-bar tab keys the user has hidden. Toggleable from View settings.
    *  'settings' and 'close' are never hidden. */
   hiddenTabs?: HideableTabKey[]

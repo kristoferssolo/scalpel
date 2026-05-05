@@ -3,8 +3,9 @@ import { ReactSortable } from 'react-sortablejs'
 import { CloseSmall, Save } from '@icon-park/react'
 import { DismissibleTip } from '../../shared/DismissibleTip'
 import { POE_REGEX_MAX_LENGTH } from './regex-engine'
-import { TagSourceIcon, loadStorage, tagChipStyle } from './mapmods-helpers'
+import { TagSourceIcon, loadStorage, tagChipStyle, useRegexKey, ensureLegacyRegexKeysMigrated } from './mapmods-helpers'
 import poereIconTight from '../../assets/other/poere-logo-tight.svg'
+import { POE_RE_URL, POE2_RE_URL } from '../../../../shared/endpoints'
 import { FilterChip } from '../price-check/FilterChip'
 import { ErrorBanner } from '../ErrorBanner'
 import { SavedPresets } from './SavedPresets'
@@ -13,45 +14,56 @@ import { CUSTOM_TAG_COLOR } from './preset-tags'
 import { MapsGenerator } from './MapsGenerator'
 import { CustomGenerator } from './CustomGenerator'
 import { FlaskGenerator } from './FlaskGenerator'
+import { WaystonesGenerator } from './WaystonesGenerator'
+import { usePoeVersion } from '../../shared/poe-version-context'
 import type { GeneratorConfig, GeneratorHandle } from './generator-types'
 import type { RegexPreset, RegexPresetTag } from '../../../../shared/types'
 
 /** Registered regex generators. Adding a new one (e.g. vendor regex) is:
  *    1. Create a component matching the `GeneratorHandle` / `GeneratorProps` shape
- *    2. Add an entry here with its key + label
+ *    2. Add an entry to the per-version list it should appear in
  *    3. Add a case in the component-switch below (see `renderActiveGenerator`)
- *  The registry drives the tab strip, localStorage key, and preset scoping. */
-const GENERATORS = [
+ *  The registry drives the tab strip, localStorage key, and preset scoping.
+ *  Generator availability is per-game: PoE1 uses Maps + Flasks + Custom;
+ *  PoE2 uses Waystones + Custom (no flasks UI yet, no PoE1 maps). */
+const GENERATORS_POE1 = [
   { key: 'maps', label: 'Maps' },
   { key: 'flasks', label: 'Flasks' },
   { key: 'custom', label: 'Custom' },
 ] as const satisfies readonly GeneratorConfig[]
 
-type GeneratorKey = (typeof GENERATORS)[number]['key']
+const GENERATORS_POE2 = [
+  { key: 'waystones', label: 'Waystones' },
+  { key: 'custom', label: 'Custom' },
+] as const satisfies readonly GeneratorConfig[]
+
+type GeneratorKey = 'maps' | 'flasks' | 'waystones' | 'custom'
 
 export function RegexGenerator(): JSX.Element {
+  // Move legacy unsuffixed regex-tool keys into the poe1: namespace before any
+  // child component reads from localStorage. Idempotent + module-flagged.
+  ensureLegacyRegexKeysMigrated()
+  const key = useRegexKey()
+  const poeVersion = usePoeVersion()
+  const GENERATORS = poeVersion === 2 ? GENERATORS_POE2 : GENERATORS_POE1
+  const defaultGenerator = GENERATORS[0].key as GeneratorKey
+
   const [generator, _setGenerator] = useState<GeneratorKey>(() =>
-    loadStorage('scalpel:regex:generator', 'maps' as GeneratorKey, (s) =>
-      GENERATORS.some((g) => g.key === s) ? (s as GeneratorKey) : 'maps',
+    loadStorage(key('generator'), defaultGenerator, (s) =>
+      (GENERATORS as readonly GeneratorConfig[]).some((g) => g.key === s) ? (s as GeneratorKey) : defaultGenerator,
     ),
   )
 
   // Preset-bar tags stored per generator so switching tabs preserves in-progress saves.
   const savedTagsByGenerator = useRef<Record<string, (RegexPresetTag & { id: number })[]>>(
     (() => {
-      const byGen = loadStorage(
-        'scalpel:regex:presetTagsByGenerator',
-        {} as Record<string, (RegexPresetTag & { id: number })[]>,
-      )
-      // Migrate legacy flat-array key on first run.
+      const byGen = loadStorage(key('presetTagsByGenerator'), {} as Record<string, (RegexPresetTag & { id: number })[]>)
+      // Migrate legacy flat-array key on first run. Reuses the `generator` state
+      // (populated above on the same render) rather than re-running the same
+      // loadStorage lookup.
       if (Object.keys(byGen).length === 0) {
-        const legacy = loadStorage<(RegexPresetTag & { id: number })[]>('scalpel:regex:presetTags', [])
-        if (legacy.length > 0) {
-          const currentGen = loadStorage('scalpel:regex:generator', 'maps', (s) =>
-            GENERATORS.some((g) => g.key === s) ? (s as GeneratorKey) : 'maps',
-          )
-          byGen[currentGen] = legacy
-        }
+        const legacy = loadStorage<(RegexPresetTag & { id: number })[]>(key('presetTags'), [])
+        if (legacy.length > 0) byGen[generator] = legacy
       }
       return byGen
     })(),
@@ -61,8 +73,8 @@ export function RegexGenerator(): JSX.Element {
   )
   useEffect(() => {
     savedTagsByGenerator.current[generator] = presetTags
-    localStorage.setItem('scalpel:regex:presetTagsByGenerator', JSON.stringify(savedTagsByGenerator.current))
-  }, [presetTags, generator])
+    localStorage.setItem(key('presetTagsByGenerator'), JSON.stringify(savedTagsByGenerator.current))
+  }, [presetTags, generator, key])
 
   const [customTagInput, setCustomTagInput] = useState('')
   const [presets, setPresets] = useState<RegexPreset[]>([])
@@ -81,19 +93,32 @@ export function RegexGenerator(): JSX.Element {
   const mapsRef = useRef<GeneratorHandle>(null)
   const flasksRef = useRef<GeneratorHandle>(null)
   const customRef = useRef<GeneratorHandle>(null)
-  const activeHandleRef = generator === 'maps' ? mapsRef : generator === 'flasks' ? flasksRef : customRef
+  const waystonesRef = useRef<GeneratorHandle>(null)
+  const refForGenerator = (g: GeneratorKey): React.RefObject<GeneratorHandle> => {
+    switch (g) {
+      case 'maps':
+        return mapsRef
+      case 'flasks':
+        return flasksRef
+      case 'waystones':
+        return waystonesRef
+      case 'custom':
+        return customRef
+    }
+  }
+  const activeHandleRef = refForGenerator(generator)
 
   const setGenerator = (g: GeneratorKey): void => {
     // Stash current tags, restore target's.
     savedTagsByGenerator.current[generator] = presetTags
-    localStorage.setItem('scalpel:regex:presetTagsByGenerator', JSON.stringify(savedTagsByGenerator.current))
+    localStorage.setItem(key('presetTagsByGenerator'), JSON.stringify(savedTagsByGenerator.current))
     setPresetTags(savedTagsByGenerator.current[g] ?? [])
     setCustomTagInput('')
     setSaveOpen(false)
     // Editing context belongs to one generator; switching tabs starts fresh so a stray
     // Update doesn't overwrite a preset that lives on a different generator.
     setEditingPresetId(null)
-    localStorage.setItem('scalpel:regex:generator', g)
+    localStorage.setItem(key('generator'), g)
     _setGenerator(g)
   }
 
@@ -226,12 +251,11 @@ export function RegexGenerator(): JSX.Element {
   const loadPreset = (preset: RegexPreset): void => {
     setPresetTags((preset.tags || []).map((t, i) => ({ ...t, id: Date.now() + i })))
     setEditingPresetId(preset.id)
-    const targetGenerator = (preset.generator ?? 'maps') as GeneratorKey
+    const targetGenerator = (preset.generator ?? defaultGenerator) as GeneratorKey
     if (targetGenerator !== generator) _setGenerator(targetGenerator)
     // Let the target generator mount before hydrating via its ref.
     requestAnimationFrame(() => {
-      const ref = targetGenerator === 'maps' ? mapsRef : targetGenerator === 'flasks' ? flasksRef : customRef
-      ref.current?.applyPreset(preset)
+      refForGenerator(targetGenerator).current?.applyPreset(preset)
     })
   }
 
@@ -378,6 +402,8 @@ export function RegexGenerator(): JSX.Element {
         return <MapsGenerator ref={mapsRef} {...sharedProps} />
       case 'flasks':
         return <FlaskGenerator ref={flasksRef} {...sharedProps} />
+      case 'waystones':
+        return <WaystonesGenerator ref={waystonesRef} {...sharedProps} />
       case 'custom':
         return <CustomGenerator ref={customRef} {...sharedProps} />
     }
@@ -412,24 +438,30 @@ export function RegexGenerator(): JSX.Element {
           </div>
           <div className="flex justify-center">
             <InfoChip size="sm">
-              <a
-                href="https://poe.re"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => {
-                  e.preventDefault()
-                  window.api.openExternal('https://poe.re')
-                }}
-                className="flex items-center gap-1 no-underline"
-              >
-                <img
-                  src={poereIconTight}
-                  alt=""
-                  className="w-[14px] h-[14px]"
-                  style={{ marginTop: 1, marginLeft: -2 }}
-                />
-                <span className="text-text-dim">Powered by poe.re</span>
-              </a>
+              {(() => {
+                const url = poeVersion === 2 ? POE2_RE_URL : POE_RE_URL
+                const label = poeVersion === 2 ? 'Powered by poe2.re' : 'Powered by poe.re'
+                return (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      window.api.openExternal(url)
+                    }}
+                    className="flex items-center gap-1 no-underline"
+                  >
+                    <img
+                      src={poereIconTight}
+                      alt=""
+                      className="w-[14px] h-[14px]"
+                      style={{ marginTop: 1, marginLeft: -2 }}
+                    />
+                    <span className="text-text-dim">{label}</span>
+                  </a>
+                )
+              })()}
             </InfoChip>
           </div>
           <div className="flex justify-end">

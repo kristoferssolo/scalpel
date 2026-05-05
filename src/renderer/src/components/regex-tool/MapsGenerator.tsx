@@ -20,7 +20,7 @@ import {
   Search,
   CloseSmall,
 } from '@icon-park/react'
-import { TAB_COLORS, loadSet, loadStorage } from './mapmods-helpers'
+import { TAB_COLORS, loadSet, loadStorage, useRegexKey } from './mapmods-helpers'
 import { FilterChip } from '../price-check/FilterChip'
 import { TradeResults } from './TradeResults'
 import { MAP_TIER_ICONS, ORIGINATOR_TIER_ICONS, TierPicker } from './TierPicker'
@@ -46,38 +46,35 @@ export const MapsGenerator = forwardRef<GeneratorHandle, GeneratorProps>(functio
   ref,
 ) {
   // ---- Persisted state -----------------------------------------------------
+  const key = useRegexKey()
   const [tab, setTab] = useState<Tab>('qualifiers')
-  const [avoid, setAvoid] = useState<Set<number>>(() => loadSet('scalpel:regex:map-avoid'))
-  const [want, setWant] = useState<Set<number>>(() => loadSet('scalpel:regex:map-want'))
+  const [avoid, setAvoid] = useState<Set<number>>(() => loadSet(key('map-avoid')))
+  const [want, setWant] = useState<Set<number>>(() => loadSet(key('map-want')))
   const [wantMode, setWantMode] = useState<WantMode>(() =>
-    loadStorage('scalpel:regex:map-want-mode', 'any' as WantMode, (s) => s as WantMode),
+    loadStorage(key('map-want-mode'), 'any' as WantMode, (s) => s as WantMode),
   )
-  const [qualifiers, setQualifiers] = useState<QualifierValues>(() => loadStorage('scalpel:regex:qualifiers', {}))
-  const [optimizeNumbers, setOptimizeNumbers] = useState(() =>
-    loadStorage('scalpel:regex:optimize', true, (s) => s !== 'false'),
-  )
-  const [showNightmare, setShowNightmare] = useState(() =>
-    loadStorage('scalpel:regex:nightmare', false, (s) => s === 'true'),
-  )
+  const [qualifiers, setQualifiers] = useState<QualifierValues>(() => loadStorage(key('qualifiers'), {}))
+  const [optimizeNumbers, setOptimizeNumbers] = useState(() => loadStorage(key('optimize'), true, (s) => s !== 'false'))
+  const [showNightmare, setShowNightmare] = useState(() => loadStorage(key('nightmare'), false, (s) => s === 'true'))
 
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:map-avoid', JSON.stringify([...avoid]))
-  }, [avoid])
+    localStorage.setItem(key('map-avoid'), JSON.stringify([...avoid]))
+  }, [avoid, key])
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:map-want', JSON.stringify([...want]))
-  }, [want])
+    localStorage.setItem(key('map-want'), JSON.stringify([...want]))
+  }, [want, key])
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:map-want-mode', wantMode)
-  }, [wantMode])
+    localStorage.setItem(key('map-want-mode'), wantMode)
+  }, [wantMode, key])
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:qualifiers', JSON.stringify(qualifiers))
-  }, [qualifiers])
+    localStorage.setItem(key('qualifiers'), JSON.stringify(qualifiers))
+  }, [qualifiers, key])
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:nightmare', String(showNightmare))
-  }, [showNightmare])
+    localStorage.setItem(key('nightmare'), String(showNightmare))
+  }, [showNightmare, key])
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:optimize', String(optimizeNumbers))
-  }, [optimizeNumbers])
+    localStorage.setItem(key('optimize'), String(optimizeNumbers))
+  }, [optimizeNumbers, key])
 
   // ---- Ephemeral UI state --------------------------------------------------
   const [panel, setPanel] = useState<MapsPanel>(null)

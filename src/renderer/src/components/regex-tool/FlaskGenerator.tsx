@@ -3,7 +3,7 @@ import { Search, CloseSmall } from '@icon-park/react'
 import { FLASK_PREFIX, FLASK_SUFFIX } from '../../../../shared/data/regex/flask-mods'
 import { generateFlaskOutput, minItemLevel } from './flask-engine'
 import { getFlaskModTag, getFlaskTagColor } from './flask-preset-tags'
-import { loadSet, loadStorage } from './mapmods-helpers'
+import { loadSet, loadStorage, useRegexKey } from './mapmods-helpers'
 import { FilterChip } from '../price-check/FilterChip'
 import { ModList } from './ModList'
 import { ScrubInput } from './ScrubInput'
@@ -91,54 +91,51 @@ export const FlaskGenerator = forwardRef<GeneratorHandle, GeneratorProps>(functi
   ref,
 ) {
   // ---- Persisted state -------------------------------------------------------
+  const key = useRegexKey()
   const [tab, setTab] = useState<FlaskTab>(() =>
-    loadStorage('scalpel:regex:flask-tab', 'qualifiers' as FlaskTab, (s) => s as FlaskTab),
+    loadStorage(key('flask-tab'), 'qualifiers' as FlaskTab, (s) => s as FlaskTab),
   )
-  const [selectedPrefix, setSelectedPrefix] = useState<Set<string>>(() => loadSet<string>('scalpel:regex:flask-prefix'))
-  const [selectedSuffix, setSelectedSuffix] = useState<Set<string>>(() => loadSet<string>('scalpel:regex:flask-suffix'))
+  const [selectedPrefix, setSelectedPrefix] = useState<Set<string>>(() => loadSet<string>(key('flask-prefix')))
+  const [selectedSuffix, setSelectedSuffix] = useState<Set<string>>(() => loadSet<string>(key('flask-suffix')))
   const [ilevel, setIlevel] = useState<number | null>(() =>
-    loadStorage('scalpel:regex:flask-ilevel', 85, (s) => {
+    loadStorage(key('flask-ilevel'), 85, (s) => {
       const n = parseInt(s)
       return isNaN(n) ? 85 : n
     }),
   )
   const [flaskHighestOnly, setFlaskHighestOnly] = useState(() =>
-    loadStorage('scalpel:regex:flask-highest', false, (s) => s === 'true'),
+    loadStorage(key('flask-highest'), false, (s) => s === 'true'),
   )
-  const [matchBoth, setMatchBoth] = useState(() =>
-    loadStorage('scalpel:regex:flask-matchboth', false, (s) => s === 'true'),
-  )
-  const [matchOpen, setMatchOpen] = useState(() =>
-    loadStorage('scalpel:regex:flask-matchopen', false, (s) => s === 'true'),
-  )
+  const [matchBoth, setMatchBoth] = useState(() => loadStorage(key('flask-matchboth'), false, (s) => s === 'true'))
+  const [matchOpen, setMatchOpen] = useState(() => loadStorage(key('flask-matchopen'), false, (s) => s === 'true'))
   const [ignoreEffectTiers, setIgnoreEffectTiers] = useState(() =>
-    loadStorage('scalpel:regex:flask-ignoretiers', false, (s) => s === 'true'),
+    loadStorage(key('flask-ignoretiers'), false, (s) => s === 'true'),
   )
 
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:flask-tab', tab)
-  }, [tab])
+    localStorage.setItem(key('flask-tab'), tab)
+  }, [tab, key])
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:flask-prefix', JSON.stringify([...selectedPrefix]))
-  }, [selectedPrefix])
+    localStorage.setItem(key('flask-prefix'), JSON.stringify([...selectedPrefix]))
+  }, [selectedPrefix, key])
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:flask-suffix', JSON.stringify([...selectedSuffix]))
-  }, [selectedSuffix])
+    localStorage.setItem(key('flask-suffix'), JSON.stringify([...selectedSuffix]))
+  }, [selectedSuffix, key])
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:flask-ilevel', String(ilevel ?? 85))
-  }, [ilevel])
+    localStorage.setItem(key('flask-ilevel'), String(ilevel ?? 85))
+  }, [ilevel, key])
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:flask-highest', String(flaskHighestOnly))
-  }, [flaskHighestOnly])
+    localStorage.setItem(key('flask-highest'), String(flaskHighestOnly))
+  }, [flaskHighestOnly, key])
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:flask-matchboth', String(matchBoth))
-  }, [matchBoth])
+    localStorage.setItem(key('flask-matchboth'), String(matchBoth))
+  }, [matchBoth, key])
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:flask-matchopen', String(matchOpen))
-  }, [matchOpen])
+    localStorage.setItem(key('flask-matchopen'), String(matchOpen))
+  }, [matchOpen, key])
   useEffect(() => {
-    localStorage.setItem('scalpel:regex:flask-ignoretiers', String(ignoreEffectTiers))
-  }, [ignoreEffectTiers])
+    localStorage.setItem(key('flask-ignoretiers'), String(ignoreEffectTiers))
+  }, [ignoreEffectTiers, key])
 
   // ---- Ephemeral UI state ----------------------------------------------------
   const [panel, setPanel] = useState<'search' | null>(null)

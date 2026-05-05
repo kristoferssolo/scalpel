@@ -67,7 +67,7 @@ import {
   setMainOverlayGetter,
   setOnLeaveScalpel,
 } from './windowing'
-import type { AppSettings } from '../shared/types'
+import type { AppSettings, RegexPreset } from '../shared/types'
 
 // ---- Elevation detection ---------------------------------------------------
 
@@ -116,7 +116,8 @@ const store = new Store<AppSettings>({
     cheatSheetsPoe2: { globalHotkey: '', categories: [] },
     stashScrollEnabled: false,
     poeVersion: 1,
-    regexPresets: [],
+    regexPresetsPoe1: [],
+    regexPresetsPoe2: [],
   },
 })
 
@@ -153,6 +154,16 @@ if (!store.get('leaguePoe1')) store.set('leaguePoe1', store.get('league'))
 if (!store.get('filterPathPoe1')) store.set('filterPathPoe1', store.get('filterPath'))
 if (!store.get('filterDirPoe1')) store.set('filterDirPoe1', store.get('filterDir'))
 if (!store.get('tradePriceOptionPoe1')) store.set('tradePriceOptionPoe1', store.get('tradePriceOption'))
+
+// Migrate: regex presets used to be a single flat `regexPresets` array. Now
+// they're per-version. Existing users only ever ran PoE1 (regex tool was off
+// for PoE2), so seed the PoE1 slot with whatever's in the legacy key.
+{
+  const legacyStore = store as Store<AppSettings & { regexPresets?: RegexPreset[] }>
+  const legacy = legacyStore.get('regexPresets')
+  const poe1Empty = (store.get('regexPresetsPoe1') ?? []).length === 0
+  if (legacy && legacy.length > 0 && poe1Empty) store.set('regexPresetsPoe1', legacy)
+}
 
 // On startup, sync the flat active fields to match whichever version is current.
 // The relaunch-on-game-switch flow (ensureCorrectGameForHotkey) means this runs
@@ -317,7 +328,8 @@ app.whenReady().then(() => {
     }
     if (action === 'useSavedRegex') {
       if (!tag) return
-      const presets = (store.get('regexPresets') as import('../shared/types').RegexPreset[] | undefined) ?? []
+      const key = store.get('poeVersion') === 2 ? 'regexPresetsPoe2' : 'regexPresetsPoe1'
+      const presets = store.get(key) ?? []
       const preset = presets.find((p) => p.tags?.some((t) => t.text === tag && (!t.source || t.source === 'custom')))
       if (preset?.regex) pasteRegexToSearch(preset.regex)
       return

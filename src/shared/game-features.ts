@@ -46,7 +46,7 @@ const FEATURES_BY_VERSION: Record<1 | 2, GameFeatures> = {
     dustExplorer: false,
     divCards: false,
     socketRecolor: false,
-    regexTool: false,
+    regexTool: true,
     bulkBaselineCurrency: 'exalted',
     bulkExchangeBanner: 'ange',
     leagues: ['Fate of the Vaal', 'HC Fate of the Vaal', 'Standard', 'Hardcore'],

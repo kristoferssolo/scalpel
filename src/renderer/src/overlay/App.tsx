@@ -895,7 +895,11 @@ export default function App(): JSX.Element {
                   <DivCardExplorer onSelectItem={() => setView('item')} />
                 </div>
               )}
-              {features.regexTool && (
+              {features.regexTool && poeVersion !== null && (
+                // Gate on poeVersion being resolved -- RegexTool's children read
+                // localStorage in their useState initializers, and those keys are
+                // namespaced by game version. Mounting before poeVersion arrives
+                // hydrates with the PoE1 default, locking in the wrong namespace.
                 <div className="flex-col flex-1 min-h-0" style={{ display: view === 'regex' ? 'flex' : 'none' }}>
                   <RegexTool />
                 </div>

@@ -70,34 +70,43 @@ export function register(store: Store<AppSettings>): void {
     }
   })
 
+  // Regex presets live in a per-version slot. The relaunch-on-game-switch flow
+  // (ensureCorrectGameForHotkey) means `poeVersion` is stable for the lifetime
+  // of this process, so it's safe to capture the active key once and reuse it.
+  const regexPresetsKey = (): 'regexPresetsPoe1' | 'regexPresetsPoe2' =>
+    store.get('poeVersion') === 2 ? 'regexPresetsPoe2' : 'regexPresetsPoe1'
+
   ipcMain.handle('get-regex-presets', () => {
-    return (store.get('regexPresets') as RegexPreset[] | undefined) ?? []
+    return store.get(regexPresetsKey()) ?? []
   })
 
   ipcMain.handle('save-regex-preset', (_event, preset: RegexPreset) => {
-    const presets = (store.get('regexPresets') as RegexPreset[] | undefined) ?? []
+    const key = regexPresetsKey()
+    const presets = store.get(key) ?? []
     const existingIdx = presets.findIndex((p) => p.id === preset.id)
     if (existingIdx >= 0) {
       presets[existingIdx] = preset
     } else {
       presets.push(preset)
     }
-    store.set('regexPresets', presets)
+    store.set(key, presets)
     return presets
   })
 
   ipcMain.handle('delete-regex-preset', (_event, id: string) => {
-    const presets = (store.get('regexPresets') as RegexPreset[] | undefined) ?? []
+    const key = regexPresetsKey()
+    const presets = store.get(key) ?? []
     const filtered = presets.filter((p) => p.id !== id)
-    store.set('regexPresets', filtered)
+    store.set(key, filtered)
     return filtered
   })
 
   ipcMain.handle('reorder-regex-presets', (_event, ids: string[]) => {
-    const presets = (store.get('regexPresets') as RegexPreset[] | undefined) ?? []
+    const key = regexPresetsKey()
+    const presets = store.get(key) ?? []
     const byId = new Map(presets.map((p) => [p.id, p]))
     const reordered = ids.map((id) => byId.get(id)).filter(Boolean) as RegexPreset[]
-    store.set('regexPresets', reordered)
+    store.set(key, reordered)
     return reordered
   })
 }
