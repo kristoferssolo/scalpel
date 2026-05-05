@@ -30,4 +30,5 @@ scripts/local/
 # OS
 .DS_Store
 .vs/
+.vscode/
 *.log
