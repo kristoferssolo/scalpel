@@ -6,6 +6,10 @@ interface ChromeProps {
    *  category tabs). Lives inside the drag region but inherits no-drag from
    *  individual interactive children. */
   headerContent?: React.ReactNode
+  /** Optional content rendered between `headerContent` and the close button --
+   *  intended for view-control affordances (size pickers, filters, etc.) that
+   *  belong on the right side of the bar. Same drag behavior as headerContent. */
+  headerEnd?: React.ReactNode
   /** Body content beneath the header. */
   children: React.ReactNode
   onClose: () => void
@@ -21,7 +25,7 @@ interface ChromeProps {
  *  `style={{ WebkitAppRegion: 'no-drag' }}` so the title-bar drag doesn't
  *  swallow their clicks. The close button + header buttons handle this
  *  automatically. */
-export function Chrome({ headerContent, children, onClose }: ChromeProps): JSX.Element {
+export function Chrome({ headerContent, headerEnd, children, onClose }: ChromeProps): JSX.Element {
   const noDrag = { WebkitAppRegion: 'no-drag' } as React.CSSProperties
   const drag = { WebkitAppRegion: 'drag' } as React.CSSProperties
   return (
@@ -38,13 +42,20 @@ export function Chrome({ headerContent, children, onClose }: ChromeProps): JSX.E
             </div>
           )}
         </div>
-        <button
-          onClick={onClose}
-          className="text-text-dim hover:text-text shrink-0 w-6 h-6 flex items-center justify-center"
-          style={noDrag}
-        >
-          <CloseSmall size={14} theme="outline" fill="currentColor" />
-        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          {headerEnd && (
+            <div className="flex items-center gap-[4px]" style={noDrag}>
+              {headerEnd}
+            </div>
+          )}
+          <button
+            onClick={onClose}
+            className="text-text-dim hover:text-text shrink-0 w-6 h-6 flex items-center justify-center"
+            style={noDrag}
+          >
+            <CloseSmall size={14} theme="outline" fill="currentColor" />
+          </button>
+        </div>
       </div>
       {children}
     </div>

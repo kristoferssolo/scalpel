@@ -263,9 +263,19 @@ export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
     const tb = OverlayController.targetBounds
     if (tb && tb.width) sendGameBounds(tb.width, tb.height)
     if (overlayVisible) {
+      // Patched showInactive() fires onGameFocus internally, which resumes
+      // hotkeys and restores any hidden secondary overlays.
       overlayWindow.showInactive()
       mouseOverPanel = false
       overlayWindow.setIgnoreMouseEvents(true)
+    } else if (onGameFocus) {
+      // Main overlay is closed but PoE just refocused -- still need to resume
+      // hotkeys and restore secondary overlays (cheat sheets, etc.) that were
+      // hidden when the user clicked away. Without this branch, the path that
+      // normally drives onGameFocus (showInactive above) doesn't fire when only
+      // a secondary overlay was up, leaving it hidden and hotkeys suspended
+      // until the user manually alt-tabs.
+      setImmediate(onGameFocus)
     }
   })
   OverlayController.events.on('moveresize', (ev) => {
