@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { AppSettings, OverlayData, PoeItem } from '../../../shared/types'
+import type { AppSettings, OverlayData, PoeItem, PriceInfo } from '../../../shared/types'
 import { isHideableTabKey } from '../../../shared/types'
 import type { ExternalLinkTarget } from '../../../shared/external-link'
 import { externalLinkUrl, ninjaLinkUrl } from '../../../shared/external-link'
@@ -26,6 +26,7 @@ import { getActiveMatch } from '../shared/activeMatch'
 import { ItemSearchCombobox } from '../components/ItemSearchCombobox'
 import { Clipboard } from '@icon-park/react'
 import { IP, initIconMap, initItemClassMaps, initUniquesByBase, mergeIconCache } from '../shared/constants'
+import { initManifest, getManifest } from '../shared/manifest'
 import { prettyHotkey } from '../components/settings'
 
 type View =
@@ -117,6 +118,7 @@ export default function App(): JSX.Element {
     initUniquesByBase(poeVersion)
     initItemClassMaps(poeVersion)
     window.api.getIconCache().then(mergeIconCache)
+    window.api.getManifest().then(initManifest)
   }, [poeVersion])
 
   // Live-merge newly-harvested icons as trade-fetch responses arrive so the
@@ -136,7 +138,7 @@ export default function App(): JSX.Element {
   // Price check state
   const [priceCheckData, setPriceCheckData] = useState<{
     item: PoeItem
-    priceInfo?: import('../../../shared/types').PriceInfo
+    priceInfo?: PriceInfo
     statFilters: Array<{
       id: string
       text: string
@@ -632,12 +634,13 @@ export default function App(): JSX.Element {
   }
 
   // poe.ninja deep-link handler. Returns undefined when there's no item, no league
-  // resolved, or the item type isn't priced on ninja (covered by ninjaLinkUrl). The
-  // active trade league is also the league we use for ninja price fetches, so the
-  // deep link always lands on the same league the user is shopping in.
-  const ninjaLinkHandler = (item: PoeItem | undefined): (() => void) | undefined => {
-    if (!item || !poeVersion || !settings?.league) return undefined
-    const url = ninjaLinkUrl(item, poeVersion, settings.league)
+  // resolved, the item type isn't priced on ninja (covered by ninjaLinkUrl), or we
+  // don't have a ninja price entry for this item -- ninja's PoE2 catalogue is
+  // incomplete and items absent from it 404 on the deep link.
+  const ninjaLinkHandler = (item: PoeItem | undefined, priceInfo: PriceInfo | undefined): (() => void) | undefined => {
+    if (!item || !poeVersion || !settings?.league || !priceInfo) return undefined
+    const leagueSlugMap = getManifest().ninjaLeagues[poeVersion === 1 ? 'poe1' : 'poe2']
+    const url = ninjaLinkUrl(item, poeVersion, settings.league, leagueSlugMap, priceInfo)
     if (!url) return undefined
     return () => window.api.openExternal(url)
   }
@@ -857,7 +860,7 @@ export default function App(): JSX.Element {
                   onOpenDivExplore={features.divCards ? () => setView('divcards') : undefined}
                   onOpenWiki={externalLinkHandler('wiki', overlayData?.item)}
                   onOpenPoeDb={externalLinkHandler('poedb', overlayData?.item)}
-                  onOpenNinja={ninjaLinkHandler(overlayData?.item)}
+                  onOpenNinja={ninjaLinkHandler(overlayData?.item, overlayData?.priceInfo)}
                   tierSisterOpen={tierSisterOpen}
                   onToggleTierSister={() => setTierSisterOpen((v) => !v)}
                   tierSisterSide={cursorSide === 'left' ? 'right' : 'left'}
@@ -880,7 +883,7 @@ export default function App(): JSX.Element {
                     onClose={close}
                     onOpenWiki={externalLinkHandler('wiki', priceCheckData?.item)}
                     onOpenPoeDb={externalLinkHandler('poedb', priceCheckData?.item)}
-                    onOpenNinja={ninjaLinkHandler(priceCheckData?.item)}
+                    onOpenNinja={ninjaLinkHandler(priceCheckData?.item, priceCheckData?.priceInfo)}
                   />
                 ) : (
                   <PriceCheckSkeleton />

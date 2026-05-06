@@ -2,6 +2,7 @@
  *  app macros. Used by both main (macro routing) and renderer (button onClick,
  *  preload IPC subscription). */
 import { SKILL_GEM_CLASSES } from './poe-item'
+import type { PriceInfo } from './types'
 
 export type ExternalLinkTarget = 'wiki' | 'poedb'
 
@@ -138,16 +139,10 @@ function ninjaSlug(name: string, variant?: string): string {
     .replace(/ /g, '-')
 }
 
-/** APT's `selectedLeagueToUrl`, ported. Standard / Hardcore are special-cased to
- *  their literal lowercase; challenge leagues lowercase as-is, and Hardcore-prefixed
- *  challenge leagues (e.g. "Hardcore Mirage") drop the prefix and append "hc"
- *  ("miragehc"). Private leagues fall through the default branch. */
-export function ninjaLeagueSegment(league: string): string {
-  if (league === 'Standard') return 'standard'
-  if (league === 'Hardcore') return 'hardcore'
-  let id = league.replace('Hardcore ', '').toLowerCase()
-  if (league.startsWith('Hardcore ')) id += 'hc'
-  return id
+/** Look up the poe.ninja URL slug for a league name using the provided map.
+ *  Returns null when the league name has no entry (caller should hide the button). */
+export function ninjaLeagueSegment(league: string, leagueSlugMap: Record<string, string>): string | null {
+  return leagueSlugMap[league] ?? null
 }
 
 /** Map an item to its poe.ninja category segment, or null if the item isn't
@@ -296,12 +291,29 @@ export function deriveItemVariant(item: NinjaItemRef): string | undefined {
 }
 
 /** Build a poe.ninja deep-link for the given item under the given league, or
- *  null if we don't know how to classify it (caller should hide the button). */
-export function ninjaLinkUrl(item: NinjaItemRef, poeVersion: 1 | 2, league: string): string | null {
-  const category = ninjaCategory(item)
+ *  null if we don't know how to classify it or the league slug isn't in the map.
+ *
+ * For PoE2, the category is read from priceInfo.ninjaCategory (tagged at fetch
+ * time from the source API type). If priceInfo is absent or has no ninjaCategory,
+ * we return null so the button hides -- PoE2's catalogue is incomplete and the
+ * base-type routing logic is unreliable for PoE2 items.
+ *
+ * For PoE1, priceInfo is ignored and the existing baseType-pattern routing applies. */
+export function ninjaLinkUrl(
+  item: NinjaItemRef,
+  poeVersion: 1 | 2,
+  league: string,
+  leagueSlugMap: Record<string, string>,
+  priceInfo?: PriceInfo,
+): string | null {
+  const leagueSegment = ninjaLeagueSegment(league, leagueSlugMap)
+  if (!leagueSegment) return null
+
+  const category = poeVersion === 2 ? (priceInfo?.ninjaCategory ?? null) : ninjaCategory(item)
   if (!category) return null
+
   const variant = deriveItemVariant(item)
   const slug = ninjaSlug(item.name, variant)
   if (!slug) return null
-  return `${NINJA_HOST_BY_VERSION[poeVersion]}/${encodeURIComponent(ninjaLeagueSegment(league))}/${category}/${slug}`
+  return `${NINJA_HOST_BY_VERSION[poeVersion]}/${leagueSegment}/${category}/${slug}`
 }

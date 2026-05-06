@@ -53,6 +53,8 @@ import * as versionsHandlers from './handlers/versions'
 import * as onlineSyncHandlers from './handlers/online-sync'
 import * as pricesHandlers from './handlers/prices'
 import { register as registerCheatSheets } from './handlers/cheat-sheets'
+import { register as registerManifest } from './handlers/manifest'
+import { refreshManifest } from './manifest'
 import {
   categoryDir,
   ensureThumb,
@@ -188,6 +190,7 @@ versionsHandlers.register(store)
 onlineSyncHandlers.register(store)
 pricesHandlers.register(store)
 registerCheatSheets()
+registerManifest()
 
 ipcMain.on('close-overlay', () => hideOverlay())
 ipcMain.on('open-devtools', (event) => {
@@ -403,6 +406,9 @@ app.whenReady().then(() => {
   // Start with hotkeys suspended until PoE actually gains focus.
   // Without this, hotkeys fire globally (e.g. in other games) before PoE opens.
   suspendHotkeys()
+
+  // Fetch manifest in background; bundled copy is the offline fallback
+  refreshManifest().catch(() => {})
 
   // Fetch prices in background, refresh every 10 minutes
   refreshPrices(store.get('league'))

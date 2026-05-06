@@ -9,7 +9,7 @@ function resp(over: {
   rates?: Record<string, number>
   itemOverviews?: Array<{
     type: string
-    lines: Array<{ name?: string; primaryValue?: number }>
+    lines: Array<{ name?: string; primaryValue?: number; sparkline?: { data: (number | null)[] } }>
   }>
 }) {
   return {
@@ -39,20 +39,20 @@ describe('applyProxyResponse (EE2 proxy math)', () => {
       }),
       map,
     )
-    expect(map.get('chaos orb')).toEqual({ chaosValue: 200, divineValue: 2 })
-    expect(map.get('regal orb')).toEqual({ chaosValue: 50, divineValue: 0.5 })
+    expect(map.get('chaos orb')).toMatchObject({ chaosValue: 200, divineValue: 2 })
+    expect(map.get('regal orb')).toMatchObject({ chaosValue: 50, divineValue: 0.5 })
   })
 
   it('synthesizes Divine Orb at { chaosValue: rates.exalted, divineValue: 1 }', () => {
     const map = new Map<string, PriceInfo>()
     applyProxyResponse(resp({ rates: { exalted: 137 } }), map)
-    expect(map.get('divine orb')).toEqual({ chaosValue: 137, divineValue: 1 })
+    expect(map.get('divine orb')).toEqual({ chaosValue: 137, divineValue: 1, ninjaCategory: 'currency' })
   })
 
   it('synthesizes Exalted Orb at { chaosValue: 1, divineValue: 1 / rates.exalted }', () => {
     const map = new Map<string, PriceInfo>()
     applyProxyResponse(resp({ rates: { exalted: 100 } }), map)
-    expect(map.get('exalted orb')).toEqual({ chaosValue: 1, divineValue: 0.01 })
+    expect(map.get('exalted orb')).toEqual({ chaosValue: 1, divineValue: 0.01, ninjaCategory: 'currency' })
   })
 
   it('skips lines with missing primaryValue', () => {
@@ -149,7 +149,7 @@ describe('applyProxyResponse (EE2 proxy math)', () => {
       }),
       map,
     )
-    expect(map.get('repeated')).toEqual({ chaosValue: 300, divineValue: 3 })
+    expect(map.get('repeated')).toMatchObject({ chaosValue: 300, divineValue: 3 })
   })
 
   it('tolerates missing itemOverviews', () => {
@@ -162,7 +162,7 @@ describe('applyProxyResponse (EE2 proxy math)', () => {
       map,
     )
     // Only synthesized entries
-    expect(map.get('divine orb')).toEqual({ chaosValue: 100, divineValue: 1 })
+    expect(map.get('divine orb')).toEqual({ chaosValue: 100, divineValue: 1, ninjaCategory: 'currency' })
   })
 
   it('tolerates missing lines within an overview', () => {
@@ -174,7 +174,7 @@ describe('applyProxyResponse (EE2 proxy math)', () => {
       }),
       map,
     )
-    expect(map.get('divine orb')).toEqual({ chaosValue: 50, divineValue: 1 })
+    expect(map.get('divine orb')).toMatchObject({ chaosValue: 50, divineValue: 1 })
   })
 
   it('passes sparkline graph data through to PriceInfo when present on the line', () => {
@@ -194,6 +194,32 @@ describe('applyProxyResponse (EE2 proxy math)', () => {
     )
     expect(map.get('graphed currency')?.graph).toEqual(graphData)
   })
+
+  it('tags line entries with ninjaCategory from categoryByType when provided', () => {
+    const map = new Map<string, PriceInfo>()
+    applyProxyResponse(
+      resp({
+        rates: { exalted: 100 },
+        itemOverviews: [{ type: 'Currency', lines: [{ name: 'Chaos Orb', primaryValue: 1 }] }],
+      }),
+      map,
+      { Currency: 'currency' },
+    )
+    expect(map.get('chaos orb')?.ninjaCategory).toBe('currency')
+  })
+
+  it('tags Breach overview lines with breach-catalyst when categoryByType is supplied', () => {
+    const map = new Map<string, PriceInfo>()
+    applyProxyResponse(
+      resp({
+        rates: { exalted: 100 },
+        itemOverviews: [{ type: 'Breach', lines: [{ name: 'Neural Catalyst', primaryValue: 2 }] }],
+      }),
+      map,
+      { Breach: 'breach-catalyst' },
+    )
+    expect(map.get('neural catalyst')?.ninjaCategory).toBe('breach-catalyst')
+  })
 })
 
 describe('fetchPoe2PricesFromProxy', () => {
@@ -203,14 +229,14 @@ describe('fetchPoe2PricesFromProxy', () => {
       itemOverviews: [{ type: 'Currency', lines: [{ name: 'Chaos Orb', primaryValue: 1 }] }],
     }
     const fetchJson = async (_url: string) => stubResp
-    const map = await fetchPoe2PricesFromProxy('Fate of the Vaal', fetchJson)
-    expect(map.get('chaos orb')).toEqual({ chaosValue: 200, divineValue: 1 })
-    expect(map.get('divine orb')).toEqual({ chaosValue: 200, divineValue: 1 })
+    const map = await fetchPoe2PricesFromProxy('Fate of the Vaal', fetchJson, { Currency: 'currency' })
+    expect(map.get('chaos orb')).toMatchObject({ chaosValue: 200, divineValue: 1 })
+    expect(map.get('divine orb')).toMatchObject({ chaosValue: 200, divineValue: 1 })
   })
 
   it('throws on an unknown league name', async () => {
     const fetchJson = async (_url: string) => ({})
-    await expect(fetchPoe2PricesFromProxy('Unknown League', fetchJson)).rejects.toThrow(
+    await expect(fetchPoe2PricesFromProxy('Unknown League', fetchJson, {})).rejects.toThrow(
       'Unsupported PoE2 league for proxy: Unknown League',
     )
   })
@@ -226,7 +252,7 @@ describe('fetchPoe2PricesFromProxy', () => {
       capturedUrl = url
       return { core: { primary: 'divine', rates: { exalted: 100 } }, itemOverviews: [] }
     }
-    await fetchPoe2PricesFromProxy(league, fetchJson)
+    await fetchPoe2PricesFromProxy(league, fetchJson, {})
     expect(capturedUrl).toBe(`https://api.exiledexchange2.dev/proxy/${slug}/overviewData.json`)
   })
 })

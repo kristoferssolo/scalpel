@@ -104,6 +104,10 @@
       {
         "from": "resources/icon.ico",
         "to": "icon.ico"
+      },
+      {
+        "from": "manifest.json",
+        "to": "manifest.json"
       }
     ],
     "asar": true,

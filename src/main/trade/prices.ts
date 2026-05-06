@@ -8,6 +8,7 @@ import { deriveItemVariant } from '../../shared/external-link'
 import type { NinjaItemRef } from '../../shared/external-link'
 import { getPoeVersion } from '../game-state'
 import { fetchAndBuildPoe2PriceMap, fetchPoe2PricesFromProxy } from './prices.poe2'
+import { getManifest } from '../manifest'
 import uniqueInfoPoe1 from '../../shared/data/items/unique-info.json'
 import uniqueInfoPoe2 from '../../shared/data/items/unique-info-poe2.json'
 const staticUniquesByVersion: Record<1 | 2, Record<string, string[]>> = {
@@ -260,11 +261,12 @@ export async function refreshPrices(league: string): Promise<void> {
   try {
     if (getPoeVersion() === 2) {
       let nextPriceMap: Map<string, PriceInfo>
+      const categoryByType = getManifest().poe2NinjaCategories
       try {
-        nextPriceMap = await fetchPoe2PricesFromProxy(league, fetchJson)
+        nextPriceMap = await fetchPoe2PricesFromProxy(league, fetchJson, categoryByType)
       } catch (proxyErr) {
         console.error('[FilterScalpel] EE2 proxy failed, falling back to ninja direct:', proxyErr)
-        nextPriceMap = await fetchAndBuildPoe2PriceMap(league, fetchJson)
+        nextPriceMap = await fetchAndBuildPoe2PriceMap(league, fetchJson, categoryByType)
       }
       resetCache(league, now)
       priceMap = nextPriceMap

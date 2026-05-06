@@ -1,9 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('electron', () => ({
-  app: { getPath: () => '/tmp', userAgentFallback: 'Scalpel-Test/1.0' },
+  app: { getPath: () => '/tmp', getAppPath: () => '/tmp', userAgentFallback: 'Scalpel-Test/1.0' },
   ipcMain: { on: vi.fn(), handle: vi.fn(), removeListener: vi.fn() },
   net: { request: vi.fn() },
+}))
+
+vi.mock('../manifest', () => ({
+  getManifest: () => ({ ninjaLeagues: { poe1: {}, poe2: {} }, poe2NinjaCategories: {} }),
+  refreshManifest: vi.fn(),
 }))
 
 import { _setPricesForTests, lookupPrice, lookupPriceForItem } from './prices'

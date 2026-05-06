@@ -1,0 +1,32 @@
+{
+  "ninjaLeagues": {
+    "poe1": {
+      "Mirage": "mirage",
+      "Hardcore Mirage": "miragehc",
+      "Standard": "standard",
+      "Hardcore": "hardcore"
+    },
+    "poe2": {
+      "Fate of the Vaal": "vaal",
+      "HC Fate of the Vaal": "vaalhc",
+      "Standard": "standard",
+      "Hardcore": "hardcore"
+    }
+  },
+  "poe2NinjaCategories": {
+    "Currency": "currency",
+    "Ritual": "omens",
+    "Fragments": "fragments",
+    "Abyss": "abyssal-bones",
+    "UncutGems": "uncut-gems",
+    "LineageSupportGems": "lineage-support-gems",
+    "Essences": "essences",
+    "SoulCores": "soul-cores",
+    "Ultimatum": "soul-cores",
+    "Idols": "idols",
+    "Runes": "runes",
+    "Expedition": "expedition",
+    "Delirium": "liquid-emotions",
+    "Breach": "breach-catalyst"
+  }
+}

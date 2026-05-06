@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { externalLinkUrl, ninjaLinkUrl } from './external-link'
+import { externalLinkUrl, ninjaLinkUrl, ninjaLeagueSegment } from './external-link'
 
 describe('externalLinkUrl', () => {
   it('uses baseType for Rare items (random name has no wiki page)', () => {
@@ -44,32 +44,57 @@ describe('externalLinkUrl', () => {
   })
 })
 
+const POE1_SLUGS: Record<string, string> = {
+  Mirage: 'mirage',
+  'Hardcore Mirage': 'miragehc',
+  Standard: 'standard',
+  Hardcore: 'hardcore',
+}
+
+const POE2_SLUGS: Record<string, string> = {
+  'Fate of the Vaal': 'vaal',
+  'HC Fate of the Vaal': 'vaalhc',
+  Standard: 'standard',
+  Hardcore: 'hardcore',
+}
+
+describe('ninjaLeagueSegment', () => {
+  it('returns the slug from the map', () => {
+    expect(ninjaLeagueSegment('Mirage', POE1_SLUGS)).toBe('mirage')
+    expect(ninjaLeagueSegment('Hardcore Mirage', POE1_SLUGS)).toBe('miragehc')
+  })
+
+  it('returns null when the league is not in the map', () => {
+    expect(ninjaLeagueSegment('Unknown League', POE1_SLUGS)).toBeNull()
+  })
+})
+
 describe('ninjaLinkUrl', () => {
   const headhunter = { name: 'Headhunter', baseType: 'Leather Belt', rarity: 'Unique', itemClass: 'Belts' }
 
   it('routes a unique accessory to plural /unique-accessories/<name-and-base>', () => {
-    expect(ninjaLinkUrl(headhunter, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(headhunter, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/unique-accessories/headhunter-leather-belt',
     )
   })
 
   it('strips apostrophes from the slug', () => {
     const item = { name: "Volkuur's Guidance", baseType: 'Sorcerer Boots', rarity: 'Unique', itemClass: 'Boots' }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/unique-armours/volkuurs-guidance-sorcerer-boots',
     )
   })
 
   it('keeps Foulborn prefix in the slug (ninja lists Foulborn variants separately)', () => {
     const item = { name: 'Foulborn Mageblood', baseType: 'Heavy Belt', rarity: 'Unique', itemClass: 'Belts' }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/unique-accessories/foulborn-mageblood-heavy-belt',
     )
   })
 
   it('routes a unique weapon to /unique-weapons/<name-and-base>', () => {
     const item = { name: "Lioneye's Glare", baseType: 'Imperial Bow', rarity: 'Unique', itemClass: 'Bows' }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/unique-weapons/lioneyes-glare-imperial-bow',
     )
   })
@@ -81,7 +106,7 @@ describe('ninjaLinkUrl', () => {
       rarity: 'Unique',
       itemClass: 'Flasks',
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/unique-flasks/soul-catcher-hallowed-hybrid-flask',
     )
   })
@@ -93,7 +118,7 @@ describe('ninjaLinkUrl', () => {
       rarity: 'Unique',
       itemClass: 'Jewels',
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/unique-jewels/watchers-eye-prismatic-jewel',
     )
   })
@@ -105,7 +130,7 @@ describe('ninjaLinkUrl', () => {
       rarity: 'Unique',
       itemClass: 'Jewels',
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/unique-jewels/voices-large-cluster-jewel',
     )
   })
@@ -117,14 +142,14 @@ describe('ninjaLinkUrl', () => {
       rarity: 'Unique',
       itemClass: 'Stackable Currency',
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/beasts/craiceann-first-of-the-deep',
     )
   })
 
   it('routes currency to singular /currency/<slug>', () => {
     const item = { name: 'Chaos Orb', baseType: 'Chaos Orb', rarity: 'Currency', itemClass: 'Stackable Currency' }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe('https://poe.ninja/poe1/economy/mirage/currency/chaos-orb')
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe('https://poe.ninja/poe1/economy/mirage/currency/chaos-orb')
   })
 
   it('routes essences (real clipboard Class is Stackable Currency) to /essences/<slug>', () => {
@@ -134,7 +159,7 @@ describe('ninjaLinkUrl', () => {
       rarity: 'Currency',
       itemClass: 'Stackable Currency',
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/essences/shrieking-essence-of-hatred',
     )
   })
@@ -146,7 +171,7 @@ describe('ninjaLinkUrl', () => {
       rarity: 'Normal',
       itemClass: 'Stackable Currency',
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/scarabs/winged-reliquary-scarab',
     )
   })
@@ -158,7 +183,7 @@ describe('ninjaLinkUrl', () => {
       rarity: 'Normal',
       itemClass: 'Map Fragments',
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/fragments/sacrifice-at-midnight',
     )
   })
@@ -170,7 +195,9 @@ describe('ninjaLinkUrl', () => {
       rarity: 'Currency',
       itemClass: 'Stackable Currency',
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe('https://poe.ninja/poe1/economy/mirage/fossils/pristine-fossil')
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
+      'https://poe.ninja/poe1/economy/mirage/fossils/pristine-fossil',
+    )
   })
 
   it('routes resonators (baseType ending in " Resonator") to /resonators/<slug>', () => {
@@ -180,14 +207,14 @@ describe('ninjaLinkUrl', () => {
       rarity: 'Currency',
       itemClass: 'Stackable Currency',
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/resonators/powerful-chaotic-resonator',
     )
   })
 
   it('routes oils (Stackable Currency, baseType ends in " Oil") to /oils/<slug>', () => {
     const item = { name: 'Golden Oil', baseType: 'Golden Oil', rarity: 'Currency', itemClass: 'Stackable Currency' }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe('https://poe.ninja/poe1/economy/mirage/oils/golden-oil')
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe('https://poe.ninja/poe1/economy/mirage/oils/golden-oil')
   })
 
   it('routes omens (baseType starts with "Omen of") to /omens/<slug>', () => {
@@ -197,7 +224,9 @@ describe('ninjaLinkUrl', () => {
       rarity: 'Currency',
       itemClass: 'Stackable Currency',
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe('https://poe.ninja/poe1/economy/mirage/omens/omen-of-amelioration')
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
+      'https://poe.ninja/poe1/economy/mirage/omens/omen-of-amelioration',
+    )
   })
 
   it('routes tattoos (baseType starts with "Tattoo of") to /tattoos/<slug>', () => {
@@ -207,7 +236,7 @@ describe('ninjaLinkUrl', () => {
       rarity: 'Currency',
       itemClass: 'Stackable Currency',
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/tattoos/tattoo-of-the-tukohama-warmonger',
     )
   })
@@ -219,7 +248,7 @@ describe('ninjaLinkUrl', () => {
       rarity: 'Currency',
       itemClass: 'Stackable Currency',
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/incubators/geomancers-incubator',
     )
   })
@@ -231,14 +260,16 @@ describe('ninjaLinkUrl', () => {
       rarity: 'Currency',
       itemClass: 'Stackable Currency',
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/delirium-orbs/diviners-delirium-orb',
     )
   })
 
   it('routes div cards to /divination-cards/<slug>', () => {
     const item = { name: 'The Doctor', baseType: 'The Doctor', rarity: 'Normal', itemClass: 'Divination Cards' }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe('https://poe.ninja/poe1/economy/mirage/divination-cards/the-doctor')
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
+      'https://poe.ninja/poe1/economy/mirage/divination-cards/the-doctor',
+    )
   })
 
   it('routes skill gems to /skill-gems/<name>-<level>-<quality> with optional corrupt suffix', () => {
@@ -251,14 +282,16 @@ describe('ninjaLinkUrl', () => {
       quality: 20,
       corrupted: true,
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/skill-gems/lightning-strike-21-20c',
     )
   })
 
   it('omits the gem variant when level and quality are both zero (unknown)', () => {
     const item = { name: 'Lightning Strike', baseType: 'Lightning Strike', rarity: 'Gem', itemClass: 'Skill Gems' }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe('https://poe.ninja/poe1/economy/mirage/skill-gems/lightning-strike')
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
+      'https://poe.ninja/poe1/economy/mirage/skill-gems/lightning-strike',
+    )
   })
 
   it('omits quality from the slug when quality < 20 (e.g. 21c with no quality)', () => {
@@ -272,7 +305,9 @@ describe('ninjaLinkUrl', () => {
       corrupted: true,
     }
     // Matches the user's example URL: https://poe.ninja/poe1/economy/mirage/skill-gems/vaal-haste-21c
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe('https://poe.ninja/poe1/economy/mirage/skill-gems/vaal-haste-21c')
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
+      'https://poe.ninja/poe1/economy/mirage/skill-gems/vaal-haste-21c',
+    )
   })
 
   it('snaps quality 20-22 to 20 and keeps 23 as 23', () => {
@@ -285,10 +320,10 @@ describe('ninjaLinkUrl', () => {
       quality: 22,
     }
     const at23 = { ...at22, quality: 23 }
-    expect(ninjaLinkUrl(at22, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(at22, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/skill-gems/lightning-strike-20-20',
     )
-    expect(ninjaLinkUrl(at23, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(at23, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/skill-gems/lightning-strike-20-23',
     )
   })
@@ -302,7 +337,9 @@ describe('ninjaLinkUrl', () => {
       gemLevel: 17,
       quality: 20,
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe('https://poe.ninja/poe1/economy/mirage/skill-gems/hatred-1-20')
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
+      'https://poe.ninja/poe1/economy/mirage/skill-gems/hatred-1-20',
+    )
   })
 
   it('uses level 4 for corrupted exceptional gems (Empower/Enhance/Enlighten +1)', () => {
@@ -315,7 +352,9 @@ describe('ninjaLinkUrl', () => {
       quality: 0,
       corrupted: true,
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBe('https://poe.ninja/poe1/economy/mirage/skill-gems/empower-support-4c')
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBe(
+      'https://poe.ninja/poe1/economy/mirage/skill-gems/empower-support-4c',
+    )
   })
 
   it('uses level 5 for awakened exceptional gems (no separate corrupted variant)', () => {
@@ -329,7 +368,7 @@ describe('ninjaLinkUrl', () => {
       corrupted: true,
     }
     // Awakened only has 1 and 5 -- no "5c" or "6". Corruption suffix is dropped.
-    expect(ninjaLinkUrl(corruptedAt5, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(corruptedAt5, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/skill-gems/awakened-empower-support-5-20',
     )
   })
@@ -344,34 +383,66 @@ describe('ninjaLinkUrl', () => {
       quality: 20,
     }
     const at7Corrupt = { ...at6, gemLevel: 7, corrupted: true }
-    expect(ninjaLinkUrl(at6, 1, 'Mirage')).toBe('https://poe.ninja/poe1/economy/mirage/skill-gems/brand-recall-6-20')
-    expect(ninjaLinkUrl(at7Corrupt, 1, 'Mirage')).toBe(
+    expect(ninjaLinkUrl(at6, 1, 'Mirage', POE1_SLUGS)).toBe(
+      'https://poe.ninja/poe1/economy/mirage/skill-gems/brand-recall-6-20',
+    )
+    expect(ninjaLinkUrl(at7Corrupt, 1, 'Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/mirage/skill-gems/brand-recall-7-20c',
     )
   })
 
-  it('lowercases standard leagues to their canonical short id', () => {
+  it('looks up standard leagues via the slug map', () => {
     const item = { name: 'Headhunter', baseType: 'Leather Belt', rarity: 'Unique', itemClass: 'Belts' }
-    expect(ninjaLinkUrl(item, 1, 'Standard')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Standard', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/standard/unique-accessories/headhunter-leather-belt',
     )
-    expect(ninjaLinkUrl(item, 1, 'Hardcore')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Hardcore', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/hardcore/unique-accessories/headhunter-leather-belt',
     )
   })
 
-  it('drops the "Hardcore " prefix and appends "hc" for Hardcore challenge leagues (matches APT)', () => {
+  it('looks up Hardcore challenge leagues via the slug map', () => {
     const item = { name: 'Headhunter', baseType: 'Leather Belt', rarity: 'Unique', itemClass: 'Belts' }
-    expect(ninjaLinkUrl(item, 1, 'Hardcore Mirage')).toBe(
+    expect(ninjaLinkUrl(item, 1, 'Hardcore Mirage', POE1_SLUGS)).toBe(
       'https://poe.ninja/poe1/economy/miragehc/unique-accessories/headhunter-leather-belt',
     )
   })
 
-  it('routes PoE2 to the /poe2/economy/ host', () => {
-    const item = { name: 'Mageblood', baseType: 'Heavy Belt', rarity: 'Unique', itemClass: 'Belts' }
-    expect(ninjaLinkUrl(item, 2, 'Fate of the Vaal')).toBe(
-      'https://poe.ninja/poe2/economy/fate%20of%20the%20vaal/unique-accessories/mageblood-heavy-belt',
+  it('routes a PoE2 currency item to the correct category via priceInfo.ninjaCategory', () => {
+    const item = { name: 'Divine Orb', baseType: 'Divine Orb', rarity: 'Currency', itemClass: 'Stackable Currency' }
+    const priceInfo = { chaosValue: 100, divineValue: 1, ninjaCategory: 'currency' }
+    expect(ninjaLinkUrl(item, 2, 'Fate of the Vaal', POE2_SLUGS, priceInfo)).toBe(
+      'https://poe.ninja/poe2/economy/vaal/currency/divine-orb',
     )
+  })
+
+  it('routes a PoE2 breach catalyst item to the correct category via priceInfo.ninjaCategory', () => {
+    const item = {
+      name: 'Neural Catalyst',
+      baseType: 'Neural Catalyst',
+      rarity: 'Currency',
+      itemClass: 'Stackable Currency',
+    }
+    const priceInfo = { chaosValue: 10, divineValue: 0.1, ninjaCategory: 'breach-catalyst' }
+    expect(ninjaLinkUrl(item, 2, 'Fate of the Vaal', POE2_SLUGS, priceInfo)).toBe(
+      'https://poe.ninja/poe2/economy/vaal/breach-catalyst/neural-catalyst',
+    )
+  })
+
+  it('returns null for PoE2 when priceInfo is absent', () => {
+    const item = { name: 'Chaos Orb', baseType: 'Chaos Orb', rarity: 'Currency', itemClass: 'Stackable Currency' }
+    expect(ninjaLinkUrl(item, 2, 'Fate of the Vaal', POE2_SLUGS, undefined)).toBeNull()
+  })
+
+  it('returns null for PoE2 when priceInfo has no ninjaCategory field', () => {
+    const item = { name: 'Chaos Orb', baseType: 'Chaos Orb', rarity: 'Currency', itemClass: 'Stackable Currency' }
+    const priceInfo = { chaosValue: 50, divineValue: 0.5 }
+    expect(ninjaLinkUrl(item, 2, 'Fate of the Vaal', POE2_SLUGS, priceInfo)).toBeNull()
+  })
+
+  it('returns null when the league is not in the slug map', () => {
+    const item = { name: 'Headhunter', baseType: 'Leather Belt', rarity: 'Unique', itemClass: 'Belts' }
+    expect(ninjaLinkUrl(item, 1, 'Unknown League', POE1_SLUGS)).toBeNull()
   })
 
   it('returns null for items poe.ninja does not price (rare equipment)', () => {
@@ -381,11 +452,11 @@ describe('ninjaLinkUrl', () => {
       rarity: 'Rare',
       itemClass: 'Belts',
     }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBeNull()
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBeNull()
   })
 
   it('returns null for unknown item classes', () => {
     const item = { name: 'Whatever', baseType: 'Whatever', rarity: 'Unique', itemClass: 'Hideout Decorations' }
-    expect(ninjaLinkUrl(item, 1, 'Mirage')).toBeNull()
+    expect(ninjaLinkUrl(item, 1, 'Mirage', POE1_SLUGS)).toBeNull()
   })
 })

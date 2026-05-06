@@ -5,11 +5,15 @@ import type {
   FilterListEntry,
   FilterVersion,
   HistoryEntry,
+  Manifest,
   OverlayData,
 } from '../shared/types'
 import type { ExternalLinkTarget } from '../shared/external-link'
 
 export const api = {
+  // Manifest
+  getManifest: (): Promise<Manifest> => ipcRenderer.invoke('get-manifest'),
+
   // Settings
   getSettings: (): Promise<AppSettings> => ipcRenderer.invoke('get-settings'),
   setSetting: <K extends keyof AppSettings>(key: K, value: AppSettings[K]): Promise<void> =>

@@ -430,6 +430,10 @@ export interface PriceInfo {
    *  null entries mean no listings for that day. Optional because legacy
    *  cached data may lack it and the renderer must tolerate its absence. */
   graph?: (number | null)[]
+  /** poe.ninja URL category segment for this entry (e.g. 'currency', 'breach-catalyst').
+   *  Set from the source type at fetch time so the deep-link button can land on the
+   *  correct category page instead of the generic /currency hub. PoE2 only. */
+  ninjaCategory?: string
 }
 
 // ─── Item Search ────────────────────────────────────────────────────────────
@@ -478,4 +482,17 @@ export interface FilterVersion {
   isCheckpoint: boolean
   label?: string
   filterName?: string
+}
+
+/** Runtime-fetched manifest. Add new top-level keys here when adding new
+ *  runtime-updatable data; the loader hands the whole object to consumers. */
+export interface Manifest {
+  ninjaLeagues: {
+    poe1: Record<string, string>
+    poe2: Record<string, string>
+  }
+  /** Maps a PoE2 ninja API type name (e.g. 'Breach', 'Essences') to the
+   *  poe.ninja URL category segment (e.g. 'breach-catalyst', 'essences').
+   *  Used to build correct deep-links from tagged price entries. */
+  poe2NinjaCategories: Record<string, string>
 }

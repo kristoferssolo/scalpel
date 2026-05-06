@@ -66,6 +66,11 @@ export const GITHUB_RELEASES_PAGE = 'https://github.com/scalpelpoe/scalpel/relea
 export const CHEAT_SHEET_PREFAB_BASE_URL =
   'https://raw.githubusercontent.com/scalpelpoe/scalpel/main/cheat-sheet-prefabs/'
 
+/** Runtime-fetched manifest of values that may change between releases (e.g.
+ *  ninja league slugs). Fetched on app start; bundled copy in the repo root
+ *  acts as the offline fallback. New leagues only need a push to main. */
+export const MANIFEST_URL = 'https://raw.githubusercontent.com/scalpelpoe/scalpel/main/manifest.json'
+
 /** "Powered by..." attribution links shown under the regex output bar. The
  *  underlying mod / regex data ships from these projects; we point users at the
  *  source so they can compare against the upstream tools and contribute upstream. */

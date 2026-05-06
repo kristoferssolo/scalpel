@@ -59,8 +59,16 @@ const POE2_EXCHANGE_TYPES = [
  *  so in PoE2 we store exalted-equivalents there. Ninja's response reports
  *  primary=divine and rates.X = "units of X per 1 divine", so:
  *    divineValue = primaryValue
- *    chaosValue  = primaryValue * rates.exalted (i.e. exalted-equivalent) */
-export function applyResponse(resp: Poe2ExchangeResponse, priceMap: Map<string, PriceInfo>): void {
+ *    chaosValue  = primaryValue * rates.exalted (i.e. exalted-equivalent)
+ *
+ * ninjaCategory is the poe.ninja URL category segment for this API type (e.g.
+ * 'currency', 'breach-catalyst'). Threaded in by the caller so this module
+ * stays decoupled from the manifest. Core currencies always use 'currency'. */
+export function applyResponse(
+  resp: Poe2ExchangeResponse,
+  priceMap: Map<string, PriceInfo>,
+  ninjaCategory?: string,
+): void {
   const exaltedPerPrimary = resp.core.rates?.exalted ?? 0
   const nameById = new Map<string, string>()
   for (const item of [...(resp.core.items ?? []), ...(resp.items ?? [])]) {
@@ -72,7 +80,7 @@ export function applyResponse(resp: Poe2ExchangeResponse, priceMap: Map<string, 
     const divineValue = item.id === resp.core.primary ? 1 : 1 / (resp.core.rates?.[item.id] ?? 0)
     const chaosValue = divineValue * exaltedPerPrimary
     if (!isFinite(chaosValue) || chaosValue <= 0) continue
-    priceMap.set(item.name.toLowerCase(), { chaosValue, divineValue })
+    priceMap.set(item.name.toLowerCase(), { chaosValue, divineValue, ninjaCategory: 'currency' })
   }
 
   for (const line of resp.lines ?? []) {
@@ -83,6 +91,7 @@ export function applyResponse(resp: Poe2ExchangeResponse, priceMap: Map<string, 
       chaosValue: primary * exaltedPerPrimary,
       divineValue: primary,
       graph: line.sparkline?.data,
+      ninjaCategory,
     })
   }
 }
@@ -121,16 +130,25 @@ interface Ee2OverviewResponse {
  *  returns all 13 categories in one payload; lines already carry names
  *  (no id->items join needed). Math mirrors the existing PoE2 path:
  *    divineValue = primaryValue
- *    chaosValue  = primaryValue * rates.exalted (exalted-equivalent) */
-export function applyProxyResponse(resp: Ee2OverviewResponse, priceMap: Map<string, PriceInfo>): void {
+ *    chaosValue  = primaryValue * rates.exalted (exalted-equivalent)
+ *
+ * categoryByType maps each overview's `type` string to a poe.ninja URL
+ * category segment. Threaded in by the caller so this module stays decoupled
+ * from the manifest. Core currencies (divine, exalted) always use 'currency'. */
+export function applyProxyResponse(
+  resp: Ee2OverviewResponse,
+  priceMap: Map<string, PriceInfo>,
+  categoryByType: Record<string, string> = {},
+): void {
   const exaltedPerPrimary = resp.core.rates?.exalted ?? 0
 
   if (exaltedPerPrimary > 0) {
-    priceMap.set('divine orb', { chaosValue: exaltedPerPrimary, divineValue: 1 })
-    priceMap.set('exalted orb', { chaosValue: 1, divineValue: 1 / exaltedPerPrimary })
+    priceMap.set('divine orb', { chaosValue: exaltedPerPrimary, divineValue: 1, ninjaCategory: 'currency' })
+    priceMap.set('exalted orb', { chaosValue: 1, divineValue: 1 / exaltedPerPrimary, ninjaCategory: 'currency' })
   }
 
   for (const overview of resp.itemOverviews ?? []) {
+    const ninjaCategory = categoryByType[overview.type]
     for (const line of overview.lines ?? []) {
       if (!line.name) continue
       if (line.primaryValue == null || line.primaryValue <= 0) continue
@@ -138,6 +156,7 @@ export function applyProxyResponse(resp: Ee2OverviewResponse, priceMap: Map<stri
         chaosValue: line.primaryValue * exaltedPerPrimary,
         divineValue: line.primaryValue,
         graph: line.sparkline?.data,
+        ninjaCategory,
       })
     }
   }
@@ -145,25 +164,33 @@ export function applyProxyResponse(resp: Ee2OverviewResponse, priceMap: Map<stri
 
 /** Single-request alternative to `fetchAndBuildPoe2PriceMap`. Generously
  *  hosted by @kvan7. Caller should fall back to the direct ninja path on
- *  failure or unknown-league error. */
+ *  failure or unknown-league error.
+ *
+ * categoryByType maps proxy type strings to poe.ninja URL category segments.
+ * Caller reads this from the manifest and passes it down. */
 export async function fetchPoe2PricesFromProxy(
   league: string,
   fetchJson: (url: string) => Promise<unknown>,
+  categoryByType: Record<string, string>,
 ): Promise<Map<string, PriceInfo>> {
   const slug = poe2LeagueToProxySlug(league)
   if (!slug) throw new Error(`Unsupported PoE2 league for proxy: ${league}`)
   const resp = (await fetchJson(`${POE2_NINJA_PROXY}/${slug}/overviewData.json`)) as Ee2OverviewResponse
   const priceMap = new Map<string, PriceInfo>()
-  applyProxyResponse(resp, priceMap)
+  applyProxyResponse(resp, priceMap, categoryByType)
   return priceMap
 }
 
 /** Fetch every populated exchange category in parallel and return a freshly
  *  built price map. Caller swaps this into its module-level cache on success;
- *  failure should not clobber existing state (leave old cache intact). */
+ *  failure should not clobber existing state (leave old cache intact).
+ *
+ * categoryByType maps ninja type strings to poe.ninja URL category segments.
+ * Caller reads this from the manifest and passes it down. */
 export async function fetchAndBuildPoe2PriceMap(
   league: string,
   fetchJson: (url: string) => Promise<unknown>,
+  categoryByType: Record<string, string>,
 ): Promise<Map<string, PriceInfo>> {
   const responses = (await Promise.all(
     POE2_EXCHANGE_TYPES.map((type) =>
@@ -171,6 +198,10 @@ export async function fetchAndBuildPoe2PriceMap(
     ),
   )) as Poe2ExchangeResponse[]
   const priceMap = new Map<string, PriceInfo>()
-  for (const resp of responses) applyResponse(resp, priceMap)
+  for (let i = 0; i < responses.length; i++) {
+    const type = POE2_EXCHANGE_TYPES[i]
+    const ninjaCategory = categoryByType[type]
+    applyResponse(responses[i], priceMap, ninjaCategory)
+  }
   return priceMap
 }

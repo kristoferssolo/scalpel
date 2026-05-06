@@ -9,7 +9,7 @@ function resp(over: {
   rates?: Record<string, number>
   coreItems?: Array<{ id: string; name: string }>
   items?: Array<{ id: string; name: string }>
-  lines?: Array<{ id: string; primaryValue?: number }>
+  lines?: Array<{ id: string; primaryValue?: number; sparkline?: { data: (number | null)[] } }>
 }) {
   return {
     core: {
@@ -43,9 +43,10 @@ describe('applyResponse (PoE2 exchange math)', () => {
         ],
       }),
       map,
+      undefined,
     )
-    expect(map.get('acme currency')).toEqual({ chaosValue: 200, divineValue: 2 })
-    expect(map.get('bronze sliver')).toEqual({ chaosValue: 50, divineValue: 0.5 })
+    expect(map.get('acme currency')).toMatchObject({ chaosValue: 200, divineValue: 2 })
+    expect(map.get('bronze sliver')).toMatchObject({ chaosValue: 50, divineValue: 0.5 })
   })
 
   it('seeds the primary core currency at divineValue=1, chaosValue=exaltedRate', () => {
@@ -57,8 +58,10 @@ describe('applyResponse (PoE2 exchange math)', () => {
         coreItems: [{ id: 'divine', name: 'Divine Orb' }],
       }),
       map,
+      undefined,
     )
-    expect(map.get('divine orb')).toEqual({ chaosValue: 137, divineValue: 1 })
+    // Core currencies always get ninjaCategory: 'currency' regardless of the passed ninjaCategory
+    expect(map.get('divine orb')).toEqual({ chaosValue: 137, divineValue: 1, ninjaCategory: 'currency' })
   })
 
   it('inverts the rate for non-primary core currencies', () => {
@@ -76,8 +79,9 @@ describe('applyResponse (PoE2 exchange math)', () => {
         ],
       }),
       map,
+      undefined,
     )
-    expect(map.get('exalted orb')).toEqual({ chaosValue: 1, divineValue: 0.01 })
+    expect(map.get('exalted orb')).toMatchObject({ chaosValue: 1, divineValue: 0.01 })
   })
 
   it('falls back to core.items + items for the id->name lookup', () => {
@@ -91,8 +95,9 @@ describe('applyResponse (PoE2 exchange math)', () => {
         lines: [{ id: 'X', primaryValue: 4 }],
       }),
       map,
+      undefined,
     )
-    expect(map.get('ext item')).toEqual({ chaosValue: 200, divineValue: 4 })
+    expect(map.get('ext item')).toMatchObject({ chaosValue: 200, divineValue: 4 })
   })
 
   it('skips lines whose id has no name mapping', () => {
@@ -103,6 +108,7 @@ describe('applyResponse (PoE2 exchange math)', () => {
         lines: [{ id: 'orphan', primaryValue: 1 }],
       }),
       map,
+      undefined,
     )
     expect(map.size).toBe(0)
   })
@@ -120,6 +126,7 @@ describe('applyResponse (PoE2 exchange math)', () => {
         lines: [{ id: 'A', primaryValue: 0 }, { id: 'B', primaryValue: -1 }, { id: 'C' /* primaryValue absent */ }],
       }),
       map,
+      undefined,
     )
     expect(map.size).toBe(0)
   })
@@ -138,6 +145,7 @@ describe('applyResponse (PoE2 exchange math)', () => {
         ],
       }),
       map,
+      undefined,
     )
     // No exalted rate means everything's chaosValue is 0 (or Infinity); both fail the guard.
     expect(map.size).toBe(0)
@@ -157,6 +165,7 @@ describe('applyResponse (PoE2 exchange math)', () => {
         items: undefined as unknown as Array<{ id: string; name: string }>,
       },
       map,
+      undefined,
     )
     expect(map.size).toBe(0)
   })
@@ -170,6 +179,7 @@ describe('applyResponse (PoE2 exchange math)', () => {
         lines: [{ id: 'A', primaryValue: 5 }],
       }),
       map,
+      undefined,
     )
     // Caller normalizes to lowercase before lookup; we mirror that here.
     expect(map.has('Mirror Of Kalandra')).toBe(false)
@@ -188,8 +198,9 @@ describe('applyResponse (PoE2 exchange math)', () => {
         lines: [{ id: 'A', primaryValue: 1 }],
       }),
       map,
+      undefined,
     )
-    expect(map.get('repeated')).toEqual({ chaosValue: 100, divineValue: 1 })
+    expect(map.get('repeated')).toMatchObject({ chaosValue: 100, divineValue: 1 })
   })
 
   it('passes sparkline graph data through to PriceInfo when present on the line', () => {
@@ -207,7 +218,36 @@ describe('applyResponse (PoE2 exchange math)', () => {
         items: [{ id: 'A', name: 'Graphed Item' }],
       },
       map,
+      undefined,
     )
     expect(map.get('graphed item')?.graph).toEqual(graphData)
+  })
+
+  it('tags line entries with the provided ninjaCategory', () => {
+    const map = new Map<string, PriceInfo>()
+    applyResponse(
+      resp({
+        rates: { divine: 1, exalted: 100 },
+        items: [{ id: 'A', name: 'Neural Catalyst' }],
+        lines: [{ id: 'A', primaryValue: 1 }],
+      }),
+      map,
+      'breach-catalyst',
+    )
+    expect(map.get('neural catalyst')?.ninjaCategory).toBe('breach-catalyst')
+  })
+
+  it('always tags core currency entries with ninjaCategory: currency regardless of the passed value', () => {
+    const map = new Map<string, PriceInfo>()
+    applyResponse(
+      resp({
+        primary: 'divine',
+        rates: { divine: 1, exalted: 100 },
+        coreItems: [{ id: 'divine', name: 'Divine Orb' }],
+      }),
+      map,
+      'breach-catalyst',
+    )
+    expect(map.get('divine orb')?.ninjaCategory).toBe('currency')
   })
 })

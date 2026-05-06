@@ -1,5 +1,13 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.8',
+    notes: [
+      'Fixed poe.ninja deep-link button for PoE2 - now lands on the correct category page (essences, soul cores, breach catalysts, etc.) instead of the generic /currency hub.',
+      'Fixed poe.ninja deep-link button for PoE2 leagues - "Fate of the Vaal" now correctly links to the vaal slug instead of a URL-encoded league name.',
+      'League slugs are now fetched from a runtime manifest so new leagues only require a push to main, not an app update.',
+    ],
+  },
+  {
     version: '0.9.7',
     notes: [
       'Added Path of Exile 2 support - game is detected automatically, switching games prompts a relaunch. Onboarding handles setting up both games or either one.',
