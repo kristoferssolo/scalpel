@@ -275,8 +275,11 @@ export function parseItemText(text: string): PoeItem | null {
   const ward = extractNum(allLines, 'Ward:') ?? 0
   const block = extractNum(allLines, 'Chance to Block:') ?? 0
 
-  // Weapon damage
-  const physDamageLine = allLines.find((l) => l.startsWith('Physical Damage:'))
+  // Weapon damage. Strip thousands-separator commas first so big rolls like
+  // "425-1,148" aren't truncated at the comma. PoE writes ", " (with a space)
+  // when listing multiple ele ranges, so the global match below still splits
+  // them correctly after the commas are gone.
+  const physDamageLine = allLines.find((l) => l.startsWith('Physical Damage:'))?.replace(/,/g, '')
   let physDamageMin: number | undefined
   let physDamageMax: number | undefined
   if (physDamageLine) {
@@ -287,8 +290,7 @@ export function parseItemText(text: string): PoeItem | null {
     }
   }
 
-  // Elemental damage: may have multiple ranges separated by commas
-  const eleDamageLine = allLines.find((l) => l.startsWith('Elemental Damage:'))
+  const eleDamageLine = allLines.find((l) => l.startsWith('Elemental Damage:'))?.replace(/,/g, '')
   let eleDamageAvg: number | undefined
   if (eleDamageLine) {
     const ranges = [...eleDamageLine.matchAll(/(\d+)-(\d+)/g)]
@@ -297,8 +299,7 @@ export function parseItemText(text: string): PoeItem | null {
     }
   }
 
-  // Chaos damage
-  const chaosDamageLine = allLines.find((l) => l.startsWith('Chaos Damage:'))
+  const chaosDamageLine = allLines.find((l) => l.startsWith('Chaos Damage:'))?.replace(/,/g, '')
   let chaosDamageAvg: number | undefined
   if (chaosDamageLine) {
     const m = chaosDamageLine.match(/(\d+)-(\d+)/)

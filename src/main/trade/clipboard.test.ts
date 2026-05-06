@@ -567,6 +567,29 @@ describe('parseItemText', () => {
       expect(item.logbookFactions).toEqual(['knights'])
       expect(item.logbookBosses).toEqual(['Medved, Feller of Heroes'])
     })
+
+    it('parses weapon physical damage with thousands-separator commas', () => {
+      const text = [
+        'Item Class: Crossbows',
+        'Rarity: Rare',
+        'Victory Core',
+        'Desolate Crossbow',
+        '--------',
+        'Quality: +20% (augmented)',
+        'Physical Damage: 425-1,148 (augmented)',
+        'Critical Hit Chance: 5.00%',
+        'Attacks per Second: 2.00 (augmented)',
+        'Reload Time: 0.64 (augmented)',
+        '--------',
+        'Item Level: 82',
+        '--------',
+        '76% increased Physical Damage',
+      ].join('\n')
+
+      const item = parseItemText(text)!
+      expect(item.physDamageMin).toBe(425)
+      expect(item.physDamageMax).toBe(1148)
+    })
   })
 
   // ---------------------------------------------------------------------------
