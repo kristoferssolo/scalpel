@@ -15,6 +15,7 @@ import { getGameFeatures } from '../../shared/game-features'
 interface Poe2ExchangeLine {
   id: string
   primaryValue?: number
+  sparkline?: { data: (number | null)[] }
 }
 
 interface Poe2ExchangeItem {
@@ -81,6 +82,7 @@ export function applyResponse(resp: Poe2ExchangeResponse, priceMap: Map<string, 
     priceMap.set(name.toLowerCase(), {
       chaosValue: primary * exaltedPerPrimary,
       divineValue: primary,
+      graph: line.sparkline?.data,
     })
   }
 }
@@ -99,6 +101,7 @@ function poe2LeagueToProxySlug(league: string): string | undefined {
 interface Ee2OverviewLine {
   name?: string
   primaryValue?: number
+  sparkline?: { data: (number | null)[] }
 }
 
 interface Ee2ItemOverview {
@@ -134,6 +137,7 @@ export function applyProxyResponse(resp: Ee2OverviewResponse, priceMap: Map<stri
       priceMap.set(line.name.toLowerCase(), {
         chaosValue: line.primaryValue * exaltedPerPrimary,
         divineValue: line.primaryValue,
+        graph: line.sparkline?.data,
       })
     }
   }

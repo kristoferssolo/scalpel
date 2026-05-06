@@ -426,6 +426,10 @@ export interface PriceInfo {
   chaosValue: number
   divineValue?: number
   dustValue?: number
+  /** 7 daily percent-change entries vs baseline; index 6 is today.
+   *  null entries mean no listings for that day. Optional because legacy
+   *  cached data may lack it and the renderer must tolerate its absence. */
+  graph?: (number | null)[]
 }
 
 // ─── Item Search ────────────────────────────────────────────────────────────

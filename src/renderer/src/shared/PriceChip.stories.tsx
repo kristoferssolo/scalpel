@@ -60,3 +60,29 @@ export const PriceChip_WithNinjaIcon: StoryObj<typeof PriceChip> = {
   render: (args) => <PriceChip {...args} />,
   args: { chaosValue: 90, showNinja: true, label: 'ninja' },
 }
+
+export const PriceChip_TrendUp: StoryObj<typeof PriceChip> = {
+  render: (args) => <PriceChip {...args} />,
+  args: { chaosValue: 120, graph: [5, 8, 10, 12, 15, 18, 22] },
+  parameters: { docs: { description: { story: 'Price trending up - last entry +22% exceeds the 15% threshold.' } } },
+}
+
+export const PriceChip_TrendDown: StoryObj<typeof PriceChip> = {
+  render: (args) => <PriceChip {...args} />,
+  args: { chaosValue: 60, graph: [-3, -5, -8, -12, -16, -20, -25] },
+  parameters: {
+    docs: { description: { story: 'Price trending down - last entry -25% is below the -15% threshold.' } },
+  },
+}
+
+export const PriceChip_TrendFlat: StoryObj<typeof PriceChip> = {
+  render: (args) => <PriceChip {...args} />,
+  args: { chaosValue: 80, graph: [1, -2, 3, -1, 5, 2, 4] },
+  parameters: { docs: { description: { story: 'Price trend flat - last entry +4% is within the ±15% threshold.' } } },
+}
+
+export const PriceChip_NoGraph: StoryObj<typeof PriceChip> = {
+  render: (args) => <PriceChip {...args} />,
+  args: { chaosValue: 47 },
+  parameters: { docs: { description: { story: 'No graph data - no trend arrow or sparkline rendered.' } } },
+}

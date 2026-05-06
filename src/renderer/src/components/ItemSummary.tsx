@@ -210,7 +210,12 @@ export function ItemSummary({
           return (
             <div className="flex gap-[6px] items-center">
               {hasPrice && (
-                <PriceChip chaosValue={priceInfo.chaosValue} divineValue={priceInfo.divineValue} showNinja />
+                <PriceChip
+                  chaosValue={priceInfo.chaosValue}
+                  divineValue={priceInfo.divineValue}
+                  graph={priceInfo.graph}
+                  showNinja
+                />
               )}
               {dustInfo != null && (
                 <InfoChip icon={dustIcon} className={onDustExplore ? '!pr-[3px]' : undefined}>

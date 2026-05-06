@@ -208,6 +208,7 @@ function processDenseResponse(resp: DenseResponse): void {
       const info = {
         chaosValue: chaos,
         divineValue: divineRate > 0 ? chaos / divineRate : undefined,
+        graph: line.graph,
       }
       priceMap.set(name.toLowerCase(), info)
       // Variant-keyed entry too (with empty-string variant for items that don't

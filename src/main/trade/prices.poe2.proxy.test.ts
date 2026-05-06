@@ -176,6 +176,24 @@ describe('applyProxyResponse (EE2 proxy math)', () => {
     )
     expect(map.get('divine orb')).toEqual({ chaosValue: 50, divineValue: 1 })
   })
+
+  it('passes sparkline graph data through to PriceInfo when present on the line', () => {
+    const map = new Map<string, PriceInfo>()
+    const graphData = [5, 10, -3, 8, 20, 15, 18]
+    applyProxyResponse(
+      {
+        core: { primary: 'divine', rates: { exalted: 100 } },
+        itemOverviews: [
+          {
+            type: 'Currency',
+            lines: [{ name: 'Graphed Currency', primaryValue: 2, sparkline: { data: graphData } }],
+          },
+        ],
+      },
+      map,
+    )
+    expect(map.get('graphed currency')?.graph).toEqual(graphData)
+  })
 })
 
 describe('fetchPoe2PricesFromProxy', () => {

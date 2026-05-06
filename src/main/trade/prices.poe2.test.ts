@@ -191,4 +191,23 @@ describe('applyResponse (PoE2 exchange math)', () => {
     )
     expect(map.get('repeated')).toEqual({ chaosValue: 100, divineValue: 1 })
   })
+
+  it('passes sparkline graph data through to PriceInfo when present on the line', () => {
+    const map = new Map<string, PriceInfo>()
+    const graphData = [5, 10, -3, 8, 20, 15, 18]
+    applyResponse(
+      {
+        core: {
+          primary: 'divine',
+          secondary: 'exalted',
+          rates: { divine: 1, exalted: 100 },
+          items: [],
+        },
+        lines: [{ id: 'A', primaryValue: 2, sparkline: { data: graphData } }],
+        items: [{ id: 'A', name: 'Graphed Item' }],
+      },
+      map,
+    )
+    expect(map.get('graphed item')?.graph).toEqual(graphData)
+  })
 })

@@ -49,7 +49,12 @@ export function FaustusBanner({ item, priceInfo, chaosPerDivine }: FaustusBanner
       </div>
       {priceInfo && priceInfo.chaosValue > 0 && (
         <div className="flex flex-col gap-1 items-end shrink-0 self-center pr-3">
-          <PriceChip chaosValue={priceInfo.chaosValue} divineValue={priceInfo.divineValue} showNinja />
+          <PriceChip
+            chaosValue={priceInfo.chaosValue}
+            divineValue={priceInfo.divineValue}
+            graph={priceInfo.graph}
+            showNinja
+          />
           {item.stackSize > 1 && (
             <PriceChip
               chaosValue={priceInfo.chaosValue * item.stackSize}

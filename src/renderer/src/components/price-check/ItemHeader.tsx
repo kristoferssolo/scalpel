@@ -89,7 +89,12 @@ export function ItemHeader({
               </InfoChip>
             )}
             {priceInfo && priceInfo.chaosValue > 0 && (
-              <PriceChip chaosValue={priceInfo.chaosValue} divineValue={priceInfo.divineValue} showNinja />
+              <PriceChip
+                chaosValue={priceInfo.chaosValue}
+                divineValue={priceInfo.divineValue}
+                graph={priceInfo.graph}
+                showNinja
+              />
             )}
             {priceInfo && stackSize != null && stackSize > 1 && (
               <PriceChip
