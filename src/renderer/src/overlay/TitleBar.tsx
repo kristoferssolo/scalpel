@@ -109,7 +109,7 @@ export function TitleBar({
                 <img
                   src={src}
                   alt=""
-                  className="w-5 h-5 object-cover"
+                  className="w-5 h-5 object-contain"
                   style={{
                     imageRendering: 'auto',
                     borderRadius: divArt ? 2 : 0,
