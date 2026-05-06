@@ -384,3 +384,19 @@ export function focusGameWindow(): void {
 export function isGameActive(): boolean {
   return OverlayController.targetHasFocus || overlayVisible
 }
+
+// Tracks whether an editable element (input/textarea/contenteditable) inside the
+// overlay window has focus. Pushed from the renderer on focusin/focusout so the
+// hotkey gate can avoid firing when the user is typing -- otherwise single-key
+// hotkeys would be unusable in any text field.
+let overlayInputFocused = false
+export function setOverlayInputFocused(focused: boolean): void {
+  overlayInputFocused = focused
+}
+
+/** True when the overlay window has OS focus AND the renderer has reported an
+ *  editable element as the active element. Hotkey handlers use this to swallow
+ *  presses that would otherwise stomp the user's typing. */
+export function isTypingInOverlay(): boolean {
+  return overlayWindow?.isFocused() === true && overlayInputFocused
+}

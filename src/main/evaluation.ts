@@ -10,10 +10,9 @@ import {
   findStrandBreakpoints,
   evaluateBlock,
 } from './filter/matcher'
-import { getOverlayWindow, showOverlay } from './overlay'
+import { focusGameWindow, getOverlayWindow, isTypingInOverlay, showOverlay } from './overlay'
 import { getPoeVersion } from './game-state'
 import { sendCtrlCToPoE } from './hotkeys'
-import { focusGameWindow } from './overlay'
 import { snapshotClipboard } from './clipboard-preserve'
 import { refreshPrices, lookupPrice, lookupPriceForItem, lookupBestUniquePrice, getUniquesByBase } from './trade/prices'
 import { ensureStatsLoaded, matchItemMods } from './trade/trade'
@@ -337,6 +336,15 @@ async function captureItemFromClipboard(isElevated: () => boolean): Promise<PoeI
  *  and the user reopens the overlay from the correct game after restart. */
 async function ensureCorrectGameForHotkey(store: Store<AppSettings>): Promise<boolean> {
   if (OverlayController.targetHasFocus) return true
+  // User typing in an overlay text field -- swallow so single-key hotkeys
+  // don't stomp the input. Otherwise if the overlay window itself is focused
+  // (user clicked into it), refocus PoE so the subsequent Ctrl+C reaches the
+  // game window.
+  if (isTypingInOverlay()) return false
+  if (getOverlayWindow()?.isFocused()) {
+    focusGameWindow()
+    return true
+  }
   const v = await detectFocusedPoeVersion()
   if (!v) return false
   if (v === getPoeVersion()) return true

@@ -21,6 +21,7 @@ import {
   getOverlayWindow,
   setCloseOnClickOutside,
   setGameFocusHandlers,
+  setOverlayInputFocused,
 } from './overlay'
 import { createAppWindow, showAppWindow, getAppWindow } from './app-window'
 import {
@@ -385,6 +386,17 @@ app.whenReady().then(() => {
   // Suspend/resume hotkeys while the hotkey recorder is active
   ipcMain.on('suspend-hotkeys', () => suspendHotkeys())
   ipcMain.on('resume-hotkeys', () => resumeHotkeys())
+
+  // Renderer pushes whether an editable element inside the overlay has focus.
+  // Suspend globalShortcut while typing so the keystroke reaches the input
+  // (otherwise registered single-key hotkeys consume the key OS-side and the
+  // text field never sees it). The flag also lets uIOhook-routed hotkeys gate
+  // themselves via isTypingInOverlay() since uIOhook isn't suspended.
+  ipcMain.on('overlay-input-focused', (_e, focused: boolean) => {
+    setOverlayInputFocused(focused)
+    if (focused) suspendHotkeys()
+    else resumeHotkeys()
+  })
 
   // Apply close-on-click-outside setting
   setCloseOnClickOutside(store.get('closeOnClickOutside'))

@@ -2,7 +2,7 @@ import { uIOhook, UiohookKey } from 'uiohook-napi'
 import { clipboard, globalShortcut } from 'electron'
 import { snapshotClipboard } from './clipboard-preserve'
 import { OverlayController } from 'electron-overlay-window'
-import { focusGameWindow, getOverlayWindow } from './overlay'
+import { focusGameWindow, getOverlayWindow, isTypingInOverlay } from './overlay'
 import { hideFocusedOrAnyVisibleSecondaryOverlay } from './windowing'
 
 // ─── Accelerator → uiohook keycode mapping ────────────────────────────────────
@@ -179,13 +179,22 @@ export function startHotkeyListener(handler: () => void): void {
   }
 }
 
-/** Temporarily unregister all global shortcuts so the hotkey recorder can capture keys. */
+// Refcounted so multiple independent reasons to suspend (hotkey recorder open
+// AND user typing in an overlay input, etc.) compose without one popping the
+// other's suspension. Each suspend pairs with one resume.
+let suspendDepth = 0
+
+/** Temporarily unregister all global shortcuts (recorder, input typing, etc.). */
 export function suspendHotkeys(): void {
-  globalShortcut.unregisterAll()
+  suspendDepth++
+  if (suspendDepth === 1) globalShortcut.unregisterAll()
 }
 
-/** Re-register all global shortcuts after the hotkey recorder finishes. */
+/** Re-register all global shortcuts when the last suspender resumes. */
 export function resumeHotkeys(): void {
+  if (suspendDepth === 0) return
+  suspendDepth--
+  if (suspendDepth > 0) return
   if (currentAccelerator) setHotkey(currentAccelerator)
   if (priceCheckAccelerator) setPriceCheckHotkey(priceCheckAccelerator)
   const cmds = chatCommandHotkeys.map((c) => ({ hotkey: c.accelerator, command: c.command, autoSubmit: c.autoSubmit }))
@@ -250,7 +259,8 @@ export function setChatCommands(commands: Array<{ hotkey: string; command: strin
     const autoSubmit = c.autoSubmit !== false
     try {
       globalShortcut.register(c.hotkey, () => {
-        if (!injecting) sendChatCommand(c.command, autoSubmit)
+        if (injecting || isTypingInOverlay()) return
+        sendChatCommand(c.command, autoSubmit)
       })
       chatCommandHotkeys.push({ accelerator: c.hotkey, command: c.command, autoSubmit })
     } catch (e) {
@@ -278,7 +288,12 @@ export function setSecondaryOverlayHotkeys(hotkeys: OverlayHotkey[]): void {
   for (const { accelerator, handler } of hotkeys) {
     if (!accelerator) continue
     try {
-      if (globalShortcut.register(accelerator, () => handler())) {
+      if (
+        globalShortcut.register(accelerator, () => {
+          if (isTypingInOverlay()) return
+          handler()
+        })
+      ) {
         registeredOverlayAccelerators.push(accelerator)
       }
     } catch (e) {
@@ -300,7 +315,8 @@ export function setAppMacros(macros: Array<{ action: string; hotkey: string; tag
     if (!hotkey || !action) continue
     try {
       globalShortcut.register(hotkey, () => {
-        if (!injecting && onAppMacro) onAppMacro(action, tag)
+        if (injecting || isTypingInOverlay() || !onAppMacro) return
+        onAppMacro(action, tag)
       })
       appMacroAccelerators.push(hotkey)
     } catch (e) {
