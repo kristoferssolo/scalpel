@@ -1,5 +1,6 @@
 import type { PriceInfo } from '../../shared/types'
-import { POE_NINJA_POE2_EXCHANGE } from '../../shared/endpoints'
+import { POE_NINJA_POE2_EXCHANGE, POE2_NINJA_PROXY } from '../../shared/endpoints'
+import { getGameFeatures } from '../../shared/game-features'
 
 /**
  * PoE2 ninja price fetching + processing. The PoE2 API has no dense/overviews
@@ -82,6 +83,75 @@ export function applyResponse(resp: Poe2ExchangeResponse, priceMap: Map<string, 
       divineValue: primary,
     })
   }
+}
+
+// EE2 proxy slugs are fixed and map by position to game-features.ts's PoE2
+// `leagues` array layout: [currentTemp, currentTempHC, Standard, Hardcore].
+// When GGG launches a new PoE2 league, only game-features.ts needs updating;
+// this mapping stays stable.
+const POE2_PROXY_SLUGS = ['league', 'leaguehc', 'standard', 'standardhc'] as const
+
+function poe2LeagueToProxySlug(league: string): string | undefined {
+  const idx = getGameFeatures(2).leagues.indexOf(league)
+  return idx >= 0 ? POE2_PROXY_SLUGS[idx] : undefined
+}
+
+interface Ee2OverviewLine {
+  name?: string
+  primaryValue?: number
+}
+
+interface Ee2ItemOverview {
+  type: string
+  lines: Ee2OverviewLine[]
+}
+
+interface Ee2OverviewResponse {
+  core: {
+    primary: string
+    rates?: Record<string, number>
+  }
+  itemOverviews?: Ee2ItemOverview[]
+}
+
+/** Apply a single EE2 proxy response to the given price map. The proxy
+ *  returns all 13 categories in one payload; lines already carry names
+ *  (no id->items join needed). Math mirrors the existing PoE2 path:
+ *    divineValue = primaryValue
+ *    chaosValue  = primaryValue * rates.exalted (exalted-equivalent) */
+export function applyProxyResponse(resp: Ee2OverviewResponse, priceMap: Map<string, PriceInfo>): void {
+  const exaltedPerPrimary = resp.core.rates?.exalted ?? 0
+
+  if (exaltedPerPrimary > 0) {
+    priceMap.set('divine orb', { chaosValue: exaltedPerPrimary, divineValue: 1 })
+    priceMap.set('exalted orb', { chaosValue: 1, divineValue: 1 / exaltedPerPrimary })
+  }
+
+  for (const overview of resp.itemOverviews ?? []) {
+    for (const line of overview.lines ?? []) {
+      if (!line.name) continue
+      if (line.primaryValue == null || line.primaryValue <= 0) continue
+      priceMap.set(line.name.toLowerCase(), {
+        chaosValue: line.primaryValue * exaltedPerPrimary,
+        divineValue: line.primaryValue,
+      })
+    }
+  }
+}
+
+/** Single-request alternative to `fetchAndBuildPoe2PriceMap`. Generously
+ *  hosted by @kvan7. Caller should fall back to the direct ninja path on
+ *  failure or unknown-league error. */
+export async function fetchPoe2PricesFromProxy(
+  league: string,
+  fetchJson: (url: string) => Promise<unknown>,
+): Promise<Map<string, PriceInfo>> {
+  const slug = poe2LeagueToProxySlug(league)
+  if (!slug) throw new Error(`Unsupported PoE2 league for proxy: ${league}`)
+  const resp = (await fetchJson(`${POE2_NINJA_PROXY}/${slug}/overviewData.json`)) as Ee2OverviewResponse
+  const priceMap = new Map<string, PriceInfo>()
+  applyProxyResponse(resp, priceMap)
+  return priceMap
 }
 
 /** Fetch every populated exchange category in parallel and return a freshly

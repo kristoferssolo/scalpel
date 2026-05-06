@@ -18,6 +18,12 @@ Scalpel includes the following third-party software and data:
 - Used for: Real-time item price data, fetched at runtime
 - Data is cached locally and refreshed every 10 minutes
 
+### Exiled Exchange 2 (kvan7/exiled-exchange-2)
+
+- Source: https://github.com/Kvan7/Exiled-Exchange-2
+- Used for: Aggregated PoE2 ninja price data, fetched at runtime from EE2's CDN-cached proxy
+- Operator: Keith Van (@kvan7) -- single endpoint replacing 13 parallel ninja calls
+
 ### Path of Exile (Grinding Gear Games)
 
 - Trade API: https://www.pathofexile.com/api/trade

@@ -43,6 +43,13 @@ export const POE_NINJA_API = 'https://poe.ninja/poe1/api/economy/current/dense/o
  *  the returned rates. Non-currency categories aren't covered here. */
 export const POE_NINJA_POE2_EXCHANGE = 'https://poe.ninja/poe2/api/economy/exchange/current/overview'
 
+/** Exiled Exchange 2's CDN-cached aggregator for PoE2 ninja data. Returns all
+ *  13 economy categories in one response (vs 13 parallel calls direct to ninja).
+ *  League slug is one of: league | leaguehc | standard | standardhc. Generously
+ *  hosted by Keith Van (@kvan7), creator of Exiled Exchange 2 -- treat as a
+ *  best-effort path with the direct-ninja path retained as fallback. */
+export const POE2_NINJA_PROXY = 'https://api.exiledexchange2.dev/proxy'
+
 /** GitHub API for update checks */
 export const GITHUB_RELEASES_API = 'https://api.github.com/repos/scalpelpoe/scalpel/releases/latest'
 

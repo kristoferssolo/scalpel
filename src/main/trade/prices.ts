@@ -7,7 +7,7 @@ import { POE_NINJA_API } from '../../shared/endpoints'
 import { deriveItemVariant } from '../../shared/external-link'
 import type { NinjaItemRef } from '../../shared/external-link'
 import { getPoeVersion } from '../game-state'
-import { fetchAndBuildPoe2PriceMap } from './prices.poe2'
+import { fetchAndBuildPoe2PriceMap, fetchPoe2PricesFromProxy } from './prices.poe2'
 import uniqueInfoPoe1 from '../../shared/data/items/unique-info.json'
 import uniqueInfoPoe2 from '../../shared/data/items/unique-info-poe2.json'
 const staticUniquesByVersion: Record<1 | 2, Record<string, string[]>> = {
@@ -59,13 +59,13 @@ let priceMap = new Map<string, PriceInfo>()
 // in prices.poe2.ts only populates name-keyed priceMap.
 let pricesByVariant = new Map<string, PriceInfo>()
 let lastFetchTime = 0
-// PoE2 fires 13 parallel requests per refresh (one per exchange category) while
-// PoE1 aggregates everything into a single dense endpoint call. Doubling the TTL
-// for PoE2 keeps ninja load roughly in line with PoE1 without impacting UX since
-// prices don't move meaningfully on a 10-minute scale anyway.
+// PoE2 now uses the EE2 proxy by default (one CDN-cached request per refresh),
+// matching the same load profile as PoE1's dense endpoint. Both versions use
+// the same 10-minute TTL; the direct-ninja fallback path is kept but is not
+// the default.
 const CACHE_TTL_BY_VERSION: Record<1 | 2, number> = {
   1: 10 * 60 * 1000,
-  2: 20 * 60 * 1000,
+  2: 10 * 60 * 1000,
 }
 
 // Dense endpoint — returns ALL item types in one request with current prices
@@ -92,6 +92,8 @@ interface DenseResponse {
 function fetchJson(url: string): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const request = net.request(url)
+    request.setHeader('User-Agent', 'Scalpel-Prices')
+    request.setHeader('Accept', 'application/json')
     let data = ''
     request.on('response', (response) => {
       response.on('data', (chunk) => {
@@ -256,9 +258,13 @@ export async function refreshPrices(league: string): Promise<void> {
 
   try {
     if (getPoeVersion() === 2) {
-      // PoE2 pricing lives in prices.poe2.ts; we just orchestrate cache swap
-      // here. Build the new map first so a failed fetch leaves old data intact.
-      const nextPriceMap = await fetchAndBuildPoe2PriceMap(league, fetchJson)
+      let nextPriceMap: Map<string, PriceInfo>
+      try {
+        nextPriceMap = await fetchPoe2PricesFromProxy(league, fetchJson)
+      } catch (proxyErr) {
+        console.error('[FilterScalpel] EE2 proxy failed, falling back to ninja direct:', proxyErr)
+        nextPriceMap = await fetchAndBuildPoe2PriceMap(league, fetchJson)
+      }
       resetCache(league, now)
       priceMap = nextPriceMap
       return
