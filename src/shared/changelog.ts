@@ -1,10 +1,15 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
-    version: '0.9.8',
+    version: '0.9.8-rc1',
     notes: [
-      'Fixed poe.ninja deep-link button for PoE2 - now lands on the correct category page (essences, soul cores, breach catalysts, etc.) instead of the generic /currency hub.',
-      'Fixed poe.ninja deep-link button for PoE2 leagues - "Fate of the Vaal" now correctly links to the vaal slug instead of a URL-encoded league name.',
-      'League slugs are now fetched from a runtime manifest so new leagues only require a push to main, not an app update.',
+      'Added price trend sparkline on poe.ninja price hover.',
+      'Fixed poe.ninja deep-link for PoE2 categories.',
+      'Fixed price checking for big-DPS items with commas.',
+      'Fixed PoE2 audit values defaulting to 8 decimal places.',
+      'Fixed hotkeys not firing while the overlay was active.',
+      'Fixed sister overlay not refreshing on a new hotkey.',
+      'Fixed sister overlay not following the main overlay during drag.',
+      'Fixed filter tab icon sizing for tall items.',
     ],
   },
   {

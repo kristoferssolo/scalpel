@@ -6,7 +6,10 @@ export const FAQ: { section: string; items: { q: string; a: string }[] }[] = [
         q: "Is Scalpel compatible with GGG's Terms of Service?",
         a: 'Scalpel is an overlay that runs alongside PoE, not inside it. The only things it does to the game are: send a copy-to-clipboard request when you press the hotkey, edit your .filter file on disk, send /reloaditemfilter or /itemfilter commands when saving changes, and send whatever chat commands you bind in settings. It does not inject into the game, read game memory, or automate gameplay.',
       },
-      { q: 'POE2 When', a: 'Stay tuned. I want to have it ready for 0.5' },
+      {
+        q: 'POE2 When',
+        a: "If you're reading this it's PoE2 szn. Fire your hotkey in PoE2 and it will prompt you to restart to make the overlay stick to the new window. Sorry, just how that works.",
+      },
     ],
   },
   {
