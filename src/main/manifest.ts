@@ -1,21 +1,11 @@
-import { app } from 'electron'
-import { readFileSync, existsSync } from 'fs'
-import { join } from 'path'
+import bundled from '../../manifest.json'
 import type { Manifest } from '../shared/types'
 import { MANIFEST_URL } from '../shared/endpoints'
 
-function loadBundledManifest(): Manifest {
-  // In a packaged app, extraResources land at process.resourcesPath.
-  // In dev, the repo root is the app path.
-  // process.resourcesPath is undefined outside Electron (e.g. vitest); guard it.
-  const prodPath = process.resourcesPath ? join(process.resourcesPath, 'manifest.json') : null
-  const devPath = join(app.getAppPath(), 'manifest.json')
-  const manifestPath = prodPath && existsSync(prodPath) ? prodPath : devPath
-  const raw = readFileSync(manifestPath, 'utf-8')
-  return JSON.parse(raw) as Manifest
-}
-
-let cached: Manifest = loadBundledManifest()
+// Imported directly so the manifest is baked into app.asar. The auto-updater
+// only ships app.asar; using extraResources broke updates from older builds
+// that never had the file on disk.
+let cached: Manifest = bundled as Manifest
 
 export function getManifest(): Manifest {
   return cached

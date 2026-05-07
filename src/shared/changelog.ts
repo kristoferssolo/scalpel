@@ -1,6 +1,6 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
-    version: '0.9.8-rc1',
+    version: '0.9.8-rc2',
     notes: [
       'Added price trend sparkline on poe.ninja price hover.',
       'Fixed poe.ninja deep-link for PoE2 categories.',
@@ -10,6 +10,7 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
       'Fixed sister overlay not refreshing on a new hotkey.',
       'Fixed sister overlay not following the main overlay during drag.',
       'Fixed filter tab icon sizing for tall items.',
+      'Fixed rc1 startup crash for users updating from older builds (manifest.json was not shipped via the auto-updater).',
     ],
   },
   {
