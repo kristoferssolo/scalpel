@@ -8,6 +8,8 @@ interface Props {
 
 export function GeneralTab({ settings, update }: Props): JSX.Element {
   const features = getGameFeatures(settings.poeVersion)
+  const cachedLeagues = settings.poeVersion === 2 ? settings.leaguesPoe2 : settings.leaguesPoe1
+  const leagueOptions: readonly string[] = cachedLeagues && cachedLeagues.length > 0 ? cachedLeagues : features.leagues
 
   return (
     <>
@@ -23,7 +25,7 @@ export function GeneralTab({ settings, update }: Props): JSX.Element {
         // so a typed value that happens to match a standard league cleanly switches
         // back to dropdown mode.
         const PRIVATE_LEAGUE_LABEL = 'Private League'
-        const isPrivate = !features.leagues.includes(settings.league)
+        const isPrivate = !leagueOptions.includes(settings.league)
         return (
           <section>
             <label>League</label>
@@ -54,7 +56,7 @@ export function GeneralTab({ settings, update }: Props): JSX.Element {
                 }}
                 className="absolute inset-0 opacity-0 cursor-pointer"
               >
-                {features.leagues.map((l) => (
+                {leagueOptions.map((l) => (
                   <option key={l} value={l}>
                     {l}
                   </option>

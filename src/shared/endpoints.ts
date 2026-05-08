@@ -7,12 +7,13 @@ export const POE_WEBSITE = 'https://www.pathofexile.com'
  *  browser, but only the browser URLs take a `poe2/` realm segment between
  *  search/exchange and the league -- API paths omit it. This matches Exiled
  *  Exchange 2's wiring, cross-checked against live requests from the PoE2 trade
- *  site. /fetch and /data/stats differ only in the prefix. */
+ *  site. /fetch, /data/stats, and /data/leagues differ only in the prefix. */
 export function getTradeUrls(version: 1 | 2): {
   search: (league: string) => string
   exchange: (league: string) => string
   fetch: (ids: string, queryId: string) => string
   stats: string
+  leagues: string
   webSearch: (league: string, queryId: string) => string
   webExchange: (league: string, queryId: string) => string
 } {
@@ -26,6 +27,7 @@ export function getTradeUrls(version: 1 | 2): {
     exchange: (l) => `${apiBase}/exchange/${enc(l)}`,
     fetch: (ids, qid) => `${apiBase}/fetch/${ids}?query=${qid}`,
     stats: `${apiBase}/data/stats`,
+    leagues: `${apiBase}/data/leagues`,
     webSearch: (l, id) => `${webBase}/search/${webRealm}${enc(l)}/${id}`,
     webExchange: (l, id) => `${webBase}/exchange/${webRealm}${enc(l)}/${id}`,
   }

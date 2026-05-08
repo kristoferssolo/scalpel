@@ -18,6 +18,13 @@ export const api = {
   getSettings: (): Promise<AppSettings> => ipcRenderer.invoke('get-settings'),
   setSetting: <K extends keyof AppSettings>(key: K, value: AppSettings[K]): Promise<void> =>
     ipcRenderer.invoke('set-setting', key, value),
+  refreshLeagues: (): Promise<{
+    leaguesPoe1: string[]
+    leaguesPoe2: string[]
+    leaguePoe1: string
+    leaguePoe2: string
+    league: string
+  }> => ipcRenderer.invoke('refresh-leagues'),
   pickFilterFile: (): Promise<string | null> => ipcRenderer.invoke('pick-filter-file'),
   pickFilterDir: (): Promise<string | null> => ipcRenderer.invoke('pick-filter-dir'),
   scanFilterDir: (dir: string): Promise<FilterListEntry[]> => ipcRenderer.invoke('scan-filter-dir', dir),

@@ -336,6 +336,14 @@ export interface AppSettings {
   filterDirPoe2: string
   leaguePoe1: string
   leaguePoe2: string
+  /** Cached league lists fetched from the trade APIs at app launch. The settings
+   *  + onboarding dropdowns prefer these when populated; falls back to the
+   *  hardcoded list in shared/game-features.ts if a fetch never succeeded. */
+  leaguesPoe1: string[]
+  leaguesPoe2: string[]
+  /** Epoch ms of the last successful league refresh. Used by refreshLeagues()
+   *  to short-circuit the network call when the cooldown hasn't elapsed. */
+  leaguesFetchedAt?: number
   hotkey: string
   priceCheckHotkey: string
   overlayOpacity: number

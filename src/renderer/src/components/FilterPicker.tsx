@@ -353,7 +353,7 @@ function FilterRow({
   return (
     <div
       onClick={switching ? undefined : onSelect}
-      className="flex items-center gap-2 rounded-[3px] border-none transition-[background] duration-100 px-2 py-1.5"
+      className="flex items-center gap-2 rounded-[3px] border-none transition-[background] duration-100 px-2 py-1.5 select-none"
       style={{
         cursor: switching ? 'default' : 'pointer',
         background: active ? 'var(--accent-dim)' : 'transparent',

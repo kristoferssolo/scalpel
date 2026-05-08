@@ -1,21 +1,26 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
-import { readFileSync, existsSync, readdirSync } from 'fs'
+import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join, basename, dirname } from 'path'
 import Store from 'electron-store'
-import { loadFilter } from '../filter-state'
 import { setCloseOnClickOutside, showOverlay } from '../overlay'
 import { getAppWindow } from '../app-window'
 import { updateOnlineSyncDir } from '../online-sync'
+import { applySetting } from '../settings-write'
 import type { AppSettings, FilterListEntry } from '../../shared/types'
 
 export function register(store: Store<AppSettings>): void {
+  const defaultFilterFolderForActiveGame = (): string => {
+    const suffix = store.get('poeVersion') === 2 ? ' 2' : ''
+    return `${process.env.USERPROFILE}\\Documents\\My Games\\Path of Exile${suffix}`
+  }
+
   ipcMain.handle('pick-filter-file', async (event) => {
     const sender = BrowserWindow.fromWebContents(event.sender)
     const isOverlay = sender && sender !== getAppWindow()
 
     const dialogOpts = {
       title: 'Select your .filter file',
-      defaultPath: `${process.env.USERPROFILE}\\Documents\\My Games\\Path of Exile`,
+      defaultPath: defaultFilterFolderForActiveGame(),
       filters: [{ name: 'PoE Filter', extensions: ['filter'] }],
       properties: ['openFile'] as 'openFile'[],
     }
@@ -37,8 +42,7 @@ export function register(store: Store<AppSettings>): void {
     }
 
     const path = result.filePaths[0]
-    store.set('filterPath', path)
-    loadFilter(path, 'Filter Opened')
+    applySetting(store, 'filterPath', path, event.sender)
 
     if (isOverlay) showOverlay()
     return path
@@ -52,7 +56,7 @@ export function register(store: Store<AppSettings>): void {
     const parent = !isOverlay && sender ? sender : undefined
     const dialogOpts = {
       title: 'Select your Path of Exile filter folder',
-      defaultPath: `${process.env.USERPROFILE}\\Documents\\My Games\\Path of Exile`,
+      defaultPath: defaultFilterFolderForActiveGame(),
       properties: ['openDirectory'] as 'openDirectory'[],
     }
     const result = parent ? await dialog.showOpenDialog(parent, dialogOpts) : await dialog.showOpenDialog(dialogOpts)
@@ -68,7 +72,7 @@ export function register(store: Store<AppSettings>): void {
     // folder that contains it. Walk back up so we scan the parent regardless.
     let dir = result.filePaths[0]
     if (basename(dir).toLowerCase() === 'onlinefilters') dir = dirname(dir)
-    store.set('filterDir', dir)
+    applySetting(store, 'filterDir', dir, event.sender)
     updateOnlineSyncDir(dir)
     if (isOverlay) showOverlay()
     return dir

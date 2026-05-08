@@ -40,6 +40,8 @@ import {
 } from './hotkeys'
 import { refreshPrices, invalidatePriceCache } from './trade/prices'
 import { onRateLimitUpdate } from './trade/trade'
+import { refreshLeagues } from './trade/leagues'
+import { requestGameSwitch } from './game-switch'
 import { startOnlineSync, stopOnlineSync } from './online-sync'
 import { initUpdater } from './update/updater'
 import { applyPendingUpdate } from './update/update-swap'
@@ -121,6 +123,8 @@ const store = new Store<AppSettings>({
     poeVersion: 1,
     regexPresetsPoe1: [],
     regexPresetsPoe2: [],
+    leaguesPoe1: [],
+    leaguesPoe2: [],
   },
 })
 
@@ -181,6 +185,17 @@ if (!store.get('tradePriceOptionPoe1')) store.set('tradePriceOptionPoe1', store.
   store.set('cheatSheets', store.get(`cheatSheets${suffix}`))
 }
 
+// Fire-and-forget league refresh on launch. Updates persist + auto-migrate the
+// user's selected league if their old challenge league rotated out. Deferred
+// until app-ready since electron's net.request requires it. `force: true`
+// bypasses the cooldown gate so a long-running app picks up new leagues each
+// time it's relaunched.
+app.whenReady().then(() => {
+  refreshLeagues(store, undefined, { force: true }).catch((err) =>
+    console.error('[leagues] launch refresh failed:', err),
+  )
+})
+
 // ---- Register IPC handlers -------------------------------------------------
 
 tradeHandlers.register(store)
@@ -221,7 +236,20 @@ function createTray(): void {
   tray = new Tray(icon)
   tray.setToolTip('Scalpel')
 
+  const current = store.get('poeVersion') === 2 ? 2 : 1
+  const other: 1 | 2 = current === 1 ? 2 : 1
+
   const contextMenu = Menu.buildFromTemplate([
+    { label: `Current Game: PoE${current}`, enabled: false },
+    {
+      label: `Switch to PoE${other}`,
+      click: () => {
+        // requestGameSwitch shows the app window and sends the prompt; the
+        // renderer's GameSwitchModal handles the user's response.
+        requestGameSwitch(store, other)
+      },
+    },
+    { type: 'separator' },
     {
       label: 'Settings',
       click: () => showAppWindow(),

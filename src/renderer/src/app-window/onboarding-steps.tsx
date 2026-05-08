@@ -1,16 +1,66 @@
 import { useEffect, useState } from 'react'
 import type { AppSettings } from '../../../shared/types'
+import { getGameFeatures } from '../../../shared/game-features'
 import poeFilterSettingImg from '../assets/other/poe-filter-setting.png'
+import poe1Logo from '../assets/other/poe1-logo.png'
+import poe2Logo from '../assets/other/poe2-logo.png'
 import { FilterPicker } from '../components/FilterPicker'
+import { LeagueDropdown } from '../components/LeagueDropdown'
 import { Toggle } from '../components/Toggle'
 import { HotkeyField } from '../components/settings'
 import appIcon from '../../../../resources/icon.png'
 import { IconGlow } from '../shared/IconGlow'
-import { TOTAL_ONBOARDING_STEPS } from './constants'
+import type { SelectedGames } from './constants'
 import { StepHeader } from './StepHeader'
 import { NavButtons } from './NavButtons'
 
-export function WelcomeStep({ onNext }: { onNext: () => void }): JSX.Element {
+function GameCard({
+  alt,
+  image,
+  selected,
+  onClick,
+}: {
+  alt: string
+  image: string
+  selected: boolean
+  onClick: () => void
+}): JSX.Element {
+  const [hovered, setHovered] = useState(false)
+  // selected = full color; hovered (but not selected) = 25% greyscale; otherwise = full greyscale
+  const filter = selected ? 'none' : hovered ? 'grayscale(25%) brightness(0.85)' : 'grayscale(100%) brightness(0.65)'
+  const opacity = selected ? 1 : hovered ? 0.95 : 0.85
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="relative flex-1 rounded-lg p-0 cursor-pointer transition-all duration-150 bg-transparent overflow-hidden"
+      style={{
+        border: selected ? '3px solid var(--accent)' : '3px solid transparent',
+        maxWidth: 150,
+      }}
+    >
+      <img
+        src={image}
+        alt={alt}
+        className="block w-full h-auto rounded-md transition-all duration-150"
+        style={{ filter, opacity }}
+      />
+    </button>
+  )
+}
+
+export function WelcomeStep({
+  selectedGames,
+  onSelectedGamesChange,
+  onNext,
+}: {
+  selectedGames: SelectedGames
+  onSelectedGamesChange: (g: SelectedGames) => void
+  onNext: () => void
+}): JSX.Element {
+  const anySelected = selectedGames.poe1 || selectedGames.poe2
   return (
     <div>
       <IconGlow
@@ -26,32 +76,64 @@ export function WelcomeStep({ onNext }: { onNext: () => void }): JSX.Element {
       />
       <StepHeader
         title="Welcome to Scalpel"
-        subtitle="The first ever fourth-party Path of Exile tool. Let's get you set up so you have one more key combo to remember just to play a video game."
+        subtitle="Path of Exile's first fourth-party tool. Select which game(s) you play to get started."
       />
-      <NavButtons onNext={onNext} nextLabel="Get Started" />
+      <div className="mb-5">
+        <div className="flex gap-6 justify-center">
+          <GameCard
+            alt="Path of Exile 1"
+            image={poe1Logo}
+            selected={selectedGames.poe1}
+            onClick={() => onSelectedGamesChange({ ...selectedGames, poe1: !selectedGames.poe1 })}
+          />
+          <GameCard
+            alt="Path of Exile 2"
+            image={poe2Logo}
+            selected={selectedGames.poe2}
+            onClick={() => onSelectedGamesChange({ ...selectedGames, poe2: !selectedGames.poe2 })}
+          />
+        </div>
+      </div>
+      <NavButtons onNext={onNext} nextLabel="Continue" nextDisabled={!anySelected} />
     </div>
   )
+}
+
+/** Returns "PoE1" / "PoE2" when both games are being set up, or "" for
+ *  single-game flow where the prefix would be redundant. */
+function gameLabel(game: 1 | 2 | null): string {
+  return game === 1 ? 'PoE1' : game === 2 ? 'PoE2' : ''
 }
 
 export function FilterFolderStep({
   settings,
   onSettingsChange,
   onNext,
+  onBack,
+  game,
+  stepNum,
+  totalSteps,
 }: {
   settings: AppSettings
   onSettingsChange: (s: AppSettings) => void
   onNext: () => void
+  onBack?: () => void
+  game: 1 | 2 | null
+  stepNum: number
+  totalSteps: number
 }): JSX.Element {
+  const prefix = gameLabel(game)
+  const folderHint = getGameFeatures(game ?? 1).filterFolderHint
   return (
     <div>
       <StepHeader
-        stepNum={1}
-        totalSteps={TOTAL_ONBOARDING_STEPS}
-        title="Point to your filter folder"
-        subtitle="Choose your Path of Exile filter folder, generally Documents\My Games\Path of Exile, so Scalpel can find your filters."
+        stepNum={stepNum}
+        totalSteps={totalSteps}
+        title={prefix ? `Point to your ${prefix} filter folder` : 'Point to your filter folder'}
+        subtitle={`Choose your filter folder, generally ${folderHint}, so Scalpel can find your filters.`}
       />
       <FilterPicker settings={settings} onSettingsChange={onSettingsChange} mode="folder" />
-      <NavButtons onNext={onNext} nextDisabled={!settings.filterDir} />
+      <NavButtons onBack={onBack} onNext={onNext} nextDisabled={!settings.filterDir} />
     </div>
   )
 }
@@ -62,19 +144,26 @@ export function FilterStep({
   onNext,
   onBack,
   onOnlineImport,
+  game,
+  stepNum,
+  totalSteps,
 }: {
   settings: AppSettings
   onSettingsChange: (s: AppSettings) => void
   onNext: () => void
   onBack: () => void
   onOnlineImport?: (name: string) => void
+  game: 1 | 2 | null
+  stepNum: number
+  totalSteps: number
 }): JSX.Element {
+  const prefix = gameLabel(game)
   return (
     <div>
       <StepHeader
-        stepNum={2}
-        totalSteps={TOTAL_ONBOARDING_STEPS}
-        title="Select your filter"
+        stepNum={stepNum}
+        totalSteps={totalSteps}
+        title={prefix ? `Select your ${prefix} filter` : 'Select your filter'}
         subtitle="Pick your starting filter. If you select an online filter, it will be resaved locally for fast editing, and you can merge in changes from your online filter whenever there are updates."
       />
       <div className="-mt-3">
@@ -138,17 +227,21 @@ export function HotkeyStep({
   onUpdate,
   onNext,
   onBack,
+  stepNum,
+  totalSteps,
 }: {
   settings: AppSettings
   onUpdate: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void
   onNext: () => void
   onBack: () => void
+  stepNum: number
+  totalSteps: number
 }): JSX.Element {
   return (
     <div>
       <StepHeader
-        stepNum={3}
-        totalSteps={TOTAL_ONBOARDING_STEPS}
+        stepNum={stepNum}
+        totalSteps={totalSteps}
         title="Set your filter hotkey"
         subtitle="This key combo activates the overlay while you're in game. Hover an item and press it to analyze your filter."
       />
@@ -163,17 +256,21 @@ export function PriceCheckHotkeyStep({
   onUpdate,
   onNext,
   onBack,
+  stepNum,
+  totalSteps,
 }: {
   settings: AppSettings
   onUpdate: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void
   onNext: () => void
   onBack: () => void
+  stepNum: number
+  totalSteps: number
 }): JSX.Element {
   return (
     <div>
       <StepHeader
-        stepNum={4}
-        totalSteps={TOTAL_ONBOARDING_STEPS}
+        stepNum={stepNum}
+        totalSteps={totalSteps}
         title="Set your price check hotkey"
         subtitle="This key combo is used to... price check items. You should know how to use this one."
       />
@@ -183,7 +280,17 @@ export function PriceCheckHotkeyStep({
   )
 }
 
-export function TradeLoginStep({ onNext, onBack }: { onNext: () => void; onBack: () => void }): JSX.Element {
+export function TradeLoginStep({
+  onNext,
+  onBack,
+  stepNum,
+  totalSteps,
+}: {
+  onNext: () => void
+  onBack: () => void
+  stepNum: number
+  totalSteps: number
+}): JSX.Element {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
 
   useEffect(() => {
@@ -197,8 +304,8 @@ export function TradeLoginStep({ onNext, onBack }: { onNext: () => void; onBack:
   return (
     <div>
       <StepHeader
-        stepNum={5}
-        totalSteps={TOTAL_ONBOARDING_STEPS}
+        stepNum={stepNum}
+        totalSteps={totalSteps}
         title="Log into the trade site"
         subtitle="This is optional, but logging in lets you travel directly to a seller's hideout to buy items from within Scalpel."
       />
@@ -238,55 +345,72 @@ export function TradeLoginStep({ onNext, onBack }: { onNext: () => void; onBack:
 
 export function PreferencesStep({
   settings,
+  selectedGames,
   onUpdate,
   onNext,
   onBack,
+  stepNum,
+  totalSteps,
 }: {
   settings: AppSettings
+  selectedGames: SelectedGames
   onUpdate: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void
   onNext: () => void
   onBack: () => void
+  stepNum: number
+  totalSteps: number
 }): JSX.Element {
+  const both = selectedGames.poe1 && selectedGames.poe2
+  // Prefer the live-fetched league lists from the trade APIs; fall back to the
+  // hardcoded list in shared/game-features.ts if the launch-time fetch failed.
+  const poe1Leagues: readonly string[] =
+    settings.leaguesPoe1 && settings.leaguesPoe1.length > 0 ? settings.leaguesPoe1 : getGameFeatures(1).leagues
+  const poe2Leagues: readonly string[] =
+    settings.leaguesPoe2 && settings.leaguesPoe2.length > 0 ? settings.leaguesPoe2 : getGameFeatures(2).leagues
   return (
     <div>
       <StepHeader
-        stepNum={5}
-        totalSteps={TOTAL_ONBOARDING_STEPS}
+        stepNum={stepNum}
+        totalSteps={totalSteps}
         title="Preferences"
         subtitle="You can always change these later from settings."
       />
       <div className="flex flex-col gap-5">
-        {/* League */}
-        <section>
-          <label>League</label>
-          <div className="setting-box mt-[6px] relative">
-            <span className="value">{settings.league}</span>
-            <button
-              className="primary"
-              onClick={() => {
-                const sel = document.getElementById('league-select-onboarding') as HTMLSelectElement | null
-                sel?.showPicker?.()
-                sel?.focus()
+        {both ? (
+          <section className="flex flex-col gap-3">
+            <LeagueDropdown
+              id="league-poe1-onboarding"
+              label="PoE1 League"
+              value={settings.leaguePoe1}
+              options={poe1Leagues}
+              onChange={(v) => {
+                onUpdate('leaguePoe1', v)
+                if (settings.poeVersion === 1) onUpdate('league', v)
               }}
-            >
-              Change
-            </button>
-            <select
+            />
+            <LeagueDropdown
+              id="league-poe2-onboarding"
+              label="PoE2 League"
+              value={settings.leaguePoe2}
+              options={poe2Leagues}
+              onChange={(v) => {
+                onUpdate('leaguePoe2', v)
+                if (settings.poeVersion === 2) onUpdate('league', v)
+              }}
+            />
+          </section>
+        ) : (
+          <section>
+            <LeagueDropdown
               id="league-select-onboarding"
+              label="League"
               value={settings.league}
-              onChange={(e) => onUpdate('league', e.target.value)}
-              className="absolute inset-0 opacity-0 cursor-pointer"
-            >
-              {['Mirage', 'Hardcore Mirage', 'Standard', 'Hardcore'].map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </div>
-        </section>
+              options={selectedGames.poe2 ? poe2Leagues : poe1Leagues}
+              onChange={(v) => onUpdate('league', v)}
+            />
+          </section>
+        )}
 
-        {/* Close on click outside */}
         <section>
           <div
             onClick={() => onUpdate('closeOnClickOutside', !settings.closeOnClickOutside)}
@@ -297,7 +421,6 @@ export function PreferencesStep({
           </div>
         </section>
 
-        {/* Reload on save */}
         <section>
           <div
             onClick={() => onUpdate('reloadOnSave', !settings.reloadOnSave)}
