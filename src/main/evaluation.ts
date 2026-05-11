@@ -3,6 +3,7 @@ import Store from 'electron-store'
 import { OverlayController } from 'electron-overlay-window'
 import { getCurrentFilter } from './filter-state'
 import { readItemFromClipboard } from './trade/clipboard'
+import { getCurrentZone } from './client-log'
 import {
   findMatchingBlocks,
   findStackSizeBreakpoints,
@@ -102,29 +103,55 @@ export function setOpenSide(side: AppSettings['openSide']): void {
   openSide = side
 }
 
+let lastEvaluatedItem: PoeItem | null = null
+let storeRef: Store<AppSettings> | null = null
+
+/** Lets the IPC layer pass the Store handle into this module so the
+ *  override helper can read the `useCurrentZoneAreaLevel` flag without
+ *  importing the store directly. Called once at boot. */
+export function setEvaluationStore(s: Store<AppSettings>): void {
+  storeRef = s
+}
+
+function applyZoneAreaLevel(item: PoeItem): PoeItem {
+  if (!storeRef?.get('useCurrentZoneAreaLevel')) return item
+  const zone = getCurrentZone()
+  if (!zone) return item
+  return { ...item, areaLevel: zone.areaLevel }
+}
+
+/** Re-run evaluation on the most recently displayed item. Called when the
+ *  user toggles the zone-level override so the panel updates without a
+ *  fresh hotkey press. No-op when no item has been evaluated yet. */
+export function reEvaluateLastItem(): void {
+  if (lastEvaluatedItem) evaluateAndSend(lastEvaluatedItem)
+}
+
 export function evaluateAndSend(item: PoeItem): void {
+  lastEvaluatedItem = item
+  const effective = applyZoneAreaLevel(item)
   const currentFilter = getCurrentFilter()
   if (!currentFilter) return
-  const matches = findMatchingBlocks(currentFilter, item)
+  const matches = findMatchingBlocks(currentFilter, effective)
   const isStackable =
-    item.stackSize > 0 && currentFilter.blocks.some((b) => b.conditions.some((c) => c.type === 'StackSize'))
-  const stackBreakpoints = isStackable ? findStackSizeBreakpoints(currentFilter, item) : undefined
+    effective.stackSize > 0 && currentFilter.blocks.some((b) => b.conditions.some((c) => c.type === 'StackSize'))
+  const stackBreakpoints = isStackable ? findStackSizeBreakpoints(currentFilter, effective) : undefined
   if (stackBreakpoints) {
     for (const bp of stackBreakpoints) {
       if (bp.activeMatch) {
-        bp.tierGroup = buildTierGroup(currentFilter, bp.activeMatch, item)
+        bp.tierGroup = buildTierGroup(currentFilter, bp.activeMatch, effective)
       }
     }
   }
   // Strand breakpoints (computed first so quality can check if strands are shown)
   const hasStrandConditions = currentFilter.blocks.some((b) => b.conditions.some((c) => c.type === 'MemoryStrands'))
   const strandBreakpoints =
-    hasStrandConditions && item.memoryStrands != null ? findStrandBreakpoints(currentFilter, item) : undefined
+    hasStrandConditions && effective.memoryStrands != null ? findStrandBreakpoints(currentFilter, effective) : undefined
   const effectiveStrandBps = strandBreakpoints && strandBreakpoints.length > 1 ? strandBreakpoints : undefined
   if (effectiveStrandBps) {
     for (const bp of effectiveStrandBps) {
       if (bp.activeMatch) {
-        bp.tierGroup = buildTierGroup(currentFilter, bp.activeMatch, item)
+        bp.tierGroup = buildTierGroup(currentFilter, bp.activeMatch, effective)
       }
     }
   }
@@ -132,18 +159,18 @@ export function evaluateAndSend(item: PoeItem): void {
   // Quality breakpoints - skip if strand breakpoints are already shown
   const hasQualityConditions = currentFilter.blocks.some((b) => b.conditions.some((c) => c.type === 'Quality'))
   const qualityBreakpoints =
-    hasQualityConditions && !effectiveStrandBps ? findQualityBreakpoints(currentFilter, item) : undefined
+    hasQualityConditions && !effectiveStrandBps ? findQualityBreakpoints(currentFilter, effective) : undefined
   const effectiveQualityBps = qualityBreakpoints && qualityBreakpoints.length > 1 ? qualityBreakpoints : undefined
   if (effectiveQualityBps) {
     for (const bp of effectiveQualityBps) {
       if (bp.activeMatch) {
-        bp.tierGroup = buildTierGroup(currentFilter, bp.activeMatch, item)
+        bp.tierGroup = buildTierGroup(currentFilter, bp.activeMatch, effective)
       }
     }
   }
   const activeMatch = matches.find((m) => m.isFirstMatch)
-  const tierGroup = activeMatch ? buildTierGroup(currentFilter, activeMatch, item) : undefined
-  const priceInfo = lookupPriceForItem(item)
+  const tierGroup = activeMatch ? buildTierGroup(currentFilter, activeMatch, effective) : undefined
+  const priceInfo = lookupPriceForItem(effective)
   const payload: OverlayData = {
     item,
     matches,
