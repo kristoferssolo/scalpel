@@ -463,6 +463,12 @@ export function isGameActive(): boolean {
 // whiteboard text editor, etc. Otherwise single-key hotkeys would be unusable
 // in any text field.
 const inputFocusedWebContents = new Set<number>()
+// WC ids we've already attached a `destroyed` cleanup listener to. Without
+// this guard, every focus/blur/focus cycle on the same renderer would attach
+// a new `once('destroyed')` listener (since `once` only auto-removes when the
+// event actually fires), tripping Node's MaxListenersExceededWarning after
+// roughly 11 cycles.
+const hookedWcIds = new Set<number>()
 
 export function setWindowInputFocused(webContentsId: number, focused: boolean): void {
   if (focused) {
@@ -471,7 +477,16 @@ export function setWindowInputFocused(webContentsId: number, focused: boolean): 
       // If the renderer dies mid-focus (window force-closed during text edit),
       // its `focusout` never fires - drain the id when the webContents goes
       // away so the Set doesn't accumulate ghost entries.
-      webContents.fromId(webContentsId)?.once('destroyed', () => inputFocusedWebContents.delete(webContentsId))
+      if (!hookedWcIds.has(webContentsId)) {
+        const wc = webContents.fromId(webContentsId)
+        if (wc) {
+          hookedWcIds.add(webContentsId)
+          wc.once('destroyed', () => {
+            inputFocusedWebContents.delete(webContentsId)
+            hookedWcIds.delete(webContentsId)
+          })
+        }
+      }
     }
   } else {
     inputFocusedWebContents.delete(webContentsId)
