@@ -1,4 +1,4 @@
-import type { OverlayData } from '../../../../shared/types'
+import type { OverlayData, Zone } from '../../../../shared/types'
 
 export interface FilterPanelProps {
   data: OverlayData
@@ -23,7 +23,7 @@ export interface FilterPanelProps {
   /** Which side of the main panel the sister overlay mounts on. Used so toggle icons
    *  can point toward wherever the sister slides out from. */
   tierSisterSide?: 'left' | 'right'
-  currentZone: { areaLevel: number; areaCode: string } | null
+  currentZone: Zone | null
   useCurrentZoneAreaLevel: boolean
   onToggleZoneAreaLevel: (next: boolean) => void
 }

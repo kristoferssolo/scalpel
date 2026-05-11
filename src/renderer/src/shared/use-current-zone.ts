@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-
-export type Zone = { areaLevel: number; areaCode: string }
+import type { Zone } from '../../../shared/types'
 
 /** React subscription to the main-process zone state. Returns null when
  *  PoE isn't running, when no zone event has fired yet, or when the

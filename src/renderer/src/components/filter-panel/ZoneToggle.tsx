@@ -1,4 +1,4 @@
-import type { Zone } from '../../shared/useCurrentZone'
+import type { Zone } from '../../../../shared/types'
 import { Toggle } from '../Toggle'
 
 interface ZoneToggleProps {
@@ -27,12 +27,13 @@ export function ZoneToggle({ currentZone, enabled, onChange }: ZoneToggleProps):
   return (
     <div className="flex mt-0.5">
       <div
-        className="inline-flex items-center gap-[6px] bg-black/30 rounded-full px-2 py-[3px] text-[11px]"
+        onClick={() => onChange(!enabled)}
+        className="inline-flex items-center gap-[6px] bg-black/30 rounded-full px-2 py-[3px] text-[11px] cursor-pointer select-none"
         title={`Override item area level with the current zone (${currentZone.areaCode})`}
       >
-        <Toggle checked={enabled} onChange={onChange} />
-        <span className="text-text-dim">Use Current Zone</span>
-        <span className="text-text font-semibold">lvl {currentZone.areaLevel}</span>
+        <Toggle checked={enabled} onChange={() => {}} />
+        <span className="text-text-dim">Use Zone Level</span>
+        <span className="text-text font-semibold">{currentZone.areaLevel}</span>
       </div>
     </div>
   )

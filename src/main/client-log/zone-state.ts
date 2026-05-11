@@ -1,8 +1,7 @@
 import { EventEmitter } from 'node:events'
+import type { Zone } from '../../shared/types'
 import { getPoeVersion } from '../game-state'
 import { isTownOrHideout } from './is-town-or-hideout'
-
-export type Zone = { areaLevel: number; areaCode: string }
 
 let currentZone: Zone | null = null
 const emitter = new EventEmitter()

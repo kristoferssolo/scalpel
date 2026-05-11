@@ -233,6 +233,17 @@ export interface TierGroup {
   currentTier: string
 }
 
+/** Live zone state derived from the running PoE process's Client.txt log.
+ *  `areaLevel` is the zone's monster/loot level (1-100ish); `areaCode` is
+ *  the internal GGG identifier (e.g. "MapWorldsAtoll", "1_1_1"). The main
+ *  process is the source of truth; the renderer subscribes via the
+ *  `zone-changed` IPC channel. Null whenever the player is in a town or
+ *  hideout, or before the first zone event has fired. */
+export interface Zone {
+  areaLevel: number
+  areaCode: string
+}
+
 export interface OverlayData {
   item: PoeItem
   matches: MatchResult[]

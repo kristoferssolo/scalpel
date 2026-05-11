@@ -7,6 +7,7 @@ import type {
   HistoryEntry,
   Manifest,
   OverlayData,
+  Zone,
 } from '../shared/types'
 import type { ExternalLinkTarget } from '../shared/external-link'
 import type { BoardLibrary, BoardSnapshot, BoardState } from '../shared/whiteboard-types'
@@ -282,9 +283,8 @@ export const api = {
     ipcRenderer.on('poe-version', handler)
     return () => ipcRenderer.removeListener('poe-version', handler)
   },
-  onZoneChanged: (cb: (zone: { areaLevel: number; areaCode: string } | null) => void): (() => void) => {
-    const handler = (_: Electron.IpcRendererEvent, zone: { areaLevel: number; areaCode: string } | null): void =>
-      cb(zone)
+  onZoneChanged: (cb: (zone: Zone | null) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, zone: Zone | null): void => cb(zone)
     ipcRenderer.on('zone-changed', handler)
     return () => ipcRenderer.removeListener('zone-changed', handler)
   },
