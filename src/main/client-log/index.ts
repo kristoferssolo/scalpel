@@ -26,7 +26,9 @@ export function startClientLogWatcher(overlayWindow: BrowserWindow): void {
   // Send the current state immediately so a renderer that mounts after
   // the first zone change picks up the existing state instead of waiting
   // for the next one.
-  overlayWindow.webContents.send('zone-changed', getCurrentZone())
+  if (!overlayWindow.isDestroyed()) {
+    overlayWindow.webContents.send('zone-changed', getCurrentZone())
+  }
 }
 
 export { getCurrentZone } from './zone-state'
