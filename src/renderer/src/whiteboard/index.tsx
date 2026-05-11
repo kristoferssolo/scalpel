@@ -21,6 +21,34 @@ export function Whiteboard(): JSX.Element {
     window.api.whiteboard.setMode(mode)
   }, [mode])
 
+  // Tell main when an editable element inside the whiteboard window has focus
+  // (the in-canvas text editor), so the hotkey gate can swallow keystrokes
+  // that would otherwise stomp the user's typing. Mirrors the main overlay's
+  // listener at src/renderer/src/overlay/App.tsx.
+  useEffect(() => {
+    const isEditable = (el: Element | null): boolean => {
+      if (!el) return false
+      const tag = el.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return true
+      return (el as HTMLElement).isContentEditable
+    }
+    let last = false
+    const update = (): void => {
+      const next = isEditable(document.activeElement)
+      if (next !== last) {
+        last = next
+        window.api.setOverlayInputFocused(next)
+      }
+    }
+    update()
+    document.addEventListener('focusin', update)
+    document.addEventListener('focusout', update)
+    return () => {
+      document.removeEventListener('focusin', update)
+      document.removeEventListener('focusout', update)
+    }
+  }, [])
+
   // Discover PoE version once.
   useEffect(() => {
     window.api

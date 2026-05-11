@@ -21,7 +21,7 @@ import {
   getOverlayWindow,
   setCloseOnClickOutside,
   setGameFocusHandlers,
-  setOverlayInputFocused,
+  setWindowInputFocused,
 } from './overlay'
 import { createAppWindow, showAppWindow, getAppWindow } from './app-window'
 import {
@@ -436,8 +436,8 @@ app.whenReady().then(() => {
   // (otherwise registered single-key hotkeys consume the key OS-side and the
   // text field never sees it). The flag also lets uIOhook-routed hotkeys gate
   // themselves via isTypingInOverlay() since uIOhook isn't suspended.
-  ipcMain.on('overlay-input-focused', (_e, focused: boolean) => {
-    setOverlayInputFocused(focused)
+  ipcMain.on('overlay-input-focused', (e, focused: boolean) => {
+    setWindowInputFocused(e.sender.id, focused)
     if (focused) suspendHotkeys()
     else resumeHotkeys()
   })
