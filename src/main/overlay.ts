@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, screen } from 'electron'
+import { BrowserWindow, ipcMain, screen, webContents } from 'electron'
 import { join } from 'path'
 import { OverlayController, OVERLAY_WINDOW_OPTS } from 'electron-overlay-window'
 import { uIOhook } from 'uiohook-napi'
@@ -463,8 +463,17 @@ export function isGameActive(): boolean {
 const inputFocusedWebContents = new Set<number>()
 
 export function setWindowInputFocused(webContentsId: number, focused: boolean): void {
-  if (focused) inputFocusedWebContents.add(webContentsId)
-  else inputFocusedWebContents.delete(webContentsId)
+  if (focused) {
+    if (!inputFocusedWebContents.has(webContentsId)) {
+      inputFocusedWebContents.add(webContentsId)
+      // If the renderer dies mid-focus (window force-closed during text edit),
+      // its `focusout` never fires - drain the id when the webContents goes
+      // away so the Set doesn't accumulate ghost entries.
+      webContents.fromId(webContentsId)?.once('destroyed', () => inputFocusedWebContents.delete(webContentsId))
+    }
+  } else {
+    inputFocusedWebContents.delete(webContentsId)
+  }
 }
 
 /** True when a Scalpel window has OS focus AND its renderer has reported an

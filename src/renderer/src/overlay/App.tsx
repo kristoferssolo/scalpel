@@ -5,6 +5,7 @@ import type { ExternalLinkTarget } from '../../../shared/external-link'
 import { externalLinkUrl, ninjaLinkUrl } from '../../../shared/external-link'
 import { getGameFeatures } from '../../../shared/game-features'
 import { PoeVersionProvider } from '../shared/poe-version-context'
+import { useReportInputFocus } from '../shared/use-report-input-focus'
 import { FilterPanel } from '../components/FilterPanel'
 import { SettingsPanel } from '../components/SettingsPanel'
 import { SocketRecolor } from '../components/SocketRecolor'
@@ -132,32 +133,7 @@ export default function App(): JSX.Element {
     return window.api.onIconCacheUpdated(mergeIconCache)
   }, [])
 
-  // Tell main when an editable element inside the overlay has focus, so the
-  // hotkey gate can swallow presses that would otherwise stomp the user's
-  // typing (especially important for single-key hotkeys).
-  useEffect(() => {
-    const isEditable = (el: Element | null): boolean => {
-      if (!el) return false
-      const tag = el.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return true
-      return (el as HTMLElement).isContentEditable
-    }
-    let last = false
-    const update = (): void => {
-      const next = isEditable(document.activeElement)
-      if (next !== last) {
-        last = next
-        window.api.setOverlayInputFocused(next)
-      }
-    }
-    update()
-    document.addEventListener('focusin', update)
-    document.addEventListener('focusout', update)
-    return () => {
-      document.removeEventListener('focusin', update)
-      document.removeEventListener('focusout', update)
-    }
-  }, [])
+  useReportInputFocus()
 
   // Auto-update state
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
