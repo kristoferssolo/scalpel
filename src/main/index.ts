@@ -109,6 +109,7 @@ const store = new Store<AppSettings>({
     overlayScale: 1,
     openSide: 'both',
     closeOnClickOutside: false,
+    useCurrentZoneAreaLevel: false,
     reloadOnSave: true,
     updateChannel: 'stable',
     tradeStatus: 'available',
@@ -135,6 +136,7 @@ const store = new Store<AppSettings>({
 
 // Backfill defaults for keys added after initial release
 if (store.get('reloadOnSave') === undefined) store.set('reloadOnSave', true)
+if (store.get('useCurrentZoneAreaLevel') === undefined) store.set('useCurrentZoneAreaLevel', false)
 if (store.get('stashScrollEnabled') === undefined) store.set('stashScrollEnabled', false)
 if (store.get('openSide') === undefined) store.set('openSide', 'both')
 if ((store.get('tradeStatus') as string) === 'any') store.set('tradeStatus', 'available')

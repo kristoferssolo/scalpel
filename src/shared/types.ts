@@ -360,6 +360,12 @@ export interface AppSettings {
    *  behavior is unaffected; this only picks the mount side at scan time. */
   openSide: 'both' | 'right' | 'left'
   closeOnClickOutside: boolean
+  /** When true, the FilterPanel re-evaluates the currently displayed item
+   *  using the area level reported by the Client.txt log watcher instead
+   *  of whatever the clipboard parser or defaultPoeItem produced. Toggled
+   *  from a pill in the FilterPanel hero; only visible when the player is
+   *  in a real drop zone (not town, not hideout). */
+  useCurrentZoneAreaLevel: boolean
   reloadOnSave: boolean
   updateChannel: 'stable' | 'beta'
   tradeStatus: 'securable' | 'online' | 'available'
