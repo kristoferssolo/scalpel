@@ -310,6 +310,7 @@ export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
       mouseOverPanel = false
       if (overlayVisible && overlayWindow && !overlayWindow.isDestroyed()) {
         overlayWindow.setIgnoreMouseEvents(true)
+        if (currentInteractiveWindow === overlayWindow) currentInteractiveWindow = null
         overlayWindow.webContents.send('skip-animation')
       }
     } catch (err) {
@@ -331,6 +332,7 @@ export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
       overlayWindow.showInactive()
       mouseOverPanel = false
       overlayWindow.setIgnoreMouseEvents(true)
+      if (currentInteractiveWindow === overlayWindow) currentInteractiveWindow = null
     } else if (onGameFocus) {
       // Main overlay is closed but PoE just refocused -- still need to resume
       // hotkeys and restore secondary overlays (cheat sheets, etc.) that were
