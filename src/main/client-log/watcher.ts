@@ -13,6 +13,7 @@ let watchedPath: string | null = null
  *  caps per-tick reads at 1 MB to protect against an idle session
  *  followed by a huge append. */
 export function startWatcher(path: string, onLine: (line: string) => void): void {
+  if (watchedPath !== null) return
   watchedPath = path
   lastFilePosition = fs.statSync(path).size
   fs.watchFile(path, { interval: POLL_INTERVAL_MS }, (curr, prev) => {
