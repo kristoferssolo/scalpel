@@ -108,12 +108,19 @@ export function hideAllOnPoeBlur(): void {
   setSnapGhost(null)
 }
 
-/** Re-show overlays that were visible when PoE last blurred. */
+/** Re-show overlays that were visible when PoE last blurred, forcing each
+ *  to the top of the Z-order. The opacity-based show path (installed by
+ *  installOpacityHideShow) only raises opacity and calls origShowInactive,
+ *  neither of which restacks the window - if Windows shuffled the Z-order
+ *  while our overlays were opacity-hidden (e.g. an alt-tab cycle popped PoE
+ *  above them), the window ends up visible-but-below-PoE without the
+ *  moveTop. Same trick aroundNativeDialog uses for its restore path. */
 export function restoreAllOnPoeFocus(): void {
   for (const state of overlays.values()) {
     if (!state.wasVisibleBeforeFocusLoss) continue
     if (!state.win || state.win.isDestroyed()) continue
     state.win.show()
+    state.win.moveTop()
   }
 }
 

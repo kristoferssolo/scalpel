@@ -322,11 +322,11 @@ function wireWindowEvents(state: OverlayState, win: BrowserWindow): void {
       // (main overlay or sibling secondary) does too. Only hide when focus
       // genuinely left the app.
       if (OverlayController.targetHasFocus || isAnyScalpelWindowFocused()) return
-      // Hide every visible secondary overlay, not just the blurred one. The
-      // user could have clicked an overlay (focusing it) then alt-tabbed away
-      // - the unfocused siblings (e.g. pinned-zone) never got a blur event of
-      // their own, so without this they'd stay floating above the destination
-      // app's window.
+      // Hide every visible secondary overlay, not just this one. Sibling
+      // overlays (the pinned-zone overlay, in particular) never receive
+      // their own blur event because they were never focused - the user
+      // clicked the cheat-sheet bar, not the pinned image - so without this
+      // they stay floating above the destination app's window.
       hideAllOnPoeBlur()
       // Focus left every Scalpel surface. The PoE-blur handler in main can't
       // fire here because PoE was already blurred when focus moved into this
