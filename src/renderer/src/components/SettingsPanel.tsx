@@ -13,6 +13,7 @@ import {
 import { HistoryPanel } from './HistoryPanel'
 import { ErrorBanner } from './ErrorBanner'
 import { findHotkeyCollision, type HotkeySlot } from './settings/hotkey-collisions'
+import { usePoeVersion } from '../shared/poe-version-context'
 
 interface Props {
   settings: AppSettings
@@ -60,6 +61,7 @@ export function SettingsPanel({
   onError,
   tabRequest,
 }: Props): JSX.Element {
+  const currentGame = usePoeVersion()
   // Use the initial tab request as the seed if present, so the first-mount
   // case (panel created in response to "Open Sheet Settings") lands on the
   // right tab without waiting for an effect.
@@ -94,7 +96,7 @@ export function SettingsPanel({
 
   /** Check if a hotkey collides or is a PoE-reserved combo. Collisions block; warnings pass. */
   const tryHotkey = (hotkey: string, slot: HotkeySlot): boolean => {
-    const collisionLabel = findHotkeyCollision(settings, hotkey, slot)
+    const collisionLabel = findHotkeyCollision(settings, hotkey, slot, currentGame)
     if (collisionLabel) {
       showError(`Hotkey already in use for ${collisionLabel}`)
       return false

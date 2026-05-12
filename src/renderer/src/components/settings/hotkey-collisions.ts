@@ -1,4 +1,10 @@
 import type { AppSettings } from '../../../../shared/types'
+import {
+  chatCommandEffectiveScope,
+  appMacroEffectiveScope,
+  scopeAppliesTo,
+  type MacroScope,
+} from '../../../../shared/macro-scope'
 
 export type HotkeySlot =
   | { kind: 'filter' }
@@ -24,36 +30,90 @@ function slotsEqual(a: HotkeySlot, b: HotkeySlot): boolean {
   return true
 }
 
+interface SlotEntry {
+  slot: HotkeySlot
+  value: string
+  label?: string
+  scope: MacroScope
+}
+
+function buildSlots(settings: AppSettings): SlotEntry[] {
+  const cheatSheets = settings.cheatSheets
+  return [
+    { slot: { kind: 'filter' }, value: settings.hotkey ?? '', scope: 'both' },
+    { slot: { kind: 'pricecheck' }, value: settings.priceCheckHotkey ?? '', scope: 'both' },
+    ...(settings.chatCommands ?? []).map<SlotEntry>((c, i) => ({
+      slot: { kind: 'chat', index: i },
+      value: c.hotkey ?? '',
+      scope: chatCommandEffectiveScope(c),
+    })),
+    ...(settings.appMacros ?? []).map<SlotEntry>((m, i) => ({
+      slot: { kind: 'appmacro', index: i },
+      value: m.hotkey ?? '',
+      scope: appMacroEffectiveScope(m),
+    })),
+    ...(cheatSheets
+      ? [
+          {
+            slot: { kind: 'cheatsheet-global' as const },
+            value: cheatSheets.globalHotkey ?? '',
+            scope: 'both' as MacroScope,
+          },
+        ]
+      : []),
+    ...(cheatSheets?.categories ?? []).map<SlotEntry>((cat, i) => ({
+      slot: { kind: 'cheatsheet-category', index: i },
+      value: cat.hotkey ?? '',
+      label: `Cheat sheet: ${cat.name}`,
+      scope: 'both',
+    })),
+  ]
+}
+
 /**
  * Find the first slot that already uses the given hotkey, ignoring the slot being edited.
  * Returns null if no collision, otherwise returns the label for a user-facing error message.
+ * Only entries applicable to the current game count as collisions; bindings scoped to the
+ * other game are invisible here so the user can reuse the key.
  */
-export function findHotkeyCollision(settings: AppSettings, hotkey: string, excluding: HotkeySlot): string | null {
+export function findHotkeyCollision(
+  settings: AppSettings,
+  hotkey: string,
+  excluding: HotkeySlot,
+  currentGame: 1 | 2,
+): string | null {
   if (!hotkey) return null
 
-  const cheatSheets = settings.cheatSheets
-  const slots: Array<{ slot: HotkeySlot; value: string; label?: string }> = [
-    { slot: { kind: 'filter' }, value: settings.hotkey ?? '' },
-    { slot: { kind: 'pricecheck' }, value: settings.priceCheckHotkey ?? '' },
-    ...(settings.chatCommands ?? []).map((c, i) => ({
-      slot: { kind: 'chat' as const, index: i },
-      value: c.hotkey ?? '',
-    })),
-    ...(settings.appMacros ?? []).map((m, i) => ({
-      slot: { kind: 'appmacro' as const, index: i },
-      value: m.hotkey ?? '',
-    })),
-    ...(cheatSheets ? [{ slot: { kind: 'cheatsheet-global' as const }, value: cheatSheets.globalHotkey ?? '' }] : []),
-    ...(cheatSheets?.categories ?? []).map((cat, i) => ({
-      slot: { kind: 'cheatsheet-category' as const, index: i },
-      value: cat.hotkey ?? '',
-      label: `Cheat sheet: ${cat.name}`,
-    })),
-  ]
-
-  for (const { slot, value, label } of slots) {
+  for (const { slot, value, label, scope } of buildSlots(settings)) {
     if (slotsEqual(slot, excluding)) continue
-    if (value === hotkey) return label ?? slotLabel[slot.kind]
+    if (value !== hotkey) continue
+    if (!scopeAppliesTo(scope, currentGame)) continue
+    return label ?? slotLabel[slot.kind]
   }
   return null
+}
+
+/**
+ * If another entry on the same hotkey is scoped to the OTHER game only, return the
+ * current-game-only scope so the new binding can be narrowed and avoid a runtime
+ * collision in the other game. Returns undefined when no narrowing is required (no
+ * cross-game conflict, or the conflicting entry's scope is 'both' which is a same-game
+ * collision already caught by findHotkeyCollision).
+ */
+export function narrowScopeForCrossGameConflict(
+  settings: AppSettings,
+  hotkey: string,
+  excluding: HotkeySlot,
+  currentGame: 1 | 2,
+): MacroScope | undefined {
+  if (!hotkey) return undefined
+  const otherGameOnly: MacroScope = currentGame === 1 ? 'poe2' : 'poe1'
+  const currentGameOnly: MacroScope = currentGame === 1 ? 'poe1' : 'poe2'
+
+  for (const { slot, value, scope } of buildSlots(settings)) {
+    if (slotsEqual(slot, excluding)) continue
+    if (value !== hotkey) continue
+    if (scope === otherGameOnly) return currentGameOnly
+  }
+  return undefined
 }

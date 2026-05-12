@@ -4,6 +4,13 @@ import { snapshotClipboard } from './clipboard-preserve'
 import { OverlayController } from 'electron-overlay-window'
 import { focusGameWindow, getOverlayWindow, isTypingInOverlay } from './overlay'
 import { hideFocusedOrAnyVisibleSecondaryOverlay } from './windowing'
+import { getPoeVersion } from './game-state'
+import {
+  chatCommandEffectiveScope,
+  appMacroEffectiveScope,
+  scopeAppliesTo,
+  type MacroScope,
+} from '../shared/macro-scope'
 
 // ─── Accelerator → uiohook keycode mapping ────────────────────────────────────
 
@@ -59,9 +66,9 @@ let currentAccelerator: string | null = null
 let priceCheckAccelerator: string | null = null
 let triggerCombo: KeyCombo | null = null
 let priceCheckCombo: KeyCombo | null = null
-let chatCommandHotkeys: Array<{ accelerator: string; command: string; autoSubmit: boolean }> = []
+let chatCommandHotkeys: Array<{ accelerator: string; command: string; autoSubmit: boolean; scope?: MacroScope }> = []
 let appMacroAccelerators: string[] = []
-let lastAppMacros: Array<{ action: string; hotkey: string; tag?: string }> = []
+let lastAppMacros: Array<{ action: string; hotkey: string; tag?: string; scope?: MacroScope }> = []
 let onAppMacro: ((action: string, tag?: string) => void) | null = null
 // Secondary-overlay hotkeys (cheat-sheets today, more later). Stored as a
 // flat list of (accelerator, handler) pairs so each consumer composes its own
@@ -197,7 +204,12 @@ export function resumeHotkeys(): void {
   if (suspendDepth > 0) return
   if (currentAccelerator) setHotkey(currentAccelerator)
   if (priceCheckAccelerator) setPriceCheckHotkey(priceCheckAccelerator)
-  const cmds = chatCommandHotkeys.map((c) => ({ hotkey: c.accelerator, command: c.command, autoSubmit: c.autoSubmit }))
+  const cmds = chatCommandHotkeys.map((c) => ({
+    hotkey: c.accelerator,
+    command: c.command,
+    autoSubmit: c.autoSubmit,
+    scope: c.scope,
+  }))
   setChatCommands(cmds)
   setAppMacros(lastAppMacros)
   setSecondaryOverlayHotkeys(secondaryOverlayHotkeys)
@@ -245,7 +257,9 @@ export function setEscapeHandler(handler: (() => void) | null): void {
   onEscape = handler
 }
 
-export function setChatCommands(commands: Array<{ hotkey: string; command: string; autoSubmit?: boolean }>): void {
+export function setChatCommands(
+  commands: Array<{ hotkey: string; command: string; autoSubmit?: boolean; scope?: MacroScope }>,
+): void {
   // Unregister previous chat command shortcuts
   for (const ch of chatCommandHotkeys) {
     try {
@@ -254,15 +268,17 @@ export function setChatCommands(commands: Array<{ hotkey: string; command: strin
   }
   chatCommandHotkeys = []
 
+  const version = getPoeVersion()
   for (const c of commands) {
     if (!c.hotkey || !c.command) continue
+    if (!scopeAppliesTo(chatCommandEffectiveScope(c), version)) continue
     const autoSubmit = c.autoSubmit !== false
     try {
       globalShortcut.register(c.hotkey, () => {
         if (injecting || isTypingInOverlay()) return
         sendChatCommand(c.command, autoSubmit)
       })
-      chatCommandHotkeys.push({ accelerator: c.hotkey, command: c.command, autoSubmit })
+      chatCommandHotkeys.push({ accelerator: c.hotkey, command: c.command, autoSubmit, scope: c.scope })
     } catch (e) {
       console.error(`[hotkeys] Failed to register chat command "${c.hotkey}":`, e)
     }
@@ -302,7 +318,9 @@ export function setSecondaryOverlayHotkeys(hotkeys: OverlayHotkey[]): void {
   }
 }
 
-export function setAppMacros(macros: Array<{ action: string; hotkey: string; tag?: string }>): void {
+export function setAppMacros(
+  macros: Array<{ action: string; hotkey: string; tag?: string; scope?: MacroScope }>,
+): void {
   lastAppMacros = macros
   for (const acc of appMacroAccelerators) {
     try {
@@ -311,16 +329,18 @@ export function setAppMacros(macros: Array<{ action: string; hotkey: string; tag
   }
   appMacroAccelerators = []
 
-  for (const { action, hotkey, tag } of macros) {
-    if (!hotkey || !action) continue
+  const version = getPoeVersion()
+  for (const m of macros) {
+    if (!m.hotkey || !m.action) continue
+    if (!scopeAppliesTo(appMacroEffectiveScope(m), version)) continue
     try {
-      globalShortcut.register(hotkey, () => {
+      globalShortcut.register(m.hotkey, () => {
         if (injecting || isTypingInOverlay() || !onAppMacro) return
-        onAppMacro(action, tag)
+        onAppMacro(m.action, m.tag)
       })
-      appMacroAccelerators.push(hotkey)
+      appMacroAccelerators.push(m.hotkey)
     } catch (e) {
-      console.error(`[hotkeys] Failed to register app macro "${action}" (${hotkey}):`, e)
+      console.error(`[hotkeys] Failed to register app macro "${m.action}" (${m.hotkey}):`, e)
     }
   }
 }

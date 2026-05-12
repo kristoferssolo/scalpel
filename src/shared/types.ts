@@ -1,5 +1,7 @@
 // Type definitions for the IPC and the frontend to talk to eachother. Truly boring stuff.
 
+import type { MacroScope } from './macro-scope'
+
 export type Visibility = 'Show' | 'Hide' | 'Minimal'
 export type ComparisonOperator = '>' | '>=' | '=' | '==' | '<=' | '<'
 
@@ -424,8 +426,8 @@ export interface AppSettings {
   tradeDefaultToBase: boolean
   tradeKeepUncheckedVisible?: boolean
   tradeNeverAutoSearch?: boolean
-  chatCommands: Array<{ hotkey: string; command: string; autoSubmit?: boolean }>
-  appMacros: Array<{ action: string; hotkey: string; tag?: string }>
+  chatCommands: Array<{ hotkey: string; command: string; autoSubmit?: boolean; scope?: MacroScope }>
+  appMacros: Array<{ action: string; hotkey: string; tag?: string; scope?: MacroScope }>
   cheatSheets: CheatSheetsSettings
   cheatSheetsPoe1: CheatSheetsSettings
   cheatSheetsPoe2: CheatSheetsSettings

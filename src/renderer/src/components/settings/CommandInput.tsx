@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { chatCommandScope, scopeAppliesTo } from '../../../../shared/macro-scope'
+import { usePoeVersion } from '../../shared/poe-version-context'
 
-const POE_COMMANDS = [
+const POE_COMMANDS: string[] = [
   '/hideout',
   '/menagerie',
   '/delve',
@@ -31,7 +33,11 @@ const POE_COMMANDS = [
 export function CommandInput({ value, onChange }: { value: string; onChange: (v: string) => void }): JSX.Element {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const filtered = value ? POE_COMMANDS.filter((c) => c.includes(value.toLowerCase())) : POE_COMMANDS
+  const currentGame = usePoeVersion()
+
+  const filtered = POE_COMMANDS.filter(
+    (cmd) => scopeAppliesTo(chatCommandScope(cmd), currentGame) && (value ? cmd.includes(value.toLowerCase()) : true),
+  )
 
   useEffect(() => {
     if (!open) return

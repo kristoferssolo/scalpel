@@ -6,6 +6,14 @@ import { HotkeyRecorder } from './HotkeyRecorder'
 import { CommandInput } from './CommandInput'
 import { APP_MACRO_DEFS } from './utils'
 import { SettingToggleBox } from './SettingToggleBox'
+import {
+  chatCommandEffectiveScope,
+  appMacroEffectiveScope,
+  appMacroScope,
+  scopeAppliesTo,
+} from '../../../../shared/macro-scope'
+import { narrowScopeForCrossGameConflict } from './hotkey-collisions'
+import { usePoeVersion } from '../../shared/poe-version-context'
 
 /** Extract all unique custom tag texts that contain "macro" (case-insensitive) */
 function getMacroTags(presets: RegexPreset[]): string[] {
@@ -31,6 +39,18 @@ export function MacrosTab({ settings, update, tryHotkey }: Props): JSX.Element {
     window.api.getRegexPresets().then(setPresets)
   }, [])
   const macroTags = getMacroTags(presets)
+  const currentGame = usePoeVersion()
+
+  // Build filtered chat command entries, retaining original indices for callbacks.
+  // Empty-command rows always show (treated as 'both' by chatCommandEffectiveScope).
+  const visibleChatCommands = (settings.chatCommands ?? [])
+    .map((cmd, i) => ({ cmd, i }))
+    .filter(({ cmd }) => scopeAppliesTo(chatCommandEffectiveScope(cmd), currentGame))
+
+  // Build filtered app macro entries, retaining original indices for callbacks.
+  const visibleAppMacros = (settings.appMacros ?? [])
+    .map((macro, i) => ({ macro, i }))
+    .filter(({ macro }) => scopeAppliesTo(appMacroEffectiveScope(macro), currentGame))
 
   return (
     <>
@@ -38,7 +58,7 @@ export function MacrosTab({ settings, update, tryHotkey }: Props): JSX.Element {
       <div className="settings-section-title mt-3">Chat Macros</div>
       <section>
         <div className="flex flex-col gap-2">
-          {(settings.chatCommands ?? []).map((cmd, i) => {
+          {visibleChatCommands.map(({ cmd, i }) => {
             const updateCmd = (patch: Partial<typeof cmd>) => {
               const cmds = [...(settings.chatCommands ?? [])]
               cmds[i] = { ...cmds[i], ...patch }
@@ -51,7 +71,13 @@ export function MacrosTab({ settings, update, tryHotkey }: Props): JSX.Element {
                     value={cmd.hotkey}
                     onChange={(hotkey) => {
                       if (!tryHotkey(hotkey, { kind: 'chat', index: i })) return
-                      updateCmd({ hotkey })
+                      const scope = narrowScopeForCrossGameConflict(
+                        settings,
+                        hotkey,
+                        { kind: 'chat', index: i },
+                        currentGame,
+                      )
+                      updateCmd({ hotkey, scope })
                     }}
                   />
                   <CommandInput value={cmd.command} onChange={(command) => updateCmd({ command })} />
@@ -98,10 +124,12 @@ export function MacrosTab({ settings, update, tryHotkey }: Props): JSX.Element {
       <div className="settings-section-title mt-3">App Macros</div>
       <section>
         <div className="flex flex-col gap-2">
-          {(settings.appMacros ?? []).map((macro, i) => {
+          {visibleAppMacros.map(({ macro, i }) => {
             const usedActions = new Set((settings.appMacros ?? []).map((m, j) => (j !== i ? m.action : '')))
             const availableActions = APP_MACRO_DEFS.filter(
-              (d) => d.id === 'useSavedRegex' || d.id === macro.action || !usedActions.has(d.id),
+              (d) =>
+                scopeAppliesTo(appMacroScope(d.id), currentGame) &&
+                (d.id === 'useSavedRegex' || d.id === macro.action || !usedActions.has(d.id)),
             )
             const hasTagDropdown = macro.action === 'useSavedRegex'
             const showNoTagsHint = hasTagDropdown && macroTags.length === 0
@@ -112,8 +140,14 @@ export function MacrosTab({ settings, update, tryHotkey }: Props): JSX.Element {
                     value={macro.hotkey}
                     onChange={(hotkey) => {
                       if (!tryHotkey(hotkey, { kind: 'appmacro', index: i })) return
+                      const scope = narrowScopeForCrossGameConflict(
+                        settings,
+                        hotkey,
+                        { kind: 'appmacro', index: i },
+                        currentGame,
+                      )
                       const macros = [...(settings.appMacros ?? [])]
-                      macros[i] = { ...macros[i], hotkey }
+                      macros[i] = { ...macros[i], hotkey, scope }
                       update('appMacros', macros)
                     }}
                     className={hasTagDropdown ? 'flex-1 min-w-0' : 'w-[200px] shrink-0'}
@@ -174,9 +208,12 @@ export function MacrosTab({ settings, update, tryHotkey }: Props): JSX.Element {
             onClick={() => {
               const used = new Set((settings.appMacros ?? []).map((m) => m.action))
               // useSavedRegex can be added multiple times; otherwise pick the first unused action
+              // that applies to the current game
               const next =
-                APP_MACRO_DEFS.find((d) => d.id === 'useSavedRegex' || !used.has(d.id)) ??
-                APP_MACRO_DEFS.find((d) => d.id === 'useSavedRegex')
+                APP_MACRO_DEFS.find(
+                  (d) =>
+                    scopeAppliesTo(appMacroScope(d.id), currentGame) && (d.id === 'useSavedRegex' || !used.has(d.id)),
+                ) ?? APP_MACRO_DEFS.find((d) => d.id === 'useSavedRegex')
               if (next) update('appMacros', [...(settings.appMacros ?? []), { action: next.id, hotkey: '' }])
             }}
             className="text-[11px] text-text-dim self-start px-3 py-1.5"
