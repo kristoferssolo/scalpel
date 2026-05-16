@@ -1,16 +1,14 @@
-import { protocol, net, app } from 'electron'
-import { existsSync } from 'fs'
+import { protocol, app } from 'electron'
+import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
-import { pathToFileURL } from 'url'
 
 const SCHEME = 'scalpel-internal'
 
 const KNOWN_MODULES = new Set(['sdk.js', 'react.js'])
 
-function internalAssetDir(): string {
-  if (app.isPackaged) {
-    return join(process.resourcesPath, 'scalpel-internal')
-  }
+// Resolve from inside the asar when packaged (app.getAppPath() is the asar path).
+// Keeps the SDK/React shim version-locked to app.asar so auto-updates swap it atomically.
+export function internalAssetDir(): string {
   return join(app.getAppPath(), 'out', 'scalpel-internal')
 }
 
@@ -26,13 +24,8 @@ export function registerScalpelInternalProtocol(): void {
     if (!existsSync(filePath)) {
       return new Response(`Missing internal asset: ${name}`, { status: 500 })
     }
-    // Wrap the response so we can set content-type on what we hand back to the
-    // renderer. The `headers` option on net.fetch is RequestInit (outbound),
-    // not response headers, so a direct return would inherit whatever
-    // content-type the file:// fetch resolves with (often missing for .js).
-    const inner = await net.fetch(pathToFileURL(filePath).toString())
-    return new Response(inner.body, {
-      status: inner.status,
+    const bytes = readFileSync(filePath)
+    return new Response(bytes, {
       headers: { 'content-type': 'application/javascript' },
     })
   })

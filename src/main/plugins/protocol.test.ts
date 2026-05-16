@@ -1,4 +1,20 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { join } from 'path'
+
+vi.mock('electron', () => ({
+  app: {
+    getAppPath: vi.fn(() => '/test/app'),
+    isPackaged: false,
+  },
+  protocol: {
+    handle: vi.fn(),
+    registerSchemesAsPrivileged: vi.fn(),
+  },
+}))
+
+beforeEach(async () => {
+  vi.resetModules()
+})
 
 describe('scalpel-internal URL parsing', () => {
   it('extracts the module name from scalpel-internal://sdk.js', () => {
@@ -11,5 +27,23 @@ describe('scalpel-internal URL parsing', () => {
     const url = new URL('scalpel-internal://react.js')
     const name = url.hostname + (url.pathname === '/' ? '' : url.pathname.replace(/^\//, ''))
     expect(name).toBe('react.js')
+  })
+})
+
+describe('internalAssetDir', () => {
+  it('resolves under app.getAppPath()/out/scalpel-internal when not packaged', async () => {
+    const { app } = await import('electron')
+    vi.mocked(app.getAppPath).mockReturnValue('/test/app')
+    vi.mocked(app as { isPackaged: boolean }).isPackaged = false
+    const { internalAssetDir } = await import('./protocol')
+    expect(internalAssetDir()).toBe(join('/test/app', 'out', 'scalpel-internal'))
+  })
+
+  it('resolves under app.getAppPath()/out/scalpel-internal when packaged (asar path)', async () => {
+    const { app } = await import('electron')
+    vi.mocked(app.getAppPath).mockReturnValue('/test/app/resources/app.asar')
+    vi.mocked(app as { isPackaged: boolean }).isPackaged = true
+    const { internalAssetDir } = await import('./protocol')
+    expect(internalAssetDir()).toBe(join('/test/app/resources/app.asar', 'out', 'scalpel-internal'))
   })
 })
