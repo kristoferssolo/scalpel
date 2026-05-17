@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AppSettings } from '../../../../shared/types'
 import type { ThemePalette } from '../../../../shared/theme/palette'
-import { PRESETS, PRESETS_BY_ID, DEFAULT_PALETTE } from '../../../../shared/theme/presets'
+import { PRESETS } from '../../../../shared/theme/presets'
 import { resolveActivePalette } from '../../../../shared/theme/active'
 import { applyPalette } from '../../shared/apply-theme'
 
@@ -29,9 +29,10 @@ const FIELDS: Array<{ key: keyof ThemePalette; label: string }> = [
 ]
 
 export function AppearanceTab({ settings, update }: Props): JSX.Element {
-  const savedActive = resolveActivePalette(settings.themeId, settings.customThemePalette ?? null)
   // Working palette is local; live-applied to THIS window only until saved.
-  const [working, setWorking] = useState<ThemePalette>(savedActive)
+  const [working, setWorking] = useState<ThemePalette>(() =>
+    resolveActivePalette(settings.themeId, settings.customThemePalette ?? null),
+  )
   const [dirty, setDirty] = useState(false)
 
   // Keep working in sync when settings change from elsewhere and we have no
@@ -41,7 +42,7 @@ export function AppearanceTab({ settings, update }: Props): JSX.Element {
   }, [settings.themeId, settings.customThemePalette, dirty])
 
   const selectPreset = (id: string): void => {
-    const palette = PRESETS_BY_ID[id]?.palette ?? DEFAULT_PALETTE
+    const palette = resolveActivePalette(id, settings.customThemePalette ?? null)
     setWorking(palette)
     setDirty(false)
     applyPalette(palette)
@@ -52,10 +53,11 @@ export function AppearanceTab({ settings, update }: Props): JSX.Element {
     const next = { ...working, [key]: value }
     setWorking(next)
     setDirty(true)
-    applyPalette(next) // live preview, this window only
+    applyPalette(next) // live preview, this window only; not persisted until Save (reconciled by save/reset/reload)
   }
 
   const saveCustom = (): void => {
+    // Persist palette before id so a 'custom' themeId never points at a stale custom palette.
     update('customThemePalette', working)
     update('themeId', 'custom')
     setDirty(false)
