@@ -11,7 +11,7 @@ vi.mock('../manifest', () => ({
   refreshManifest: vi.fn(),
 }))
 
-import { _setPricesForTests, lookupPrice, lookupPriceForItem } from './prices'
+import { _setPricesForTests, lookupPrice, lookupPriceForItem, lookupUniquePriceForBase } from './prices'
 
 const baseItem = (overrides: Record<string, unknown> = {}): Parameters<typeof lookupPriceForItem>[0] => ({
   name: '',
@@ -137,5 +137,30 @@ describe('lookupPriceForItem (variant-aware)', () => {
     const price = lookupPrice('Hatred', 'Hatred')
     expect(price).toBeDefined()
     expect([5, 50]).toContain(price?.chaosValue)
+  })
+})
+
+describe('lookupUniquePriceForBase', () => {
+  beforeEach(() => {
+    _setPricesForTests([])
+  })
+
+  it('prefers the variant key (name|baseType) over the name-only entry', () => {
+    _setPricesForTests([
+      { name: 'Grand Spectrum', variant: 'Emerald', chaos: 40250 },
+      { name: 'Grand Spectrum', variant: 'Ruby', chaos: 3000 },
+    ])
+    expect(lookupUniquePriceForBase('Grand Spectrum', 'Emerald')?.chaosValue).toBe(40250)
+    expect(lookupUniquePriceForBase('Grand Spectrum', 'Ruby')?.chaosValue).toBe(3000)
+  })
+
+  it('falls back to the name-only entry when no variant key matches', () => {
+    _setPricesForTests([{ name: 'Headhunter', chaos: 75000 }])
+    expect(lookupUniquePriceForBase('Headhunter', 'Unknown Base')?.chaosValue).toBe(75000)
+  })
+
+  it('returns undefined when the name is not priced at all', () => {
+    _setPricesForTests([{ name: 'Something Else', variant: 'Foo', chaos: 1 }])
+    expect(lookupUniquePriceForBase('Nonexistent', 'Foo')).toBeUndefined()
   })
 })

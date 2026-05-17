@@ -7,7 +7,7 @@ import { POE_NINJA_API } from '../../shared/endpoints'
 import { deriveItemVariant } from '../../shared/external-link'
 import type { NinjaItemRef } from '../../shared/external-link'
 import { getPoeVersion } from '../game-state'
-import { fetchAndBuildPoe2PriceMap, fetchPoe2PricesFromProxy } from './prices.poe2'
+import { fetchAndBuildPoe2PriceMap, fetchPoe2PricesFromProxy, type Poe2PriceResult } from './prices.poe2'
 import { getManifest } from '../manifest'
 import uniqueInfoPoe1 from '../../shared/data/items/unique-info.json'
 import uniqueInfoPoe2 from '../../shared/data/items/unique-info-poe2.json'
@@ -47,6 +47,35 @@ function saveCachedUniquesByBase(data: Record<string, string[]>): void {
   }
 }
 
+// PoE2 keeps its own cache file. Both games share the userData dir and the
+// app relaunches on game switch, so a shared file would let one game clobber
+// the other's cached base map. Falls back to the bundled static PoE2 scrape.
+function getPoe2CachePath(): string {
+  return join(app.getPath('userData'), 'uniques-by-base-poe2-cache.json')
+}
+
+function loadCachedUniquesByBasePoe2(): Record<string, string[]> {
+  try {
+    const cachePath = getPoe2CachePath()
+    if (existsSync(cachePath)) {
+      return JSON.parse(readFileSync(cachePath, 'utf-8'))
+    }
+  } catch {
+    /* fall through */
+  }
+  return staticUniquesByVersion[2]
+}
+
+function saveCachedUniquesByBasePoe2(data: Record<string, string[]>): void {
+  try {
+    writeFileSync(getPoe2CachePath(), JSON.stringify(data), 'utf-8')
+  } catch {
+    /* ignore */
+  }
+}
+
+let uniqueBaseMapPoe2: Record<string, string[]> = loadCachedUniquesByBasePoe2()
+
 // Cache: "<poeVersion>:<league>" -> (name -> price). Versioning the key prevents
 // "Standard" from one game silently serving the other game's prices if an
 // in-process flip ever happens (relaunch on game switch makes that rare today,
@@ -56,8 +85,8 @@ let priceMap = new Map<string, PriceInfo>()
 // Variant-keyed prices for items that ninja's dense API splits across multiple
 // lines (skill gems by level/quality/corruption, multi-link uniques by link count).
 // Key shape: `${name.toLowerCase()}|${variant}`. Fallback to name-only priceMap is
-// handled by lookupPriceForItem below. PoE2 leaves this empty -- its pricing fetch
-// in prices.poe2.ts only populates name-keyed priceMap.
+// handled by lookupPriceForItem below. PoE2 populates this from the EE2 proxy for
+// unique items; the direct-ninja exchange fallback leaves it empty.
 let pricesByVariant = new Map<string, PriceInfo>()
 let lastFetchTime = 0
 // PoE2 now uses the EE2 proxy by default (one CDN-cached request per refresh),
@@ -260,16 +289,20 @@ export async function refreshPrices(league: string): Promise<void> {
 
   try {
     if (getPoeVersion() === 2) {
-      let nextPriceMap: Map<string, PriceInfo>
       const categoryByType = getManifest().poe2NinjaCategories
+      const staticUniques = staticUniquesByVersion[2]
+      let result: Poe2PriceResult
       try {
-        nextPriceMap = await fetchPoe2PricesFromProxy(league, fetchJson, categoryByType)
+        result = await fetchPoe2PricesFromProxy(league, fetchJson, categoryByType, staticUniques)
       } catch (proxyErr) {
         console.error('[FilterScalpel] EE2 proxy failed, falling back to ninja direct:', proxyErr)
-        nextPriceMap = await fetchAndBuildPoe2PriceMap(league, fetchJson, categoryByType)
+        result = await fetchAndBuildPoe2PriceMap(league, fetchJson, categoryByType, staticUniques)
       }
       resetCache(league, now)
-      priceMap = nextPriceMap
+      priceMap = result.priceMap
+      pricesByVariant = result.pricesByVariant
+      uniqueBaseMapPoe2 = result.uniquesByBase
+      saveCachedUniquesByBasePoe2(result.uniquesByBase)
       return
     }
     const resp = (await fetchJson(`${DENSE_URL}?league=${encodeURIComponent(league)}&language=en`)) as DenseResponse
@@ -291,6 +324,15 @@ export function invalidatePriceCache(): void {
 export function lookupPrice(itemName: string, baseType: string): PriceInfo | undefined {
   // Try exact name first (for uniques), then base type (for currency/fragments)
   return priceMap.get(itemName.toLowerCase()) ?? priceMap.get(baseType.toLowerCase())
+}
+
+/** Unique price lookup that disambiguates same-name / different-base
+ *  uniques (e.g. Grand Spectrum Emerald vs Ruby). Tries the variant key
+ *  `${name}|${baseType}` first, then the legacy name-only entry. Shared
+ *  by both games: exact for PoE2 (EE2 `variant` == base type), and a
+ *  strict no-regression improvement for PoE1 (name-only fallback). */
+export function lookupUniquePriceForBase(name: string, baseType: string): PriceInfo | undefined {
+  return pricesByVariant.get(`${name.toLowerCase()}|${baseType}`) ?? priceMap.get(name.toLowerCase())
 }
 
 /** Variant-aware price lookup. Tries the exact variant key first (e.g. "hatred|21 20c"
@@ -332,9 +374,9 @@ export function getGemNames(): Set<string> {
 }
 
 /** Active baseType -> [unique names] map. Returns the PoE1 dense-augmented map
- *  in PoE1, or the bundled static PoE2 map in PoE2. */
+ *  in PoE1, or the dynamic (cache-backed) PoE2 map in PoE2. */
 export function getUniquesByBase(): Record<string, string[]> {
-  return getPoeVersion() === 2 ? staticUniquesByVersion[2] : uniqueBaseMap
+  return getPoeVersion() === 2 ? uniqueBaseMapPoe2 : uniqueBaseMap
 }
 
 export function lookupBestUniquePrice(baseType: string): PriceInfo | undefined {
@@ -342,7 +384,7 @@ export function lookupBestUniquePrice(baseType: string): PriceInfo | undefined {
   if (!names) return undefined
   let best: PriceInfo | undefined
   for (const name of names) {
-    const info = priceMap.get(name.toLowerCase())
+    const info = lookupUniquePriceForBase(name, baseType)
     if (info && (!best || info.chaosValue > best.chaosValue)) {
       best = info
     }

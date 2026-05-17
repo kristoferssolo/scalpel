@@ -16,7 +16,14 @@ import { focusGameWindow, getOverlayWindow, isTypingInOverlay, showOverlay } fro
 import { getPoeVersion } from './game-state'
 import { sendCtrlCToPoE } from './hotkeys'
 import { snapshotClipboard } from './clipboard-preserve'
-import { refreshPrices, lookupPrice, lookupPriceForItem, lookupBestUniquePrice, getUniquesByBase } from './trade/prices'
+import {
+  refreshPrices,
+  lookupPrice,
+  lookupPriceForItem,
+  lookupBestUniquePrice,
+  lookupUniquePriceForBase,
+  getUniquesByBase,
+} from './trade/prices'
 import { ensureStatsLoaded, matchItemMods } from './trade/trade'
 import { detectFocusedPoeVersion } from './game-detector'
 import { requestGameSwitch } from './game-switch'
@@ -218,8 +225,9 @@ export async function preloadPriceCheck(item: PoeItem, store: Store<AppSettings>
     }
     const isStandard = league.toLowerCase() === 'standard'
     for (const name of names) {
-      // Look up by name only - base type fallback would return the base's price, not the unique's
-      const price = lookupPrice(name, name)
+      // Disambiguate same-name uniques by the item's base type; falls back
+      // to the name-only entry when no variant key matches.
+      const price = lookupUniquePriceForBase(name, item.baseType)
       // In non-Standard leagues, skip items with no price (not obtainable this league)
       if (!isStandard && !price) continue
       unidCandidates.push({ name, chaosValue: price?.chaosValue ?? 0 })

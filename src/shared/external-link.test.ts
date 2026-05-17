@@ -429,6 +429,14 @@ describe('ninjaLinkUrl', () => {
     )
   })
 
+  it('routes a PoE2 unique to its category and base-disambiguated slug via priceInfo.ninjaCategory', () => {
+    const item = { name: 'Grand Spectrum', baseType: 'Emerald', rarity: 'Unique', itemClass: 'Jewels' }
+    const priceInfo = { chaosValue: 40250, divineValue: 402.5, ninjaCategory: 'unique-jewels' }
+    expect(ninjaLinkUrl(item, 2, 'Fate of the Vaal', POE2_SLUGS, priceInfo)).toBe(
+      'https://poe.ninja/poe2/economy/vaal/unique-jewels/grand-spectrum-emerald',
+    )
+  })
+
   it('returns null for PoE2 when priceInfo is absent', () => {
     const item = { name: 'Chaos Orb', baseType: 'Chaos Orb', rarity: 'Currency', itemClass: 'Stackable Currency' }
     expect(ninjaLinkUrl(item, 2, 'Fate of the Vaal', POE2_SLUGS, undefined)).toBeNull()

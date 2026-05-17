@@ -27,6 +27,14 @@
     "Runes": "runes",
     "Expedition": "expedition",
     "Delirium": "liquid-emotions",
-    "Breach": "breach-catalyst"
+    "Breach": "breach-catalyst",
+    "UniqueWeapons": "unique-weapons",
+    "UniqueArmours": "unique-armours",
+    "UniqueAccessories": "unique-accessories",
+    "UniqueFlasks": "unique-flasks",
+    "UniqueCharms": "unique-charms",
+    "UniqueJewels": "unique-jewels",
+    "UniqueMaps": "unique-maps",
+    "UniqueSanctumRelics": "unique-relics"
   }
 }

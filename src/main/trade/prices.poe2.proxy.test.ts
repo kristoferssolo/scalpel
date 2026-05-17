@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { applyProxyResponse, fetchPoe2PricesFromProxy } from './prices.poe2'
+import {
+  applyProxyResponse,
+  fetchPoe2PricesFromProxy,
+  fetchAndBuildPoe2PriceMap,
+  buildPoe2UniquesByBaseFromProxy,
+} from './prices.poe2'
 import type { PriceInfo } from '../../shared/types'
 
 // Helper: minimal valid Ee2OverviewResponse shape for the parts applyProxyResponse
@@ -9,7 +14,7 @@ function resp(over: {
   rates?: Record<string, number>
   itemOverviews?: Array<{
     type: string
-    lines: Array<{ name?: string; primaryValue?: number; sparkline?: { data: (number | null)[] } }>
+    lines: Array<{ name?: string; variant?: string; primaryValue?: number; sparkline?: { data: (number | null)[] } }>
   }>
 }) {
   return {
@@ -220,23 +225,107 @@ describe('applyProxyResponse (EE2 proxy math)', () => {
     )
     expect(map.get('neural catalyst')?.ninjaCategory).toBe('breach-catalyst')
   })
+
+  it('writes a variant-keyed entry when a 4th map and line.variant are provided', () => {
+    const map = new Map<string, PriceInfo>()
+    const variantMap = new Map<string, PriceInfo>()
+    applyProxyResponse(
+      resp({
+        rates: { exalted: 100 },
+        itemOverviews: [
+          {
+            type: 'UniqueJewels',
+            lines: [{ name: 'Grand Spectrum', variant: 'Emerald', primaryValue: 402.5 }],
+          },
+        ],
+      }),
+      map,
+      {},
+      variantMap,
+    )
+    expect(variantMap.get('grand spectrum|Emerald')).toMatchObject({ chaosValue: 40250, divineValue: 402.5 })
+    expect(map.get('grand spectrum')).toMatchObject({ divineValue: 402.5 })
+  })
+
+  it('disambiguates same-name uniques by base via the variant map', () => {
+    const map = new Map<string, PriceInfo>()
+    const variantMap = new Map<string, PriceInfo>()
+    applyProxyResponse(
+      resp({
+        rates: { exalted: 100 },
+        itemOverviews: [
+          {
+            type: 'UniqueJewels',
+            lines: [
+              { name: 'Grand Spectrum', variant: 'Emerald', primaryValue: 402.5 },
+              { name: 'Grand Spectrum', variant: 'Sapphire', primaryValue: 38.8 },
+              { name: 'Grand Spectrum', variant: 'Ruby', primaryValue: 30 },
+            ],
+          },
+        ],
+      }),
+      map,
+      {},
+      variantMap,
+    )
+    expect(variantMap.get('grand spectrum|Emerald')?.divineValue).toBe(402.5)
+    expect(variantMap.get('grand spectrum|Sapphire')?.divineValue).toBe(38.8)
+    expect(variantMap.get('grand spectrum|Ruby')?.divineValue).toBe(30)
+  })
+
+  it('uses an empty variant segment when line.variant is absent', () => {
+    const map = new Map<string, PriceInfo>()
+    const variantMap = new Map<string, PriceInfo>()
+    applyProxyResponse(
+      resp({
+        rates: { exalted: 100 },
+        itemOverviews: [{ type: 'Currency', lines: [{ name: 'Chaos Orb', primaryValue: 2 }] }],
+      }),
+      map,
+      {},
+      variantMap,
+    )
+    expect(variantMap.get('chaos orb|')).toMatchObject({ chaosValue: 200, divineValue: 2 })
+  })
+
+  it('does not require the 4th map (existing 3-arg callers unaffected)', () => {
+    const map = new Map<string, PriceInfo>()
+    applyProxyResponse(
+      resp({ rates: { exalted: 100 }, itemOverviews: [{ type: 'Currency', lines: [{ name: 'X', primaryValue: 1 }] }] }),
+      map,
+      {},
+    )
+    expect(map.get('x')).toMatchObject({ chaosValue: 100 })
+  })
 })
 
 describe('fetchPoe2PricesFromProxy', () => {
-  it('returns a populated map for a known league with a valid stub response', async () => {
+  it('returns priceMap + pricesByVariant + uniquesByBase for a known league', async () => {
     const stubResp = {
       core: { primary: 'divine', rates: { exalted: 200 } },
-      itemOverviews: [{ type: 'Currency', lines: [{ name: 'Chaos Orb', primaryValue: 1 }] }],
+      itemOverviews: [
+        { type: 'Currency', lines: [{ name: 'Chaos Orb', primaryValue: 1 }] },
+        { type: 'UniqueJewels', lines: [{ name: 'Grand Spectrum', variant: 'Emerald', primaryValue: 5 }] },
+      ],
     }
     const fetchJson = async (_url: string) => stubResp
-    const map = await fetchPoe2PricesFromProxy('Fate of the Vaal', fetchJson, { Currency: 'currency' })
-    expect(map.get('chaos orb')).toMatchObject({ chaosValue: 200, divineValue: 1 })
-    expect(map.get('divine orb')).toMatchObject({ chaosValue: 200, divineValue: 1 })
+    const result = await fetchPoe2PricesFromProxy(
+      'Fate of the Vaal',
+      fetchJson,
+      { Currency: 'currency' },
+      {
+        Emerald: ['Old Static Jewel'],
+      },
+    )
+    expect(result.priceMap.get('chaos orb')).toMatchObject({ chaosValue: 200, divineValue: 1 })
+    expect(result.priceMap.get('divine orb')).toMatchObject({ chaosValue: 200, divineValue: 1 })
+    expect(result.pricesByVariant.get('grand spectrum|Emerald')).toMatchObject({ divineValue: 5 })
+    expect(new Set(result.uniquesByBase['Emerald'])).toEqual(new Set(['Old Static Jewel', 'Grand Spectrum']))
   })
 
   it('throws on an unknown league name', async () => {
     const fetchJson = async (_url: string) => ({})
-    await expect(fetchPoe2PricesFromProxy('Unknown League', fetchJson, {})).rejects.toThrow(
+    await expect(fetchPoe2PricesFromProxy('Unknown League', fetchJson, {}, {})).rejects.toThrow(
       'Unsupported PoE2 league for proxy: Unknown League',
     )
   })
@@ -252,7 +341,85 @@ describe('fetchPoe2PricesFromProxy', () => {
       capturedUrl = url
       return { core: { primary: 'divine', rates: { exalted: 100 } }, itemOverviews: [] }
     }
-    await fetchPoe2PricesFromProxy(league, fetchJson, {})
+    await fetchPoe2PricesFromProxy(league, fetchJson, {}, {})
     expect(capturedUrl).toBe(`https://api.exiledexchange2.dev/proxy/${slug}/overviewData.json`)
+  })
+})
+
+describe('fetchAndBuildPoe2PriceMap (direct-ninja fallback)', () => {
+  it('returns a populated priceMap, an empty pricesByVariant, and a cloned static uniquesByBase', async () => {
+    const exchange = {
+      core: {
+        primary: 'divine',
+        secondary: 'exalted',
+        rates: { exalted: 100 },
+        items: [{ id: 'divine', name: 'Divine Orb' }],
+      },
+      lines: [],
+      items: [],
+    }
+    const fetchJson = async (_url: string) => exchange
+    const staticMap = { Emerald: ['Old Static Jewel'] }
+    const result = await fetchAndBuildPoe2PriceMap('Fate of the Vaal', fetchJson, {}, staticMap)
+    expect(result.priceMap.get('divine orb')).toMatchObject({ chaosValue: 100, divineValue: 1 })
+    expect(result.pricesByVariant.size).toBe(0)
+    expect(result.uniquesByBase).toEqual(staticMap)
+    expect(result.uniquesByBase).not.toBe(staticMap)
+  })
+})
+
+describe('buildPoe2UniquesByBaseFromProxy', () => {
+  const proxyResp = (itemOverviews: Array<{ type: string; lines: Array<{ name?: string; variant?: string }> }>) =>
+    ({ core: { primary: 'divine', rates: { exalted: 100 } }, itemOverviews }) as Parameters<
+      typeof buildPoe2UniquesByBaseFromProxy
+    >[0]
+
+  it('maps each unique line variant (base type) to its names', () => {
+    const out = buildPoe2UniquesByBaseFromProxy(
+      proxyResp([
+        {
+          type: 'UniqueWeapons',
+          lines: [
+            { name: 'Sacred Flame', variant: 'Shrine Sceptre' },
+            { name: "Lioneye's Glare", variant: 'Heavy Bow' },
+          ],
+        },
+        { type: 'UniqueJewels', lines: [{ name: 'Grand Spectrum', variant: 'Emerald' }] },
+      ]),
+      {},
+    )
+    expect(out['Shrine Sceptre']).toContain('Sacred Flame')
+    expect(out['Heavy Bow']).toContain("Lioneye's Glare")
+    expect(out['Emerald']).toContain('Grand Spectrum')
+  })
+
+  it('merges with the static map (union per base, dynamic supplements static)', () => {
+    const out = buildPoe2UniquesByBaseFromProxy(
+      proxyResp([{ type: 'UniqueJewels', lines: [{ name: 'Grand Spectrum', variant: 'Emerald' }] }]),
+      { Emerald: ['Old Static Jewel'], 'Amber Amulet': ['Carnage Heart'] },
+    )
+    expect(new Set(out['Emerald'])).toEqual(new Set(['Old Static Jewel', 'Grand Spectrum']))
+    expect(out['Amber Amulet']).toEqual(['Carnage Heart'])
+  })
+
+  it('ignores non-unique overviews and lines missing name or variant', () => {
+    const out = buildPoe2UniquesByBaseFromProxy(
+      proxyResp([
+        { type: 'Currency', lines: [{ name: 'Chaos Orb', variant: 'Chaos Orb' }] },
+        { type: 'UniqueArmours', lines: [{ name: 'NoVariant' }, { variant: 'NoName' }] },
+      ]),
+      {},
+    )
+    expect(out['Chaos Orb']).toBeUndefined()
+    expect(Object.keys(out)).toEqual([])
+  })
+
+  it('does not mutate the passed static map', () => {
+    const staticMap = { Emerald: ['Old Static Jewel'] }
+    buildPoe2UniquesByBaseFromProxy(
+      proxyResp([{ type: 'UniqueJewels', lines: [{ name: 'Grand Spectrum', variant: 'Emerald' }] }]),
+      staticMap,
+    )
+    expect(staticMap).toEqual({ Emerald: ['Old Static Jewel'] })
   })
 })

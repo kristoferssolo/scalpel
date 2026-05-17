@@ -34,6 +34,12 @@ interface Poe2ExchangeResponse {
   items: Poe2ExchangeItem[]
 }
 
+export interface Poe2PriceResult {
+  priceMap: Map<string, PriceInfo>
+  pricesByVariant: Map<string, PriceInfo>
+  uniquesByBase: Record<string, string[]>
+}
+
 // Categories that currently return populated data on the PoE2 exchange
 // endpoint. Unique/SkillGem/BaseType etc. respond 200 but with empty lines,
 // so we skip them to save requests.
@@ -109,6 +115,7 @@ function poe2LeagueToProxySlug(league: string): string | undefined {
 
 interface Ee2OverviewLine {
   name?: string
+  variant?: string
   primaryValue?: number
   sparkline?: { data: (number | null)[] }
 }
@@ -139,6 +146,7 @@ export function applyProxyResponse(
   resp: Ee2OverviewResponse,
   priceMap: Map<string, PriceInfo>,
   categoryByType: Record<string, string> = {},
+  pricesByVariant?: Map<string, PriceInfo>,
 ): void {
   const exaltedPerPrimary = resp.core.rates?.exalted ?? 0
 
@@ -152,14 +160,56 @@ export function applyProxyResponse(
     for (const line of overview.lines ?? []) {
       if (!line.name) continue
       if (line.primaryValue == null || line.primaryValue <= 0) continue
-      priceMap.set(line.name.toLowerCase(), {
+      const info = {
         chaosValue: line.primaryValue * exaltedPerPrimary,
         divineValue: line.primaryValue,
         graph: line.sparkline?.data,
         ninjaCategory,
-      })
+      }
+      priceMap.set(line.name.toLowerCase(), info)
+      pricesByVariant?.set(`${line.name.toLowerCase()}|${line.variant ?? ''}`, info)
     }
   }
+}
+
+// The 8 unique overview types the EE2 proxy added. Each unique line's
+// `variant` field is exactly the base type (e.g. "Shrine Sceptre"), so
+// no parsing is needed -- unlike PoE1's heuristic dense-variant split.
+const POE2_UNIQUE_TYPES = new Set([
+  'UniqueWeapons',
+  'UniqueArmours',
+  'UniqueAccessories',
+  'UniqueFlasks',
+  'UniqueCharms',
+  'UniqueJewels',
+  'UniqueMaps',
+  'UniqueSanctumRelics',
+])
+
+/** Build a PoE2 baseType -> [unique names] map from the EE2 proxy's unique
+ *  overviews, merged with the bundled static catalogue (union per base,
+ *  dynamic supplements static -- same merge PoE1's dense path does). The
+ *  static map is threaded in by the caller so this module stays decoupled
+ *  from the data import. Never mutates the passed static map. */
+export function buildPoe2UniquesByBaseFromProxy(
+  resp: Ee2OverviewResponse,
+  staticMap: Record<string, string[]>,
+): Record<string, string[]> {
+  const merged: Record<string, Set<string>> = {}
+  for (const [base, names] of Object.entries(staticMap)) {
+    merged[base] = new Set(names)
+  }
+  for (const overview of resp.itemOverviews ?? []) {
+    if (!POE2_UNIQUE_TYPES.has(overview.type)) continue
+    for (const line of overview.lines ?? []) {
+      if (!line.name || !line.variant) continue
+      if (!merged[line.variant]) merged[line.variant] = new Set()
+      merged[line.variant].add(line.name)
+    }
+  }
+  const out: Record<string, string[]> = {}
+  for (const [base, set] of Object.entries(merged)) out[base] = [...set]
+  return out
 }
 
 /** Single-request alternative to `fetchAndBuildPoe2PriceMap`. Generously
@@ -167,18 +217,23 @@ export function applyProxyResponse(
  *  failure or unknown-league error.
  *
  * categoryByType maps proxy type strings to poe.ninja URL category segments.
- * Caller reads this from the manifest and passes it down. */
+ * Caller reads this from the manifest and passes it down.
+ * staticUniquesByBase is the bundled unique catalogue; merged with dynamic
+ * data from the proxy response. Threaded in by the caller. */
 export async function fetchPoe2PricesFromProxy(
   league: string,
   fetchJson: (url: string) => Promise<unknown>,
   categoryByType: Record<string, string>,
-): Promise<Map<string, PriceInfo>> {
+  staticUniquesByBase: Record<string, string[]>,
+): Promise<Poe2PriceResult> {
   const slug = poe2LeagueToProxySlug(league)
   if (!slug) throw new Error(`Unsupported PoE2 league for proxy: ${league}`)
   const resp = (await fetchJson(`${POE2_NINJA_PROXY}/${slug}/overviewData.json`)) as Ee2OverviewResponse
   const priceMap = new Map<string, PriceInfo>()
-  applyProxyResponse(resp, priceMap, categoryByType)
-  return priceMap
+  const pricesByVariant = new Map<string, PriceInfo>()
+  applyProxyResponse(resp, priceMap, categoryByType, pricesByVariant)
+  const uniquesByBase = buildPoe2UniquesByBaseFromProxy(resp, staticUniquesByBase)
+  return { priceMap, pricesByVariant, uniquesByBase }
 }
 
 /** Fetch every populated exchange category in parallel and return a freshly
@@ -186,12 +241,17 @@ export async function fetchPoe2PricesFromProxy(
  *  failure should not clobber existing state (leave old cache intact).
  *
  * categoryByType maps ninja type strings to poe.ninja URL category segments.
- * Caller reads this from the manifest and passes it down. */
+ * Caller reads this from the manifest and passes it down.
+ * staticUniquesByBase is the bundled unique catalogue. The direct-ninja
+ * exchange endpoint never returns uniques, so pricesByVariant is always empty
+ * and uniquesByBase is a shallow clone of the static map. This preserves
+ * today's name-only fallback behavior exactly. */
 export async function fetchAndBuildPoe2PriceMap(
   league: string,
   fetchJson: (url: string) => Promise<unknown>,
   categoryByType: Record<string, string>,
-): Promise<Map<string, PriceInfo>> {
+  staticUniquesByBase: Record<string, string[]>,
+): Promise<Poe2PriceResult> {
   const responses = (await Promise.all(
     POE2_EXCHANGE_TYPES.map((type) =>
       fetchJson(`${POE_NINJA_POE2_EXCHANGE}?league=${encodeURIComponent(league)}&type=${type}`),
@@ -200,8 +260,10 @@ export async function fetchAndBuildPoe2PriceMap(
   const priceMap = new Map<string, PriceInfo>()
   for (let i = 0; i < responses.length; i++) {
     const type = POE2_EXCHANGE_TYPES[i]
-    const ninjaCategory = categoryByType[type]
-    applyResponse(responses[i], priceMap, ninjaCategory)
+    applyResponse(responses[i], priceMap, categoryByType[type])
   }
-  return priceMap
+  // The direct-ninja exchange endpoint never returns uniques, so there is
+  // no variant data and the base map stays the static catalogue. Empty
+  // pricesByVariant preserves today's name-only fallback behavior exactly.
+  return { priceMap, pricesByVariant: new Map(), uniquesByBase: { ...staticUniquesByBase } }
 }
