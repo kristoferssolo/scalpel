@@ -1,0 +1,107 @@
+import type { ThemePalette, ThemePreset } from './palette'
+
+/** Verbatim current styles.css values. Changing these breaks the derive
+ *  anchor test on purpose - it guarantees the engine is a no-op for existing
+ *  users. */
+export const DEFAULT_PALETTE: ThemePalette = {
+  bgSolid: '#171821',
+  bgCard: '#23232e',
+  accent: '#c8a96e',
+  match: '#4caf50',
+  secondaryMatch: '#7e57c2',
+  text: '#e0d8cc',
+  textDim: '#9e9480',
+  border: '#50506e',
+  danger: '#ef5350',
+  warn: '#e67e22',
+  dangerBg: '#b71c1c',
+  hideColor: '#ef5350',
+  showColor: '#4caf50',
+  minimalColor: '#7e57c2',
+}
+
+export const PRESETS: ThemePreset[] = [
+  { id: 'default', name: 'Vaal Gold (default)', palette: DEFAULT_PALETTE },
+  {
+    id: 'abyssal',
+    name: 'Abyssal',
+    palette: {
+      bgSolid: '#14171f',
+      bgCard: '#1d2230',
+      accent: '#5fa8d3',
+      match: '#4caf50',
+      secondaryMatch: '#7e8fd6',
+      text: '#dde6ee',
+      textDim: '#8694a4',
+      border: '#3a4660',
+      danger: '#ef5350',
+      warn: '#e6a23c',
+      dangerBg: '#7a1f1f',
+      hideColor: '#ef5350',
+      showColor: '#4caf50',
+      minimalColor: '#7e8fd6',
+    },
+  },
+  {
+    id: 'bloodied',
+    name: 'Bloodied',
+    palette: {
+      bgSolid: '#1a1413',
+      bgCard: '#261b1a',
+      accent: '#c75b4a',
+      match: '#6fbf73',
+      secondaryMatch: '#b06ad6',
+      text: '#ecdedc',
+      textDim: '#a48d8a',
+      border: '#5a3a38',
+      danger: '#ff6b66',
+      warn: '#e6932b',
+      dangerBg: '#5e1414',
+      hideColor: '#ff6b66',
+      showColor: '#6fbf73',
+      minimalColor: '#b06ad6',
+    },
+  },
+  {
+    id: 'verdant',
+    name: 'Verdant',
+    palette: {
+      bgSolid: '#121712',
+      bgCard: '#1c241c',
+      accent: '#8bc34a',
+      match: '#4caf50',
+      secondaryMatch: '#80a0c0',
+      text: '#dde7da',
+      textDim: '#8a9a86',
+      border: '#3c4a3a',
+      danger: '#ef5350',
+      warn: '#e6a23c',
+      dangerBg: '#6e1f1f',
+      hideColor: '#ef5350',
+      showColor: '#4caf50',
+      minimalColor: '#80a0c0',
+    },
+  },
+  {
+    id: 'mono',
+    name: 'Mono Contrast',
+    palette: {
+      bgSolid: '#0c0c0e',
+      bgCard: '#18181c',
+      accent: '#f0f0f0',
+      match: '#51d36a',
+      secondaryMatch: '#b48ef0',
+      text: '#ffffff',
+      textDim: '#b8b8b8',
+      border: '#5a5a64',
+      danger: '#ff5b56',
+      warn: '#ffb24d',
+      dangerBg: '#6e1414',
+      hideColor: '#ff5b56',
+      showColor: '#51d36a',
+      minimalColor: '#b48ef0',
+    },
+  },
+]
+
+export const PRESETS_BY_ID: Record<string, ThemePreset> = Object.fromEntries(PRESETS.map((p) => [p.id, p]))
