@@ -41,6 +41,16 @@ export function broadcastSettingUpdate(sender: WebContents | null, key: keyof Ap
       win.webContents.send('setting-updated', key, value)
     }
   }
+  void import('./whiteboard')
+    .then(({ getWhiteboardOverlay }) => {
+      const wbWin = getWhiteboardOverlay()?.getWindow() ?? null
+      if (wbWin && wbWin.webContents !== sender) {
+        wbWin.webContents.send('setting-updated', key, value)
+      }
+    })
+    .catch(() => {
+      // whiteboard module unavailable; nothing to notify.
+    })
 }
 
 /** Persist a setting + mirror it + dispatch any side effects + broadcast.
