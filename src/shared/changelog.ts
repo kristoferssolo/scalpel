@@ -1,5 +1,13 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.8-rc8',
+    notes: [
+      'Added theme customization.',
+      'Added poe.ninja prices for PoE2 uniques (thanks kvan for the API).',
+      'Fixed filter detection of uniques and corrupted variants in PoE2.',
+    ],
+  },
+  {
     version: '0.9.8-rc7',
     notes: [
       'Fixed installed plugins failing to load after an app update.',
