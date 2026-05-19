@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync } from 'fs'
+import { closeSync, ftruncateSync, mkdtempSync, openSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 
@@ -52,9 +52,14 @@ describe('readImageFromFilePath', () => {
   })
 
   it('rejects files that exceed the size limit', () => {
-    // 51 MB exceeds the 50 MB cap.
+    // 51 MB exceeds the 50 MB cap. Use a sparse file (ftruncate) instead of
+    // allocating + writing 51 MB - the size check uses statSync and short-
+    // circuits before readFileSync, and a real 51 MB write blew the default
+    // 5s vitest timeout on slow CI disks.
     const path = join(tmp, 'huge.png')
-    writeFileSync(path, Buffer.alloc(51 * 1024 * 1024))
+    const fd = openSync(path, 'w')
+    ftruncateSync(fd, 51 * 1024 * 1024)
+    closeSync(fd)
     expect(__readImageFromFilePathForTests(path)).toBeNull()
   })
 
