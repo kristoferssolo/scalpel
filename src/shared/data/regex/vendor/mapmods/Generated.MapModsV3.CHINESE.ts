@@ -527,7 +527,7 @@ export const regexMapModsCHINESE: Regex<MapModsTokenOption> = {
       id: 646965355,
       regex: '大生',
       rawText: '怪物獲得 (70-80)% 最大生命的額外最大能量護盾|區域中掉落的地圖增加 35%',
-      generalizedText: '^怪物獲得 #% 最大生命的額外最大能量護��$|^區域中掉落的地圖增加 #%$',
+      generalizedText: '^怪物獲得 #% 最大生命��額外最大能量護盾$|^區域中掉落的地圖增加 #%$',
       options: { scary: 1001, nm: true, prefix: true },
     },
     {
@@ -567,8 +567,8 @@ export const regexMapModsCHINESE: Regex<MapModsTokenOption> = {
     },
     {
       id: 829751875,
-      regex: '少的',
-      rawText: '玩家��� (15-25)% 更少的範圍效果',
+      regex: '��的',
+      rawText: '玩家有 (15-25)% 更少的範圍效果',
       generalizedText: '^玩家有 #% 更少的範圍效果$',
       options: { scary: 60, nm: false, prefix: true },
     },
@@ -610,7 +610,7 @@ export const regexMapModsCHINESE: Regex<MapModsTokenOption> = {
     {
       id: 1062763755,
       regex: '有冰',
-      rawText: '地圖含有冰��地面',
+      rawText: '地圖含有冰緩地面',
       generalizedText: '^地圖含有冰緩地面$',
       options: { scary: 310, nm: false, prefix: true },
     },
@@ -702,7 +702,7 @@ export const regexMapModsCHINESE: Regex<MapModsTokenOption> = {
       id: 1428847539,
       regex: '曬',
       rawText: '玩家不能造成曝曬',
-      generalizedText: '^玩家不能造成曝��$',
+      generalizedText: '^玩家不能造成曝曬$',
       options: { scary: 150, nm: false, prefix: true },
     },
     {
@@ -744,7 +744,7 @@ export const regexMapModsCHINESE: Regex<MapModsTokenOption> = {
       id: 1551446200,
       regex: '能受',
       rawText: '怪物不能受到詛咒',
-      generalizedText: '^怪物不能��到詛咒$',
+      generalizedText: '^怪物不能受到詛咒$',
       options: { scary: 150, nm: false, prefix: true },
     },
     {
@@ -798,7 +798,7 @@ export const regexMapModsCHINESE: Regex<MapModsTokenOption> = {
     },
     {
       id: 1799781772,
-      regex: '為��',
+      regex: '為冰',
       rawText: '怪物造成 (50-110)% 額外物理傷害視為冰冷',
       generalizedText: '^怪物造成 #% 額外物理傷害視為冰冷$',
       options: { scary: 450, nm: false, prefix: true },
@@ -841,7 +841,7 @@ export const regexMapModsCHINESE: Regex<MapModsTokenOption> = {
     {
       id: 2105788016,
       regex: '嘲',
-      rawText: '怪物的行���速度不能被調整至低於基礎值|怪物的移動速度不能被調整至低於基礎值|怪物不能被嘲諷',
+      rawText: '怪物的行動速度不能被調整至低於基礎值|怪物的移動速度不能被調整至低於基礎值|怪物不能被嘲諷',
       generalizedText: '^怪物的行動速度不能被調整至低於基礎值$|^怪物的移動速度不能被調整至低於基礎值$|^怪物不能被嘲諷$',
       options: { scary: 89, nm: false, prefix: true },
     },
@@ -1055,7 +1055,7 @@ export const regexMapModsCHINESE: Regex<MapModsTokenOption> = {
       count: 4,
     },
     '-1818595967:-1629200695': { ids: [-1818595967, -1629200695], regex: '觸', weight: 1, count: 2 },
-    '-1818595967:1756122717': { ids: [-1818595967, 1756122717], regex: '���', weight: 1, count: 2 },
+    '-1818595967:1756122717': { ids: [-1818595967, 1756122717], regex: '界', weight: 1, count: 2 },
     '-1818595967:-1647756153:-683043845:972998450:1313044496:1665221611': {
       ids: [-1818595967, -1647756153, -683043845, 972998450, 1313044496, 1665221611],
       regex: '稀有',
