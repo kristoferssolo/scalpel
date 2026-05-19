@@ -28,7 +28,7 @@ const FIELDS: Array<{ key: keyof ThemePalette; label: string }> = [
   { key: 'minimalColor', label: 'Filter: Minimal' },
 ]
 
-export function AppearanceTab({ settings, update }: Props): JSX.Element {
+export function ThemeSettings({ settings, update }: Props): JSX.Element {
   // Working palette is local; live-applied to THIS window only until saved.
   const [working, setWorking] = useState<ThemePalette>(() =>
     resolveActivePalette(settings.themeId, settings.customThemePalette ?? null),
@@ -134,26 +134,6 @@ export function AppearanceTab({ settings, update }: Props): JSX.Element {
           >
             Reset
           </button>
-        </div>
-      </section>
-
-      <section>
-        <label>Preview</label>
-        <div className="mt-[6px] flex flex-col gap-2 p-3 bg-bg-card rounded">
-          <div className="flex items-center gap-2">
-            <span className="text-accent text-[13px] font-poe">Headhunter</span>
-            <span className="text-text-dim text-[11px]">Leather Belt</span>
-          </div>
-          <div className="flex gap-2">
-            <button className="primary text-[11px] px-3 py-1.5">Primary</button>
-            <span className="text-[11px] px-2 py-1 bg-match-dim text-match rounded">Tier match</span>
-            <span className="text-[11px] px-2 py-1" style={{ color: 'var(--hide-color)' }}>
-              Hide
-            </span>
-            <span className="text-[11px] px-2 py-1" style={{ color: 'var(--show-color)' }}>
-              Show
-            </span>
-          </div>
         </div>
       </section>
     </>

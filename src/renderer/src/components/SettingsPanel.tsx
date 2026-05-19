@@ -3,7 +3,6 @@ import type { AppSettings, PoeItem } from '../../../shared/types'
 import {
   GeneralTab,
   ViewTab,
-  AppearanceTab,
   MacrosTab,
   FilterTab,
   PriceCheckTab,
@@ -41,7 +40,6 @@ const POE_PROTECTED_HOTKEYS = new Set(['CommandOrControl+F', 'CommandOrControl+A
 const TAB_KEYS = [
   'general',
   'view',
-  'appearance',
   'macros',
   'cheatsheets',
   'filter',
@@ -54,7 +52,6 @@ type TabKey = (typeof TAB_KEYS)[number]
 const TAB_LABELS: Record<TabKey, string> = {
   general: 'General',
   view: 'View',
-  appearance: 'Theme',
   macros: 'Macros',
   cheatsheets: 'Sheets',
   filter: 'Filter',
@@ -160,7 +157,6 @@ export function SettingsPanel({
 
       {tab === 'general' && <GeneralTab settings={settings} update={update} />}
       {tab === 'view' && <ViewTab settings={settings} update={update} />}
-      {tab === 'appearance' && <AppearanceTab settings={settings} update={update} />}
       {tab === 'macros' && <MacrosTab settings={settings} update={update} tryHotkey={tryHotkey} />}
       {tab === 'cheatsheets' && (
         <CheatSheetsTab settings={settings} update={update} tryHotkey={tryHotkey} onError={showError} />

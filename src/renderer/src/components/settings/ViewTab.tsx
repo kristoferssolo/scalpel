@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { AppSettings, HideableTabKey } from '../../../../shared/types'
 import { ScrubInput } from '../regex-tool/ScrubInput'
 import { SettingToggleBox } from './SettingToggleBox'
+import { ThemeSettings } from './ThemeSettings'
 import { Setting, CloseSmall, Buy, Filter } from '@icon-park/react'
 import { getGameFeatures } from '../../../../shared/game-features'
 import { DIV_CARD_ICON_URL, IP } from '../../shared/constants'
@@ -190,6 +191,7 @@ export function ViewTab({ settings, update }: Props): JSX.Element {
         checked={settings.closeOnClickOutside}
         onChange={(val) => update('closeOnClickOutside', val)}
       />
+      <ThemeSettings settings={settings} update={update} />
     </>
   )
 }
