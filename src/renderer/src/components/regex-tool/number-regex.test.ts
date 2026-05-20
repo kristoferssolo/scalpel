@@ -62,3 +62,70 @@ describe('atLeastRegex', () => {
     expect(pat).toContain('[89]')
   })
 })
+
+describe('atLeastRegex - PR #398 regressions', () => {
+  // Upstream bugs the helper had before veiset/poe-vendor-string#398. Our impl is shaped
+  // differently and these traced as correct during port; tests stay so we can't drift back.
+
+  it('min=290 does not over-match values below the minimum', () => {
+    const pat = atLeastRegex(290)
+    for (let v = 200; v < 290; v++) expect(matches(pat, v), `v=${v}`).toBe(false)
+    for (let v = 290; v <= 999; v++) expect(matches(pat, v), `v=${v}`).toBe(true)
+  })
+
+  it('min=175 still matches 200-999', () => {
+    const pat = atLeastRegex(175)
+    for (let v = 175; v <= 999; v++) expect(matches(pat, v), `v=${v}`).toBe(true)
+  })
+
+  it('min=185 still matches 200-999', () => {
+    const pat = atLeastRegex(185)
+    for (let v = 185; v <= 999; v++) expect(matches(pat, v), `v=${v}`).toBe(true)
+  })
+
+  it('min=105 matches X00 values (200, 300, ..., 900)', () => {
+    const pat = atLeastRegex(105)
+    for (const v of [200, 300, 400, 500, 600, 700, 800, 900]) {
+      expect(matches(pat, v), `v=${v}`).toBe(true)
+    }
+  })
+})
+
+describe('atLeastRegex - exact-hundred boundaries collapse to compact form', () => {
+  it.each([
+    [100, '[1-9]..'],
+    [200, '[2-9]..'],
+    [500, '[5-9]..'],
+    [900, '9..'],
+  ])('min=%i produces %s', (n, expected) => {
+    expect(atLeastRegex(n)).toBe(expected)
+  })
+})
+
+describe('atLeastRegex - exhaustive correctness sweep', () => {
+  it('every min in 1..999 matches exactly v>=min for v in 1..999', () => {
+    const failures: string[] = []
+    outer: for (let n = 1; n <= 999; n++) {
+      const pat = atLeastRegex(n)
+      const re = new RegExp(`^${pat}$`)
+      for (let v = 1; v <= 999; v++) {
+        const should = v >= n
+        const does = re.test(String(v))
+        if (should !== does) {
+          failures.push(`n=${n} v=${v} should=${should} does=${does} re=${pat}`)
+          if (failures.length >= 10) break outer
+        }
+      }
+    }
+    expect(failures).toEqual([])
+  })
+
+  it('no generated pattern exceeds 30 characters for min in 1..999', () => {
+    const oversized: { n: number; r: string }[] = []
+    for (let n = 1; n <= 999; n++) {
+      const r = atLeastRegex(n)
+      if (r.length > 30) oversized.push({ n, r })
+    }
+    expect(oversized).toEqual([])
+  })
+})
