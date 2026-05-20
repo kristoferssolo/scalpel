@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CloseSmall } from '@icon-park/react'
 
 const TIP_KEY_PREFIX = 'tip.'
+const DISMISS_EVENT = 'scalpel:dismissible-tip-dismissed'
 
 interface DismissibleTipProps {
-  /** Unique id for this tip; persists dismissal at `tip.<id>.dismissed` in localStorage. */
+  /** Unique id for this tip; persists dismissal at `tip.<id>.dismissed` in localStorage.
+   * Multiple instances sharing the same id all dismiss together when any one is dismissed. */
   id: string
   children: React.ReactNode
 }
@@ -12,6 +14,19 @@ interface DismissibleTipProps {
 export function DismissibleTip({ id, children }: DismissibleTipProps): JSX.Element | null {
   const key = `${TIP_KEY_PREFIX}${id}.dismissed`
   const [dismissed, setDismissed] = useState(() => localStorage.getItem(key) === '1')
+
+  // Sync sibling instances with the same id: when one dismisses, the others hide too
+  // without needing a remount. Per-instance useState would otherwise keep them visible
+  // until reload.
+  useEffect(() => {
+    if (dismissed) return
+    const handler = (e: Event): void => {
+      if ((e as CustomEvent<string>).detail === id) setDismissed(true)
+    }
+    window.addEventListener(DISMISS_EVENT, handler)
+    return () => window.removeEventListener(DISMISS_EVENT, handler)
+  }, [id, dismissed])
+
   if (dismissed) return null
   return (
     <div
@@ -37,6 +52,7 @@ export function DismissibleTip({ id, children }: DismissibleTipProps): JSX.Eleme
         onClick={() => {
           localStorage.setItem(key, '1')
           setDismissed(true)
+          window.dispatchEvent(new CustomEvent(DISMISS_EVENT, { detail: id }))
         }}
       />
     </div>

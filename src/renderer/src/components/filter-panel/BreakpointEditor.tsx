@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import type { StackSizeBreakpoint } from '../../../../shared/types'
 import { visColors } from './constants'
 import { BoundaryControl } from './BoundaryControl'
+import { DismissibleTip } from '../../shared/DismissibleTip'
 import type { PendingThreshold } from './types'
 
 /** Apply a boundary change and push adjacent boundaries to avoid collisions */
@@ -147,6 +148,13 @@ export function BreakpointEditor({
             )
           })}
         </div>
+      </div>
+
+      <div className="mt-2">
+        <DismissibleTip id="filter-panel.threshold-segment">
+          Tip: Selecting a different segment in the threshold editor changes which block is being viewed and edited in
+          your filter.
+        </DismissibleTip>
       </div>
     </div>
   )
