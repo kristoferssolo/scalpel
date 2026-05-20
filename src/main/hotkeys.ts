@@ -411,6 +411,16 @@ export function setAppMacros(
   }
 }
 
+const PLACEHOLDER_LAST = '@last'
+const AUTO_CLEAR = [
+  '#', // Global
+  '%', // Party
+  '@', // Whisper
+  '$', // Trade
+  '&', // Guild
+  '/', // Command
+]
+
 /**
  * Paste text into PoE chat via clipboard + uiohook keyTaps.
  * Layout-independent, near-instant.
@@ -421,7 +431,6 @@ function pasteToPoEChat(text: string, submit: boolean): Promise<void> {
   chatLocked = true
 
   const restoreClip = snapshotClipboard()
-  clipboard.writeText(text)
   injecting = true
 
   // Focus PoE so keystrokes reach the game (only if it doesn't already have focus)
@@ -429,11 +438,39 @@ function pasteToPoEChat(text: string, submit: boolean): Promise<void> {
 
   // All keystrokes fire synchronously so the chat window
   // opens and closes in a single frame, preventing visible flash
-  uIOhook.keyTap(UiohookKey.Enter)
+  if (text.startsWith(PLACEHOLDER_LAST)) {
+    // Ctrl+Enter pre-fills @<lastwhisperer> in the chat input; paste body after
+    text = text.slice(`${PLACEHOLDER_LAST} `.length)
+    clipboard.writeText(text)
+    uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
+    uIOhook.keyTap(UiohookKey.Enter)
+    uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
+  } else if (text.endsWith(PLACEHOLDER_LAST)) {
+    // Ctrl+Enter pre-fills @CharName at position 0; Home x2 then Delete strips the @
+    text = text.slice(0, -PLACEHOLDER_LAST.length)
+    clipboard.writeText(text)
+    uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
+    uIOhook.keyTap(UiohookKey.Enter)
+    uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
+    uIOhook.keyTap(UiohookKey.Home)
+    // press twice to focus input when using controller
+    uIOhook.keyTap(UiohookKey.Home)
+    uIOhook.keyTap(UiohookKey.Delete)
+  } else {
+    clipboard.writeText(text)
+    uIOhook.keyTap(UiohookKey.Enter)
+    // PoE auto-clears the input when the text starts with a chat-prefix char
+    if (!AUTO_CLEAR.includes(text[0])) {
+      uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
+      uIOhook.keyTap(UiohookKey.A)
+      uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
+    }
+  }
+
   uIOhook.keyToggle(UiohookKey.Ctrl, 'down')
-  uIOhook.keyTap(UiohookKey.A)
   uIOhook.keyTap(UiohookKey.V)
   uIOhook.keyToggle(UiohookKey.Ctrl, 'up')
+
   if (submit) {
     uIOhook.keyTap(UiohookKey.Enter)
   }
