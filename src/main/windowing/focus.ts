@@ -150,3 +150,15 @@ function hideOverlayState(state: import('./state').OverlayState): void {
   state.wasVisibleBeforeFocusLoss = false
   state.win.hide()
 }
+
+/** Hide every secondary overlay because PoE itself exited. Used by the
+ *  OverlayController 'detach' handler in overlay.ts. Delegates to
+ *  hideOverlayState so a future change to the per-overlay hide path
+ *  (e.g. a new opacity-restore step) automatically applies here too.
+ *  Unlike hideAllOnPoeBlur this does not record prior visibility - there
+ *  is no PoE focus event coming back to restore from. */
+export function closeAllOverlaysOnPoeExit(): void {
+  for (const state of overlays.values()) {
+    hideOverlayState(state)
+  }
+}

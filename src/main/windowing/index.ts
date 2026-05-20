@@ -11,6 +11,7 @@ export type { Rect }
 export { sendCanvasIpc, moveCanvasTop, prewarmSnapCanvas, setSnapGhost } from './snap-canvas'
 export {
   aroundNativeDialog,
+  closeAllOverlaysOnPoeExit,
   hideAllOnPoeBlur,
   hideFocusedOrAnyVisibleSecondaryOverlay,
   isAnyScalpelWindowFocused,

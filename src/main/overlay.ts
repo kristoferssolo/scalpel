@@ -4,7 +4,7 @@ import { OverlayController, OVERLAY_WINDOW_OPTS } from 'electron-overlay-window'
 import { uIOhook } from 'uiohook-napi'
 import { getPoeVersion, setPoeVersion } from './game-state'
 import { startClientLogWatcher } from './client-log'
-import { isInsideAnySecondaryOverlay, isAnyScalpelWindowFocused } from './windowing'
+import { closeAllOverlaysOnPoeExit, isAnyScalpelWindowFocused, isInsideAnySecondaryOverlay } from './windowing'
 
 let overlayWindow: BrowserWindow | null = null
 let overlayVisible = false
@@ -317,6 +317,18 @@ export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
       }
     } catch (err) {
       console.error('[overlay] Error in attach handler:', err)
+    }
+  })
+  OverlayController.events.on('detach', () => {
+    try {
+      // PoE window was destroyed (player quit / crashed). The library
+      // already hides the main overlay's BrowserWindow; we still need to
+      // clear our renderer-side overlay state and hide every secondary
+      // overlay using the same paths the Esc handler uses.
+      hideOverlay()
+      closeAllOverlaysOnPoeExit()
+    } catch (err) {
+      console.error('[overlay] Error in detach handler:', err)
     }
   })
   OverlayController.events.on('focus', () => {
