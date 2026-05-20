@@ -98,10 +98,26 @@ export const MapsGenerator = forwardRef<GeneratorHandle, GeneratorProps>(functio
   const [tradeListings, setTradeListings] = useState<Listing[]>([])
   const [tradeTotal, setTradeTotal] = useState<number | null>(null)
   const [tradeQueryId, setTradeQueryId] = useState<string | null>(null)
+  // Mirror of tradeQueryId for stale-response detection in tradeLoadMore.
+  // See PriceCheck.tsx queryIdRef for the full rationale.
+  const tradeQueryIdRef = useRef<string | null>(null)
   const [tradeLeague, setTradeLeague] = useState<string>('')
   const [tradeError, setTradeError] = useState<string | null>(null)
   const [tradeRemainingIds, setTradeRemainingIds] = useState<string[]>([])
   const [loadingMore, setLoadingMore] = useState(false)
+  // Auto-prefetch the second batch of map listings after a fresh trade search
+  // lands. Mirrors PriceCheck's behavior - the /fetch rate-limit bucket resets
+  // fast enough that one extra call back-to-back is safe.
+  const tradeAutoPrefetchedFor = useRef<string | null>(null)
+  useEffect(() => {
+    if (!tradeQueryId || tradeRemainingIds.length === 0) return
+    if (tradeAutoPrefetchedFor.current === tradeQueryId) return
+    // Defer if a previous tradeLoadMore is still in flight; effect re-fires once
+    // `loadingMore` clears. See PriceCheck.tsx auto-prefetch effect for details.
+    if (loadingMore) return
+    tradeAutoPrefetchedFor.current = tradeQueryId
+    void tradeLoadMore()
+  }, [tradeQueryId, tradeRemainingIds.length, loadingMore])
   const [expandedListing, setExpandedListing] = useState<string | null>(null)
   const [actionStatus, setActionStatus] = useState<Record<string, 'pending' | 'success' | 'failed'>>({})
   const [loggedIn, setLoggedIn] = useState(false)
@@ -214,6 +230,7 @@ export const MapsGenerator = forwardRef<GeneratorHandle, GeneratorProps>(functio
       setTradeListings(result.listings)
       setTradeTotal(result.total)
       setTradeQueryId(result.queryId)
+      tradeQueryIdRef.current = result.queryId
       setTradeLeague(result.league)
       setTradeRemainingIds(result.remainingIds)
       setPanel('trade')
@@ -228,15 +245,20 @@ export const MapsGenerator = forwardRef<GeneratorHandle, GeneratorProps>(functio
 
   const tradeLoadMore = async (): Promise<void> => {
     if (!tradeQueryId || tradeRemainingIds.length === 0 || loadingMore) return
+    const fetchQueryId = tradeQueryId
     setLoadingMore(true)
     try {
-      const result = await window.api.fetchMoreListings(tradeQueryId, tradeRemainingIds)
+      const result = await window.api.fetchMoreListings(fetchQueryId, tradeRemainingIds)
+      // Stale-response guard: drop if the user has re-run the search while this
+      // fetch was in flight. Mirrors the same guard in PriceCheck.loadMore.
+      if (tradeQueryIdRef.current !== fetchQueryId) return
       setTradeListings((prev) => [...prev, ...result.listings])
       setTradeRemainingIds(result.remainingIds)
     } catch {
       // silently fail
+    } finally {
+      setLoadingMore(false)
     }
-    setLoadingMore(false)
   }
 
   // ---- Imperative handle ---------------------------------------------------

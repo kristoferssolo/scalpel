@@ -99,11 +99,36 @@ export function PriceCheck({
   }, [listings])
   const [total, setTotal] = useState<number | null>(null)
   const [queryId, setQueryId] = useState<string | null>(null)
+  // Mirror of queryId for stale-response detection in loadMore. Closures capture
+  // queryId at fetch-start; we compare against the ref at response-landing time
+  // so an in-flight load-more doesn't pollute the next search's listings if the
+  // user re-searches mid-flight. Assigned synchronously at each setQueryId call
+  // site rather than via a follow-on useEffect, so a re-search registers in the
+  // ref before any in-flight loadMore resumes (a useEffect would commit one
+  // render late and the bug would still slip through on tight races).
+  const queryIdRef = useRef<string | null>(null)
   const [searching, setSearching] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searched, setSearched] = useState(false)
   const [remainingIds, setRemainingIds] = useState<string[]>([])
   const [loadingMore, setLoadingMore] = useState(false)
+  // Auto-prefetch listings 11-20 immediately after a fresh search lands. The
+  // trade API's /fetch bucket resets fast enough that one extra call back-to-
+  // back is well within bounds (see src/main/trade/rate-limiter.ts). Doubles
+  // the default-visible listings without the user having to click "Load more".
+  // Guarded by `autoPrefetchedFor` so we only fire once per queryId, not on
+  // every change to `remainingIds` (e.g. after a manual Load more click).
+  const autoPrefetchedFor = useRef<string | null>(null)
+  useEffect(() => {
+    if (!queryId || remainingIds.length === 0) return
+    if (autoPrefetchedFor.current === queryId) return
+    // Defer if a previous loadMore is still in flight (e.g. a stale auto-prefetch
+    // from a prior search). Don't claim the queryId in the ref yet - the effect
+    // will re-fire once `loadingMore` clears, and we'll retry then.
+    if (loadingMore) return
+    autoPrefetchedFor.current = queryId
+    void loadMore()
+  }, [queryId, remainingIds.length, loadingMore])
   const autoSearched = useRef(false)
   const [isBulk, setIsBulk] = useState<boolean | null>(null)
   const [bulkListings, setBulkListings] = useState<BulkListing[]>([])
@@ -186,6 +211,7 @@ export function PriceCheck({
       setBulkListings(result.listings)
       setTotal(result.total)
       setQueryId(result.queryId)
+      queryIdRef.current = result.queryId
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Search failed')
     }
@@ -232,6 +258,7 @@ export function PriceCheck({
       setListings(result.listings)
       setTotal(result.total)
       setQueryId(result.queryId)
+      queryIdRef.current = result.queryId
       setRemainingIds(result.remainingIds ?? [])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Search failed')
@@ -241,15 +268,21 @@ export function PriceCheck({
 
   const loadMore = async (): Promise<void> => {
     if (!queryId || remainingIds.length === 0 || loadingMore) return
+    const fetchQueryId = queryId
     setLoadingMore(true)
     try {
-      const result = await window.api.fetchMoreListings(queryId, remainingIds)
+      const result = await window.api.fetchMoreListings(fetchQueryId, remainingIds)
+      // Stale-response guard: drop the response if the user has re-searched
+      // (queryId changed) while this fetch was in flight. Without this, the
+      // prior search's listings would append onto the new search's results.
+      if (queryIdRef.current !== fetchQueryId) return
       setListings((prev) => [...prev, ...result.listings])
       setRemainingIds(result.remainingIds)
     } catch {
       // silently fail
+    } finally {
+      setLoadingMore(false)
     }
-    setLoadingMore(false)
   }
 
   // Auto-search on first mount (wait for bulk check AND settings load first).
