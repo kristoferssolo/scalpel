@@ -125,6 +125,16 @@ function fireTrigger(): void {
   if (!injecting && onTrigger) onTrigger()
 }
 
+/** True when PoE has foreground focus or one of Scalpel's overlay windows is
+ *  focused. Used to gate hotkeys that only make sense in a PoE-adjacent context
+ *  (chat commands, Escape-closes-overlay) so they don't fire in a browser or
+ *  random app when Scalpel is running in the background. See issues #18, #21. */
+function hasPoeOrOverlayFocus(): boolean {
+  if (OverlayController.targetHasFocus) return true
+  const overlayWin = getOverlayWindow()
+  return !!overlayWin && !overlayWin.isDestroyed() && overlayWin.isFocused()
+}
+
 function firePriceCheck(): void {
   const now = Date.now()
   if (now - lastPriceCheckFireAt < DEDUPE_MS) return
@@ -153,11 +163,7 @@ export function startHotkeyListener(handler: () => void): void {
       // Only respond to Escape when PoE or the overlay itself has focus -- otherwise
       // pressing Esc in another app (browser, Discord, etc.) would silently hide the
       // overlay here in the background.
-      if (onEscape) {
-        const overlayWin = getOverlayWindow()
-        const overlayFocused = !!overlayWin && !overlayWin.isDestroyed() && overlayWin.isFocused()
-        if (OverlayController.targetHasFocus || overlayFocused) onEscape()
-      }
+      if (onEscape && hasPoeOrOverlayFocus()) onEscape()
     }
     // Trigger + price-check via uIOhook so the combo fires in BOTH PoE1 and PoE2,
     // not just whichever game electron-overlay-window is attached to. The handlers
@@ -223,6 +229,13 @@ export function startHotkeyListener(handler: () => void): void {
 // Refcounted so multiple independent reasons to suspend (hotkey recorder open
 // AND user typing in an overlay input, etc.) compose without one popping the
 // other's suspension. Each suspend pairs with one resume.
+//
+// All set*() mutators below MUST treat `suspendDepth > 0` as "store-only, skip
+// OS-side globalShortcut.register/unregister". Boot starts with all shortcuts
+// suspended until PoE actually gains focus (see index.ts), and the user can
+// edit a hotkey via settings while PoE is unfocused. Without the gate, those
+// set*() calls hijack the accelerator system-wide (e.g. F5 stops refreshing
+// browsers) even though we're nominally suspended. See issues #18, #21.
 let suspendDepth = 0
 
 /** Temporarily unregister all global shortcuts (recorder, input typing, etc.). */
@@ -254,13 +267,16 @@ export function resumeHotkeys(): void {
  *  that still fires when PoE blocks globalShortcut from the non-attached game).
  *  fireTrigger dedupes the two paths. */
 export function setHotkey(accelerator: string): void {
-  if (currentAccelerator) {
+  if (currentAccelerator && suspendDepth === 0) {
     try {
       globalShortcut.unregister(currentAccelerator)
     } catch {}
   }
   currentAccelerator = accelerator
+  // Combo is consumed by the uIOhook fallback regardless of globalShortcut
+  // state, so update it even when suspended.
   triggerCombo = parseAccelerator(accelerator)
+  if (suspendDepth > 0) return
   try {
     globalShortcut.register(accelerator, () => fireTrigger())
   } catch (e) {
@@ -269,13 +285,14 @@ export function setHotkey(accelerator: string): void {
 }
 
 export function setPriceCheckHotkey(accelerator: string): void {
-  if (priceCheckAccelerator) {
+  if (priceCheckAccelerator && suspendDepth === 0) {
     try {
       globalShortcut.unregister(priceCheckAccelerator)
     } catch {}
   }
   priceCheckAccelerator = accelerator
   priceCheckCombo = parseAccelerator(accelerator)
+  if (suspendDepth > 0) return
   try {
     globalShortcut.register(accelerator, () => firePriceCheck())
   } catch (e) {
@@ -294,11 +311,14 @@ export function setEscapeHandler(handler: (() => void) | null): void {
 export function setChatCommands(
   commands: Array<{ hotkey: string; command: string; autoSubmit?: boolean; scope?: MacroScope }>,
 ): void {
-  // Unregister previous chat command shortcuts
-  for (const ch of chatCommandHotkeys) {
-    try {
-      globalShortcut.unregister(ch.accelerator)
-    } catch {}
+  // Unregister previous chat command shortcuts (no-op when suspended -- nothing
+  // is registered with the OS in that state).
+  if (suspendDepth === 0) {
+    for (const ch of chatCommandHotkeys) {
+      try {
+        globalShortcut.unregister(ch.accelerator)
+      } catch {}
+    }
   }
   chatCommandHotkeys = []
 
@@ -307,12 +327,18 @@ export function setChatCommands(
     if (!c.hotkey || !c.command) continue
     if (!scopeAppliesTo(chatCommandEffectiveScope(c), version)) continue
     const autoSubmit = c.autoSubmit !== false
+    chatCommandHotkeys.push({ accelerator: c.hotkey, command: c.command, autoSubmit, scope: c.scope })
+    if (suspendDepth > 0) continue
     try {
       globalShortcut.register(c.hotkey, () => {
         if (injecting || isTypingInOverlay()) return
+        // Defense-in-depth focus gate: even with the registration-time suspend
+        // check, races between focus events and key delivery could otherwise
+        // route a press to the wrong app's keystroke injection. Gate on
+        // PoE/overlay focus so unrelated apps see the raw key. Issues #18, #21.
+        if (!hasPoeOrOverlayFocus()) return
         sendChatCommand(c.command, autoSubmit)
       })
-      chatCommandHotkeys.push({ accelerator: c.hotkey, command: c.command, autoSubmit, scope: c.scope })
     } catch (e) {
       console.error(`[hotkeys] Failed to register chat command "${c.hotkey}":`, e)
     }
@@ -329,12 +355,15 @@ export function setAppMacroHandler(handler: (action: string, tag?: string) => vo
  *  belongs to. Re-applied automatically by resumeHotkeys. */
 export function setSecondaryOverlayHotkeys(hotkeys: OverlayHotkey[]): void {
   secondaryOverlayHotkeys = hotkeys
-  for (const acc of registeredOverlayAccelerators) {
-    try {
-      globalShortcut.unregister(acc)
-    } catch {}
+  if (suspendDepth === 0) {
+    for (const acc of registeredOverlayAccelerators) {
+      try {
+        globalShortcut.unregister(acc)
+      } catch {}
+    }
   }
   registeredOverlayAccelerators = []
+  if (suspendDepth > 0) return
   for (const { accelerator, handler } of hotkeys) {
     if (!accelerator) continue
     try {
@@ -356,12 +385,15 @@ export function setAppMacros(
   macros: Array<{ action: string; hotkey: string; tag?: string; scope?: MacroScope }>,
 ): void {
   lastAppMacros = macros
-  for (const acc of appMacroAccelerators) {
-    try {
-      globalShortcut.unregister(acc)
-    } catch {}
+  if (suspendDepth === 0) {
+    for (const acc of appMacroAccelerators) {
+      try {
+        globalShortcut.unregister(acc)
+      } catch {}
+    }
   }
   appMacroAccelerators = []
+  if (suspendDepth > 0) return
 
   const version = getPoeVersion()
   for (const m of macros) {
