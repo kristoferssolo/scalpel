@@ -1,5 +1,16 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.8-rc9',
+    notes: [
+      'Added tooltips on filter threshold sliders to clarify their interaction.',
+      'Added trade fetch support in price-check and maps tabs.',
+      'Added Linux AppImage build (experimental).',
+      'Fixed hotkeys firing outside of the game.',
+      'Fixed Scalpel overlays staying open after Path of Exile closes.',
+      'Fixed @last chat hotkey.',
+    ],
+  },
+  {
     version: '0.9.8-rc8',
     notes: [
       'Added theme customization.',
