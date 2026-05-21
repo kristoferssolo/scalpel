@@ -9,15 +9,18 @@ Path of Exile's first ever fourth-party tool. An overlay to edit your filter, pr
 - **Price Checker** - A price checker that works like you'd expect, when it works. But better. Sometimes.
 - **Regex** - Generate, save and hotkey regex strings. Maps/Waystones, Flask & Custom for now. More coming. Powered by [poe.re](https://poe.re)
 - **Economy Audit** - Bulk retier items based on current market prices from poe.ninja
-- **Dust Explorer** - Easily filter uniques to find the best ones to dust
-- **Div Card Explorer** - EV calculator for div cards on maps with live prices (s/o [Maps of Exile](https://github.com/deathbeam/maps-of-exile) and the Forbidden Library)
-- **Socket Recolor** - Easily calculate cost of recoloring sockets on items
 - **Online Filter Sync** - Use and update your FilterBlade filter like you always do, with the speed of local edits.
 - **Macros** - Create chat macros for hideout etc.
 - **Cheat Sheets** - Use prefabs (PoE1 Leagues, PoE2 Leveling Guide) or add your own. Or just add pictures of Greg.
 - **View in Wiki/PoEDB/Ninja** - Don't like what Scalpel has to say about an item? Try the other sites.
+- **Art Mode** - Bind an app hotkey in settings to launch an artboard on top of the game - draw, add shapes, text and images. I don't know who would want this besides content creators but it's really fucking cool.
 - **Plugins (beta)** - Browse and install from Settings → Plugins, or build your own. 
-- **And more** - Scrollable stash tabs, filter checkpoints etc.
+- **And more** - Scrollable stash tabs, filter checkpoints, cool themes etc.
+
+**PoE1 Only:**
+- **Dust Explorer** - Easily filter uniques to find the best ones to dust
+- **Div Card Explorer** - EV calculator for div cards on maps with live prices (s/o [Maps of Exile](https://github.com/deathbeam/maps-of-exile) and the Forbidden Library)
+- **Socket Recolor** - Easily calculate cost of recoloring sockets on items
 
 ## Plugins
 
@@ -25,8 +28,7 @@ See [PLUGINS.md](PLUGINS.md) for information on how to build a plugin. Please jo
 
 ## Requirements
 
-- Windows 10+ (The Linux bois are working on it but it currently sometimes "just works")
-- You're okay being an early adopter (Some of this ain't work good)
+- Windows 10+, Linux
 
 ## Official Releases
 
@@ -38,7 +40,7 @@ Pre-built releases are available on the [Releases](https://github.com/scalpelpoe
 
 ## Notes from Fred
 
-Scalpel is now open source. If you like Scalpel and have feedback, the Discord to do that is below. This app is in beta right now and it acts like it some times. Let me know and I will fix it, and if I can't handle it, maybe someone else can. Here is what I am working on next:
+The PoE2 era has begun for Scalpel. Enjoy 0.5 and all the new content and please feel free to bug me about what works and what doesn't. I have tried to smoke test PoE2 as best I can, but that is short of actually using it during gameplay.
 
 - Adding more regex support via [poe.re gh](https://github.com/veiset/poe-vendor-string/issues)
 - Smart price checking that "remembers" how you price check and adapts over time
@@ -62,13 +64,13 @@ Scalpel is now open source. If you like Scalpel and have feedback, the Discord t
 
 ## Contributing
 
-Let it fuckin' rip homies. Thanks for the help.
+There are two ways to contribute to Scalpel - fork this repo and make a PR (duh), or you can make a plugin (instructions above.) Plugins are a great way for you to integrate your tool into Scalpel and manage it as your own project, and it reduces bloat in the main project. Scalpel users will be able to easily add plugins in settings.
 
-Here are some things I need help with:
+**If you want to help in the main repo:**
 
-- Linux support
 - Localization (All the Spanish I know is from watching Narcos)
 - If you find item affixes that break in price checker (This is 50% of what is wrong with Scalpel)
+- You tell me!
 
 ## Building from Source
 
