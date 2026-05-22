@@ -215,9 +215,13 @@ export function RegexGenerator(): JSX.Element {
   const findMatchingPreset = (): RegexPreset | undefined =>
     presets.find((p) => (p.generator ?? 'maps') === generator && activeHandleRef.current?.matchesPreset(p) === true)
 
-  const addCustomTag = (): void => {
+  /** Validate the in-progress input text and build a custom tag from it. Returns null
+   *  for empty input, or for a "macro" tag already claimed by another preset (in which
+   *  case it also surfaces the transient error). Shared by the Enter/Space add path and
+   *  the Save button's commit-before-save path. */
+  const buildPendingTag = (): (RegexPresetTag & { id: number }) | null => {
     const text = customTagInput.trim()
-    if (!text) return
+    if (!text) return null
     if (/macro/i.test(text)) {
       const ownPreset = findMatchingPreset()
       const inUseByOther = presets.some(
@@ -227,21 +231,33 @@ export function RegexGenerator(): JSX.Element {
         setMacroTagError('Macro tag is in use')
         if (macroErrorTimer.current) clearTimeout(macroErrorTimer.current)
         macroErrorTimer.current = setTimeout(() => setMacroTagError(null), 3000)
-        return
+        return null
       }
     }
-    setPresetTags((prev) => [...prev, { text, color: CUSTOM_TAG_COLOR, id: Date.now() }])
+    return { text, color: CUSTOM_TAG_COLOR, id: Date.now() }
+  }
+
+  const addCustomTag = (): void => {
+    const tag = buildPendingTag()
+    if (!tag) return
+    setPresetTags((prev) => [...prev, tag])
     setCustomTagInput('')
   }
 
   const savePreset = async (): Promise<void> => {
-    if (presetTags.length === 0) return
+    // Commit any in-progress tag text first so users don't have to hit space/enter before
+    // saving. If the typed text is an in-use macro, buildPendingTag surfaces the error --
+    // abort rather than saving without it.
+    const pending = buildPendingTag()
+    if (customTagInput.trim() && !pending) return
+    const tags = pending ? [...presetTags, pending] : presetTags
+    if (tags.length === 0) return
     const payload = activeHandleRef.current?.getPresetPayload() ?? {}
     const id = editingPresetId ?? findMatchingPreset()?.id ?? crypto.randomUUID()
     const preset: RegexPreset = {
       id,
       generator,
-      tags: presetTags,
+      tags,
       avoid: [],
       want: [],
       wantMode: 'any',
@@ -252,6 +268,8 @@ export function RegexGenerator(): JSX.Element {
     }
     const updated = await window.api.saveRegexPreset(preset)
     setPresets(updated)
+    // Reflect the just-committed pending tag as a chip and clear the input.
+    setPresetTags(tags)
     // Stay in edit mode for this preset so further tweaks keep updating instead of forking.
     setEditingPresetId(id)
     setCustomTagInput('')
@@ -371,7 +389,7 @@ export function RegexGenerator(): JSX.Element {
           </ReactSortable>
           <button
             onClick={savePreset}
-            disabled={presetTags.length === 0}
+            disabled={presetTags.length === 0 && !customTagInput.trim()}
             className="primary disabled:opacity-30 disabled:cursor-default shrink-0"
           >
             {editingPresetId ? 'Update' : 'Save'}
