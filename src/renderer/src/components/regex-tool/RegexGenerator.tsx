@@ -3,7 +3,14 @@ import { ReactSortable } from 'react-sortablejs'
 import { CloseSmall, Save } from '@icon-park/react'
 import { DismissibleTip } from '../../shared/DismissibleTip'
 import { poeRegexMaxLength } from './regex-engine'
-import { TagSourceIcon, loadStorage, tagChipStyle, useRegexKey, ensureLegacyRegexKeysMigrated } from './mapmods-helpers'
+import {
+  TagSourceIcon,
+  loadStorage,
+  tagChipStyle,
+  useRegexKey,
+  ensureLegacyRegexKeysMigrated,
+  usePersistedBool,
+} from './mapmods-helpers'
 import poereIconTight from '../../assets/other/poere-logo-tight.svg'
 import { POE_RE_URL, POE2_RE_URL } from '../../../../shared/endpoints'
 import { FilterChip } from '../price-check/FilterChip'
@@ -80,8 +87,10 @@ export function RegexGenerator(): JSX.Element {
   const [customTagInput, setCustomTagInput] = useState('')
   const [presets, setPresets] = useState<RegexPreset[]>([])
   const [copied, setCopied] = useState(false)
-  const [saveOpen, setSaveOpen] = useState(false)
-  const [loadOpen, setLoadOpen] = useState(false)
+  // Save/Load panels persist their open state. Save defaults open so new users discover
+  // preset saving; once they collapse it (or open Load) the choice sticks across launches.
+  const [saveOpen, setSaveOpen] = usePersistedBool(key('saveOpen'), true)
+  const [loadOpen, setLoadOpen] = usePersistedBool(key('loadOpen'), false)
   const [macroTagError, setMacroTagError] = useState<string | null>(null)
   /** Active save target. When set, Save updates this preset id instead of dedup-or-creating;
    *  null means "create new". Saves keep it set so further edits keep updating. */
@@ -115,7 +124,6 @@ export function RegexGenerator(): JSX.Element {
     localStorage.setItem(key('presetTagsByGenerator'), JSON.stringify(savedTagsByGenerator.current))
     setPresetTags(savedTagsByGenerator.current[g] ?? [])
     setCustomTagInput('')
-    setSaveOpen(false)
     // Editing context belongs to one generator; switching tabs starts fresh so a stray
     // Update doesn't overwrite a preset that lives on a different generator.
     setEditingPresetId(null)
