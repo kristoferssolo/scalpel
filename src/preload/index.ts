@@ -56,6 +56,9 @@ export const api = {
     itemJson?: string,
   ): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke('save-block-edit', blockIndex, block, itemJson),
   reloadFilter: (): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke('reload-filter'),
+  getUniqueVisibility: (
+    refs: Array<{ name: string; baseType: string; itemClass: string }>,
+  ): Promise<Record<string, 'Show' | 'Hide'>> => ipcRenderer.invoke('get-unique-visibility', refs),
   lookupBaseType: (
     baseType: string,
     itemClass: string,

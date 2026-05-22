@@ -1,4 +1,4 @@
-import { Buy } from '@icon-park/react'
+import { Buy, PreviewOpen, PreviewClose } from '@icon-park/react'
 import dustIcon from '../../assets/currency/thaumaturgic-dust.png'
 import { chaosIcon, divineIcon } from '../../shared/icons'
 import { IconGlow } from '../../shared/IconGlow'
@@ -15,6 +15,7 @@ interface DustEntryRowProps {
   classMap: Record<string, string>
   onSelectItem?: () => void
   onPriceCheckItem?: () => void
+  visibility?: 'Show' | 'Hide'
 }
 
 export function DustEntryRow({
@@ -25,6 +26,7 @@ export function DustEntryRow({
   classMap,
   onSelectItem,
   onPriceCheckItem,
+  visibility,
 }: DustEntryRowProps): JSX.Element {
   const loadItem = (): void => {
     window.api.lookupBaseType(entry.baseType, classMap[entry.baseType] || '', 'Unique', entry.name)
@@ -46,6 +48,24 @@ export function DustEntryRow({
         <IconGlow src={entry.iconUrl} size={22} blur={10} saturate={2.5} opacity={0.35} />
       ) : (
         <div className="w-[22px] h-[22px] shrink-0" />
+      )}
+
+      {/* Filter visibility status icon */}
+      {visibility && (
+        <span
+          title={visibility === 'Show' ? 'Shown by your filter' : 'Hidden by your filter'}
+          className="shrink-0 flex items-center"
+          style={{
+            color: visibility === 'Show' ? 'var(--text-dim)' : '#ef5350',
+            opacity: visibility === 'Show' ? 0.5 : 0.9,
+          }}
+        >
+          {visibility === 'Show' ? (
+            <PreviewOpen size={12} theme="outline" fill="currentColor" />
+          ) : (
+            <PreviewClose size={12} theme="outline" fill="currentColor" />
+          )}
+        </span>
       )}
 
       {/* Name */}

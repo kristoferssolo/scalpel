@@ -29,6 +29,7 @@ export function DustExplorer({
   const [mirrorRate, setMirrorRate] = useState(0)
   const [loading, setLoading] = useState(true)
   const [filters, setFiltersState] = useState<ActiveFilter[]>(persistedState.filters)
+  const [visibility, setVisibility] = useState<Record<string, 'Show' | 'Hide'>>({})
 
   const setFilters = (fn: ActiveFilter[] | ((prev: ActiveFilter[]) => ActiveFilter[])) => {
     setFiltersState((prev) => {
@@ -78,6 +79,21 @@ export function DustExplorer({
       setLoading(false)
     }
     fetchPrices()
+    return () => {
+      cancelled = true
+    }
+  }, [baseEntries])
+
+  useEffect(() => {
+    let cancelled = false
+    window.api
+      .getUniqueVisibility(
+        baseEntries.map((e) => ({ name: e.name, baseType: e.baseType, itemClass: baseClassMap[e.baseType] ?? '' })),
+      )
+      .then((v) => {
+        if (!cancelled) setVisibility(v)
+      })
+      .catch(() => {})
     return () => {
       cancelled = true
     }
@@ -293,6 +309,7 @@ export function DustExplorer({
             classMap={baseClassMap}
             onSelectItem={onSelectItem}
             onPriceCheckItem={onPriceCheckItem}
+            visibility={visibility[entry.name]}
           />
         ))}
       </div>

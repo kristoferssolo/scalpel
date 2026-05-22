@@ -358,6 +358,26 @@ export function register(store: Store<AppSettings>): void {
   )
 
   ipcMain.handle(
+    'get-unique-visibility',
+    (_event, refs: Array<{ name: string; baseType: string; itemClass: string }>): Record<string, 'Show' | 'Hide'> => {
+      const currentFilter = getCurrentFilter()
+      if (!currentFilter) return {}
+      const result: Record<string, 'Show' | 'Hide'> = {}
+      for (const ref of refs) {
+        const synthetic = defaultPoeItem(
+          { ...clickSyntheticOverrides(ref.baseType, ref.itemClass, 'Unique'), name: ref.name, itemLevel: 84 },
+          getPoeVersion(),
+        )
+        const active = findMatchingBlocks(currentFilter, synthetic).find((m) => m.isFirstMatch)
+        // Mirror the renderer's show-vs-hide collapse (see toLabelBlock in this file):
+        // anything that isn't an explicit Hide counts as shown; no match = hidden by default.
+        result[ref.name] = active && active.block.visibility !== 'Hide' ? 'Show' : 'Hide'
+      }
+      return result
+    },
+  )
+
+  ipcMain.handle(
     'batch-lookup-prices',
     async (
       _event,
