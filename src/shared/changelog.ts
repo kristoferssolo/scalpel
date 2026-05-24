@@ -1,5 +1,9 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.8-rc12',
+    notes: ['Fixed Scalpel not closing on Linux when you quit it.'],
+  },
+  {
     version: '0.9.8-rc11',
     notes: ['Fixed Scalpel hanging on quit instead of closing cleanly.'],
   },
