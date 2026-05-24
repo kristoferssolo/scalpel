@@ -1,14 +1,15 @@
 import { app, type BrowserWindow, clipboard, ipcMain, Tray, Menu, nativeImage, powerMonitor, screen } from 'electron'
+import {
+  createAndOpenBugReport,
+  installEarlyDiagnostics,
+  recordMainDiagnostic,
+  registerDiagnostics,
+} from './diagnostics'
 
 // Prevent unhandled JS exceptions from crashing the native overlay thread
 // electron-overlay-window's tsfn_to_js_proxy calls napi_fatal_error if napi_call_function
 // returns non-ok, which happens when there's a pending exception on the JS isolate
-process.on('uncaughtException', (err) => {
-  console.error('[UNCAUGHT]', err)
-})
-process.on('unhandledRejection', (err) => {
-  console.error('[UNHANDLED REJECTION]', err)
-})
+installEarlyDiagnostics()
 
 import { dirname, join } from 'node:path'
 import { execSync } from 'node:child_process'
@@ -230,6 +231,7 @@ registerWhiteboard()
 registerClipboard()
 registerManifest()
 registerPlugins(store, isElevated)
+registerDiagnostics({ store, getAppWindow, showAppWindow })
 
 ipcMain.on('close-overlay', () => hideOverlay())
 ipcMain.on('open-devtools', (event) => {
@@ -277,6 +279,12 @@ function createTray(): void {
     {
       label: 'Settings',
       click: () => showAppWindow(),
+    },
+    {
+      label: 'Report a Bug',
+      click: () => {
+        createAndOpenBugReport().catch((err) => recordMainDiagnostic('bug-report', err))
+      },
     },
     { type: 'separator' },
     { label: 'Quit', click: () => app.quit() },
