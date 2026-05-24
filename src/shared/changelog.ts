@@ -1,5 +1,18 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.8-rc10',
+    notes: [
+      'Added a match count to the top of trade search results, not just the bottom.',
+      'Added a filter-visibility indicator to uniques in the Dust tab, so you can see which ones your filter shows.',
+      'Added a "Report a Bug" option to the tray menu that captures diagnostics into a shareable report.',
+      'Defaulted the regex Save tab to open to reduce confusion.',
+      'Fixed regex tags not saving unless you pressed Enter or Space.',
+      'Fixed PoE2 pseudo totals via a weighted sum for logged-in users when a pseudo stat has no trade equivalent.',
+      'Fixed Linux startup by relaunching under XWayland and disabling hardware acceleration.',
+      'Fixed hotkeys not firing on Linux under XWayland.',
+    ],
+  },
+  {
     version: '0.9.8-rc9',
     notes: [
       'Added tooltips on filter threshold sliders to clarify their interaction.',
