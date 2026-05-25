@@ -148,15 +148,33 @@ let currentInteractiveWindow: BrowserWindow | null = null
 function setInteractiveWindow(win: BrowserWindow | null): void {
   if (currentInteractiveWindow === win) return
   // Revert prior window to click-through.
-  if (currentInteractiveWindow && !currentInteractiveWindow.isDestroyed()) {
+  const prev = currentInteractiveWindow
+  if (prev && !prev.isDestroyed()) {
     try {
-      currentInteractiveWindow.setIgnoreMouseEvents(true)
+      prev.setIgnoreMouseEvents(true)
     } catch {}
   }
   currentInteractiveWindow = win
   if (win && !win.isDestroyed()) {
     try {
       win.setIgnoreMouseEvents(false)
+    } catch {}
+    // X11: toggling the input shape (setIgnoreMouseEvents) is enough on Windows,
+    // but an unfocused always-on-top overlay on X11 still won't receive pointer
+    // button events -- it has to take native input focus. electron-overlay-window
+    // exposes activateOverlay() for exactly this (it runs the native lib.activateOverlay()
+    // on Linux). Only the attached main overlay can be activated this way, so secondary
+    // windows (whiteboard, cheat sheets) fall outside this path. See issue #30.
+    if (process.platform === 'linux' && win === overlayWindow) {
+      try {
+        OverlayController.activateOverlay()
+      } catch {}
+    }
+  } else if (process.platform === 'linux' && prev === overlayWindow) {
+    // Cursor left the main overlay: hand native input focus back to PoE so the
+    // game keeps receiving input (mirrors the focusTarget() handoff hideOverlay uses).
+    try {
+      OverlayController.focusTarget()
     } catch {}
   }
 }
