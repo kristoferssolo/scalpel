@@ -310,6 +310,7 @@ export default function App(): JSX.Element {
         if (isNewItem) {
           setSelectedBpIndex(null)
           setSelectedQualityBpIndex(null)
+          setSelectedStrandBpIndex(null)
           setAuditBlockIndex(null)
           prevItemKey.current = itemKey
         }

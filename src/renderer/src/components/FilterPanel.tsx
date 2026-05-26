@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { getActiveMatch } from '../shared/activeMatch'
 import { ItemSummary } from './ItemSummary'
 import { FilterBlockEditor, type SaveState } from './filter-block-editor'
@@ -10,6 +10,7 @@ import { BreakpointEditor } from './filter-panel/BreakpointEditor'
 import { UniquesForBase } from './filter-panel/UniquesForBase'
 import { ZoneToggle } from './filter-panel/ZoneToggle'
 import type { FilterPanelProps, PendingThreshold } from './filter-panel/types'
+import { useBreakpointHoming } from './filter-panel/useBreakpointHoming'
 
 export function FilterPanel({
   data,
@@ -72,29 +73,9 @@ export function FilterPanel({
     }
   }
 
-  // Auto-select first breakpoint when breakpoints exist but none selected
-  useEffect(() => {
-    if (hasBreakpoints && selectedBpIndex === null) {
-      const matchIdx = stackBreakpoints.findIndex((bp) => item.stackSize >= bp.min && item.stackSize <= bp.max)
-      onSelectBp(matchIdx >= 0 ? matchIdx : 0)
-    }
-  }, [hasBreakpoints])
-
-  useEffect(() => {
-    if (hasQualityBreakpoints && selectedQualityBpIndex === null) {
-      const matchIdx = qualityBreakpoints.findIndex((bp) => item.quality >= bp.min && item.quality <= bp.max)
-      onSelectQualityBp(matchIdx >= 0 ? matchIdx : 0)
-    }
-  }, [hasQualityBreakpoints])
-
-  useEffect(() => {
-    if (hasStrandBreakpoints && selectedStrandBpIndex === null) {
-      const matchIdx = strandBreakpoints.findIndex(
-        (bp) => (item.memoryStrands ?? 0) >= bp.min && (item.memoryStrands ?? 0) <= bp.max,
-      )
-      onSelectStrandBp(matchIdx >= 0 ? matchIdx : 0)
-    }
-  }, [hasStrandBreakpoints])
+  useBreakpointHoming(hasBreakpoints, stackBreakpoints, item.stackSize, onSelectBp)
+  useBreakpointHoming(hasQualityBreakpoints, qualityBreakpoints, item.quality, onSelectQualityBp)
+  useBreakpointHoming(hasStrandBreakpoints, strandBreakpoints, item.memoryStrands ?? 0, onSelectStrandBp)
 
   const { match: displayMatch, tierGroup: activeTierGroup } = getActiveMatch(
     data,
