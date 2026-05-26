@@ -13,6 +13,27 @@ export const FAQ: { section: string; items: { q: string; a: string }[] }[] = [
     ],
   },
   {
+    section: 'Tips & Tricks',
+    items: [
+      {
+        q: 'Macros',
+        a: "That's not really a question but macros are a great way to set a hotkey/combo to almost anything. You can find Macros as a tab in Settings. Set one for /hideout or a chat to the @last person you talked to. Set one for any tab/feature in scalpel - my favorite is the whiteboard! Or, set one for your regex (See below!)",
+      },
+      {
+        q: 'How do I set a macro to my regex?',
+        a: 'You can add custom tags to your regexes in addition to the ones that Scalpel generates in an attempt to help you parse it later. If you add a tag containing the word "macro" anywhere in the tag, you can add a "Scalpel Macro" in settings to "Use Saved Regex" which will then show you all the macro-available regexes. This hotkey will enter it directly into your stash or vendor.',
+      },
+      {
+        q: 'Wait so how does this online filter sync work?',
+        a: 'Use online filter in Scalpel -> it creates a local version that it edits that is locally "linked" to your online filter -> you update your online filter -> you hit "check for filter updates" -> Scalpel syncs changes from your online filter. Mostly correctly.',
+      },
+      {
+        q: 'How do I use custom sound packs?',
+        a: "Drop your .mp3 files into your filter folder (Documents/My Games/Path of Exile). They'll appear in the sound dropdown alongside built-in sounds when editing a filter block.",
+      },
+    ],
+  },
+  {
     section: 'Something Broke',
     items: [
       {
@@ -42,15 +63,6 @@ export const FAQ: { section: string; items: { q: string; a: string }[] }[] = [
       {
         q: "I can't seem to update Scalpel",
         a: 'In some cases your antivirus may block the folder that the updates go to. Check that AppData/Roaming is not being blocked by AV. This has helped some people.',
-      },
-    ],
-  },
-  {
-    section: 'Tips & Tricks',
-    items: [
-      {
-        q: 'How do I use custom sound packs?',
-        a: "Drop your .mp3 files into your filter folder (Documents/My Games/Path of Exile). They'll appear in the sound dropdown alongside built-in sounds when editing a filter block.",
       },
     ],
   },
