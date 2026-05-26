@@ -7,9 +7,11 @@ interface Props {
   settings: RuntimeSettings
   update: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void
   updateProfile: <K extends 'league'>(key: K, value: ProfileSettingValue<K>) => Promise<void>
+  /** Dev-only: re-enter the onboarding flow to review it. Present in app mode only. */
+  onShowOnboarding?: () => void
 }
 
-export function GeneralTab({ settings, update, updateProfile }: Props): JSX.Element {
+export function GeneralTab({ settings, update, updateProfile, onShowOnboarding }: Props): JSX.Element {
   const [reportMessage, setReportMessage] = useState<string | null>(null)
   const [reporting, setReporting] = useState(false)
   const [simulateCrash, setSimulateCrash] = useState(false)
@@ -201,6 +203,22 @@ export function GeneralTab({ settings, update, updateProfile }: Props): JSX.Elem
               title="Throw during render so the diagnostics error boundary catches it"
             >
               Simulate a fatal crash
+            </button>
+            {onShowOnboarding && (
+              <button
+                onClick={onShowOnboarding}
+                className="text-[11px] px-3 py-1.5 text-text-dim"
+                title="Re-enter the onboarding flow to review it"
+              >
+                Review Onboarding
+              </button>
+            )}
+            <button
+              onClick={() => void window.api.resetLearning('all')}
+              className="text-[11px] px-3 py-1.5 text-text-dim"
+              title="Clear all adaptive price-check learned preferences"
+            >
+              Reset PC Learnings
             </button>
           </div>
         </section>

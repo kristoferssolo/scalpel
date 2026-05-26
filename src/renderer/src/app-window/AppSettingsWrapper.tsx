@@ -7,11 +7,13 @@ export function AppSettingsWrapper({
   settings,
   onSettingsChange,
   onEditProfile,
+  onShowOnboarding,
   tabRequest,
 }: {
   settings: RuntimeSettings
   onSettingsChange: (s: RuntimeSettings) => void
   onEditProfile: (profile: PoeProfileSummary) => void
+  onShowOnboarding: () => void
   tabRequest?: { tab: string; n: number } | null
 }): JSX.Element {
   const [onlineImportName, setOnlineImportName] = useState<string | null>(null)
@@ -23,6 +25,7 @@ export function AppSettingsWrapper({
         onSettingsChange={onSettingsChange}
         mode="app"
         onEditProfile={onEditProfile}
+        onShowOnboarding={onShowOnboarding}
         onOnlineImport={setOnlineImportName}
         tabRequest={tabRequest}
       />

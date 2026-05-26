@@ -102,20 +102,6 @@ export function PriceCheckTab({ settings, update, updateProfile, tryHotkey }: Pr
           options={ADAPTIVE_MODE_OPTIONS}
           onChange={(v) => update('adaptiveDefaultsMode', v)}
         />
-        {import.meta.env.DEV && (
-          <section>
-            <label>Reset learned preferences (dev)</label>
-            <div className="setting-box mt-[2px] min-h-[40px] flex items-center">
-              <button
-                type="button"
-                className="text-[13px] font-semibold text-text px-[10px] py-[4px] rounded-[4px] bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.16)]"
-                onClick={() => void window.api.resetLearning('all')}
-              >
-                Reset everything
-              </button>
-            </div>
-          </section>
-        )}
       </div>
 
       <div className="settings-section-title mt-3">Additional Settings</div>

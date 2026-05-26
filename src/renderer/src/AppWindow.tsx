@@ -39,6 +39,9 @@ export function AppWindow(): JSX.Element {
   const [gameSwitchTarget, setGameSwitchTarget] = useState<1 | 2 | null>(null)
   const [selectedGames, setSelectedGames] = useState<SelectedGames>({ poe1: false, poe2: false })
   const [settingsTabRequest, setSettingsTabRequest] = useState<{ tab: string; n: number } | null>(null)
+  // Set when "Review onboarding" is clicked from settings (dev only) so the
+  // focus-bounce effect below doesn't yank the user back to settings on focus.
+  const [revisitingOnboarding, setRevisitingOnboarding] = useState(false)
 
   const goTo = (next: Step, resumeGames = selectedGames): void => {
     const curIdx = STEP_ORDER.indexOf(step)
@@ -91,11 +94,11 @@ export function AppWindow(): JSX.Element {
 
   useEffect(() => {
     const onFocus = (): void => {
-      if (settings?.onboardingCompleted && step !== 'settings') goTo('settings')
+      if (settings?.onboardingCompleted && step !== 'settings' && !revisitingOnboarding) goTo('settings')
     }
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
-  }, [settings, step])
+  }, [settings, step, revisitingOnboarding])
 
   const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]): void => {
     if (!settings) return
@@ -311,6 +314,7 @@ export function AppWindow(): JSX.Element {
                 onFinish={() => {
                   window.api.setSetting('onboardingCompleted', true)
                   window.api.setSetting('onboardingStep', '')
+                  setRevisitingOnboarding(false)
                   goTo('settings')
                 }}
               />
@@ -321,6 +325,10 @@ export function AppWindow(): JSX.Element {
               settings={settings}
               onSettingsChange={setSettings}
               tabRequest={settingsTabRequest}
+              onShowOnboarding={() => {
+                setRevisitingOnboarding(true)
+                goTo('welcome')
+              }}
               onEditProfile={(profile) => {
                 void editProfile(profile)
               }}

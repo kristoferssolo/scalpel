@@ -32,6 +32,8 @@ interface Props {
   onOnlineFilterUpdated?: (name: string) => void
   onOnlineImport?: (name: string) => void
   onEditProfile?: (profile: PoeProfileSummary) => void
+  /** Dev-only: re-enter the onboarding flow to review it. App mode only. */
+  onShowOnboarding?: () => void
   /** Item currently loaded in the overlay, used to preserve context when undoing/restoring */
   currentItem?: PoeItem
   /** Optional callback to show a short banner at the top of the overlay */
@@ -79,6 +81,7 @@ export function SettingsPanel({
   onOnlineFilterUpdated,
   onOnlineImport,
   onEditProfile,
+  onShowOnboarding,
   currentItem,
   onError,
   tabRequest,
@@ -178,7 +181,14 @@ export function SettingsPanel({
         </div>
       </div>
 
-      {tab === 'general' && <GeneralTab settings={settings} update={update} updateProfile={updateProfile} />}
+      {tab === 'general' && (
+        <GeneralTab
+          settings={settings}
+          update={update}
+          updateProfile={updateProfile}
+          onShowOnboarding={onShowOnboarding}
+        />
+      )}
       {tab === 'view' && <ViewTab settings={settings} update={update} updateMany={updateMany} />}
       {tab === 'macros' && <MacrosTab settings={settings} update={update} tryHotkey={tryHotkey} />}
       {tab === 'cheatsheets' && (

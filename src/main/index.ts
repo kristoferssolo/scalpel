@@ -448,7 +448,7 @@ function startLiveServices(): void {
   }
 
   // Start online filter sync
-  const filterDir = store.get('filterDir')
+  const filterDir = getProfileBackedSetting(store, 'filterDir') as string
   if (filterDir) {
     startOnlineSync(filterDir, () => {
       const wins: BrowserWindow[] = []
