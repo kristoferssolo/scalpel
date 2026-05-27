@@ -1,6 +1,6 @@
 import type { WebContents } from 'electron'
 import type Store from 'electron-store'
-import { getOverlayWindow, setCloseOnClickOutside } from './overlay'
+import { getMainPanelMode, getOverlayWindow, setCloseOnClickOutside } from './overlay'
 import { withPluginHotkeys } from './app-macros'
 import { getAppWindow } from './app-window'
 import { applyCheatSheetHotkeys, getCheatSheetsOverlay } from './cheat-sheets'
@@ -61,14 +61,14 @@ function sideEffect(setting: ProfileChangedSetting, prevAppSettings?: AppSetting
       if (profile) {
         if (profile.league) refreshPrices(profile.league)
         updateOnlineSyncDir(profile.filterDir)
-        if (profile.cheatSheets) applyCheatSheetHotkeys(profile.cheatSheets)
+        if (getMainPanelMode() === 'overlay' && profile.cheatSheets) applyCheatSheetHotkeys(profile.cheatSheets)
         if (profile.filterPath) loadFilter(profile.filterPath, 'Profile Activation')
         else clearFilterState()
-        applyPinnedZoneEnabled(profile.cheatSheets?.pinned === true)
+        if (getMainPanelMode() === 'overlay') applyPinnedZoneEnabled(profile.cheatSheets?.pinned === true)
       } else {
         clearFilterState()
         updateOnlineSyncDir('')
-        applyPinnedZoneEnabled(false)
+        if (getMainPanelMode() === 'overlay') applyPinnedZoneEnabled(false)
       }
       return
     }
@@ -88,7 +88,7 @@ function sideEffect(setting: ProfileChangedSetting, prevAppSettings?: AppSetting
   } else if (key === 'appMacros') {
     setAppMacros(withPluginHotkeys(value as AppSettings['appMacros']))
   } else if (key === 'stashScrollEnabled') {
-    setStashScrollEnabled(value as boolean)
+    setStashScrollEnabled(getMainPanelMode() === 'overlay' && (value as boolean))
   } else if (key === 'stashScrollModifier') {
     setStashScrollModifier(value as NonNullable<AppSettings['stashScrollModifier']>)
   } else if (key === 'openSide') {
@@ -191,8 +191,10 @@ export function applyProfileEditSideEffect<K extends ProfileSettingKey>(key: K, 
     updateOnlineSyncDir(value as string)
   } else if (key === 'cheatSheets') {
     const cs = value as CheatSheetsSettings
-    applyCheatSheetHotkeys(cs)
-    applyPinnedZoneEnabled(cs?.pinned === true)
+    if (getMainPanelMode() === 'overlay') {
+      applyCheatSheetHotkeys(cs)
+      applyPinnedZoneEnabled(cs?.pinned === true)
+    }
   } else if (key === 'league') {
     refreshPrices(value as string)
   }

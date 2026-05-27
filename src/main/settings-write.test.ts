@@ -35,6 +35,7 @@ vi.mock('./filter-state', () => ({
 }))
 
 vi.mock('./overlay', () => ({
+  getMainPanelMode: vi.fn(() => 'overlay'),
   getOverlayWindow: vi.fn(() => null),
   setCloseOnClickOutside: vi.fn(),
 }))
@@ -67,6 +68,7 @@ vi.mock('./hotkeys', () => ({
   setHotkey: vi.fn(),
   setPriceCheckHotkey: vi.fn(),
   setStashScrollEnabled: vi.fn(),
+  setStashScrollModifier: vi.fn(),
 }))
 
 vi.mock('./online-sync', () => ({

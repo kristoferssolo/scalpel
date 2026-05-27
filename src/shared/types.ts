@@ -42,6 +42,7 @@ export interface RuntimeSettings extends AppSettings {
 
 export type Visibility = 'Show' | 'Hide' | 'Minimal'
 export type ComparisonOperator = '>' | '>=' | '=' | '==' | '<=' | '<'
+export type MainPanelMode = 'overlay' | 'standalone'
 
 // Any string is valid as new things can pop up from league to league
 // Known types are handled explicitly by the matcher; unknown ones evaluate as 'unknown'.
@@ -452,6 +453,7 @@ export interface AppSettings {
   priceCheckHotkey: string
   overlayOpacity: number
   overlayScale: number
+  mainPanelMode: MainPanelMode
   /** Which side the overlay mounts on when a new item is scanned. 'both' = based on
    *  cursor X (default); 'right'/'left' = always that side regardless of cursor. Drag
    *  behavior is unaffected; this only picks the mount side at scan time. */
