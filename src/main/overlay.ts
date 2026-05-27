@@ -338,7 +338,7 @@ export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
       if (overlayWindow && !overlayWindow.isDestroyed()) {
         overlayWindow.webContents.send('poe-version', getPoeVersion())
         startClientLogWatcher(overlayWindow)
-        startPanelDetection(overlayWindow)
+        startPanelDetection()
       }
       sendGameBounds(ev.width, ev.height)
       mouseOverPanel = false

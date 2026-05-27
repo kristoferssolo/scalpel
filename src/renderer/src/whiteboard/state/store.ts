@@ -1,5 +1,6 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import type { WhiteboardElement } from '../../../../shared/whiteboard-types'
+import type { PanelState } from '../../../../shared/panel-state'
 import { createHistory, type History } from './history'
 
 export type Tool = 'select' | 'pen' | 'highlighter' | 'eraser' | 'shape' | 'text' | 'ruler' | 'radiusRing'
@@ -23,6 +24,10 @@ export interface WhiteboardState {
    *  it to project; null disables them. */
   poeVersion: 1 | 2 | null
   setPoeVersion: (v: 1 | 2 | null) => void
+  /** Live PoE side-panel open-state, pushed from the main process. Drives the
+   *  distance-overlay clip correction. Defaults to both-closed. */
+  panelState: PanelState
+  setPanelState: (s: PanelState) => void
   color: string
   /** Stroke width normalized to game height. */
   width: number
@@ -134,6 +139,7 @@ export function createWhiteboardStore(): WhiteboardStore {
       tool: 'select',
       mode: 'edit',
       poeVersion: null,
+      panelState: { leftPanelOpen: false, rightPanelOpen: false },
       color: DEFAULT_COLOR,
       width: DEFAULT_WIDTH,
       drawingsOpacity: 1,
@@ -148,6 +154,7 @@ export function createWhiteboardStore(): WhiteboardStore {
       setTool: (t) => set({ tool: t }),
       setMode: (m) => set({ mode: m }),
       setPoeVersion: (v) => set({ poeVersion: v }),
+      setPanelState: (s) => set({ panelState: s }),
       setColor: (c) => set({ color: c }),
       setWidth: (w) => set({ width: w }),
       setDrawingsOpacity: (o) => set({ drawingsOpacity: o }),

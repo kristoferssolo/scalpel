@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { app, ipcMain } from 'electron'
+import { OverlayController } from 'electron-overlay-window'
 import { type BoardLibrary, emptyBoardLibrary, migrateBoardLibrary } from '../shared/whiteboard-types'
 import { registerSecondaryOverlay, type SecondaryOverlay } from './windowing'
 
@@ -167,6 +168,15 @@ ipcMain.on('whiteboard:set-mode', (_event, mode: 'edit' | 'play') => {
   currentMode = mode
   ensureModeHook()
   applyMode()
+  if (mode === 'play') {
+    // Entering passthrough makes the window click-through, but it still holds OS
+    // keyboard focus from whatever click toggled the mode - so PoE wouldn't get
+    // key input (e.g. "i" for inventory) until the user clicked through once.
+    // Hand focus back to PoE immediately, mirroring hideOverlay()'s handoff.
+    try {
+      OverlayController.focusTarget()
+    } catch {}
+  }
 })
 
 ipcMain.on('whiteboard:request-shown-state', (event) => {

@@ -33,4 +33,19 @@ describe('ruler session', () => {
     expect(el).not.toBeNull()
     expect(el!.type).toBe('ruler')
   })
+
+  it('commitRuler honors clipNdcX', () => {
+    const clip = 0.1
+    const anchorPx = { x: 0.4 * size.w, y: 0.45 * size.h }
+    const cursorPx = { x: 0.6 * size.w, y: 0.55 * size.h }
+    const s = startRuler({ version: 1, color: '#fff', strokeWidth: 0.0035, anchorPx, size })
+    updateRulerEnd(s, cursorPx)
+    const el = commitRuler(s, size, clip)!
+    const a = screenToGround(1, { x: anchorPx.x / size.w, y: anchorPx.y / size.h }, size, clip)!
+    const b = screenToGround(1, { x: cursorPx.x / size.w, y: cursorPx.y / size.h }, size, clip)!
+    expect(el.a.x).toBeCloseTo(a.x, 4)
+    expect(el.a.y).toBeCloseTo(a.y, 4)
+    expect(el.b.x).toBeCloseTo(b.x, 4)
+    expect(el.b.y).toBeCloseTo(b.y, 4)
+  })
 })

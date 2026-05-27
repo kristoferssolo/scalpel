@@ -64,6 +64,17 @@ describe('applyRingEdit', () => {
   })
 })
 
+describe('applyRingEdit clipNdcX', () => {
+  it('applyRingEdit honors clipNdcX (cursor projected with the shift)', () => {
+    const clip = 0.1
+    const center = screenToGround(1, { x: 0.5, y: 0.5 }, size, clip)!
+    // Cursor is the screen point that, under the SAME clip, maps to a 30-unit-right ground point.
+    const cursor = groundToScreen(1, { x: center.x + 30, y: center.y }, size, clip)!
+    const next = applyRingEdit({ ...baseRing, center, radius: 10 }, { kind: 'ring-radius' }, cursor, size, 1, clip)
+    expect(next.radius).toBeCloseTo(30, 4)
+  })
+})
+
 describe('applyRulerEdit', () => {
   it('ruler-a moves endpoint a to the cursor ground point', () => {
     const target = screenToGround(1, { x: 0.4, y: 0.45 }, size)!

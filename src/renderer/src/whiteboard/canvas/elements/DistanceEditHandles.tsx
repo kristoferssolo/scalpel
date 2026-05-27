@@ -17,6 +17,7 @@ interface Props {
   element: WhiteboardElement
   size: GameSize
   version: 1 | 2 | null
+  clipNdcX?: number
 }
 
 const handleStyle = {
@@ -29,19 +30,19 @@ const handleStyle = {
 
 /** Draggable-looking handles for the selected ruler/radiusRing. The Stage owns
  *  the drag logic and routes by node `name`; these are display + hit targets. */
-export function DistanceEditHandles({ element, size, version }: Props): JSX.Element | null {
+export function DistanceEditHandles({ element, size, version, clipNdcX = 0 }: Props): JSX.Element | null {
   if (version === null) return null
 
   if (element.type === 'radiusRing') {
-    const ring = projectCircle(version, element.center, element.radius, size)
+    const ring = projectCircle(version, element.center, element.radius, size, clipNdcX)
     const right = rightmostPx(ring, size)
     if (!right) return null
     return <Circle name={DISTANCE_HANDLE.ringRadius} x={right.x} y={right.y} {...handleStyle} />
   }
 
   if (element.type === 'ruler') {
-    const a = groundToScreen(version, element.a, size)
-    const b = groundToScreen(version, element.b, size)
+    const a = groundToScreen(version, element.a, size, clipNdcX)
+    const b = groundToScreen(version, element.b, size, clipNdcX)
     return (
       <>
         {a && <Circle name={DISTANCE_HANDLE.rulerA} x={a.x * size.w} y={a.y * size.h} {...handleStyle} />}

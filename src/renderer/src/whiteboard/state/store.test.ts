@@ -233,3 +233,12 @@ describe('poeVersion + new tools', () => {
     expect(store.getState().tool).toBe('radiusRing')
   })
 })
+
+describe('panelState', () => {
+  it('setPanelState updates panelState', () => {
+    const store = createWhiteboardStore()
+    expect(store.getState().panelState).toEqual({ leftPanelOpen: false, rightPanelOpen: false })
+    store.getState().setPanelState({ leftPanelOpen: true, rightPanelOpen: false })
+    expect(store.getState().panelState).toEqual({ leftPanelOpen: true, rightPanelOpen: false })
+  })
+})

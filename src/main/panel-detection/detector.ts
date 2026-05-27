@@ -56,7 +56,7 @@ export class PanelDetector {
   private frameH = 0
 
   constructor(private readonly deps: PanelDetectorDeps) {
-    this.intervalMs = deps.intervalMs ?? 333
+    this.intervalMs = deps.intervalMs ?? 500
   }
 
   start(): void {

@@ -32,6 +32,9 @@ export interface ElementRenderContext {
   /** Active PoE version, or null until resolved. The distance kinds (ruler,
    *  radiusRing) need it to project and render nothing when null. */
   version: 1 | 2 | null
+  /** Signed NDC-x clip from the open-panel correction; 0 when no panel is open
+   *  or the version is unsupported. Forwarded to the projection-based kinds. */
+  clipNdcX?: number
   draggable: boolean
   editingTextId: string | null
   onDragEnd: (id: string, delta: Pt) => void
@@ -127,13 +130,17 @@ const imageKind: ElementKindDef<ImageEl, BboxTransformResult> = {
 const rulerKind: ElementKindDef<RulerEl, BboxTransformResult> = {
   applyDragDelta: (el) => el,
   bakeTransform: (el) => el,
-  render: (el, ctx) => <RulerElement key={el.id} element={el} size={ctx.size} version={ctx.version} />,
+  render: (el, ctx) => (
+    <RulerElement key={el.id} element={el} size={ctx.size} version={ctx.version} clipNdcX={ctx.clipNdcX} />
+  ),
 }
 
 const radiusRingKind: ElementKindDef<RingEl, BboxTransformResult> = {
   applyDragDelta: (el) => el,
   bakeTransform: (el) => el,
-  render: (el, ctx) => <RadiusRingElement key={el.id} element={el} size={ctx.size} version={ctx.version} />,
+  render: (el, ctx) => (
+    <RadiusRingElement key={el.id} element={el} size={ctx.size} version={ctx.version} clipNdcX={ctx.clipNdcX} />
+  ),
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: heterogeneous element-kind registry

@@ -33,7 +33,7 @@ import { RulerElement } from './elements/RulerElement'
 import { RadiusRingElement } from './elements/RadiusRingElement'
 import { applyRingEdit, applyRulerEdit, type RingEdit, type RulerEdit } from './tools/distance-edit'
 import { DistanceEditHandles, DISTANCE_HANDLE } from './elements/DistanceEditHandles'
-import { screenToGround } from './poe-projection'
+import { panelClipNdcX, screenToGround } from './poe-projection'
 
 const SHAPE_STROKE_WIDTH_NORM = 0.0035
 /** Per-step stagger applied when pasting via keyboard. Each successive paste
@@ -255,6 +255,8 @@ export function Stage(): JSX.Element {
   const radiusSessionRef = useRef<RadiusSession | null>(null)
   const editSessionRef = useRef<EditSession | null>(null)
   const poeVersion = useWhiteboardStore((s) => s.poeVersion)
+  const panelState = useWhiteboardStore((s) => s.panelState)
+  const clipNdcX = poeVersion === null ? 0 : panelClipNdcX(poeVersion, panelState, size)
   const erasingRef = useRef(false)
   const erasedThisPassRef = useRef(false)
   const [contextMenu, setContextMenu] = useState<{ hitId: string | null; x: number; y: number } | null>(null)
@@ -405,7 +407,7 @@ export function Stage(): JSX.Element {
           return
         }
         if (hit === selEl.id) {
-          const grab = screenToGround(poeVersion, cursorNorm, size)
+          const grab = screenToGround(poeVersion, cursorNorm, size, clipNdcX)
           if (grab) {
             editSessionRef.current =
               selEl.type === 'radiusRing'
@@ -536,9 +538,9 @@ export function Stage(): JSX.Element {
       if (!curr) return
       let next = curr
       if (s.el === 'radiusRing' && curr.type === 'radiusRing')
-        next = applyRingEdit(curr, s.edit, cursorNorm, size, poeVersion)
+        next = applyRingEdit(curr, s.edit, cursorNorm, size, poeVersion, clipNdcX)
       else if (s.el === 'ruler' && curr.type === 'ruler')
-        next = applyRulerEdit(curr, s.edit, cursorNorm, size, poeVersion)
+        next = applyRulerEdit(curr, s.edit, cursorNorm, size, poeVersion, clipNdcX)
       if (next === curr) return
       updateElement(s.id, () => next, { history: false })
       forceRender((n) => n + 1)
@@ -629,7 +631,7 @@ export function Stage(): JSX.Element {
         w: Math.abs(dx),
         h: Math.abs(dy),
       }
-      const ids = elementsInMarquee(elements, rect, size, poeVersion)
+      const ids = elementsInMarquee(elements, rect, size, poeVersion, clipNdcX)
       setSelectedIds(ids)
       forceRender((n) => n + 1)
       return
@@ -642,14 +644,14 @@ export function Stage(): JSX.Element {
       return
     }
     if (rulerSessionRef.current) {
-      const finished = commitRuler(rulerSessionRef.current, size)
+      const finished = commitRuler(rulerSessionRef.current, size, clipNdcX)
       rulerSessionRef.current = null
       if (finished) addElement(finished)
       forceRender((n) => n + 1)
       return
     }
     if (radiusSessionRef.current) {
-      const finished = commitRadius(radiusSessionRef.current, size)
+      const finished = commitRadius(radiusSessionRef.current, size, clipNdcX)
       radiusSessionRef.current = null
       if (finished) addElement(finished)
       forceRender((n) => n + 1)
@@ -729,10 +731,10 @@ export function Stage(): JSX.Element {
     : null
 
   const inProgressRuler =
-    rulerSessionRef.current && poeVersion !== null ? commitRuler(rulerSessionRef.current, size) : null
+    rulerSessionRef.current && poeVersion !== null ? commitRuler(rulerSessionRef.current, size, clipNdcX) : null
 
   const inProgressRing =
-    radiusSessionRef.current && poeVersion !== null ? commitRadius(radiusSessionRef.current, size) : null
+    radiusSessionRef.current && poeVersion !== null ? commitRadius(radiusSessionRef.current, size, clipNdcX) : null
 
   return (
     <>
@@ -753,6 +755,7 @@ export function Stage(): JSX.Element {
             renderElement(el, {
               size,
               version: poeVersion,
+              clipNdcX,
               draggable: tool === 'select',
               editingTextId,
               onDragEnd: (id, delta) => updateElement(id, (curr) => applyDragDelta(curr, delta, size)),
@@ -765,10 +768,22 @@ export function Stage(): JSX.Element {
           {inProgressEl && <StrokeElement element={inProgressEl} size={size} listening={false} />}
           {inProgressShape && <ShapeElement element={inProgressShape} size={size} listening={false} />}
           {inProgressRuler && (
-            <RulerElement element={inProgressRuler} size={size} version={poeVersion} listening={false} />
+            <RulerElement
+              element={inProgressRuler}
+              size={size}
+              version={poeVersion}
+              clipNdcX={clipNdcX}
+              listening={false}
+            />
           )}
           {inProgressRing && (
-            <RadiusRingElement element={inProgressRing} size={size} version={poeVersion} listening={false} />
+            <RadiusRingElement
+              element={inProgressRing}
+              size={size}
+              version={poeVersion}
+              clipNdcX={clipNdcX}
+              listening={false}
+            />
           )}
           {marquee && (
             <KonvaRect
@@ -799,7 +814,7 @@ export function Stage(): JSX.Element {
           if (!el || (el.type !== 'ruler' && el.type !== 'radiusRing')) return null
           return (
             <Layer>
-              <DistanceEditHandles element={el} size={size} version={poeVersion} />
+              <DistanceEditHandles element={el} size={size} version={poeVersion} clipNdcX={clipNdcX} />
             </Layer>
           )
         })()}

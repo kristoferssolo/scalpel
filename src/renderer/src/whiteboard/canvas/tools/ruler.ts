@@ -34,13 +34,13 @@ export function updateRulerEnd(s: RulerSession, cursorPx: { x: number; y: number
   s.cursorPx = { ...cursorPx }
 }
 
-export function commitRuler(s: RulerSession, size: GameSize): RulerElement | null {
+export function commitRuler(s: RulerSession, size: GameSize, clipNdcX = 0): RulerElement | null {
   const dx = s.cursorPx.x - s.anchorPx.x
   const dy = s.cursorPx.y - s.anchorPx.y
   if (Math.abs(dx) < COMMIT_THRESHOLD_PX && Math.abs(dy) < COMMIT_THRESHOLD_PX) return null
 
-  const a = screenToGround(s.version, { x: s.anchorPx.x / size.w, y: s.anchorPx.y / size.h }, size)
-  const b = screenToGround(s.version, { x: s.cursorPx.x / size.w, y: s.cursorPx.y / size.h }, size)
+  const a = screenToGround(s.version, { x: s.anchorPx.x / size.w, y: s.anchorPx.y / size.h }, size, clipNdcX)
+  const b = screenToGround(s.version, { x: s.cursorPx.x / size.w, y: s.cursorPx.y / size.h }, size, clipNdcX)
   if (!a || !b) return null
 
   return {

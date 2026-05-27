@@ -9,6 +9,7 @@ import type { BoardState } from '../../../shared/whiteboard-types'
 export function Whiteboard(): JSX.Element {
   const poeVersion = useWhiteboardStore((s) => s.poeVersion)
   const setPoeVersion = useWhiteboardStore((s) => s.setPoeVersion)
+  const setPanelState = useWhiteboardStore((s) => s.setPanelState)
   const replaceAll = useWhiteboardStore((s) => s.replaceAll)
   const markClean = useWhiteboardStore((s) => s.markClean)
   const mode = useWhiteboardStore((s) => s.mode)
@@ -19,13 +20,21 @@ export function Whiteboard(): JSX.Element {
 
   useReportInputFocus()
 
-  // Discover PoE version once.
+  // Discover PoE version and initial panel state once.
   useEffect(() => {
     window.api
       .getOverlayState()
-      .then((s) => setPoeVersion(s.poeVersion))
+      .then((s) => {
+        setPoeVersion(s.poeVersion)
+        setPanelState(s.panelState)
+      })
       .catch(() => setPoeVersion(1))
-  }, [setPoeVersion])
+  }, [setPoeVersion, setPanelState])
+
+  // Live panel-state updates from the main-process detection service.
+  useEffect(() => {
+    return window.api.onPanelState(setPanelState)
+  }, [setPanelState])
 
   // Load active canvas once we know the version.
   useEffect(() => {

@@ -34,4 +34,18 @@ describe('radius session', () => {
     expect(el).not.toBeNull()
     expect(el!.type).toBe('radiusRing')
   })
+
+  it('commitRadius honors clipNdcX', () => {
+    const clip = 0.1
+    const centerPx = { x: 0.5 * size.w, y: 0.5 * size.h }
+    const edgePx = { x: 0.62 * size.w, y: 0.5 * size.h }
+    const s = startRadius({ version: 1, color: '#fff', strokeWidth: 0.0035, anchorPx: centerPx, size })
+    updateRadiusEnd(s, edgePx)
+    const el = commitRadius(s, size, clip)!
+    const center = screenToGround(1, { x: centerPx.x / size.w, y: centerPx.y / size.h }, size, clip)!
+    const edge = screenToGround(1, { x: edgePx.x / size.w, y: edgePx.y / size.h }, size, clip)!
+    expect(el.center.x).toBeCloseTo(center.x, 4)
+    expect(el.center.y).toBeCloseTo(center.y, 4)
+    expect(el.radius).toBeCloseTo(groundDistance(center, edge), 4)
+  })
 })
