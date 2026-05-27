@@ -5,6 +5,7 @@ import type { AppSettings, GameVariant, MainPanelMode } from '../shared/types'
 const mode = vi.hoisted<{ value: MainPanelMode }>(() => ({ value: 'standalone' }))
 const focusedVersion = vi.hoisted<{ value: GameVariant | null }>(() => ({ value: null }))
 const currentVersion = vi.hoisted<{ value: GameVariant }>(() => ({ value: 1 }))
+const passiveHotkeys = vi.hoisted<{ value: boolean }>(() => ({ value: false }))
 const requestGameSwitch = vi.hoisted(() => vi.fn<(store: Store<AppSettings>, version: GameVariant) => Promise<void>>())
 
 vi.mock('electron', () => ({
@@ -37,7 +38,9 @@ vi.mock('./game-switch', () => ({
 }))
 
 vi.mock('./hotkeys', () => ({
+  recordHotkeyFocusDetectionResult: vi.fn(),
   sendCtrlCToPoE: vi.fn(),
+  shouldUsePassiveHotkeys: () => passiveHotkeys.value,
 }))
 
 vi.mock('./client-log', () => ({
@@ -92,6 +95,7 @@ describe('ensureCorrectGameForHotkey', () => {
     mode.value = 'standalone'
     focusedVersion.value = null
     currentVersion.value = 1
+    passiveHotkeys.value = false
     requestGameSwitch.mockReset()
     requestGameSwitch.mockResolvedValue()
   })
@@ -107,6 +111,14 @@ describe('ensureCorrectGameForHotkey', () => {
     focusedVersion.value = null
 
     await expect(ensureCorrectGameForHotkey(store)).resolves.toBe(false)
+    expect(requestGameSwitch).not.toHaveBeenCalled()
+  })
+
+  it('allows unknown focus in passive standalone mode', async () => {
+    focusedVersion.value = null
+    passiveHotkeys.value = true
+
+    await expect(ensureCorrectGameForHotkey(store)).resolves.toBe(true)
     expect(requestGameSwitch).not.toHaveBeenCalled()
   })
 

@@ -25,7 +25,7 @@ import { getCurrentFilter } from './filter-state'
 import { detectFocusedPoeVersion } from './game-detector'
 import { getPoeVersion } from './game-state'
 import { requestGameSwitch } from './game-switch'
-import { sendCtrlCToPoE } from './hotkeys'
+import { recordHotkeyFocusDetectionResult, sendCtrlCToPoE, shouldUsePassiveHotkeys } from './hotkeys'
 import { focusGameWindow, getMainPanelMode, getOverlayWindow, isTypingInOverlay, showOverlay } from './overlay'
 import { readItemFromClipboard } from './trade/clipboard'
 import {
@@ -396,7 +396,11 @@ export async function ensureCorrectGameForHotkey(store: Store<AppSettings>): Pro
     return true
   }
   const v = await detectFocusedPoeVersion()
-  if (!v) return false
+  if (!v) {
+    recordHotkeyFocusDetectionResult('none')
+    return shouldUsePassiveHotkeys()
+  }
+  recordHotkeyFocusDetectionResult(`poe${v}`)
   if (v === getPoeVersion()) return true
   requestGameSwitch(store, v).catch((err) => console.error('[game-switch]', err))
   return false

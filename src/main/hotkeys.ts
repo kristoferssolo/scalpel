@@ -69,12 +69,30 @@ interface KeyCombo {
   alt: boolean
 }
 
+interface ChatCommandHotkey {
+  accelerator: string
+  command: string
+  autoSubmit: boolean
+  combo: KeyCombo | null
+  scope?: MacroScope
+}
+
+interface AppMacroHotkey {
+  accelerator: string
+  action: string
+  combo: KeyCombo | null
+  tag?: string
+  presetId?: string
+  scope?: MacroScope
+}
+
 let currentAccelerator: string | null = null
 let priceCheckAccelerator: string | null = null
 let triggerCombo: KeyCombo | null = null
 let priceCheckCombo: KeyCombo | null = null
-let chatCommandHotkeys: Array<{ accelerator: string; command: string; autoSubmit: boolean; scope?: MacroScope }> = []
+let chatCommandHotkeys: ChatCommandHotkey[] = []
 let appMacroAccelerators: string[] = []
+let appMacroHotkeys: AppMacroHotkey[] = []
 let lastAppMacros: Array<{ action: string; hotkey: string; tag?: string; presetId?: string; scope?: MacroScope }> = []
 let onAppMacro: ((action: string, tag?: string, presetId?: string) => void) | null = null
 // Secondary-overlay hotkeys (cheat-sheets today, more later). Stored as a
@@ -99,6 +117,11 @@ let lastHookStartError: string | null = null
 let lastHookStopError: string | null = null
 let hookResumeTimer: ReturnType<typeof setTimeout> | null = null
 let standalonePoeFocused = false
+let passiveGlobalShortcutSkipped = false
+let lastUiohookKeydownAt: number | null = null
+let lastUiohookKeycode: number | null = null
+let lastHotkeyDispatch: string | null = null
+let lastFocusDetectionResult: string | null = null
 
 /** globalShortcut is suppressed when the non-attached PoE has focus (Windows blocks
  *  hotkey delivery from a game that Electron isn't attached to); uIOhook is a
@@ -107,6 +130,8 @@ let standalonePoeFocused = false
 const DEDUPE_MS = 100
 let lastTriggerFireAt = 0
 let lastPriceCheckFireAt = 0
+let lastChatCommandFireAt = 0
+let lastAppMacroFireAt = 0
 
 function parseAccelerator(accelerator: string): KeyCombo | null {
   let ctrl = false
@@ -142,13 +167,24 @@ function releaseHotkeyKey(combo: KeyCombo | null): void {
   uIOhook.keyToggle(combo.keycode, 'up')
 }
 
+export function shouldUsePassiveHotkeys(): boolean {
+  return process.platform === 'linux' && getMainPanelMode() === 'standalone'
+}
+
+export function recordHotkeyFocusDetectionResult(result: string): void {
+  lastFocusDetectionResult = result
+}
+
 function fireTrigger(): void {
   const now = Date.now()
   if (now - lastTriggerFireAt < DEDUPE_MS) return
   lastTriggerFireAt = now
   if (injecting) return
   releaseHotkeyKey(triggerCombo)
-  if (onTrigger) onTrigger()
+  if (onTrigger) {
+    lastHotkeyDispatch = 'main'
+    onTrigger()
+  }
 }
 
 /** True when PoE has foreground focus or one of Scalpel's overlay windows is
@@ -171,7 +207,46 @@ function firePriceCheck(): void {
   lastPriceCheckFireAt = now
   if (injecting) return
   releaseHotkeyKey(priceCheckCombo)
-  if (onPriceCheck) onPriceCheck()
+  if (onPriceCheck) {
+    lastHotkeyDispatch = 'price-check'
+    onPriceCheck()
+  }
+}
+
+function fireChatCommand(command: string, autoSubmit: boolean): void {
+  const now = Date.now()
+  if (now - lastChatCommandFireAt < DEDUPE_MS) return
+  lastChatCommandFireAt = now
+  lastHotkeyDispatch = 'chat'
+  sendChatCommand(command, autoSubmit)
+}
+
+function fireAppMacro(combo: KeyCombo | null, action: string, tag?: string, presetId?: string): void {
+  const now = Date.now()
+  if (now - lastAppMacroFireAt < DEDUPE_MS) return
+  lastAppMacroFireAt = now
+  if (!onAppMacro) return
+  releaseHotkeyKey(combo)
+  lastHotkeyDispatch = 'app-macro'
+  onAppMacro(action, tag, presetId)
+}
+
+function dispatchPassiveHotkeys(e: { keycode: number; ctrlKey: boolean; shiftKey: boolean; altKey: boolean }): void {
+  if (!shouldUsePassiveHotkeys() || isTypingInOverlay()) return
+
+  for (const command of chatCommandHotkeys) {
+    if (command.combo && matchesCombo(e, command.combo)) {
+      fireChatCommand(command.command, command.autoSubmit)
+      return
+    }
+  }
+
+  for (const macro of appMacroHotkeys) {
+    if (macro.combo && matchesCombo(e, macro.combo)) {
+      fireAppMacro(macro.combo, macro.action, macro.tag, macro.presetId)
+      return
+    }
+  }
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -185,6 +260,8 @@ export function startHotkeyListener(handler: () => void): void {
   uIOhook.on(
     'keydown',
     guardNativeListener('keydown-main', (e) => {
+      lastUiohookKeydownAt = Date.now()
+      lastUiohookKeycode = e.keycode
       if (injecting) return
       // Only respond to Escape when PoE or the overlay itself has focus -- otherwise
       // pressing Esc in another app (browser, Discord, etc.) would silently hide the
@@ -205,6 +282,7 @@ export function startHotkeyListener(handler: () => void): void {
       // so presses in non-PoE apps are ignored downstream.
       if (triggerCombo && matchesCombo(e, triggerCombo)) fireTrigger()
       if (priceCheckCombo && matchesCombo(e, priceCheckCombo)) firePriceCheck()
+      dispatchPassiveHotkeys(e)
     }),
   )
 
@@ -330,6 +408,10 @@ export function setHotkey(accelerator: string): void {
   // Combo is consumed by the uIOhook fallback regardless of globalShortcut
   // state, so update it even when suspended.
   triggerCombo = parseAccelerator(accelerator)
+  if (shouldUsePassiveHotkeys()) {
+    passiveGlobalShortcutSkipped = true
+    return
+  }
   if (suspendDepth > 0) return
   try {
     globalShortcut.register(accelerator, () => fireTrigger())
@@ -346,6 +428,10 @@ export function setPriceCheckHotkey(accelerator: string): void {
   }
   priceCheckAccelerator = accelerator
   priceCheckCombo = parseAccelerator(accelerator)
+  if (shouldUsePassiveHotkeys()) {
+    passiveGlobalShortcutSkipped = true
+    return
+  }
   if (suspendDepth > 0) return
   try {
     globalShortcut.register(accelerator, () => firePriceCheck())
@@ -381,9 +467,19 @@ export function setChatCommands(
     if (!c.hotkey || !c.command) continue
     if (!scopeAppliesTo(chatCommandEffectiveScope(c), version)) continue
     const autoSubmit = c.autoSubmit !== false
-    chatCommandHotkeys.push({ accelerator: c.hotkey, command: c.command, autoSubmit, scope: c.scope })
-    if (suspendDepth > 0) continue
     const combo = parseAccelerator(c.hotkey)
+    chatCommandHotkeys.push({
+      accelerator: c.hotkey,
+      command: c.command,
+      autoSubmit,
+      combo,
+      scope: c.scope,
+    })
+    if (shouldUsePassiveHotkeys()) {
+      passiveGlobalShortcutSkipped = true
+      continue
+    }
+    if (suspendDepth > 0) continue
     try {
       globalShortcut.register(c.hotkey, () => {
         if (injecting || isTypingInOverlay()) return
@@ -419,6 +515,10 @@ export function setSecondaryOverlayHotkeys(hotkeys: OverlayHotkey[]): void {
     }
   }
   registeredOverlayAccelerators = []
+  if (shouldUsePassiveHotkeys()) {
+    passiveGlobalShortcutSkipped = true
+    return
+  }
   if (suspendDepth > 0) return
   for (const { accelerator, handler } of hotkeys) {
     if (!accelerator) continue
@@ -451,13 +551,26 @@ export function setAppMacros(
     }
   }
   appMacroAccelerators = []
-  if (suspendDepth > 0) return
+  appMacroHotkeys = []
 
   const version = getPoeVersion()
   for (const m of macros) {
     if (!m.hotkey || !m.action) continue
     if (!scopeAppliesTo(appMacroEffectiveScope(m), version)) continue
     const combo = parseAccelerator(m.hotkey)
+    appMacroHotkeys.push({
+      accelerator: m.hotkey,
+      action: m.action,
+      combo,
+      tag: m.tag,
+      presetId: m.presetId,
+      scope: m.scope,
+    })
+    if (shouldUsePassiveHotkeys()) {
+      passiveGlobalShortcutSkipped = true
+      continue
+    }
+    if (suspendDepth > 0) continue
     try {
       globalShortcut.register(m.hotkey, () => {
         if (injecting || isTypingInOverlay() || !onAppMacro) return
@@ -709,8 +822,14 @@ function getHotkeyDiagnostics(): Record<string, unknown> {
     triggerHotkeyConfigured: currentAccelerator !== null,
     priceCheckHotkeyConfigured: priceCheckAccelerator !== null,
     chatCommandHotkeyCount: chatCommandHotkeys.length,
-    appMacroHotkeyCount: appMacroAccelerators.length,
+    appMacroHotkeyCount: appMacroHotkeys.length,
     secondaryOverlayHotkeyCount: secondaryOverlayHotkeys.length,
+    passiveHotkeysEnabled: shouldUsePassiveHotkeys(),
+    passiveGlobalShortcutSkipped,
+    lastUiohookKeydownAt,
+    lastUiohookKeycode,
+    lastHotkeyDispatch,
+    lastFocusDetectionResult,
     stashScrollEnabled,
     stashScrollModifier,
     lastHookStartError,
