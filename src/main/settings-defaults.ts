@@ -37,6 +37,7 @@ export const DEFAULT_APP_SETTINGS = {
   [LAST_PROFILE_ID_POE1_KEY]: '',
   [LAST_PROFILE_ID_POE2_KEY]: '',
   onboardingCompleted: false,
+  currencyLabelsAsText: false,
 } satisfies AppSettings
 
 export function backfillAppSettings(store: Store<AppSettings>): void {
@@ -50,4 +51,5 @@ export function backfillAppSettings(store: Store<AppSettings>): void {
   if (store.get('customThemePalette') === undefined) store.set('customThemePalette', null)
   if (store.get('adaptiveDefaultsMode') === undefined) store.set('adaptiveDefaultsMode', 'eager')
   if (store.get('startInTray') === undefined) store.set('startInTray', true)
+  if (store.get('currencyLabelsAsText') === undefined) store.set('currencyLabelsAsText', false)
 }

@@ -1,50 +1,57 @@
+import { Clipboard } from '@icon-park/react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { PluginHost } from '../plugins/PluginHost'
-import { PluginTabHost } from '../plugins/PluginTabHost'
-import type { RegisteredTab } from '../plugins/PluginHost'
-import type { AppSettings, RuntimeSettings, OverlayData, PoeItem, PriceInfo } from '../../../shared/types'
-import { isHideableTabKey } from '../../../shared/types'
 import type { ExternalLinkTarget } from '../../../shared/external-link'
 import { externalLinkUrl, ninjaLinkUrl } from '../../../shared/external-link'
 import { getGameFeatures } from '../../../shared/game-features'
-import { PoeVersionProvider } from '../shared/poe-version-context'
-import { CurrencyLabelsProvider } from '../shared/currency-labels-context'
-import { useReportInputFocus } from '../shared/use-report-input-focus'
-import { useCurrentZone } from '../shared/use-current-zone'
+import type {
+  AppSettings,
+  MainPanelMode,
+  OverlayData,
+  PoeItem,
+  PriceInfo,
+  RuntimeSettings,
+} from '../../../shared/types'
+import { isHideableTabKey } from '../../../shared/types'
+import { ErrorBanner } from '../components/ErrorBanner'
 import { FilterPanel } from '../components/FilterPanel'
+import { ItemSearchCombobox } from '../components/ItemSearchCombobox'
 import { SettingsPanel } from '../components/SettingsPanel'
 import { SocketRecolor } from '../components/SocketRecolor'
-import { DustExplorer } from '../components/dust-explorer'
 import { DivCardExplorer } from '../components/div-card-explorer'
-import { RegexTool } from '../components/regex-tool'
+import { DustExplorer } from '../components/dust-explorer'
 import { PriceCheck } from '../components/price-check'
 import { PriceCheckSkeleton } from '../components/price-check/PriceCheckSkeleton'
-import { SnapGhosts } from './SnapGhosts'
-import { TitleBar } from './TitleBar'
-import { ErrorBanner } from '../components/ErrorBanner'
-import { UpdateBanner } from './UpdateBanner'
-import { FilterInfoBanner } from './FilterInfoBanner'
-import { AuditView } from './AuditView'
-import { Notice } from './Notice'
-import { SisterOverlay } from './SisterOverlay'
-import { TierItemsSister } from './TierItemsSister'
+import { RegexTool } from '../components/regex-tool'
+import { prettyHotkey } from '../components/settings'
+import { createTryHotkey } from '../components/settings/hotkey-collisions'
+import type { BrokenPlugin } from '../plugins/PluginErrorBanner'
+import { PluginErrorBanner } from '../plugins/PluginErrorBanner'
+import type { RegisteredTab } from '../plugins/PluginHost'
+import { PluginHost } from '../plugins/PluginHost'
+import { PluginTabHost } from '../plugins/PluginTabHost'
 import { getActiveMatch } from '../shared/activeMatch'
-import { ItemSearchCombobox } from '../components/ItemSearchCombobox'
-import { Clipboard } from '@icon-park/react'
 import {
   IP,
-  iconMap,
   divCardArtMap,
+  iconMap,
   initIconMap,
   initItemClassMaps,
   initUniquesByBase,
   mergeIconCache,
 } from '../shared/constants'
-import { initManifest, getManifest } from '../shared/manifest'
-import { prettyHotkey } from '../components/settings'
-import { createTryHotkey } from '../components/settings/hotkey-collisions'
-import { PluginErrorBanner } from '../plugins/PluginErrorBanner'
-import type { BrokenPlugin } from '../plugins/PluginErrorBanner'
+import { CurrencyLabelsProvider } from '../shared/currency-labels-context'
+import { getManifest, initManifest } from '../shared/manifest'
+import { PoeVersionProvider } from '../shared/poe-version-context'
+import { useCurrentZone } from '../shared/use-current-zone'
+import { useReportInputFocus } from '../shared/use-report-input-focus'
+import { AuditView } from './AuditView'
+import { FilterInfoBanner } from './FilterInfoBanner'
+import { Notice } from './Notice'
+import { SisterOverlay } from './SisterOverlay'
+import { SnapGhosts } from './SnapGhosts'
+import { TierItemsSister } from './TierItemsSister'
+import { TitleBar } from './TitleBar'
+import { UpdateBanner } from './UpdateBanner'
 import type { View } from './view'
 
 /** Shape published to globalThis.__scalpel so the plugin SDK can read live
@@ -56,6 +63,10 @@ interface ScalpelGlobal {
 
 const PANEL_WIDTH = 540
 const PANEL_TOP = 8
+
+export function getStandaloneStartupView(settings: RuntimeSettings | null): 'no-filter' | 'no-item' {
+  return settings?.activeProfile?.filterPath ? 'no-item' : 'no-filter'
+}
 
 /** How long the macro's pending-target ref stays armed before we drop it.
  *  Without this, a failed price-check (no overlay-data ever arrives) would
@@ -81,10 +92,13 @@ export default function App(): JSX.Element {
   const [overlayData, setOverlayData] = useState<OverlayData | null>(null)
   const [searchId, setSearchId] = useState(0)
   const [settings, setSettings] = useState<RuntimeSettings | null>(null)
+  const [mainPanelMode, setMainPanelMode] = useState<MainPanelMode>('overlay')
   const [gameBounds, setGameBounds] = useState<{ gameWidth: number; gameHeight: number; sidebarWidth: number } | null>(
     null,
   )
-  const [cursorSide, setCursorSide] = useState<'left' | 'right'>('right')
+  const [cursorSide, setCursorSide] = useState<'left' | 'right'>('left')
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth)
+  const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight)
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   const dragging = useRef<{ startX: number; startY: number; origOffsetX: number; origOffsetY: number } | null>(null)
@@ -121,6 +135,7 @@ export default function App(): JSX.Element {
   const [poeVersion, setPoeVersion] = useState<1 | 2 | null>(null)
   poeVersionRef.current = poeVersion
   const features = getGameFeatures(poeVersion)
+  const isStandalone = mainPanelMode === 'standalone'
 
   // Swap the per-version icon CDN sheet into the shared iconMap whenever the
   // version changes. In practice this fires once per process (we relaunch on
@@ -256,6 +271,7 @@ export default function App(): JSX.Element {
     window.api.getOverlayState().then((state) => {
       if (state.poeVersion) setPoeVersion(state.poeVersion)
       if (state.gameBounds) setGameBounds(state.gameBounds)
+      setMainPanelMode(state.mainPanelMode)
     })
     // Pull cached updater state so a late-mount overlay sees anything that already fired.
     window.api.getUpdateState().then((s) => {
@@ -429,6 +445,15 @@ export default function App(): JSX.Element {
     }
   }, [])
 
+  useEffect(() => {
+    const onResize = (): void => {
+      setViewportWidth(window.innerWidth)
+      setViewportHeight(window.innerHeight)
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
   // Scroll content to top when switching to item view
   useEffect(() => {
     if (view === 'item' && contentRef.current) {
@@ -439,6 +464,7 @@ export default function App(): JSX.Element {
   // Lock interactive mode while native <select> dropdowns are open so click-through
   // doesn't activate when the dropdown extends past the panel bounds
   useEffect(() => {
+    if (isStandalone) return
     const onFocus = (e: FocusEvent): void => {
       if (e.target instanceof HTMLSelectElement) window.api.lockInteractive()
     }
@@ -451,9 +477,14 @@ export default function App(): JSX.Element {
       document.removeEventListener('focus', onFocus, true)
       document.removeEventListener('blur', onBlur, true)
     }
-  }, [])
+  }, [isStandalone])
 
   // No-op: onboarding is handled by the app window, not the overlay
+
+  useEffect(() => {
+    if (!isStandalone || !settings || closing) return
+    setView((prev) => (prev === 'idle' ? getStandaloneStartupView(settings) : prev))
+  }, [isStandalone, settings, closing])
 
   const close = (): void => {
     cancelDragRef.current?.()
@@ -468,7 +499,14 @@ export default function App(): JSX.Element {
   // Mount positions for both sides
   const leftMountX = gameBounds ? gameBounds.sidebarWidth - 1 : 0
   const rightMountX = gameBounds ? gameBounds.gameWidth - gameBounds.sidebarWidth - PANEL_WIDTH + 1 : 0
-  const basePanelLeft = gameBounds ? (cursorSide === 'left' ? leftMountX : rightMountX) : undefined
+  const standaloneLeft = Math.max((viewportWidth - PANEL_WIDTH) / 2, 8)
+  const basePanelLeft = isStandalone
+    ? standaloneLeft
+    : gameBounds
+      ? cursorSide === 'left'
+        ? leftMountX
+        : rightMountX
+      : undefined
 
   const skipAnimRef = useRef(false)
   const isMounted = dragOffset.x === 0 && dragOffset.y === 0
@@ -498,6 +536,7 @@ export default function App(): JSX.Element {
   // - getBoundingClientRect during animation returns the mid-animation position
   // - One-shot after state change would capture the animation start, not end
   useEffect(() => {
+    if (isStandalone) return
     if (isHidden) {
       window.api.reportPanelRect([])
       return
@@ -527,7 +566,7 @@ export default function App(): JSX.Element {
     tick()
     const interval = setInterval(tick, 100)
     return () => clearInterval(interval)
-  }, [isHidden])
+  }, [isHidden, isStandalone])
 
   // Suppress slide-in animation when cursorSide changes due to a snap
   useLayoutEffect(() => {
@@ -538,6 +577,7 @@ export default function App(): JSX.Element {
   }, [cursorSide, dragOffset])
 
   const handleTitleBarMouseDown = (e: React.MouseEvent): void => {
+    if (isStandalone) return
     if ((e.target as HTMLElement).closest('button')) return
     dragging.current = {
       startX: e.clientX,
@@ -666,16 +706,21 @@ export default function App(): JSX.Element {
   // CSS px so the post-scale visible gap stays at SISTER_GAP regardless of scale.
   const overlayScale = settings?.overlayScale ?? 1
   const sisterScaleOffset = (overlayScale - 1) * (PANEL_WIDTH + SISTER_WIDTH)
-  const sisterLeft =
+  const rawSisterLeft =
     cursorSide === 'left'
       ? (basePanelLeft ?? 0) + PANEL_WIDTH + SISTER_GAP + sisterScaleOffset
       : (basePanelLeft ?? 0) - SISTER_WIDTH - SISTER_GAP - sisterScaleOffset
+  const sisterLeft = isStandalone
+    ? Math.min(Math.max(rawSisterLeft, 8), Math.max(viewportWidth - SISTER_WIDTH - 8, 8))
+    : rawSisterLeft
   // Bound the sister to the game window the same way the main panel is, minus the
   // SISTER_NAV_OFFSET it already sits below. Scale divides out so the post-scale
   // visual height fits within the game bounds.
   const sisterMaxHeight = gameBounds
     ? (gameBounds.gameHeight - PANEL_TOP * 2 - 23 - SISTER_NAV_OFFSET) / (settings?.overlayScale ?? 1)
-    : undefined
+    : isStandalone
+      ? viewportHeight - PANEL_TOP * 2 - SISTER_NAV_OFFSET
+      : undefined
 
   // Compute baseTypes for the tier sister on the filter page. Uses the shared
   // getActiveMatch so the sister's items match whatever tier FilterPanel is showing.
@@ -775,15 +820,17 @@ export default function App(): JSX.Element {
             maxHeight={sisterMaxHeight}
           />
         )}
-        <SnapGhosts
-          leftMountX={leftMountX}
-          rightMountX={rightMountX}
-          panelTop={PANEL_TOP}
-          panelWidth={PANEL_WIDTH}
-          panelHeight={panelRef.current?.offsetHeight ?? 0}
-          snapTarget={snapTarget}
-          overlayScale={settings?.overlayScale}
-        />
+        {!isStandalone && (
+          <SnapGhosts
+            leftMountX={leftMountX}
+            rightMountX={rightMountX}
+            panelTop={PANEL_TOP}
+            panelWidth={PANEL_WIDTH}
+            panelHeight={panelRef.current?.offsetHeight ?? 0}
+            snapTarget={snapTarget}
+            overlayScale={settings?.overlayScale}
+          />
+        )}
         <div
           ref={wrapperRef}
           className="absolute"
@@ -829,9 +876,15 @@ export default function App(): JSX.Element {
                 maxHeight: gameBounds
                   ? (gameBounds.gameHeight - PANEL_TOP * 2 - 23) / (settings?.overlayScale ?? 1)
                   : 'calc(100vh - 16px)',
-                borderRadius: isMounted ? (cursorSide === 'left' ? '0 10px 10px 0' : '10px 0 0 10px') : '10px',
-                borderLeft: isMounted && cursorSide === 'left' ? 'none' : '1px solid var(--border)',
-                borderRight: isMounted && cursorSide === 'right' ? 'none' : '1px solid var(--border)',
+                borderRadius: isStandalone
+                  ? '10px'
+                  : isMounted
+                    ? cursorSide === 'left'
+                      ? '0 10px 10px 0'
+                      : '10px 0 0 10px'
+                    : '10px',
+                borderLeft: !isStandalone && isMounted && cursorSide === 'left' ? 'none' : '1px solid var(--border)',
+                borderRight: !isStandalone && isMounted && cursorSide === 'right' ? 'none' : '1px solid var(--border)',
                 boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
               }}
             >
@@ -925,7 +978,7 @@ export default function App(): JSX.Element {
                 )}
                 {view === 'no-filter' && (
                   <Notice
-                    icon="⚠"
+                    icon="!"
                     title="No filter loaded"
                     body="Select your .filter file to get started."
                     action={{

@@ -42,6 +42,7 @@ const settings: AppSettings = {
   lastProfileIdPoe2: '',
   startInTray: true,
   onboardingCompleted: false,
+  currencyLabelsAsText: false,
 }
 
 describe('ViewTab', () => {

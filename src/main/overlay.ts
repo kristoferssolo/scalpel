@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { BrowserWindow, ipcMain, screen, webContents } from 'electron'
 import { OVERLAY_WINDOW_OPTS, OverlayController } from 'electron-overlay-window'
 import { uIOhook } from 'uiohook-napi'
+import type { MainPanelMode } from '../shared/types'
 import { startClientLogWatcher } from './client-log'
 import { guardNativeListener, registerDiagnosticProvider } from './diagnostics'
 import { getCurrentPanelState, startPanelDetection, stopPanelDetection } from './panel-detection'
@@ -10,6 +11,7 @@ import { closeAllOverlaysOnPoeExit, isAnyScalpelWindowFocused, isInsideAnySecond
 import { POE_SIDEBAR_RATIO } from '../shared/poe-geometry'
 
 let overlayWindow: BrowserWindow | null = null
+let mainPanelMode: MainPanelMode = 'overlay'
 let overlayVisible = false
 let mouseOverPanel = false
 let closeOnClickOutside = false
@@ -62,6 +64,7 @@ function windowAtPoint(x: number, y: number): BrowserWindow | null {
 }
 
 function getScaleFactor(): number {
+  if (mainPanelMode === 'standalone') return screen.getPrimaryDisplay().scaleFactor
   // Use the display the game is actually on, not the primary display.
   // Multi-monitor setups with different DPIs need the correct scale factor.
   const tb = OverlayController.targetBounds
@@ -72,6 +75,7 @@ function getScaleFactor(): number {
 }
 
 ipcMain.on('report-panel-rect', (event, payload: unknown) => {
+  if (mainPanelMode === 'standalone') return
   // Accept either a single rect (legacy) or an array of rects (main + sister etc.).
   const rects = Array.isArray(payload)
     ? (payload as Array<{ left: number; top: number; width: number; height: number }>)
@@ -108,6 +112,13 @@ ipcMain.on('clear-panel-rect', (event) => {
 
 // Allow renderer to pull initial state on mount (attach events may fire before renderer loads)
 ipcMain.handle('get-overlay-state', () => {
+  if (mainPanelMode === 'standalone') {
+    return {
+      poeVersion: getPoeVersion(),
+      gameBounds: null,
+      mainPanelMode,
+    }
+  }
   const tb = OverlayController.targetBounds
   const sf = getScaleFactor()
   return {
@@ -120,16 +131,19 @@ ipcMain.handle('get-overlay-state', () => {
           sidebarWidth: Math.round((tb.height / sf) * POE_SIDEBAR_RATIO),
         }
       : null,
+    mainPanelMode,
   }
 })
 
 // Lock interactive mode while native select dropdowns are open
 ipcMain.on('lock-interactive', () => {
+  if (mainPanelMode === 'standalone') return
   interactiveLocked = true
   setInteractive(true)
   OverlayController.activateOverlay()
 })
 ipcMain.on('unlock-interactive', () => {
+  if (mainPanelMode === 'standalone') return
   interactiveLocked = false
   // Re-evaluate based on current mouse position
   if (!mouseOverPanel) setInteractive(false)
@@ -150,6 +164,7 @@ let currentInteractiveWindow: BrowserWindow | null = null
  *  Setting a different window to interactive automatically reverts the prior
  *  one to click-through, so we never end up with two windows competing. */
 function setInteractiveWindow(win: BrowserWindow | null): void {
+  if (mainPanelMode === 'standalone') return
   if (currentInteractiveWindow === win) return
   // Revert prior window to click-through.
   const prev = currentInteractiveWindow
@@ -186,6 +201,7 @@ function setInteractiveWindow(win: BrowserWindow | null): void {
 /** Compatibility shim used by the lock-interactive IPC and other paths that
  *  only care about the main overlay window. */
 function setInteractive(interactive: boolean): void {
+  if (mainPanelMode === 'standalone') return
   if (!overlayWindow || overlayWindow.isDestroyed()) return
   try {
     overlayWindow.setIgnoreMouseEvents(!interactive)
@@ -203,6 +219,7 @@ let exitTimer: ReturnType<typeof setTimeout> | null = null
 uIOhook.on(
   'mousemove',
   guardNativeListener('mousemove', (e) => {
+    if (mainPanelMode === 'standalone') return
     // No rects reported yet -- skip hit testing. (Whiteboard registers its own
     // rects independently of the main overlay's `overlayVisible` flag.)
     if (panelRectsBySender.size === 0) return
@@ -232,6 +249,7 @@ uIOhook.on(
 uIOhook.on(
   'mousedown',
   guardNativeListener('mousedown-overlay', (e) => {
+    if (mainPanelMode === 'standalone') return
     if (!overlayVisible) return
     // Only process clicks if the overlay window is actually visible on screen
     if (!overlayWindow || overlayWindow.isDestroyed() || !overlayWindow.isVisible()) return
@@ -261,6 +279,7 @@ const POE_WINDOW_TITLES: Record<1 | 2, string> = {
 }
 
 export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
+  mainPanelMode = 'overlay'
   setPoeVersion(version)
   overlayWindow = new BrowserWindow({
     ...OVERLAY_WINDOW_OPTS,
@@ -407,6 +426,50 @@ export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
   return overlayWindow
 }
 
+function overlayRendererUrl(mode: MainPanelMode): string {
+  if (!process.env.ELECTRON_RENDERER_URL) return ''
+  const url = new URL(process.env.ELECTRON_RENDERER_URL)
+  url.searchParams.set('mainPanelMode', mode)
+  return url.toString()
+}
+
+export function createStandaloneOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
+  mainPanelMode = 'standalone'
+  setPoeVersion(version)
+  overlayWindow = new BrowserWindow({
+    width: 760,
+    height: 820,
+    minWidth: 620,
+    minHeight: 520,
+    show: false,
+    frame: true,
+    autoHideMenuBar: true,
+    title: 'Scalpel',
+    backgroundColor: '#171821',
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
+      contextIsolation: true,
+    },
+  })
+
+  if (process.env.ELECTRON_RENDERER_URL) {
+    overlayWindow.loadURL(overlayRendererUrl('standalone'))
+  } else {
+    overlayWindow.loadFile(join(__dirname, '../renderer/index.html'), { query: { mainPanelMode: 'standalone' } })
+  }
+
+  overlayWindow.on('closed', () => {
+    overlayWindow = null
+  })
+
+  overlayWindow.webContents.on('did-finish-load', () => {
+    overlayWindow?.webContents.send('poe-version', getPoeVersion())
+  })
+
+  return overlayWindow
+}
+
 function sendGameBounds(physWidth: number, physHeight: number): void {
   if (!overlayWindow || overlayWindow.isDestroyed()) return
   const sf = getScaleFactor()
@@ -422,6 +485,18 @@ function sendGameBounds(physWidth: number, physHeight: number): void {
 
 export function showOverlay(): void {
   if (!overlayWindow || overlayWindow.isDestroyed()) return
+  if (mainPanelMode === 'standalone') {
+    overlayVisible = true
+    lastShowTime = Date.now()
+    try {
+      if (overlayWindow.isMinimized()) overlayWindow.restore()
+      overlayWindow.showInactive()
+      overlayWindow.webContents.send('poe-version', getPoeVersion())
+    } catch (err) {
+      console.error('[overlay] Error in standalone showOverlay:', err)
+    }
+    return
+  }
   // Mutual exclusion: hide the whiteboard before showing the main overlay.
   import('./whiteboard').then(({ getWhiteboardOverlay }) => {
     getWhiteboardOverlay()?.hide()
@@ -448,6 +523,11 @@ export function hideOverlay(): void {
   if (!overlayWindow || overlayWindow.isDestroyed() || !overlayVisible) return
   overlayVisible = false
   mouseOverPanel = false
+  if (mainPanelMode === 'standalone') {
+    overlayWindow.webContents.send('overlay-hide')
+    overlayWindow.hide()
+    return
+  }
   try {
     overlayWindow.setIgnoreMouseEvents(true)
   } catch {}
@@ -462,7 +542,7 @@ export function reloadFilterInGame(): void {
   import('./hotkeys').then(({ sendReloadFilterToPoE }) => {
     sendReloadFilterToPoE()
       .then(() => {
-        if (overlayVisible && overlayWindow && mouseOverPanel) {
+        if (mainPanelMode === 'overlay' && overlayVisible && overlayWindow && mouseOverPanel) {
           overlayWindow.setIgnoreMouseEvents(false)
         }
       })
@@ -474,7 +554,7 @@ export function reloadFilterInGame(): void {
 export async function switchFilterInGame(filterName: string, currentFilter?: string): Promise<void> {
   const { sendItemFilterCommand } = await import('./hotkeys')
   await sendItemFilterCommand(filterName, currentFilter)
-  if (overlayVisible && overlayWindow) {
+  if (mainPanelMode === 'overlay' && overlayVisible && overlayWindow) {
     overlayWindow.setIgnoreMouseEvents(false)
     mouseOverPanel = true
   }
@@ -500,12 +580,18 @@ export function setGameFocusHandlers(onFocus: () => void, onBlur: () => void): v
 }
 
 export function focusGameWindow(): void {
+  if (mainPanelMode === 'standalone') return
   OverlayController.focusTarget()
 }
 
 /** Check if PoE or the overlay is in a usable state (PoE focused, or overlay visible) */
 export function isGameActive(): boolean {
+  if (mainPanelMode === 'standalone') return overlayVisible
   return OverlayController.targetHasFocus || overlayVisible
+}
+
+export function getMainPanelMode(): MainPanelMode {
+  return mainPanelMode
 }
 
 // Tracks which Scalpel windows currently have an editable element
