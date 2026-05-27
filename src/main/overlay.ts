@@ -4,6 +4,7 @@ import { OVERLAY_WINDOW_OPTS, OverlayController } from 'electron-overlay-window'
 import { uIOhook } from 'uiohook-napi'
 import { startClientLogWatcher } from './client-log'
 import { guardNativeListener, registerDiagnosticProvider } from './diagnostics'
+import { getCurrentPanelState, startPanelDetection, stopPanelDetection } from './panel-detection'
 import { getPoeVersion, setPoeVersion } from './game-state'
 import { closeAllOverlaysOnPoeExit, isAnyScalpelWindowFocused, isInsideAnySecondaryOverlay } from './windowing'
 
@@ -113,6 +114,7 @@ ipcMain.handle('get-overlay-state', () => {
   const sf = getScaleFactor()
   return {
     poeVersion: getPoeVersion(),
+    panelState: getCurrentPanelState(),
     gameBounds: tb?.width
       ? {
           gameWidth: Math.round(tb.width / sf),
@@ -336,6 +338,7 @@ export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
       if (overlayWindow && !overlayWindow.isDestroyed()) {
         overlayWindow.webContents.send('poe-version', getPoeVersion())
         startClientLogWatcher(overlayWindow)
+        startPanelDetection(overlayWindow)
       }
       sendGameBounds(ev.width, ev.height)
       mouseOverPanel = false
@@ -356,6 +359,7 @@ export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
       // already hides the main overlay's BrowserWindow; we still need to
       // clear our renderer-side overlay state and hide every secondary
       // overlay using the same paths the Esc handler uses.
+      stopPanelDetection()
       hideOverlay()
       closeAllOverlaysOnPoeExit()
     } catch (err) {
