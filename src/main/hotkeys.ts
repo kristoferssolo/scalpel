@@ -16,7 +16,7 @@ import {
   registerDiagnosticProvider,
 } from './diagnostics'
 import { getPoeVersion } from './game-state'
-import { focusGameWindow, getOverlayWindow, isTypingInOverlay } from './overlay'
+import { focusGameWindow, getMainPanelMode, getOverlayWindow, isTypingInOverlay } from './overlay'
 import { hideFocusedOrAnyVisibleSecondaryOverlay } from './windowing'
 
 // ─── Accelerator → uiohook keycode mapping ────────────────────────────────────
@@ -98,6 +98,7 @@ let stashScrollModifier: 'Ctrl' | 'Shift' | 'Alt' = 'Ctrl'
 let lastHookStartError: string | null = null
 let lastHookStopError: string | null = null
 let hookResumeTimer: ReturnType<typeof setTimeout> | null = null
+let standalonePoeFocused = false
 
 /** globalShortcut is suppressed when the non-attached PoE has focus (Windows blocks
  *  hotkey delivery from a game that Electron isn't attached to); uIOhook is a
@@ -155,6 +156,10 @@ function fireTrigger(): void {
  *  (chat commands, Escape-closes-overlay) so they don't fire in a browser or
  *  random app when Scalpel is running in the background. See issues #18, #21. */
 function hasPoeOrOverlayFocus(): boolean {
+  if (getMainPanelMode() === 'standalone') {
+    const overlayWin = getOverlayWindow()
+    return standalonePoeFocused || (!!overlayWin && !overlayWin.isDestroyed() && overlayWin.isFocused())
+  }
   if (OverlayController.targetHasFocus) return true
   const overlayWin = getOverlayWindow()
   return !!overlayWin && !overlayWin.isDestroyed() && overlayWin.isFocused()
@@ -209,7 +214,8 @@ export function startHotkeyListener(handler: () => void): void {
     guardNativeListener('wheel', (e) => {
       const modHeld =
         stashScrollModifier === 'Ctrl' ? e.ctrlKey : stashScrollModifier === 'Shift' ? e.shiftKey : e.altKey
-      if (!stashScrollEnabled || !modHeld || !OverlayController.targetHasFocus) return
+      if (getMainPanelMode() !== 'overlay' || !stashScrollEnabled || !modHeld || !OverlayController.targetHasFocus)
+        return
       const tb = OverlayController.targetBounds
       if (!tb?.width) return
       // Only act when cursor is inside the PoE window but outside the stash grid area
@@ -488,7 +494,7 @@ function pasteToPoEChat(text: string, submit: boolean): Promise<void> {
   injecting = true
 
   // Focus PoE so keystrokes reach the game (only if it doesn't already have focus)
-  if (!OverlayController.targetHasFocus) focusGameWindow()
+  if (getMainPanelMode() === 'overlay' && !OverlayController.targetHasFocus) focusGameWindow()
 
   // All keystrokes fire synchronously so the chat window
   // opens and closes in a single frame, preventing visible flash
@@ -609,7 +615,11 @@ export function stopHotkeyListener(): void {
 }
 
 export function setStashScrollEnabled(enabled: boolean): void {
-  stashScrollEnabled = enabled
+  stashScrollEnabled = getMainPanelMode() === 'overlay' && enabled
+}
+
+export function setStandalonePoeFocusForHotkeys(focused: boolean): void {
+  standalonePoeFocused = focused
 }
 
 export function setStashScrollModifier(modifier: 'Ctrl' | 'Shift' | 'Alt'): void {

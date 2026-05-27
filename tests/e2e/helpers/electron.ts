@@ -1,8 +1,7 @@
 import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { writeFileSync } from 'node:fs'
 
 export interface ScalpelE2EApp {
   app: ElectronApplication
@@ -22,12 +21,13 @@ export async function launchScalpelE2E(opts?: ScalpelE2EOptions): Promise<Scalpe
   const userDataDir = await mkdtemp(join(tmpdir(), 'scalpel-e2e-'))
   try {
     if (opts?.seedConfig) {
-      writeFileSync(join(userDataDir, CONFIG_FILE), JSON.stringify(opts.seedConfig))
+      await writeFile(join(userDataDir, CONFIG_FILE), JSON.stringify(opts.seedConfig), 'utf8')
     }
+    const { ELECTRON_RUN_AS_NODE: _electronRunAsNode, ...env } = process.env
     const app = await electron.launch({
-      args: [join(process.cwd(), 'out/main/index.js')],
+      args: [join(process.cwd(), 'out/main/index.js'), '--ozone-platform=x11'],
       env: {
-        ...process.env,
+        ...env,
         NODE_ENV: 'test',
         SCALPEL_E2E: '1',
         SCALPEL_E2E_USER_DATA: userDataDir,

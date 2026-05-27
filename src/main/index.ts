@@ -45,7 +45,9 @@ import { uIOhook, UiohookKey } from 'uiohook-napi'
 import Store from 'electron-store'
 import { OverlayController } from 'electron-overlay-window'
 import {
+  createStandaloneOverlayWindow,
   createOverlayWindow,
+  getMainPanelMode,
   hideOverlay,
   showOverlay,
   getOverlayWindow,
@@ -66,6 +68,7 @@ import {
   setAppMacroHandler,
   suspendHotkeys,
   resumeHotkeys,
+  setStandalonePoeFocusForHotkeys,
   setStashScrollEnabled,
   setStashScrollModifier,
 } from './hotkeys'
@@ -134,6 +137,8 @@ import {
 } from './regex-remote'
 import { detectPanelStateOnce, getCurrentPanelState } from './panel-detection'
 import type { AppSettings, CheatSheetsSettings, GameVariant, LegacyAppSettings, RegexPreset } from '../shared/types'
+import { DEFAULT_APP_SETTINGS, backfillAppSettings } from './settings-defaults'
+import { detectFocusedPoeVersion } from './game-detector'
 import { initProfileStore } from './profiles/store'
 import {
   ACTIVE_PROFILE_ID_KEY,
@@ -181,56 +186,11 @@ function isElevated(): boolean {
 // ---- Persistent settings ---------------------------------------------------
 
 const store = new Store<AppSettings>({
-  defaults: {
-    hotkey: 'CommandOrControl+Shift+D',
-    priceCheckHotkey: 'CommandOrControl+Shift+A',
-    overlayOpacity: 0.95,
-    overlayScale: 1,
-    openSide: 'both',
-    closeOnClickOutside: false,
-    currencyLabelsAsText: false,
-    useCurrentZoneAreaLevel: false,
-    reloadOnSave: true,
-    updateChannel: 'stable',
-    tradeStatus: 'available',
-    tradeCollapseListings: true,
-    previewVolume: 0.25,
-    priceCheckDefaultPercent: 90,
-    adaptiveDefaultsMode: 'eager',
-    tradeDefaultToBase: false,
-    chatCommands: [],
-    appMacros: [],
-    stashScrollEnabled: false,
-    stashScrollModifier: 'Ctrl',
-    poeVersion: 1,
-    regexPresetsPoe1: [],
-    regexPresetsPoe2: [],
-    leaguesPoe1: [],
-    leaguesPoe2: [],
-    developerMode: false,
-    themeId: 'default',
-    customThemePalette: null,
-    pluginRegistryUrl: undefined,
-    startInTray: true,
-    appWindowPosition: undefined,
-    [ACTIVE_PROFILE_ID_KEY]: '',
-    [LAST_PROFILE_ID_POE1_KEY]: '',
-    [LAST_PROFILE_ID_POE2_KEY]: '',
-    onboardingCompleted: false,
-  },
+  defaults: DEFAULT_APP_SETTINGS,
 })
 
 // Backfill defaults for keys added after initial release
-if (store.get('reloadOnSave') === undefined) store.set('reloadOnSave', true)
-if (store.get('useCurrentZoneAreaLevel') === undefined) store.set('useCurrentZoneAreaLevel', false)
-if (store.get('stashScrollEnabled') === undefined) store.set('stashScrollEnabled', false)
-if (store.get('stashScrollModifier') === undefined) store.set('stashScrollModifier', 'Ctrl')
-if (store.get('openSide') === undefined) store.set('openSide', 'both')
-if ((store.get('tradeStatus') as string) === 'any') store.set('tradeStatus', 'available')
-if (store.get('themeId') === undefined) store.set('themeId', 'default')
-if (store.get('customThemePalette') === undefined) store.set('customThemePalette', null)
-if (store.get('adaptiveDefaultsMode') === undefined) store.set('adaptiveDefaultsMode', 'eager')
-if (store.get('startInTray') === undefined) store.set('startInTray', true)
+backfillAppSettings(store)
 
 const profileStore = initProfileStore(app.getPath('userData'))
 
@@ -414,6 +374,34 @@ if (!gotLock) {
 
 const installDir = IS_E2E ? process.cwd() : applyPendingUpdate()
 
+interface StandaloneFocusWatcherOptions {
+  onPoeFocus: () => void
+  onPoeBlur: () => void
+}
+
+function startStandaloneFocusWatcher({ onPoeFocus, onPoeBlur }: StandaloneFocusWatcherOptions): void {
+  let active = false
+  let polling = false
+  setInterval(() => {
+    if (polling) return
+    polling = true
+    detectFocusedPoeVersion()
+      .then((focusedPoe) => {
+        const focused = focusedPoe !== null
+        setStandalonePoeFocusForHotkeys(focused)
+        const nextActive = focused || isAnyScalpelWindowFocused()
+        if (nextActive === active) return
+        active = nextActive
+        if (active) onPoeFocus()
+        else onPoeBlur()
+      })
+      .catch((err) => recordMainDiagnostic('standalone-focus-watch', err))
+      .finally(() => {
+        polling = false
+      })
+  }, 250)
+}
+
 // Live services skipped under the e2e harness (SCALPEL_E2E): game-focus handlers,
 // background network refreshers, the updater, devtools, and online filter sync.
 // Each needs native/network access the harness deliberately avoids. Called once
@@ -437,6 +425,19 @@ function startLiveServices(): void {
   // Start with hotkeys suspended until PoE actually gains focus.
   // Without this, hotkeys fire globally (e.g. in other games) before PoE opens.
   suspendHotkeys()
+  if (getMainPanelMode() === 'standalone') {
+    startStandaloneFocusWatcher({
+      onPoeFocus: () => {
+        resumeHotkeys()
+        restoreAllOnPoeFocus()
+      },
+      onPoeBlur: () => {
+        if (isAnyScalpelWindowFocused()) return
+        suspendHotkeys()
+        hideAllOnPoeBlur()
+      },
+    })
+  }
 
   // Fetch manifest in background; bundled copy is the offline fallback
   refreshManifest().catch(() => {})
@@ -487,7 +488,14 @@ app.whenReady().then(() => {
   // Seed the overlay with the last-known game version so attachByTitle waits for
   // that window. The hotkey handler re-detects the focused PoE on every fire and
   // relaunches to swap versions if needed (ensureCorrectGameForHotkey).
-  if (!IS_E2E) createOverlayWindow((store.get(PROFILE_VERSION_KEY) as GameVariant) ?? 1)
+  const mainPanelMode = store.get('mainPanelMode') ?? 'overlay'
+  if (!IS_E2E) {
+    if (mainPanelMode === 'standalone')
+      createStandaloneOverlayWindow((store.get(PROFILE_VERSION_KEY) as GameVariant) ?? 1)
+    else createOverlayWindow((store.get(PROFILE_VERSION_KEY) as GameVariant) ?? 1)
+  } else if (mainPanelMode === 'standalone') {
+    createStandaloneOverlayWindow((store.get(PROFILE_VERSION_KEY) as GameVariant) ?? 1)
+  }
   // Let the secondary-overlay system know about the main overlay window so its
   // isAnyScalpelWindowFocused predicate can include it.
   setMainOverlayGetter(getOverlayWindow)
@@ -497,6 +505,10 @@ app.whenReady().then(() => {
   if (!IS_E2E) setOnLeaveScalpel(() => suspendHotkeys())
   createAppWindow(store)
   if (!IS_E2E) createTray()
+
+  if (mainPanelMode === 'standalone') {
+    showOverlay()
+  }
 
   // Serve plugin-facing built-in modules (React, SDK) via a custom scheme so
   // plugins can import them without bundling their own copies.
@@ -627,6 +639,7 @@ app.whenReady().then(() => {
       return
     }
     if (action === 'toggleWhiteboard') {
+      if (mainPanelMode === 'standalone') return
       const main = getOverlayWindow()
       if (main && !main.isDestroyed() && main.isVisible()) hideOverlay()
       getCheatSheetsOverlay()?.hide()

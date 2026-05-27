@@ -26,7 +26,7 @@ import { detectFocusedPoeVersion } from './game-detector'
 import { getPoeVersion } from './game-state'
 import { requestGameSwitch } from './game-switch'
 import { sendCtrlCToPoE } from './hotkeys'
-import { focusGameWindow, getOverlayWindow, isTypingInOverlay, showOverlay } from './overlay'
+import { focusGameWindow, getMainPanelMode, getOverlayWindow, isTypingInOverlay, showOverlay } from './overlay'
 import { readItemFromClipboard } from './trade/clipboard'
 import {
   getUniquesByBase,
@@ -384,14 +384,14 @@ async function captureItemFromClipboard(isElevated: () => boolean): Promise<PoeI
  *  requires an app relaunch. Fast path hits no OS call when targetHasFocus is true.
  *  Always returns false when a switch is needed: the current press is swallowed,
  *  and the user reopens the overlay from the correct game after restart. */
-async function ensureCorrectGameForHotkey(store: Store<AppSettings>): Promise<boolean> {
-  if (OverlayController.targetHasFocus) return true
+export async function ensureCorrectGameForHotkey(store: Store<AppSettings>): Promise<boolean> {
+  if (getMainPanelMode() === 'overlay' && OverlayController.targetHasFocus) return true
   // User typing in an overlay text field -- swallow so single-key hotkeys
   // don't stomp the input. Otherwise if the overlay window itself is focused
   // (user clicked into it), refocus PoE so the subsequent Ctrl+C reaches the
   // game window.
   if (isTypingInOverlay()) return false
-  if (getOverlayWindow()?.isFocused()) {
+  if (getMainPanelMode() === 'overlay' && getOverlayWindow()?.isFocused()) {
     focusGameWindow()
     return true
   }
