@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Info } from '@icon-park/react'
 import { useAuth } from '../shared/use-auth'
 import appIcon from '../../../../resources/icon.png'
 import { getGameFeatures } from '../../../shared/game-features'
@@ -143,6 +144,15 @@ export function FilterFolderStep({
         subtitle={`Choose your filter folder, generally ${folderHint}, so Scalpel can find your filters.`}
       />
       <FilterPicker settings={settings} onSettingsChange={onSettingsChange} mode="folder" />
+      <p className="text-[10px] text-text-dim flex items-start gap-1 m-0 ml-1 mt-1.5">
+        <Info
+          size={12}
+          theme="two-tone"
+          fill={['currentColor', 'rgba(255,255,255,0.2)']}
+          className="flex shrink-0 mt-[2px]"
+        />
+        <span>Use online filters? You still need to do this step - online filters live here too.</span>
+      </p>
       <NavButtons onBack={onBack} onNext={onNext} onBackToSettings={onBackToSettings} />
     </div>
   )
