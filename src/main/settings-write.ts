@@ -7,7 +7,14 @@ import { applyCheatSheetHotkeys, getCheatSheetsOverlay } from './cheat-sheets'
 import { reEvaluateLastItem, setOpenSide } from './evaluation'
 import { clearFilterState, loadFilter } from './filter-state'
 import { setPoeVersion } from './game-state'
-import { setAppMacros, setChatCommands, setHotkey, setPriceCheckHotkey, setStashScrollEnabled } from './hotkeys'
+import {
+  setAppMacros,
+  setChatCommands,
+  setHotkey,
+  setPriceCheckHotkey,
+  setStashScrollEnabled,
+  setStashScrollModifier,
+} from './hotkeys'
 import { applyPinnedZoneEnabled, getPinnedZoneOverlay } from './pinned-zone'
 import { updateOnlineSyncDir } from './online-sync'
 import { refreshPrices } from './trade/prices'
@@ -82,6 +89,8 @@ function sideEffect(setting: ProfileChangedSetting, prevAppSettings?: AppSetting
     setAppMacros(withPluginHotkeys(value as AppSettings['appMacros']))
   } else if (key === 'stashScrollEnabled') {
     setStashScrollEnabled(value as boolean)
+  } else if (key === 'stashScrollModifier') {
+    setStashScrollModifier(value as NonNullable<AppSettings['stashScrollModifier']>)
   } else if (key === 'openSide') {
     setOpenSide(value as AppSettings['openSide'])
   } else if (key === 'updateChannel') {

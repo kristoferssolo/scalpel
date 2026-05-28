@@ -66,6 +66,7 @@ import {
   suspendHotkeys,
   resumeHotkeys,
   setStashScrollEnabled,
+  setStashScrollModifier,
 } from './hotkeys'
 import { refreshPrices, invalidatePriceCache } from './trade/prices'
 import { onRateLimitUpdate } from './trade/trade'
@@ -186,6 +187,7 @@ const store = new Store<AppSettings>({
     chatCommands: [],
     appMacros: [],
     stashScrollEnabled: false,
+    stashScrollModifier: 'Ctrl',
     poeVersion: 1,
     regexPresetsPoe1: [],
     regexPresetsPoe2: [],
@@ -208,6 +210,7 @@ const store = new Store<AppSettings>({
 if (store.get('reloadOnSave') === undefined) store.set('reloadOnSave', true)
 if (store.get('useCurrentZoneAreaLevel') === undefined) store.set('useCurrentZoneAreaLevel', false)
 if (store.get('stashScrollEnabled') === undefined) store.set('stashScrollEnabled', false)
+if (store.get('stashScrollModifier') === undefined) store.set('stashScrollModifier', 'Ctrl')
 if (store.get('openSide') === undefined) store.set('openSide', 'both')
 if ((store.get('tradeStatus') as string) === 'any') store.set('tradeStatus', 'available')
 if (store.get('themeId') === undefined) store.set('themeId', 'default')
@@ -616,6 +619,7 @@ app.whenReady().then(() => {
   applyPinnedZoneEnabled(getProfileBackedSetting(store, 'cheatSheets')?.pinned === true)
   subscribeToPoeMoves()
   setStashScrollEnabled(store.get('stashScrollEnabled') ?? false)
+  setStashScrollModifier(store.get('stashScrollModifier') ?? 'Ctrl')
   setOpenSide(store.get('openSide') ?? 'both')
 
   // Suspend/resume hotkeys while the hotkey recorder is active

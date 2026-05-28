@@ -211,6 +211,7 @@ function settingsSummary(): Record<string, unknown> {
     overlayScale: s.overlayScale,
     openSide: s.openSide,
     stashScrollEnabled: s.stashScrollEnabled,
+    stashScrollModifier: s.stashScrollModifier,
     cheatSheetsCategories: profile?.cheatSheets?.categories?.length ?? 0,
   }
 }

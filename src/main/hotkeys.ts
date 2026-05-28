@@ -94,6 +94,7 @@ let hookStarted = false
 let hookSuspended = false
 let injecting = false
 let stashScrollEnabled = false
+let stashScrollModifier: 'Ctrl' | 'Shift' | 'Alt' = 'Ctrl'
 let lastHookStartError: string | null = null
 let lastHookStopError: string | null = null
 let hookResumeTimer: ReturnType<typeof setTimeout> | null = null
@@ -185,11 +186,13 @@ export function startHotkeyListener(handler: () => void): void {
     }),
   )
 
-  // Stash tab scrolling: Ctrl+scroll outside stash grid -> arrow key taps
+  // Stash tab scrolling: ModKey+scroll outside stash grid -> arrow key taps
   uIOhook.on(
     'wheel',
     guardNativeListener('wheel', (e) => {
-      if (!stashScrollEnabled || !e.ctrlKey || !OverlayController.targetHasFocus) return
+      const modHeld =
+        stashScrollModifier === 'Ctrl' ? e.ctrlKey : stashScrollModifier === 'Shift' ? e.shiftKey : e.altKey
+      if (!stashScrollEnabled || !modHeld || !OverlayController.targetHasFocus) return
       const tb = OverlayController.targetBounds
       if (!tb?.width) return
       // Only act when cursor is inside the PoE window but outside the stash grid area
@@ -586,6 +589,10 @@ export function setStashScrollEnabled(enabled: boolean): void {
   stashScrollEnabled = enabled
 }
 
+export function setStashScrollModifier(modifier: 'Ctrl' | 'Shift' | 'Alt'): void {
+  stashScrollModifier = modifier
+}
+
 // PoE stash grid area (physical pixels) - if cursor is here, don't intercept scroll
 function isStashGridArea(x: number, y: number, tb: { x: number; y: number; width: number; height: number }): boolean {
   const sidebarWidth = tb.height * POE_SIDEBAR_RATIO
@@ -672,6 +679,7 @@ function getHotkeyDiagnostics(): Record<string, unknown> {
     appMacroHotkeyCount: appMacroAccelerators.length,
     secondaryOverlayHotkeyCount: secondaryOverlayHotkeys.length,
     stashScrollEnabled,
+    stashScrollModifier,
     lastHookStartError,
     lastHookStopError,
   }

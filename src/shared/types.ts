@@ -481,6 +481,8 @@ export interface AppSettings {
   chatCommands: Array<{ hotkey: string; command: string; autoSubmit?: boolean; scope?: MacroScope }>
   appMacros: Array<{ action: string; hotkey: string; tag?: string; scope?: MacroScope }>
   stashScrollEnabled: boolean
+  /** Modifier held with the scroll wheel to switch stash tabs. Defaults to Ctrl. */
+  stashScrollModifier?: 'Ctrl' | 'Shift' | 'Alt'
   poeVersion: GameVariant
   /** Regex presets are persisted per game. Each session reads/writes the slot
    *  matching `poeVersion` -- the relaunch-on-switch flow guarantees the active

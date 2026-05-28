@@ -6,6 +6,7 @@ import { HotkeyRecorder } from './HotkeyRecorder'
 import { CommandInput } from './CommandInput'
 import { APP_MACRO_DEFS } from './utils'
 import { SettingToggleBox } from './SettingToggleBox'
+import { SettingSelectBox } from './SettingSelectBox'
 import {
   chatCommandEffectiveScope,
   appMacroEffectiveScope,
@@ -14,6 +15,12 @@ import {
 } from '../../../../shared/macro-scope'
 import { narrowScopeForCrossGameConflict } from './hotkey-collisions'
 import { usePoeVersion } from '../../shared/poe-version-context'
+
+const STASH_SCROLL_MODIFIER_OPTIONS = [
+  { value: 'Ctrl', label: 'Ctrl +' },
+  { value: 'Shift', label: 'Shift +' },
+  { value: 'Alt', label: 'Alt +' },
+] as const
 
 /** Extract all unique custom tag texts that contain "macro" (case-insensitive) */
 function getMacroTags(presets: RegexPreset[]): string[] {
@@ -315,11 +322,21 @@ export function MacrosTab({ settings, update, tryHotkey }: Props): JSX.Element {
 
       {/* Other Macros */}
       <div className="settings-section-title mt-3">Other Macros</div>
-      <SettingToggleBox
-        label="Stash tab scrolling (Ctrl + Scroll Wheel)"
-        checked={settings.stashScrollEnabled ?? false}
-        onChange={(val) => update('stashScrollEnabled', val)}
-      />
+      <div className={settings.stashScrollEnabled ? 'grid grid-cols-2 gap-x-2 gap-y-[10px]' : ''}>
+        <SettingToggleBox
+          label="Stash tab scrolling (ModKey + Scroll Wheel)"
+          checked={settings.stashScrollEnabled ?? false}
+          onChange={(val) => update('stashScrollEnabled', val)}
+        />
+        {settings.stashScrollEnabled && (
+          <SettingSelectBox
+            label="Modifier key"
+            value={settings.stashScrollModifier ?? 'Ctrl'}
+            options={STASH_SCROLL_MODIFIER_OPTIONS}
+            onChange={(v) => update('stashScrollModifier', v)}
+          />
+        )}
+      </div>
     </>
   )
 }
