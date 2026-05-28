@@ -103,6 +103,7 @@
       "category": "Game",
       "executableName": "scalpel",
       "icon": "resources/icon.png",
+      "artifactName": "Scalpel.${ext}",
       "desktop": {
         "StartupWMClass": "scalpel"
       }
