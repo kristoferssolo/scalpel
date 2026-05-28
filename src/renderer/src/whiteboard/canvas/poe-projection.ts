@@ -1,5 +1,6 @@
 import type { PanelState } from '../../../../shared/panel-state'
 import type { Pt } from '../../../../shared/whiteboard-types'
+import { POE_SIDEBAR_RATIO } from '../../../../shared/poe-geometry'
 import type { GameSize } from './coords'
 
 /** Camera/render constants for one PoE game version. Distances are in the
@@ -47,21 +48,17 @@ export const CAMERA_CONSTANTS: Record<1 | 2, PoeCameraConstants | null> = {
   },
 }
 
-/** Panel-clip base for PoE1, from ifnjeff/poe-rangefinder. Divided by the
- *  playfield aspect to get the NDC-x shift (see panelClipNdcX), which makes the
- *  screen-space shift 0.616 * height / 2 px - half the side panel's width, which
- *  scales with PoE's height-based UI, not window width. PoE2 = 0 (uncalibrated). */
-export const PANEL_CLIP_BASE: Record<1 | 2, number> = { 1: 0.616, 2: 0 }
-
 /** Signed NDC-x clip term for the current panel state. The game re-centers the
  *  playfield away from the open panel, so a left panel shifts the world right
  *  (+) and a right panel shifts it left (-); both-open or neither = no shift.
- *  The base is divided by the playfield aspect so the screen shift is
- *  height-proportional (half the side panel's width), matching the game. */
+ *  POE_SIDEBAR_RATIO (panel width / height, shared with the snap-ghost math)
+ *  divided by the playfield aspect makes the screen shift height-proportional -
+ *  half the side panel's width - matching the game. PoE1 and PoE2 re-center
+ *  identically, so the same ratio drives both. */
 export function panelClipNdcX(version: 1 | 2, panel: PanelState, size: GameSize): number {
   if (panel.leftPanelOpen === panel.rightPanelOpen) return 0
   const pf = playfieldRect(version, size)
-  const c = PANEL_CLIP_BASE[version] / (pf.width / pf.height)
+  const c = POE_SIDEBAR_RATIO / (pf.width / pf.height)
   return panel.leftPanelOpen ? c : -c
 }
 

@@ -10,6 +10,7 @@ import {
   screenToGround,
   unitsToMetres,
 } from './poe-projection'
+import { POE_SIDEBAR_RATIO } from '../../../../shared/poe-geometry'
 
 describe('CAMERA_CONSTANTS', () => {
   it('has PoE1 and PoE2 filled', () => {
@@ -145,9 +146,9 @@ describe('clipNdcX shift', () => {
 
 describe('panelClipNdcX', () => {
   const size = { w: 1920, h: 1080 } // 16:9 -> playfield aspect 16/9
-  // The base is divided by the playfield aspect, so the screen shift ends up
+  // POE_SIDEBAR_RATIO is divided by the playfield aspect, so the screen shift ends up
   // height-proportional (half the side panel's width).
-  const expected = 0.616 / (16 / 9)
+  const expected = POE_SIDEBAR_RATIO / (16 / 9)
 
   it('shifts +/- the aspect-divided base for one panel, 0 for both/neither', () => {
     expect(panelClipNdcX(1, { leftPanelOpen: true, rightPanelOpen: false }, size)).toBeCloseTo(expected, 6)
@@ -156,7 +157,8 @@ describe('panelClipNdcX', () => {
     expect(panelClipNdcX(1, { leftPanelOpen: false, rightPanelOpen: false }, size)).toBe(0)
   })
 
-  it('is 0 for PoE2 (no calibrated shift)', () => {
-    expect(panelClipNdcX(2, { leftPanelOpen: true, rightPanelOpen: false }, size)).toBe(0)
+  it('shifts PoE2 identically to PoE1 (same sidebar ratio drives both)', () => {
+    expect(panelClipNdcX(2, { leftPanelOpen: true, rightPanelOpen: false }, size)).toBeCloseTo(expected, 6)
+    expect(panelClipNdcX(2, { leftPanelOpen: false, rightPanelOpen: true }, size)).toBeCloseTo(-expected, 6)
   })
 })

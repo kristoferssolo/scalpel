@@ -7,6 +7,7 @@ import {
   type MacroScope,
   scopeAppliesTo,
 } from '../shared/macro-scope'
+import { POE_SIDEBAR_RATIO } from '../shared/poe-geometry'
 import { snapshotClipboard } from './clipboard-preserve'
 import {
   guardNativeListener,
@@ -586,7 +587,6 @@ export function setStashScrollEnabled(enabled: boolean): void {
 }
 
 // PoE stash grid area (physical pixels) - if cursor is here, don't intercept scroll
-const POE_SIDEBAR_RATIO = 370 / 600
 function isStashGridArea(x: number, y: number, tb: { x: number; y: number; width: number; height: number }): boolean {
   const sidebarWidth = tb.height * POE_SIDEBAR_RATIO
   if (x > tb.x + sidebarWidth) return false

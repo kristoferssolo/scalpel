@@ -56,15 +56,24 @@ async function captureGameWindow(): Promise<BitmapView | null> {
     if (full.width === 0 || full.height === 0) return null
     const bmp = img.toBitmap() // BGRA, row-major
 
-    // Actual capture scale from the returned thumbnail (drivers may clamp/round
-    // the requested size), so the crop offsets land on the right pixels.
-    const scaleX = full.width / (display.size.width * sf)
-    const scaleY = full.height / (display.size.height * sf)
-    const ox = Math.round((tb.x - display.bounds.x * sf) * scaleX)
-    const oy = Math.round((tb.y - display.bounds.y * sf) * scaleY)
-    const w = Math.round(tb.width * scaleX)
-    const h = Math.round(tb.height * scaleY)
-    if (w <= 0 || h <= 0 || ox < 0 || oy < 0 || ox + w > full.width || oy + h > full.height) return null
+    // tb (targetBounds) is in physical pixels; display.bounds/size are in DIP.
+    // display.bounds * scaleFactor only equals the physical origin for the primary
+    // display (origin 0,0); on a secondary scaled display the DIP layout is
+    // non-linear in physical space, so that product is wrong and the crop lands
+    // off-frame. Convert the window origin to DIP with the per-display-aware
+    // screenToDipPoint, locate it inside the display's DIP rect, then scale to the
+    // thumbnail (which spans the whole display). thumbnail-px-per-DIP = full / size.
+    const winDip = screen.screenToDipPoint({ x: tb.x, y: tb.y })
+    const tpdX = full.width / display.size.width
+    const tpdY = full.height / display.size.height
+    const ox = Math.round((winDip.x - display.bounds.x) * tpdX)
+    const oy = Math.round((winDip.y - display.bounds.y) * tpdY)
+    // Clamp width/height to the thumbnail to absorb sub-pixel rounding at the far
+    // edges (e.g. a fullscreen window flush to the display); a negative origin
+    // means the window isn't on the captured display, which is a real failure.
+    const w = Math.min(Math.round((tb.width / sf) * tpdX), full.width - ox)
+    const h = Math.min(Math.round((tb.height / sf) * tpdY), full.height - oy)
+    if (w <= 0 || h <= 0 || ox < 0 || oy < 0) return null
 
     const out = Buffer.allocUnsafe(w * h * 4)
     for (let y = 0; y < h; y++) {

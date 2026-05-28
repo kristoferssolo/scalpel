@@ -7,6 +7,7 @@ import { guardNativeListener, registerDiagnosticProvider } from './diagnostics'
 import { getCurrentPanelState, startPanelDetection, stopPanelDetection } from './panel-detection'
 import { getPoeVersion, setPoeVersion } from './game-state'
 import { closeAllOverlaysOnPoeExit, isAnyScalpelWindowFocused, isInsideAnySecondaryOverlay } from './windowing'
+import { POE_SIDEBAR_RATIO } from '../shared/poe-geometry'
 
 let overlayWindow: BrowserWindow | null = null
 let overlayVisible = false
@@ -24,9 +25,6 @@ let onGameBlur: (() => void) | null = null
 export function setCloseOnClickOutside(enabled: boolean): void {
   closeOnClickOutside = enabled
 }
-
-/** PoE sidebar is 370px at 800x600 -- ratio used for gameBounds calculation */
-const POE_SIDEBAR_RATIO = 370 / 600
 
 // Panel bounds in physical screen coordinates (for uiohook mouse hit testing).
 // Updated by the renderer reporting its actual CSS bounding rects, which we convert
