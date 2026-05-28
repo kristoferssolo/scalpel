@@ -4,6 +4,7 @@ export type DiagnosticSource =
   | 'overlay'
   | 'whiteboard'
   | 'cheat-sheets'
+  | 'cheat-sheet-preview'
   | 'pinned-zone'
   | 'secondary-overlay-canvas'
   | 'renderer'

@@ -1,5 +1,6 @@
-import { screen } from 'electron'
-import { OverlayController } from 'electron-overlay-window'
+import { join } from 'node:path'
+import { BrowserWindow, screen } from 'electron'
+import { OverlayController, OVERLAY_WINDOW_OPTS } from 'electron-overlay-window'
 import {
   CHEAT_SHEET_MINIMIZED_HEIGHT,
   CHEAT_SHEET_MINIMIZED_SLACK,
@@ -8,7 +9,13 @@ import {
 import type { CheatSheetsSettings, OverlayAnchor } from '../shared/types'
 import { forwardZoneChangesTo, sendCurrentZoneTo } from './client-log'
 import { setSecondaryOverlayHotkeys } from './hotkeys'
-import { moveCanvasTop, type Rect, registerSecondaryOverlay, type SecondaryOverlay, sendCanvasIpc } from './windowing'
+import {
+  type Rect,
+  registerAuxiliaryScalpelWindow,
+  registerOnPoeLeave,
+  registerSecondaryOverlay,
+  type SecondaryOverlay,
+} from './windowing'
 
 // Re-export the pure storage / image-fetch helpers so consumers (handlers,
 // protocol handler, tests) keep their existing import path. The actual
@@ -120,6 +127,10 @@ export function toggleCheatSheets(categoryId?: string): void {
   }
   overlay.toggle()
   if (!wasVisible) overlay.send('cheat-sheet:focus-category', categoryId)
+  // When the grid is being dismissed, also clear any in-flight hover preview:
+  // the renderer's onMouseLeave doesn't fire from an opacity-hide so the
+  // preview would otherwise stay painted above PoE indefinitely.
+  if (wasVisible) hidePreview()
 }
 
 export function getCheatSheetsOverlay(): SecondaryOverlay | null {
@@ -251,28 +262,147 @@ export function restoreCheatSheets(): void {
   animateBoundsTo(target)
 }
 
-// ---- Hover preview (cheat-sheet specific, renders on the shared canvas) ----
+// ---- Hover preview (dedicated transparent click-through window) -----------
+
+// A standalone preview window, sized per-show to match PoE's bounds. We don't
+// reuse the shared full-desktop canvas (snap-canvas) because that window spans
+// every display, which forces Chromium to pick a single devicePixelRatio - so
+// on a mixed-DPI multi-monitor desktop a box sized in DIP renders at the wrong
+// physical scale on any monitor that doesn't match the chosen dpr, and there's
+// no CSS sizing trick that fixes it (the per-monitor DIP slice is fixed by the
+// window's bounds). By giving the preview its own window whose bounds match
+// PoE's display, Chromium assigns it that monitor's dpr and w-full/h-full
+// just works.
+//
+// Lifecycle mirrors snap-canvas: create once on first use, never destroy, never
+// .hide() (which would trigger Windows' show/hide animation on next reveal).
+// "Hide" is just an IPC clearing the image - the window stays as a transparent
+// click-through layer doing nothing.
+
+let previewWin: BrowserWindow | null = null
+let previewShown = false
+// True once the renderer has fired did-finish-load. Before that, IPC sends
+// are silently dropped (same gotcha that pendingFocusCategory works around
+// for the grid window).
+let previewReady = false
+// Latest src reported via showPreview while the renderer is still loading.
+// Flushed in the did-finish-load handler. Also doubles as "preview is logically
+// showing" state for PoE-move re-bounding and PoE-leave clearing.
+let pendingPreviewSrc: string | null = null
+// Auxiliary-window + PoE-leave registrations live for the lifetime of the
+// process; the unregister thunks aren't needed.
+let previewHooksRegistered = false
+
+function registerPreviewHooks(): void {
+  if (previewHooksRegistered) return
+  previewHooksRegistered = true
+  // Make the preview visible to focus.ts so aroundNativeDialog can demote its
+  // screen-saver alwaysOnTop level when a native file picker opens.
+  registerAuxiliaryScalpelWindow(() => previewWin)
+  // Clear the image on alt-tab and PoE exit so it doesn't paint over the
+  // destination app. The window itself stays alive (warm) but renders nothing
+  // when src is null.
+  registerOnPoeLeave(() => hidePreview())
+  // Track PoE moves while a preview is visible. Without this a windowed-PoE
+  // user dragging the game during a hover would see the preview detach and
+  // stay at PoE's old bounds until the next mouseEnter.
+  OverlayController.events.on('moveresize', () => {
+    if (pendingPreviewSrc === null || !previewWin || previewWin.isDestroyed()) return
+    setBoundsToGame(previewWin)
+  })
+}
+
+function ensurePreviewWindow(): BrowserWindow {
+  if (previewWin && !previewWin.isDestroyed()) return previewWin
+  // Fresh window - reset both flags so showPreview takes the first-show branch
+  // and so pre-load IPCs get stashed instead of silently dropped. Without this
+  // reset, a destroyed-and-recreated previewWin would be stuck in the
+  // moveTop-only branch and stay invisible forever.
+  previewShown = false
+  previewReady = false
+  previewWin = new BrowserWindow({
+    ...OVERLAY_WINDOW_OPTS,
+    focusable: false,
+    backgroundColor: '#00000000',
+    show: false,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  })
+  // 'screen-saver' matches the secondary overlays' level so the preview lifts
+  // above PoE and the cheat-sheet grid window without fighting the taskbar.
+  previewWin.setAlwaysOnTop(true, 'screen-saver')
+  previewWin.setIgnoreMouseEvents(true)
+  previewWin.webContents.once('did-finish-load', () => {
+    previewReady = true
+    if (previewWin && !previewWin.isDestroyed() && pendingPreviewSrc !== null) {
+      previewWin.webContents.send('cheat-sheet-preview:render', { src: pendingPreviewSrc })
+    }
+  })
+  if (process.env.ELECTRON_RENDERER_URL) {
+    void previewWin.loadURL(`${process.env.ELECTRON_RENDERER_URL}/cheat-sheet-preview.html`)
+  } else {
+    void previewWin.loadFile(join(__dirname, '../renderer/cheat-sheet-preview.html'))
+  }
+  registerPreviewHooks()
+  return previewWin
+}
+
+/** Bound the window to PoE's current rect in DIP. Pass null as the reference
+ *  window to screenToDipRect so the conversion uses the display nearest the
+ *  RECT (PoE's monitor) rather than the window's current display - otherwise
+ *  the first show would use the preview window's default-placement display
+ *  (primary) for the conversion, and a PoE on a different-DPI secondary
+ *  monitor would land at the wrong scale on first hover. On non-Windows
+ *  targetBounds is already logical. */
+function setBoundsToGame(win: BrowserWindow): boolean {
+  const tb = OverlayController.targetBounds
+  if (!tb || !tb.width || !tb.height) return false
+  const dip =
+    process.platform === 'win32'
+      ? screen.screenToDipRect(null, { x: tb.x, y: tb.y, width: tb.width, height: tb.height })
+      : { x: tb.x, y: tb.y, width: tb.width, height: tb.height }
+  win.setBounds(dip)
+  // Windows's first setBounds across displays / on a freshly created window
+  // doesn't always stick; the second call lets the OS settle. Matches the
+  // electron-overlay-window library's double-apply pattern.
+  if (process.platform === 'win32') win.setBounds(dip)
+  return true
+}
 
 export function showPreview(src: string): void {
-  // Center the image on the PoE window when known; otherwise fall back to the
-  // primary display's work area (e.g. dev runs without an attached game).
-  const tb = OverlayController.targetBounds
-  const gameBounds =
-    tb && tb.width > 0 && tb.height > 0
-      ? { x: tb.x, y: tb.y, width: tb.width, height: tb.height }
-      : (() => {
-          const wa = screen.getPrimaryDisplay().workArea
-          return { x: wa.x, y: wa.y, width: wa.width, height: wa.height }
-        })()
-  sendCanvasIpc('cheat-sheet-preview:render', { src, gameBounds })
-  // Lift the canvas above the cheat-sheet window so the hover image visibly
-  // overlays the thumbnail strip (snap ghost intentionally doesn't do this -
-  // it stays behind the dragged window).
-  moveCanvasTop()
+  const win = ensurePreviewWindow()
+  if (!setBoundsToGame(win)) {
+    // No game attached (dev runs without PoE). Fall back to the primary work
+    // area, using the same double-setBounds pattern setBoundsToGame uses so a
+    // fresh window at fractional Windows DPI commits on the second call.
+    const wa = screen.getPrimaryDisplay().workArea
+    const rect = { x: wa.x, y: wa.y, width: wa.width, height: wa.height }
+    win.setBounds(rect)
+    if (process.platform === 'win32') win.setBounds(rect)
+  }
+  pendingPreviewSrc = src
+  if (previewReady) {
+    win.webContents.send('cheat-sheet-preview:render', { src })
+  }
+  // Re-assert top so the preview sits above the grid window every show (both
+  // at 'screen-saver' level, so last-on-top wins) - including the first show,
+  // where the grid was raised earlier by restoreAllOnPoeFocus/aroundNativeDialog
+  // and would otherwise stack above us.
+  if (!previewShown) {
+    win.showInactive()
+    previewShown = true
+  }
+  win.moveTop()
 }
 
 export function hidePreview(): void {
-  // Don't hide the canvas - that would trigger a paint flash on next show.
-  // Just clear the cheat-sheet preview layer; snap ghost (if any) is unaffected.
-  sendCanvasIpc('cheat-sheet-preview:render', { src: null, gameBounds: null })
+  pendingPreviewSrc = null
+  const win = previewWin
+  if (!win || win.isDestroyed()) return
+  // Only meaningful to send if the renderer is loaded - otherwise the stash
+  // above already prevents the next did-finish-load from flushing stale src.
+  if (previewReady) win.webContents.send('cheat-sheet-preview:render', { src: null })
 }

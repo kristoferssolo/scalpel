@@ -262,19 +262,8 @@ export const api = {
     ipcRenderer.on('secondary-overlay-canvas:snap-ghost', handler)
     return () => ipcRenderer.removeListener('secondary-overlay-canvas:snap-ghost', handler)
   },
-  onCheatSheetPreview: (
-    cb: (state: {
-      src: string | null
-      gameBounds: { x: number; y: number; width: number; height: number } | null
-    }) => void,
-  ): (() => void) => {
-    const handler = (
-      _: Electron.IpcRendererEvent,
-      state: {
-        src: string | null
-        gameBounds: { x: number; y: number; width: number; height: number } | null
-      },
-    ): void => cb(state)
+  onCheatSheetPreview: (cb: (state: { src: string | null }) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, state: { src: string | null }): void => cb(state)
     ipcRenderer.on('cheat-sheet-preview:render', handler)
     return () => ipcRenderer.removeListener('cheat-sheet-preview:render', handler)
   },

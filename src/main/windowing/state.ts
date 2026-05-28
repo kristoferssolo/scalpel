@@ -54,3 +54,50 @@ export function setOnLeaveScalpel(cb: (() => void) | null): void {
 export function fireOnLeaveScalpel(): void {
   onLeaveScalpelCb?.()
 }
+
+// Auxiliary Scalpel-owned windows that aren't registered as secondary overlays
+// (the cheat-sheet hover preview, in particular). The windowing module's focus
+// predicates and PoE-leave hooks need to see them, but they're owned by other
+// modules - so each module injects a getter at boot.
+const auxiliaryWindowGetters: Array<() => BrowserWindow | null> = []
+
+export function registerAuxiliaryScalpelWindow(getter: () => BrowserWindow | null): () => void {
+  auxiliaryWindowGetters.push(getter)
+  return () => {
+    const i = auxiliaryWindowGetters.indexOf(getter)
+    if (i >= 0) auxiliaryWindowGetters.splice(i, 1)
+  }
+}
+
+export function getAuxiliaryScalpelWindows(): BrowserWindow[] {
+  const result: BrowserWindow[] = []
+  for (const get of auxiliaryWindowGetters) {
+    const w = get()
+    if (w && !w.isDestroyed()) result.push(w)
+  }
+  return result
+}
+
+// Fired when PoE blurs (user alt-tabs out) or detaches (PoE exits). Lets
+// modules with their own non-overlay-registered windows participate in the
+// cleanup paths (clear content, hide image, etc.) without focus.ts having to
+// import them.
+const poeLeaveHooks: Array<() => void> = []
+
+export function registerOnPoeLeave(cb: () => void): () => void {
+  poeLeaveHooks.push(cb)
+  return () => {
+    const i = poeLeaveHooks.indexOf(cb)
+    if (i >= 0) poeLeaveHooks.splice(i, 1)
+  }
+}
+
+export function firePoeLeaveHooks(): void {
+  for (const cb of poeLeaveHooks) {
+    try {
+      cb()
+    } catch {
+      // hooks must not break alt-tab/exit cleanup for siblings
+    }
+  }
+}

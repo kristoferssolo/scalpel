@@ -1,6 +1,6 @@
 import { BrowserWindow, screen } from 'electron'
 import { getSnapCanvasWindow, setSnapGhost } from './snap-canvas'
-import { getMainOverlay, overlays } from './state'
+import { firePoeLeaveHooks, getAuxiliaryScalpelWindows, getMainOverlay, overlays } from './state'
 
 /** True if `win` is a registered secondary-overlay window. */
 export function isSecondaryOverlayWindow(win: BrowserWindow): boolean {
@@ -54,6 +54,10 @@ function collectScalpelWindows(): BrowserWindow[] {
   }
   const canvas = getSnapCanvasWindow()
   if (canvas) result.push(canvas)
+  // Auxiliary windows not in the secondary-overlay map (cheat-sheet hover
+  // preview, etc.) - their owners inject getters at boot so we don't have to
+  // import them and risk a cycle.
+  result.push(...getAuxiliaryScalpelWindows())
   return result
 }
 
@@ -106,6 +110,9 @@ export function hideAllOnPoeBlur(): void {
     if (state.wasVisibleBeforeFocusLoss) state.win.hide()
   }
   setSnapGhost(null)
+  // Let auxiliary windows (cheat-sheet hover preview) clear themselves so
+  // their content doesn't paint over the destination app while alt-tabbed.
+  firePoeLeaveHooks()
 }
 
 /** Re-show overlays that were visible when PoE last blurred, forcing each
@@ -161,4 +168,7 @@ export function closeAllOverlaysOnPoeExit(): void {
   for (const state of overlays.values()) {
     hideOverlayState(state)
   }
+  // Auxiliary windows (preview) need to clear too - they're not in the
+  // overlays map but the user shouldn't see leftover content after PoE exits.
+  firePoeLeaveHooks()
 }

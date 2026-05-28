@@ -18,8 +18,8 @@ export {
   isSecondaryOverlayWindow,
   restoreAllOnPoeFocus,
 } from './focus'
-export { moveCanvasTop, prewarmSnapCanvas, sendCanvasIpc, setSnapGhost } from './snap-canvas'
-export { setMainOverlayGetter, setOnLeaveScalpel } from './state'
+export { prewarmSnapCanvas, setSnapGhost } from './snap-canvas'
+export { registerAuxiliaryScalpelWindow, registerOnPoeLeave, setMainOverlayGetter, setOnLeaveScalpel } from './state'
 // Public re-exports - this module is the public face of the windowing system.
 export type { Rect }
 
@@ -108,6 +108,24 @@ export interface SecondaryOverlay {
    *  animation, content-driven height) that shouldn't pollute the stored
    *  anchor. No-op if the window hasn't been created. */
   setBoundsProgrammatic(target: Rect): void
+  /** Resize the window in place without moving it. Calls setBounds exactly
+   *  once: the double-call in setBoundsProgrammatic exists to settle cross-
+   *  display anchor moves, and at fractional Windows scale factors (1.5x in
+   *  particular) the second call compounds the DPI conversion - growing the
+   *  window by the scale factor on every call. Size-only updates never cross
+   *  displays, so single-apply is both correct and necessary. No-op if the
+   *  window hasn't been created. */
+  setSizeProgrammatic(width: number, height: number): void
+  /** Hide the window without clearing the alt-tab restore memory. Use when
+   *  the hide is driven by content/state (e.g. the pinned-zone overlay
+   *  reacting to a zone with no matching cheat sheet) rather than the user
+   *  explicitly dismissing the overlay. The default hide() treats the hide
+   *  as user intent and clears wasVisibleBeforeFocusLoss so PoE refocus
+   *  doesn't bring it back; that's wrong for content-driven hides because
+   *  the next alt-tab can leave the window permanently hidden when it
+   *  happened to be opacity-hidden at PoE-blur time (isVisible() returns
+   *  false then, so hideAllOnPoeBlur doesn't re-record the flag). */
+  hideKeepingRestore(): void
 }
 
 const SNAP_RANGE = 80
@@ -145,6 +163,27 @@ function setBoundsProgrammatic(state: OverlayState, target: Rect): void {
   state.inProgrammaticMove = true
   state.win.setBounds(target)
   if (process.platform === 'win32') state.win.setBounds(target)
+  if (state.programmaticSettleTimer) clearTimeout(state.programmaticSettleTimer)
+  state.programmaticSettleTimer = setTimeout(() => {
+    state.inProgrammaticMove = false
+    state.programmaticSettleTimer = null
+  }, PROGRAMMATIC_MOVE_SETTLE_MS)
+}
+
+/** Size-only programmatic resize. Single setBounds (no double-apply): the
+ *  double-call in setBoundsProgrammatic is there to settle cross-display
+ *  anchor moves, but on Windows at fractional scale factors (1.5x) calling
+ *  setBounds twice with the same target compounds the DIP-to-physical
+ *  conversion, growing the window by the scale factor every call. The
+ *  pinned-zone ResizeObserver-driven height update fires this many times per
+ *  second, so the compounding turns into runaway growth. Size-only updates
+ *  don't move the window, so single-apply is sufficient. */
+function setSizeProgrammatic(state: OverlayState, width: number, height: number): void {
+  if (!state.win || state.win.isDestroyed()) return
+  const cur = state.win.getBounds()
+  if (cur.width === width && cur.height === height) return
+  state.inProgrammaticMove = true
+  state.win.setBounds({ x: cur.x, y: cur.y, width, height })
   if (state.programmaticSettleTimer) clearTimeout(state.programmaticSettleTimer)
   state.programmaticSettleTimer = setTimeout(() => {
     state.inProgrammaticMove = false
@@ -220,6 +259,16 @@ function makeOverlayApi(state: OverlayState): SecondaryOverlay {
     setBoundsProgrammatic: (target) => {
       if (!state.win || state.win.isDestroyed()) return
       setBoundsProgrammatic(state, target)
+    },
+    setSizeProgrammatic: (width, height) => {
+      if (!state.win || state.win.isDestroyed()) return
+      setSizeProgrammatic(state, width, height)
+    },
+    hideKeepingRestore: () => {
+      if (!state.win || state.win.isDestroyed()) return
+      // Opacity-based hide (installed by installOpacityHideShow). Does NOT
+      // touch state.wasVisibleBeforeFocusLoss - that's the whole point.
+      state.win.hide()
     },
     getWindow: () => (state.win && !state.win.isDestroyed() ? state.win : null),
   }

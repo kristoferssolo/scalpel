@@ -21,6 +21,7 @@ export default defineConfig({
           overlay: resolve(__dirname, 'src/renderer/index.html'),
           app: resolve(__dirname, 'src/renderer/app.html'),
           cheatSheetsGrid: resolve(__dirname, 'src/renderer/cheat-sheets-grid.html'),
+          cheatSheetPreview: resolve(__dirname, 'src/renderer/cheat-sheet-preview.html'),
           secondaryOverlayCanvas: resolve(__dirname, 'src/renderer/secondary-overlay-canvas.html'),
           whiteboard: resolve(__dirname, 'src/renderer/whiteboard.html'),
           pinnedZone: resolve(__dirname, 'src/renderer/pinned-zone.html'),

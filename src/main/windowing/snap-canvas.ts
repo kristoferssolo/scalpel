@@ -1,12 +1,16 @@
 import { join } from 'node:path'
 import { BrowserWindow, screen } from 'electron'
-import { OVERLAY_WINDOW_OPTS } from 'electron-overlay-window'
+import { OVERLAY_WINDOW_OPTS, OverlayController } from 'electron-overlay-window'
 
 /** Shared transparent click-through window used by the secondary-overlay system
- *  to render snap-target ghosts during drag. Sized to the primary display's full
- *  bounds (including the taskbar region) so anchor positions near screen edges
- *  aren't clipped. One instance shared across all registered secondary overlays
- *  - only one drag is in flight at a time, so no coordination is needed.
+ *  to render the snap-target ghost during drag. Sized to PoE's current display
+ *  (not the full virtual desktop) so Chromium assigns it that monitor's device
+ *  scale factor - a window spanning mixed-DPI monitors otherwise gets the
+ *  primary's dpr, and DIP-sized rects then render at the wrong physical scale
+ *  on any non-primary monitor (visible as ghosts that are offset and shrunk by
+ *  the scale-factor ratio). Snap targets are always within PoE's bounds
+ *  (they're derived from PoE-relative anchors), so confining the canvas to
+ *  PoE's display covers every position a ghost can land at.
  *
  *  The window is created+loaded lazily on first activation; from then on it's
  *  never hidden. Each "hide ghost" sends an IPC clearing the rect so the
@@ -23,29 +27,32 @@ export interface Rect {
   height: number
 }
 
+// Track the display id we last sized the canvas to so we can skip the
+// double-setBounds dance when nothing has changed. setSnapGhost re-runs
+// applyCanvasBounds on every snap-target transition during drag; without this
+// guard each transition would emit two setBounds + the OS move/resize events
+// they synthesize, even when the target rect is identical to the current.
+let lastCanvasDisplayId: number | null = null
+
 function applyCanvasBounds(win: BrowserWindow): void {
-  // Span the union of all displays so snap ghosts and the cheat-sheet hover
-  // preview are visible when PoE / a secondary overlay sits on a non-primary
-  // monitor. The renderer paints fixed-position elements at screen coords and
-  // translates by window.screenX/Y, so the canvas just needs to cover whatever
-  // screen rect those coords could land in.
-  const displays = screen.getAllDisplays()
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-  for (const d of displays) {
-    minX = Math.min(minX, d.bounds.x)
-    minY = Math.min(minY, d.bounds.y)
-    maxX = Math.max(maxX, d.bounds.x + d.bounds.width)
-    maxY = Math.max(maxY, d.bounds.y + d.bounds.height)
-  }
-  win.setBounds({
-    x: minX,
-    y: minY,
-    width: maxX - minX,
-    height: maxY - minY,
-  })
+  // Prefer the display PoE sits on so the canvas's CSS coordinate space ==
+  // that monitor's DIP at the monitor's scale factor. Fall back to the primary
+  // display when PoE isn't attached (dev, between attach/detach, etc.).
+  const tb = OverlayController.targetBounds
+  const display =
+    tb && tb.width > 0 && tb.height > 0
+      ? screen.getDisplayNearestPoint({
+          x: tb.x + Math.round(tb.width / 2),
+          y: tb.y + Math.round(tb.height / 2),
+        })
+      : screen.getPrimaryDisplay()
+  if (display.id === lastCanvasDisplayId) return
+  lastCanvasDisplayId = display.id
+  win.setBounds(display.bounds)
+  // Windows sometimes needs a second setBounds when the target display has a
+  // different scale factor than the current one, mirroring the double-apply
+  // pattern in electron-overlay-window's main overlay.
+  if (process.platform === 'win32') win.setBounds(display.bounds)
 }
 
 function ensureCanvasWindow(): BrowserWindow {
@@ -88,34 +95,17 @@ export function getSnapCanvasWindow(): BrowserWindow | null {
 /** Show the snap ghost at the given rect. Pass null to clear it. */
 export function setSnapGhost(rect: Rect | null): void {
   const win = ensureCanvasWindow()
-  if (rect && !canvasShown) {
-    // Re-apply bounds right before show: Windows can re-clamp the window when
-    // it gains visibility, chopping the bottom off into the taskbar.
+  if (rect) {
+    // Re-apply bounds on every show: PoE may have moved to a different display
+    // since the canvas was last sized, and the canvas needs to land on PoE's
+    // current display to inherit that monitor's scale factor. Also covers the
+    // Windows quirk where the first show after creation re-clamps the window
+    // into the work area, chopping the bottom off.
     applyCanvasBounds(win)
-    win.show()
-    canvasShown = true
+    if (!canvasShown) {
+      win.show()
+      canvasShown = true
+    }
   }
   win.webContents.send('secondary-overlay-canvas:snap-ghost', rect)
-}
-
-/** Send an arbitrary render IPC to the canvas. Lets cheat-sheet-specific (and
- *  future) consumers add their own visual layers (e.g. hover-preview image)
- *  without each spawning their own click-through fullscreen window. */
-export function sendCanvasIpc(channel: string, payload: unknown): void {
-  const win = ensureCanvasWindow()
-  if (!canvasShown) {
-    applyCanvasBounds(win)
-    win.show()
-    canvasShown = true
-  }
-  win.webContents.send(channel, payload)
-}
-
-/** Bring the canvas above other secondary-overlay windows in Z-order. Used by
- *  consumers (e.g. cheat-sheet hover preview) that need their content to
- *  visually overlay the dragged window. The snap ghost intentionally does NOT
- *  call this - it stays behind the dragged window so the user sees what they're
- *  positioning. */
-export function moveCanvasTop(): void {
-  if (canvasWin && !canvasWin.isDestroyed()) canvasWin.moveTop()
 }

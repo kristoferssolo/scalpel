@@ -7,33 +7,17 @@ interface Rect {
   height: number
 }
 
-interface CheatSheetPreviewState {
-  src: string | null
-  gameBounds: Rect | null
-}
-
 /** Single transparent click-through canvas window shared by every secondary
- *  overlay for visual extras that need to render outside the overlay's own
- *  bounds: snap-target ghosts during drag (a system feature), and consumer-
- *  specific layers like the cheat-sheet hover preview.
- *
- *  Each layer is its own IPC channel so consumers can opt in independently
- *  without coordinating through the canvas. */
+ *  overlay for the snap-target ghost during drag. (The cheat-sheet hover
+ *  preview used to render here too, but moved to its own dedicated window so
+ *  it can pick up the correct per-monitor devicePixelRatio - this shared
+ *  canvas spans every display and gets one dpr, which is fine for the snap
+ *  ghost's coarse rectangle but breaks pixel-accurate fit-to-game-window
+ *  rendering on mixed-DPI multi-monitor setups.) */
 export function App(): JSX.Element {
   const [snapGhost, setSnapGhost] = useState<Rect | null>(null)
-  const [cheatSheetPreview, setCheatSheetPreview] = useState<CheatSheetPreviewState | null>(null)
-
   useEffect(() => window.api.onSecondaryOverlaySnapGhost((rect) => setSnapGhost(rect)), [])
-  useEffect(() => window.api.onCheatSheetPreview((s) => setCheatSheetPreview(s)), [])
-
-  return (
-    <>
-      {snapGhost && <SnapGhost rect={snapGhost} />}
-      {cheatSheetPreview?.src && cheatSheetPreview.gameBounds && (
-        <CheatSheetPreviewLayer src={cheatSheetPreview.src} gameBounds={cheatSheetPreview.gameBounds} />
-      )}
-    </>
-  )
+  return <>{snapGhost && <SnapGhost rect={snapGhost} />}</>
 }
 
 // Rects come from main in screen coords; the canvas window spans the
@@ -51,23 +35,5 @@ function SnapGhost({ rect }: { rect: Rect }): JSX.Element {
         borderRadius: 6,
       }}
     />
-  )
-}
-
-function CheatSheetPreviewLayer({ src, gameBounds }: { src: string; gameBounds: Rect }): JSX.Element {
-  const PAD = 16
-  return (
-    <div
-      className="fixed pointer-events-none flex items-center justify-center"
-      style={{
-        left: gameBounds.x - window.screenX,
-        top: gameBounds.y - window.screenY,
-        width: gameBounds.width,
-        height: gameBounds.height,
-        padding: PAD,
-      }}
-    >
-      <img src={src} alt="" className="max-w-full max-h-full object-contain" />
-    </div>
   )
 }
