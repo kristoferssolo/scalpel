@@ -1,7 +1,10 @@
 import { useState } from 'react'
+import { Github } from '@icon-park/react'
 import type { AppSettings, ProfileSettingValue, RuntimeSettings } from '../../../../shared/types'
 import { getGameFeatures } from '../../../../shared/game-features'
+import { GITHUB_REPO_URL, KOFI_URL } from '../../../../shared/endpoints'
 import { reportDiagnosticError } from '../../shared/diagnostics'
+import kofiIcon from '../../assets/other/kofi-logo.svg'
 import { SettingToggleBox } from './SettingToggleBox'
 
 interface Props {
@@ -168,6 +171,26 @@ export function GeneralTab({ settings, update, updateProfile, onShowOnboarding }
             recent redacted logs. Nothing is uploaded automatically. Review it before attaching.
           </p>
           {reportMessage && <div className="text-[10px] text-text-dim break-all">{reportMessage}</div>}
+        </div>
+      </section>
+
+      <section>
+        <div className="settings-section-title mt-3">Support Development</div>
+        <div className="flex gap-1.5 mt-[6px] flex-wrap">
+          <button
+            onClick={() => window.api.openExternal(KOFI_URL)}
+            className="flex items-center gap-1.5 text-[11px] leading-none px-3 py-1.5 text-text-dim"
+          >
+            <img src={kofiIcon} alt="" className="w-[14px] h-[14px] object-contain" />
+            <span className="-translate-y-[1px]">Ko-fi</span>
+          </button>
+          <button
+            onClick={() => window.api.openExternal(GITHUB_REPO_URL)}
+            className="flex items-center gap-1.5 text-[11px] leading-none px-3 py-1.5 text-text-dim"
+          >
+            <Github theme="filled" size="14" />
+            <span className="-translate-y-[1px]">GitHub</span>
+          </button>
         </div>
       </section>
 

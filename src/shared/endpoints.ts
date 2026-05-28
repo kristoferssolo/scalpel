@@ -52,20 +52,27 @@ export const POE_NINJA_POE2_EXCHANGE = 'https://poe.ninja/poe2/api/economy/excha
  *  best-effort path with the direct-ninja path retained as fallback. */
 export const POE2_NINJA_PROXY = 'https://api.exiledexchange2.dev/proxy'
 
+/** Scalpel's GitHub repo home. Base for the release/issue URLs below and the
+ *  Support Development link in Settings. */
+export const GITHUB_REPO_URL = 'https://github.com/scalpelpoe/scalpel'
+
+/** GitHub releases page (user-facing, for manual download links in banners) */
+export const GITHUB_RELEASES_PAGE = `${GITHUB_REPO_URL}/releases/latest`
+
+/** GitHub new-issue page, opened (with a prefilled body) by the bug reporter */
+export const GITHUB_NEW_ISSUE_URL = `${GITHUB_REPO_URL}/issues/new`
+
 /** GitHub API for update checks */
 export const GITHUB_RELEASES_API = 'https://api.github.com/repos/scalpelpoe/scalpel/releases/latest'
 
 /** GitHub for Electron binary downloads (only during full version upgrades) */
 export const ELECTRON_RELEASES = 'https://github.com/electron/electron/releases/download'
 
-/** GitHub releases page (user-facing, for manual download links in banners) */
-export const GITHUB_RELEASES_PAGE = 'https://github.com/scalpelpoe/scalpel/releases/latest'
-
-/** GitHub new-issue page, opened (with a prefilled body) by the bug reporter */
-export const GITHUB_NEW_ISSUE_URL = 'https://github.com/scalpelpoe/scalpel/issues/new'
-
 /** Discord invite, opened alongside a generated bug report */
 export const DISCORD_INVITE_URL = 'https://discord.com/invite/nUNcrmEAP5'
+
+/** Ko-fi tip jar, linked from the Support Development section in Settings */
+export const KOFI_URL = 'https://ko-fi.com/scalpelpoe'
 
 /** Raw GitHub URL prefix for the cheat-sheet starter packs hosted in this
  *  repo's /cheat-sheet-prefabs/ folder. Images are not bundled into the
