@@ -60,7 +60,7 @@ export class ProfileStore {
     const isPoe2 = variant === 2
     return {
       name: `Path of Exile ${isPoe2 ? '2' : '1'}`,
-      league: isPoe2 ? 'Fate of the Vaal' : 'Mirage',
+      league: isPoe2 ? 'Runes of Aldur' : 'Mirage',
       tradePriceOption: isPoe2 ? 'exalted_divine' : 'chaos_divine',
       cheatSheets: { globalHotkey: '', categories: [], pinned: false },
     }

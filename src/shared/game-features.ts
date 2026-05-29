@@ -51,7 +51,7 @@ const FEATURES_BY_VERSION: Record<GameVariant, GameFeatures> = {
     regexTool: true,
     bulkBaselineCurrency: 'exalted',
     bulkExchangeBanner: 'ange',
-    leagues: ['Fate of the Vaal', 'HC Fate of the Vaal', 'Standard', 'Hardcore'],
+    leagues: ['Runes of Aldur', 'HC Runes of Aldur', 'Standard', 'Hardcore'],
     filterFolderHint: 'Documents\\My Games\\Path of Exile 2',
   },
 }

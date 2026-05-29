@@ -310,7 +310,7 @@ describe('fetchPoe2PricesFromProxy', () => {
     }
     const fetchJson = async (_url: string) => stubResp
     const result = await fetchPoe2PricesFromProxy(
-      'Fate of the Vaal',
+      'Runes of Aldur',
       fetchJson,
       { Currency: 'currency' },
       {
@@ -331,8 +331,8 @@ describe('fetchPoe2PricesFromProxy', () => {
   })
 
   it.each([
-    ['Fate of the Vaal', 'league'],
-    ['HC Fate of the Vaal', 'leaguehc'],
+    ['Runes of Aldur', 'league'],
+    ['HC Runes of Aldur', 'leaguehc'],
     ['Standard', 'standard'],
     ['Hardcore', 'standardhc'],
   ])('hits %s -> %s slug', async (league, slug) => {
@@ -360,7 +360,7 @@ describe('fetchAndBuildPoe2PriceMap (direct-ninja fallback)', () => {
     }
     const fetchJson = async (_url: string) => exchange
     const staticMap = { Emerald: ['Old Static Jewel'] }
-    const result = await fetchAndBuildPoe2PriceMap('Fate of the Vaal', fetchJson, {}, staticMap)
+    const result = await fetchAndBuildPoe2PriceMap('Runes of Aldur', fetchJson, {}, staticMap)
     expect(result.priceMap.get('divine orb')).toMatchObject({ chaosValue: 100, divineValue: 1 })
     expect(result.pricesByVariant.size).toBe(0)
     expect(result.uniquesByBase).toEqual(staticMap)
