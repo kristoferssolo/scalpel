@@ -9,6 +9,7 @@ export type DiagnosticSource =
   | 'secondary-overlay-canvas'
   | 'renderer'
   | 'plugin'
+  | 'plugin-overlay'
 
 export interface SerializedDiagnosticError {
   name?: string

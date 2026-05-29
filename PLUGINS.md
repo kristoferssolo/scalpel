@@ -82,6 +82,13 @@ interface ScalpelPluginContext {
   onCurrentZone(handler: (zone: Zone) => void): () => void
   onLeagueChange(handler: (league: string) => void): () => void
 
+  // Raw Client.txt log tail. onLogLine fires once per appended line (zone
+  // changes, level-ups, chat, whispers, trade, ...); getRecentLogLines returns
+  // the last N buffered lines (default all, capped at 200). See "Reading the
+  // game log" below - the log includes chat and whispers.
+  onLogLine(handler: (line: string) => void): () => void
+  getRecentLogLines(count?: number): Promise<string[]>
+
   // Tab registration (call exactly once).
   // `icon` is inline SVG markup (or a data URL). Scalpel clamps the rendered
   // size to 16x16 and forces `display: flex` on any descendant SVG, so the
@@ -96,6 +103,18 @@ interface ScalpelPluginContext {
   // Hotkey registration (call at most once)
   // Surfaces in Settings > Macros > Plugin Hotkeys; the user binds the key.
   registerHotkey(opts: { label: string }, handler: () => void): void
+
+  // Overlay window (call at most once). Gives the plugin a real chrome'd,
+  // draggable, game-anchored window, separate from its tab. `render` runs in
+  // that window's own process. `hotkeyLabel`, when set, adds a dedicated
+  // overlay-toggle row in Settings > Macros (separate from registerHotkey's).
+  // See "Overlay windows" below.
+  registerOverlay(
+    opts: { title: string; icon?: string; hotkeyLabel?: string; defaultSize?: { width: number; height: number } },
+    render: (container: HTMLElement) => (() => void) | void,
+  ): void
+  openOverlay(): void   // show the overlay window
+  closeOverlay(): void  // hide the overlay window
 
   // Workflow helpers
   // Run the same copy flow as Scalpel's main hotkey: sends Ctrl+C to PoE,
@@ -168,6 +187,59 @@ ctx.registerHotkey({ label: 'Inspect item' }, async () => {
 ```
 
 Because `copyAndEvaluateItem` fires the same pipeline as Scalpel's main hotkey, all other tabs (Filter, Price Check) also reflect the copied item. The user does not need to press Scalpel's own hotkey separately.
+
+### Reading the game log
+
+Scalpel watches the PoE client log (`Client.txt`) to track your current zone. `getCurrentZone` / `onCurrentZone` give you the parsed zone, but you can also read the raw log tail and pull out anything the log carries:
+
+```tsx
+// React to new lines as they're written.
+const off = ctx.onLogLine((line) => {
+  if (line.includes('has been slain')) ctx.log('a death line', line)
+})
+
+// On load, scan recent history (the buffer holds up to the last 200 lines).
+const recent = await ctx.getRecentLogLines()
+const levelUps = recent.filter((l) => l.includes('is now level')).length
+```
+
+`onLogLine` fires once per newly appended line, in order, and returns an unsubscribe function. `getRecentLogLines(count?)` resolves to the most recent buffered lines (all of them, up to 200, when you pass no argument).
+
+Heads-up on privacy: `Client.txt` contains **all in-game chat, including private whispers and trade messages**, alongside zone changes and level-ups. The raw tail is handed to you ungated, so treat it accordingly - do not log or transmit lines you don't need.
+
+### Overlay windows
+
+A tab lives inside Scalpel's main overlay. `registerOverlay` instead gives your plugin its own **separate window** - the same kind of chrome'd, draggable, game-anchored window Scalpel uses for the whiteboard and cheat sheets. A plugin can register a tab, an overlay, or both (each at most once).
+
+```tsx
+export default function activate(ctx) {
+  // A tab is optional; if you register one, it automatically gets a "Pop out"
+  // button that opens the overlay window.
+  ctx.registerTab({ label: 'Tracker', icon: ICON, render: (el) => { el.textContent = 'tab view' } })
+
+  ctx.registerOverlay(
+    {
+      title: 'Tracker',                          // shown in the window title bar
+      hotkeyLabel: 'Toggle Tracker window',      // adds a bindable row in Settings > Macros
+      defaultSize: { width: 420, height: 320 },
+    },
+    (container) => {
+      container.textContent = 'overlay view'
+      const off = ctx.onLogLine((l) => { /* ... */ })
+      return off   // optional cleanup, called when the window tears down
+    },
+  )
+}
+```
+
+Launch it three ways: the **Pop out** button on the plugin's tab, the dedicated **hotkey** (when you set `hotkeyLabel`; it is a separate Settings > Macros row from your `registerHotkey` action hotkey), or programmatically via `ctx.openOverlay()` / `ctx.closeOverlay()`.
+
+**The render runs in a separate process.** Each window is its own renderer process, so the `render` you pass to `registerOverlay` cannot be the same live function object your tab uses - Scalpel loads (imports and runs) your plugin module a *second time* inside the overlay window and calls your `registerOverlay` render there. Two consequences:
+
+- Inside the overlay window, `registerTab` and `registerHotkey` are inert no-ops (your tab and action hotkey already took effect in the main overlay). Only the overlay `render` is used.
+- **Keep `activate` idempotent.** It runs once per window. Any side effect at the top of `activate` runs again when the overlay window opens. For example, do not POST analytics or mutate a shared counter directly in `activate` - it will fire a second time. Put such work behind an event handler or guard it, and confine per-window work to the render callbacks.
+
+The full context (`getCurrentItem`, `onCurrentZone`, `onLogLine`, `storage`, `fetch`, etc.) is available inside the overlay render exactly as in a tab.
 
 ## Forwarded helpers, hooks, and components
 

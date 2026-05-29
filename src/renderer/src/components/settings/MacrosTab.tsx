@@ -45,9 +45,14 @@ export function MacrosTab({ settings, update, tryHotkey }: Props): JSX.Element {
   useEffect(() => {
     window.api.getRegexPresets().then(setPresets)
   }, [])
-  const [pluginHotkeys, setPluginHotkeys] = useState<Array<{ id: string; label: string }>>([])
+  const [pluginHotkeys, setPluginHotkeys] = useState<Array<{ action: string; pluginId: string; label: string }>>([])
   useEffect(() => {
     void window.api.pluginListRegisteredHotkeys().then(setPluginHotkeys)
+  }, [])
+  useEffect(() => {
+    return window.api.onPluginHotkeysChanged(() => {
+      void window.api.pluginListRegisteredHotkeys().then(setPluginHotkeys)
+    })
   }, [])
   // Installed plugin manifests, used to render the plugin's display name in the
   // hotkey dropdown rather than the hotkey-action label.
@@ -58,6 +63,11 @@ export function MacrosTab({ settings, update, tryHotkey }: Props): JSX.Element {
       .then((list) => setInstalledPlugins(list.map((p) => ({ id: p.manifest.id, name: p.manifest.name }))))
   }, [])
   const getPluginName = (id: string): string => installedPlugins.find((p) => p.id === id)?.name ?? id
+  const isPluginAction = (a: string): boolean => a.startsWith('plugin:') || a.startsWith('plugin-overlay:')
+  const actionPluginId = (a: string): string =>
+    a.startsWith('plugin-overlay:') ? a.slice('plugin-overlay:'.length) : a.slice('plugin:'.length)
+  const pluginOptionLabel = (pluginId: string, label: string): string =>
+    label ? `${getPluginName(pluginId)} - ${label}` : getPluginName(pluginId)
   const macroTags = getMacroTags(presets)
   const currentGame = usePoeVersion()
 
@@ -72,15 +82,15 @@ export function MacrosTab({ settings, update, tryHotkey }: Props): JSX.Element {
   // below; the Scalpel Macros section only renders built-in app macros.
   const visibleAppMacros = (settings.appMacros ?? [])
     .map((macro, i) => ({ macro, i }))
-    .filter(({ macro }) => !macro.action.startsWith('plugin:'))
+    .filter(({ macro }) => !isPluginAction(macro.action))
     .filter(({ macro }) => scopeAppliesTo(appMacroEffectiveScope(macro), currentGame))
 
-  // Plugin-hotkey rows: entries in appMacros whose action begins with 'plugin:'.
+  // Plugin-hotkey rows: entries in appMacros whose action begins with 'plugin:' or 'plugin-overlay:'.
   const visiblePluginMacros = (settings.appMacros ?? [])
     .map((macro, i) => ({ macro, i }))
-    .filter(({ macro }) => macro.action.startsWith('plugin:'))
-  const pluginIdsInUse = new Set(visiblePluginMacros.map(({ macro }) => macro.action.slice('plugin:'.length)))
-  const availablePluginsForNewRow = pluginHotkeys.filter((p) => !pluginIdsInUse.has(p.id))
+    .filter(({ macro }) => isPluginAction(macro.action))
+  const pluginActionsInUse = new Set(visiblePluginMacros.map(({ macro }) => macro.action))
+  const availablePluginsForNewRow = pluginHotkeys.filter((p) => !pluginActionsInUse.has(p.action))
 
   return (
     <>
@@ -152,14 +162,15 @@ export function MacrosTab({ settings, update, tryHotkey }: Props): JSX.Element {
           <section>
             <div className="flex flex-col gap-2">
               {visiblePluginMacros.map(({ macro, i }) => {
-                const pluginId = macro.action.slice('plugin:'.length)
+                const pluginId =
+                  pluginHotkeys.find((p) => p.action === macro.action)?.pluginId ?? actionPluginId(macro.action)
                 const usedElsewhere = new Set(
-                  visiblePluginMacros
-                    .filter(({ i: j }) => j !== i)
-                    .map(({ macro: m }) => m.action.slice('plugin:'.length)),
+                  visiblePluginMacros.filter(({ i: j }) => j !== i).map(({ macro: m }) => m.action),
                 )
-                const optionsForThisRow = pluginHotkeys.filter((p) => p.id === pluginId || !usedElsewhere.has(p.id))
-                const orphan = !pluginHotkeys.some((p) => p.id === pluginId)
+                const optionsForThisRow = pluginHotkeys.filter(
+                  (p) => p.action === macro.action || !usedElsewhere.has(p.action),
+                )
+                const orphan = !pluginHotkeys.some((p) => p.action === macro.action)
                 return (
                   <div key={i} className="flex gap-[6px] items-center bg-black/15 rounded p-[5px] min-w-0">
                     <HotkeyRecorder
@@ -184,8 +195,8 @@ export function MacrosTab({ settings, update, tryHotkey }: Props): JSX.Element {
                     >
                       {orphan && <option value={macro.action}>{`${getPluginName(pluginId)} (not loaded)`}</option>}
                       {optionsForThisRow.map((p) => (
-                        <option key={p.id} value={`plugin:${p.id}`}>
-                          {getPluginName(p.id)}
+                        <option key={p.action} value={p.action}>
+                          {pluginOptionLabel(p.pluginId, p.label)}
                         </option>
                       ))}
                     </select>
@@ -205,7 +216,7 @@ export function MacrosTab({ settings, update, tryHotkey }: Props): JSX.Element {
                   onClick={() => {
                     const next = availablePluginsForNewRow[0]
                     if (!next) return
-                    update('appMacros', [...(settings.appMacros ?? []), { action: `plugin:${next.id}`, hotkey: '' }])
+                    update('appMacros', [...(settings.appMacros ?? []), { action: next.action, hotkey: '' }])
                   }}
                   className="text-[11px] text-text-dim self-start px-3 py-1.5"
                 >

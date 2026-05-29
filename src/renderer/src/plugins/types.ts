@@ -10,6 +10,8 @@ export type PluginContextFactoryDeps = {
   subscribeCurrentItem: (h: (i: PoeItem) => void) => () => void
   subscribeCurrentZone: (h: (z: Zone) => void) => () => void
   subscribeLeagueChange: (h: (l: string) => void) => () => void
+  onLogLine: (handler: (line: string) => void) => () => void
+  getRecentLogLines: (count?: number) => Promise<string[]>
   openExternal: (url: string) => void
   storage: {
     get: (key: string) => Promise<unknown>
@@ -28,4 +30,10 @@ export type PluginContextFactoryDeps = {
   registerHotkey: (pluginId: string, opts: { label: string }, handler: () => void) => void
   openTab: (pluginId: string) => void
   copyAndEvaluateItem: () => Promise<import('../../../shared/types').PoeItem | null>
+  registerOverlay: (
+    pluginId: string,
+    opts: { title: string; icon?: string; hotkeyLabel?: string; defaultSize?: { width: number; height: number } },
+  ) => void
+  openOverlay: (pluginId: string) => void
+  closeOverlay: (pluginId: string) => void
 }

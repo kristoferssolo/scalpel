@@ -1,10 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { RegistryEntry, RegistrySnapshot } from '../../../../shared/plugin-registry-types'
 import type { PluginManifest } from '../../../../plugin-sdk/src/types'
+import type { AppSettings, RuntimeSettings } from '../../../../shared/types'
+import type { HotkeySlot } from './hotkey-collisions'
 import { Button } from '../primitives/Button'
+import { HotkeyRecorder } from './HotkeyRecorder'
+import { pluginHotkeyBinding } from './plugin-hotkey-binding'
 
 interface Props {
   onError: (msg: string, tone?: 'error' | 'warn') => void
+  settings: RuntimeSettings
+  update: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void
+  tryHotkey: (hotkey: string, slot: HotkeySlot) => boolean
 }
 
 interface InstalledEntry {
@@ -36,28 +43,83 @@ function PluginIcon({ iconUrl, name }: { iconUrl?: string; name: string }): JSX.
   )
 }
 
+function PluginHotkeyBindRow({
+  action,
+  label,
+  settings,
+  update,
+  tryHotkey,
+}: {
+  action: string
+  label: string
+  settings: RuntimeSettings
+  update: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void
+  tryHotkey: (hotkey: string, slot: HotkeySlot) => boolean
+}): JSX.Element {
+  const { hotkey, setHotkey } = pluginHotkeyBinding({ action, settings, update, tryHotkey })
+  return (
+    <div className="flex items-center gap-[6px] min-w-0">
+      <HotkeyRecorder
+        value={hotkey}
+        onChange={setHotkey}
+        className="w-[200px] shrink-0"
+        placeholder="Set plugin hotkey"
+      />
+      {/* Read-only on purpose: the plugin + action are fixed by context, so unlike
+          the Macros-tab row there is no editable select or remove control here. */}
+      <span className="text-[11px] text-text-dim flex-1 min-w-0 truncate px-3 rounded bg-black/15 h-[34px] box-border flex items-center">
+        {label}
+      </span>
+    </div>
+  )
+}
+
 function InstalledRow({
   manifest,
   busy,
   onUninstall,
+  hotkeys,
+  settings,
+  update,
+  tryHotkey,
 }: {
   manifest: PluginManifest
   busy: boolean
   onUninstall: () => void
+  hotkeys: Array<{ action: string; label: string }>
+  settings: RuntimeSettings
+  update: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void
+  tryHotkey: (hotkey: string, slot: HotkeySlot) => boolean
 }): JSX.Element {
   return (
-    <div className={`${ROW_GRID} items-center px-3 py-2.5 rounded-[10px] bg-white/[0.04]`}>
-      <PluginIcon iconUrl={manifest.iconUrl} name={manifest.name} />
-      <div className="min-w-0">
-        <div className="flex items-center gap-x-2.5 flex-wrap leading-tight">
-          <span className="text-[13.5px] font-semibold text-text truncate">{manifest.name}</span>
-          <span className="font-mono text-[10.5px] text-zinc-500">v{manifest.version}</span>
+    <div className="flex flex-col gap-2 px-3 py-2.5 rounded-[10px] bg-white/[0.04]">
+      <div className={`${ROW_GRID} items-center`}>
+        <PluginIcon iconUrl={manifest.iconUrl} name={manifest.name} />
+        <div className="min-w-0">
+          <div className="flex items-center gap-x-2.5 flex-wrap leading-tight">
+            <span className="text-[13.5px] font-semibold text-text truncate">{manifest.name}</span>
+            <span className="font-mono text-[10.5px] text-zinc-500">v{manifest.version}</span>
+          </div>
+          <div className="text-[11.5px] text-text-dim mt-0.5 truncate">by {manifest.author}</div>
         </div>
-        <div className="text-[11.5px] text-text-dim mt-0.5 truncate">by {manifest.author}</div>
+        <Button variant="secondary" size="sm" disabled={busy} onClick={onUninstall}>
+          Uninstall
+        </Button>
       </div>
-      <Button variant="secondary" size="sm" disabled={busy} onClick={onUninstall}>
-        Uninstall
-      </Button>
+      {hotkeys.length > 0 && (
+        <div className="flex flex-col gap-1.5 pl-[52px]">
+          {hotkeys.map((h) => (
+            <PluginHotkeyBindRow
+              key={h.action}
+              action={h.action}
+              label={h.label}
+              settings={settings}
+              update={update}
+              tryHotkey={tryHotkey}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -242,18 +304,25 @@ function BrowseRow({
   )
 }
 
-export function PluginsSection({ onError }: Props): JSX.Element {
+export function PluginsSection({ onError, settings, update, tryHotkey }: Props): JSX.Element {
   const [registry, setRegistry] = useState<RegistrySnapshot | null>(null)
   const [registryError, setRegistryError] = useState<string | null>(null)
   const [installed, setInstalled] = useState<InstalledEntry[]>([])
   const [busyId, setBusyId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [activeShot, setActiveShot] = useState(0)
+  const [registeredHotkeys, setRegisteredHotkeys] = useState<
+    Array<{ action: string; pluginId: string; label: string }>
+  >([])
 
-  const refreshInstalled = async (): Promise<void> => {
-    const list = await window.api.listInstalledPlugins()
+  const refreshAll = useCallback(async (): Promise<void> => {
+    const [list, hotkeys] = await Promise.all([
+      window.api.listInstalledPlugins(),
+      window.api.pluginListRegisteredHotkeys(),
+    ])
     setInstalled(list.map((p) => ({ manifest: p.manifest })))
-  }
+    setRegisteredHotkeys(hotkeys)
+  }, [])
 
   const refreshRegistry = async (): Promise<void> => {
     const r = await window.api.pluginFetchRegistry()
@@ -267,9 +336,18 @@ export function PluginsSection({ onError }: Props): JSX.Element {
   }
 
   useEffect(() => {
-    void refreshInstalled()
+    void refreshAll()
     void refreshRegistry()
-  }, [])
+  }, [refreshAll])
+
+  useEffect(() => {
+    const offInstalled = window.api.onPluginInstalled(() => void refreshAll())
+    const offHotkeys = window.api.onPluginHotkeysChanged(() => void refreshAll())
+    return () => {
+      offInstalled()
+      offHotkeys()
+    }
+  }, [refreshAll])
 
   const isInstalled = (id: string): boolean => installed.some((i) => i.manifest.id === id)
 
@@ -282,7 +360,7 @@ export function PluginsSection({ onError }: Props): JSX.Element {
       return
     }
     onError(`Installed "${entry.name}".`, 'warn')
-    void refreshInstalled()
+    void refreshAll()
   }
 
   const uninstall = async (pluginId: string, name: string): Promise<void> => {
@@ -294,7 +372,7 @@ export function PluginsSection({ onError }: Props): JSX.Element {
       return
     }
     onError(`Uninstalled "${name}".`, 'warn')
-    void refreshInstalled()
+    void refreshAll()
   }
 
   const browseEntries = (registry?.plugins ?? []).filter((e) => !isInstalled(e.id))
@@ -318,6 +396,12 @@ export function PluginsSection({ onError }: Props): JSX.Element {
                 manifest={manifest}
                 busy={busyId === manifest.id}
                 onUninstall={() => void uninstall(manifest.id, manifest.name)}
+                hotkeys={registeredHotkeys
+                  .filter((h) => h.pluginId === manifest.id)
+                  .map((h) => ({ action: h.action, label: h.label }))}
+                settings={settings}
+                update={update}
+                tryHotkey={tryHotkey}
               />
             ))}
           </div>

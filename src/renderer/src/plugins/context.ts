@@ -6,6 +6,7 @@ const DEBUG = (): boolean => Boolean(window.__SCALPEL_DEBUG_LOG)
 export function createPluginContext(deps: PluginContextFactoryDeps): ScalpelPluginContext {
   let tabRegistered = false
   let hotkeyRegistered = false
+  let overlayRegistered = false
 
   return {
     pluginId: deps.pluginId,
@@ -17,6 +18,8 @@ export function createPluginContext(deps: PluginContextFactoryDeps): ScalpelPlug
     onCurrentItem: (h) => deps.subscribeCurrentItem(h),
     onCurrentZone: (h) => deps.subscribeCurrentZone(h),
     onLeagueChange: (h) => deps.subscribeLeagueChange(h),
+    onLogLine: (h) => deps.onLogLine(h),
+    getRecentLogLines: (count) => deps.getRecentLogLines(count),
     registerTab: (opts) => {
       if (tabRegistered) {
         throw new Error(`[plugin:${deps.pluginId}] registerTab already called`)
@@ -31,6 +34,24 @@ export function createPluginContext(deps: PluginContextFactoryDeps): ScalpelPlug
       hotkeyRegistered = true
       deps.registerHotkey(deps.pluginId, opts, handler)
     },
+    registerOverlay: (opts, render) => {
+      if (overlayRegistered) {
+        throw new Error(`[plugin:${deps.pluginId}] registerOverlay already called`)
+      }
+      overlayRegistered = true
+      // render runs in the SEPARATE overlay window's process (that window
+      // re-imports this plugin module). On the main-overlay side we only
+      // forward the metadata so the window + hotkey can be wired in main.
+      void render
+      deps.registerOverlay(deps.pluginId, {
+        title: opts.title,
+        icon: opts.icon,
+        hotkeyLabel: opts.hotkeyLabel,
+        defaultSize: opts.defaultSize,
+      })
+    },
+    openOverlay: () => deps.openOverlay(deps.pluginId),
+    closeOverlay: () => deps.closeOverlay(deps.pluginId),
     fetch: window.fetch.bind(window),
     storage: {
       get: <T = unknown>(key: string): Promise<T | null> => deps.storage.get(key) as Promise<T | null>,

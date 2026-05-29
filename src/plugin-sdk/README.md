@@ -43,7 +43,7 @@ export default async function activate(ctx: ScalpelPluginContext): Promise<void>
 
 ## What's exported
 
-**Types:** `ScalpelPluginContext`, `PluginActivate`, `PluginManifest`, `RegisterTabOptions`, `RegisterHotkeyOptions`, `PluginStorage`.
+**Types:** `ScalpelPluginContext`, `PluginActivate`, `PluginManifest`, `RegisterTabOptions`, `RegisterHotkeyOptions`, `RegisterOverlayOptions`, `PluginStorage`.
 
 **Item helpers:** `isClusterJewel`, `isSkillGem`, `SKILL_GEM_CLASSES`, `defaultPoeItem`.
 
@@ -63,7 +63,9 @@ export default async function activate(ctx: ScalpelPluginContext): Promise<void>
 
 **Stateless components:** `<Toggle>`, `<Notice>`, `<ErrorBanner>`.
 
-## Design tokens for dev environments
+## Log tail and overlay windows
+
+Beyond a tab, the context also exposes the raw `Client.txt` log tail (`onLogLine`, `getRecentLogLines` - note the log includes chat and whispers) and a separate chrome'd overlay window (`registerOverlay`, `openOverlay`, `closeOverlay`). The overlay `render` runs in its own renderer process, so keep `activate` idempotent. See the "Reading the game log" and "Overlay windows" sections in [PLUGINS.md](../../PLUGINS.md) for the full guide.
 
 Plugins running inside Scalpel inherit CSS variables (`--bg`, `--accent`, `--text`, etc.) from the renderer DOM tree, so the forwarded components render with the correct theme without any extra setup.
 

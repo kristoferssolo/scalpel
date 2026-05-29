@@ -201,6 +201,12 @@ img {
   vertical-align: middle;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: var(--text);
+  opacity: 0.3;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -276,6 +282,9 @@ input[type='number']::-webkit-outer-spin-button {
   }
   .setting-box .value.recording {
     @apply text-accent;
+  }
+  .setting-box .value.placeholder {
+    opacity: 0.5;
   }
   .setting-box button.primary {
     @apply shrink-0 ml-2;

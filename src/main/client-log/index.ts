@@ -1,10 +1,12 @@
 import type { BrowserWindow } from 'electron'
 import { parseClientLogLine } from './parse-client-log'
 import { resolveClientLogPath } from './path-resolver'
+import { hasLogLineSubscribers, pushLogLine } from './tail-buffer'
 import { startWatcher } from './watcher'
 import { getCurrentZone, ingestZoneEvent, onZoneChanged } from './zone-state'
 
 let started = false
+const logLineWinGetters: Array<() => BrowserWindow | null> = []
 
 /** Boot the Client.txt watcher and pipe zone changes to the overlay
  *  webContents. Idempotent (re-attach events shouldn't restart the
@@ -16,10 +18,12 @@ export function startClientLogWatcher(overlayWindow: BrowserWindow): void {
   if (!path) return
   started = true
   startWatcher(path, (line) => {
+    emitLogLine(line)
     const parsed = parseClientLogLine(line)
     if (parsed) ingestZoneEvent(parsed)
   })
   forwardZoneChangesTo(() => overlayWindow)
+  forwardLogLinesTo(() => overlayWindow)
   sendCurrentZoneTo(overlayWindow)
 }
 
@@ -42,4 +46,28 @@ export function forwardZoneChangesTo(getWin: () => BrowserWindow | null): void {
  *  Client.txt event. */
 export function sendCurrentZoneTo(win: BrowserWindow): void {
   if (!win.isDestroyed()) win.webContents.send('zone-changed', getCurrentZone())
+}
+
+/** Wire a window to receive `client-log:line` IPCs for every raw Client.txt
+ *  line, gated on at least one active subscriber (see tail-buffer ref-count).
+ *  Mirrors forwardZoneChangesTo. */
+export function forwardLogLinesTo(getWin: () => BrowserWindow | null): void {
+  logLineWinGetters.push(getWin)
+}
+
+function emitLogLine(line: string): void {
+  pushLogLine(line)
+  if (!hasLogLineSubscribers()) return
+  for (const getWin of logLineWinGetters) {
+    const win = getWin()
+    if (!win || win.isDestroyed()) continue
+    win.webContents.send('client-log:line', line)
+  }
+}
+
+/** Test-only: reset the started guard and clear log-line forwarders so each
+ *  test re-arms the watcher callback and starts from a clean getter list. */
+export function _resetForTests(): void {
+  started = false
+  logLineWinGetters.length = 0
 }

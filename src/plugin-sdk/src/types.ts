@@ -36,6 +36,25 @@ export interface RegisterTabOptions {
   render: (container: HTMLElement) => (() => void) | void
 }
 
+export interface RegisterOverlayOptions {
+  /** Shown in the overlay window's chrome title bar. */
+  title: string
+  /**
+   * Optional inline SVG markup or data URL for the launch button rendered in
+   * the plugin's main-overlay tab header. Same 16x16 clamping as
+   * RegisterTabOptions.icon. Only shown if the plugin also registers a tab.
+   */
+  icon?: string
+  /**
+   * When set, exposes a dedicated overlay-toggle hotkey slot in Scalpel's
+   * app-macro settings, separate from registerHotkey's action hotkey. The user
+   * binds the key; this is the label shown in the settings row.
+   */
+  hotkeyLabel?: string
+  /** Initial window size in CSS px. Falls back to a Scalpel default if absent. */
+  defaultSize?: { width: number; height: number }
+}
+
 export interface PluginStorage {
   get<T = unknown>(key: string): Promise<T | null>
   set<T = unknown>(key: string, value: T): Promise<void>
@@ -64,6 +83,21 @@ export interface ScalpelPluginContext {
   onCurrentZone(handler: (zone: Zone) => void): () => void
   onLeagueChange(handler: (league: string) => void): () => void
 
+  /**
+   * Subscribe to raw Client.txt lines as they are appended. The handler fires
+   * once per new line, in order. Returns an unsubscribe function. Lines are the
+   * raw log text (zone changes, level-ups, chat, whispers, trade, ...). Scalpel
+   * does not parse these beyond what getCurrentZone already provides.
+   */
+  onLogLine(handler: (line: string) => void): () => void
+
+  /**
+   * The most recent buffered Client.txt lines (default: all buffered, up to
+   * Scalpel's 200-line cap). Useful on plugin load to scan recent history
+   * before the first onLogLine fires.
+   */
+  getRecentLogLines(count?: number): Promise<string[]>
+
   registerTab(opts: RegisterTabOptions): void
 
   /**
@@ -72,6 +106,21 @@ export interface ScalpelPluginContext {
    * in v1; calling registerHotkey a second time throws.
    */
   registerHotkey(opts: RegisterHotkeyOptions, handler: () => void): void
+
+  /**
+   * Give this plugin a real Scalpel overlay window (chrome'd, draggable,
+   * snap-anchored to the game) hosting `render`. Independent of registerTab: a
+   * plugin may register a tab, an overlay, or both. Exactly one overlay per
+   * plugin; a second call throws. `render` runs inside the overlay window's own
+   * process and may return a cleanup function called on window teardown.
+   */
+  registerOverlay(opts: RegisterOverlayOptions, render: (container: HTMLElement) => (() => void) | void): void
+
+  /** Open (show) this plugin's overlay window. No-op if no overlay registered. */
+  openOverlay(): void
+
+  /** Close (hide) this plugin's overlay window. No-op if not open / none registered. */
+  closeOverlay(): void
 
   /**
    * Trigger the same flow Scalpel's main hotkey runs: send Ctrl+C to PoE,

@@ -5,7 +5,15 @@ import type { AppSettings } from '../../shared/types'
 import { refreshAppMacros } from '../app-macros'
 import { runMainHotkeyFlow } from '../evaluation'
 import { getOverlayWindow, showOverlay } from '../overlay'
-import { getRegisteredPluginHotkeys, removePluginHotkey, setPluginHotkey } from '../plugins/hotkey-registry'
+import { disposePluginOverlay, hidePluginOverlay, registerPluginOverlay, showPluginOverlay } from '../plugin-overlay'
+import {
+  getRegisteredOverlayHotkeys,
+  getRegisteredPluginHotkeys,
+  removePluginHotkey,
+  removePluginOverlayHotkey,
+  setPluginHotkey,
+  setPluginOverlayHotkey,
+} from '../plugins/hotkey-registry'
 import { installFromRegistry } from '../plugins/install-from-registry'
 import { installUnpacked } from '../plugins/install-unpacked'
 import { getInstalledPlugins } from '../plugins/manager'
@@ -21,11 +29,22 @@ export interface InstalledPluginIpc {
 }
 
 export function register(store: Store<AppSettings>, isElevated: () => boolean = () => false): void {
+  const notifyHotkeysChanged = (): void => {
+    getOverlayWindow()?.webContents.send('plugin-hotkeys-changed')
+  }
+
   ipcMain.handle('plugins:list-installed', (): InstalledPluginIpc[] => {
     return getInstalledPlugins().map((p) => ({
       manifest: p.manifest,
       entryUrl: pluginEntryUrl(p.manifest.id),
     }))
+  })
+
+  ipcMain.handle('plugins:get-installed', (_evt, pluginId: string): InstalledPluginIpc | null => {
+    if (!PLUGIN_ID_PATTERN.test(pluginId)) throw new Error('invalid plugin id')
+    const found = getInstalledPlugins().find((p) => p.manifest.id === pluginId)
+    if (!found) return null
+    return { manifest: found.manifest, entryUrl: pluginEntryUrl(found.manifest.id) }
   })
 
   ipcMain.handle('plugins:storage-get', (_evt, pluginId: string, key: string) => {
@@ -52,10 +71,21 @@ export function register(store: Store<AppSettings>, isElevated: () => boolean = 
     if (!PLUGIN_ID_PATTERN.test(pluginId)) throw new Error('invalid plugin id')
     setPluginHotkey(pluginId, label)
     refreshAppMacros()
+    notifyHotkeysChanged()
   })
 
   ipcMain.handle('plugins:list-registered-hotkeys', () => {
-    return Array.from(getRegisteredPluginHotkeys(), ([id, { label }]) => ({ id, label }))
+    const actions = Array.from(getRegisteredPluginHotkeys(), ([id, { label }]) => ({
+      action: `plugin:${id}`,
+      pluginId: id,
+      label,
+    }))
+    const overlayRows = Array.from(getRegisteredOverlayHotkeys(), ([id, { label }]) => ({
+      action: `plugin-overlay:${id}`,
+      pluginId: id,
+      label,
+    }))
+    return [...actions, ...overlayRows]
   })
 
   ipcMain.handle('plugins:install-unpacked', async (evt) => {
@@ -112,10 +142,40 @@ export function register(store: Store<AppSettings>, isElevated: () => boolean = 
     return registryResult
   })
 
+  ipcMain.handle(
+    'plugins:register-overlay',
+    (
+      _evt,
+      pluginId: string,
+      opts: { title: string; hotkeyLabel?: string; defaultSize?: { width: number; height: number } },
+    ) => {
+      if (!PLUGIN_ID_PATTERN.test(pluginId)) throw new Error('invalid plugin id')
+      registerPluginOverlay(pluginId, { title: opts.title, defaultSize: opts.defaultSize })
+      if (opts.hotkeyLabel) {
+        setPluginOverlayHotkey(pluginId, opts.hotkeyLabel)
+        refreshAppMacros()
+        notifyHotkeysChanged()
+      }
+    },
+  )
+  ipcMain.handle('plugins:open-overlay', (_evt, pluginId: string) => {
+    if (!PLUGIN_ID_PATTERN.test(pluginId)) throw new Error('invalid plugin id')
+    showPluginOverlay(pluginId)
+  })
+  ipcMain.handle('plugins:close-overlay', (_evt, pluginId: string) => {
+    if (!PLUGIN_ID_PATTERN.test(pluginId)) throw new Error('invalid plugin id')
+    hidePluginOverlay(pluginId)
+  })
+
   ipcMain.handle('plugins:uninstall', async (_evt, pluginId: string) => {
     const uninstallResult = uninstallPlugin(pluginId)
     if (uninstallResult.ok) {
       getOverlayWindow()?.webContents.send('plugin-uninstalled', pluginId)
+      disposePluginOverlay(pluginId)
+      removePluginHotkey(pluginId)
+      removePluginOverlayHotkey(pluginId)
+      refreshAppMacros()
+      notifyHotkeysChanged()
     }
     return uninstallResult
   })
@@ -124,6 +184,7 @@ export function register(store: Store<AppSettings>, isElevated: () => boolean = 
     if (!PLUGIN_ID_PATTERN.test(pluginId)) throw new Error('invalid plugin id')
     removePluginHotkey(pluginId)
     refreshAppMacros()
+    notifyHotkeysChanged()
   })
 
   ipcMain.handle('plugins:trigger-main-hotkey', async (): Promise<import('../../shared/types').PoeItem | null> => {

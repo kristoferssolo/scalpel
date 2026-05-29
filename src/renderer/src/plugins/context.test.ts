@@ -14,11 +14,16 @@ const baseDeps = () => ({
   subscribeCurrentItem: () => () => {},
   subscribeCurrentZone: () => () => {},
   subscribeLeagueChange: () => () => {},
+  onLogLine: () => () => {},
+  getRecentLogLines: async () => [],
   openExternal: vi.fn(),
   registerTab: vi.fn(),
   registerHotkey: vi.fn(),
   openTab: vi.fn(),
   copyAndEvaluateItem: vi.fn(async () => null),
+  registerOverlay: vi.fn(),
+  openOverlay: vi.fn(),
+  closeOverlay: vi.fn(),
   storage: {
     get: vi.fn(async () => null),
     set: vi.fn(async () => undefined),
@@ -85,6 +90,20 @@ describe('createPluginContext', () => {
     expect(typeof ctx.log).toBe('function')
     ctx.log('hi') // must not throw
   })
+
+  it('forwards onLogLine and getRecentLogLines to deps', async () => {
+    const unsub = vi.fn()
+    const onLogLine = vi.fn(() => unsub)
+    const getRecentLogLines = vi.fn(async () => ['x'])
+    const ctx = createPluginContext({ ...baseDeps(), onLogLine, getRecentLogLines })
+    const handler = vi.fn()
+    const off = ctx.onLogLine(handler)
+    expect(onLogLine).toHaveBeenCalledWith(handler)
+    off()
+    expect(unsub).toHaveBeenCalled()
+    await expect(ctx.getRecentLogLines(5)).resolves.toEqual(['x'])
+    expect(getRecentLogLines).toHaveBeenCalledWith(5)
+  })
 })
 
 describe('createPluginContext registerHotkey', () => {
@@ -115,6 +134,32 @@ describe('createPluginContext storage', () => {
     expect(deps.storage.delete).toHaveBeenCalledWith('k')
     await ctx.storage.keys()
     expect(deps.storage.keys).toHaveBeenCalled()
+  })
+})
+
+describe('createPluginContext registerOverlay', () => {
+  it('routes registerOverlay through deps with the plugin id and ignores render on this side', () => {
+    const deps = baseDeps()
+    const ctx = createPluginContext(deps)
+    const render = vi.fn()
+    ctx.registerOverlay({ title: 'T' }, render)
+    expect(deps.registerOverlay).toHaveBeenCalledWith('test', expect.objectContaining({ title: 'T' }))
+    expect(render).not.toHaveBeenCalled()
+  })
+
+  it('throws if registerOverlay is called twice', () => {
+    const ctx = createPluginContext(baseDeps())
+    ctx.registerOverlay({ title: 'T' }, () => {})
+    expect(() => ctx.registerOverlay({ title: 'U' }, () => {})).toThrow(/already/i)
+  })
+
+  it('routes openOverlay/closeOverlay through deps with the plugin id', () => {
+    const deps = baseDeps()
+    const ctx = createPluginContext(deps)
+    ctx.openOverlay()
+    expect(deps.openOverlay).toHaveBeenCalledWith('test')
+    ctx.closeOverlay()
+    expect(deps.closeOverlay).toHaveBeenCalledWith('test')
   })
 })
 

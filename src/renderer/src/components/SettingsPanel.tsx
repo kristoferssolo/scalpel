@@ -213,7 +213,9 @@ export function SettingsPanel({
       {tab === 'profiles' && !isOverlay && onEditProfile && (
         <ProfileManagerTab settings={settings} onSettingsChange={onSettingsChange} onEditProfile={onEditProfile} />
       )}
-      {tab === 'plugins' && <PluginsSection onError={showError} />}
+      {tab === 'plugins' && (
+        <PluginsSection onError={showError} settings={settings} update={update} tryHotkey={tryHotkey} />
+      )}
       {tab === 'faq' && <FaqTab />}
       {tab === 'developer' && <DeveloperSection settings={settings} update={update} onError={showError} />}
     </div>

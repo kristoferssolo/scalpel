@@ -1,6 +1,6 @@
 import type { AppSettings } from '../shared/types'
 import { setAppMacros } from './hotkeys'
-import { getRegisteredPluginHotkeys } from './plugins/hotkey-registry'
+import { getRegisteredOverlayHotkeys, getRegisteredPluginHotkeys } from './plugins/hotkey-registry'
 
 /** Merge plugin-registered hotkey stubs into a user-defined macro list.
  *  Plugin hotkeys appear with action "plugin:<id>" and an empty hotkey by
@@ -12,6 +12,10 @@ export function withPluginHotkeys(macros: AppSettings['appMacros']): AppSettings
   const present = new Set(macros.map((m) => m.action))
   for (const [pluginId] of getRegisteredPluginHotkeys()) {
     const action = `plugin:${pluginId}`
+    if (!present.has(action)) out.push({ action, hotkey: '' })
+  }
+  for (const [pluginId] of getRegisteredOverlayHotkeys()) {
+    const action = `plugin-overlay:${pluginId}`
     if (!present.has(action)) out.push({ action, hotkey: '' })
   }
   return out

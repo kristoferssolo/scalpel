@@ -98,6 +98,7 @@ import { register as registerWhiteboard } from './handlers/whiteboard'
 import { register as registerClipboard } from './handlers/clipboard'
 import { register as registerManifest } from './handlers/manifest'
 import { register as registerPlugins } from './handlers/plugins'
+import { registerClientLogHandlers } from './handlers/client-log'
 import { flushAll as flushPluginStorage } from './plugins/storage'
 import { refreshManifest } from './manifest'
 import { registerCheatSheetProtocol } from './cheat-sheet-protocol'
@@ -110,6 +111,7 @@ import {
   getCheatSheetsOverlay,
 } from './cheat-sheets'
 import { registerWhiteboardOverlay, toggleWhiteboard } from './whiteboard'
+import { togglePluginOverlay } from './plugin-overlay'
 import { registerPinnedZoneOverlay, applyPinnedZoneEnabled } from './pinned-zone'
 import {
   hideAllOnPoeBlur,
@@ -320,6 +322,7 @@ registerClipboard()
 registerManifest()
 registerPlugins(store, isElevated)
 learningHandlers.register()
+registerClientLogHandlers()
 registerDiagnostics({ store, getAppWindow, showAppWindow })
 
 ipcMain.on('close-overlay', () => hideOverlay())
@@ -571,6 +574,10 @@ app.whenReady().then(() => {
       if (main && !main.isDestroyed() && main.isVisible()) hideOverlay()
       getCheatSheetsOverlay()?.hide()
       toggleWhiteboard()
+      return
+    }
+    if (action.startsWith('plugin-overlay:')) {
+      togglePluginOverlay(action.slice('plugin-overlay:'.length))
       return
     }
     if (action.startsWith('plugin:')) {

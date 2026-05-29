@@ -2,12 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PoeItem, Zone } from '../../../shared/types'
 import type { PluginActivate, PluginManifest } from '../../../plugin-sdk/src/types'
 import { createPluginContext } from './context'
+import { importPluginModule } from './import-plugin-module'
 
 export interface RegisteredTab {
   pluginId: string
   label: string
   icon: string
   render: (container: HTMLElement) => (() => void) | void
+  /** Present when the plugin also registered an overlay window; drives the
+   *  "pop out" button in the tab content pane. */
+  overlay?: { title: string; icon?: string }
 }
 
 export interface PluginHostProps {
@@ -27,23 +31,11 @@ export interface PluginHostProps {
   onPluginUnloaded?: (pluginId: string) => void
 }
 
-// Allow tests to swap in a fake importer. The default uses native dynamic import.
-//
-// Note: at runtime entryUrl is a `file://` URL pointing under userData. In
-// packaged builds this works because the renderer also loads from `file://`.
-// In dev (where the renderer loads from http://localhost) this may be blocked
-// as a cross-origin module import depending on Chromium's policy; plugin
-// loading is only fully exercised in packaged smoke tests.
-function importPluginModule(entryUrl: string): Promise<unknown> {
-  const w = window as unknown as { __pluginImport?: (u: string) => Promise<unknown> }
-  if (w.__pluginImport) return w.__pluginImport(entryUrl)
-  return import(/* @vite-ignore */ entryUrl)
-}
-
 export function PluginHost(props: PluginHostProps): JSX.Element | null {
   const [tabs, setTabs] = useState<RegisteredTab[]>([])
   const loadedRef = useRef(false)
   const pluginHotkeyHandlersRef = useRef<Map<string, () => void>>(new Map())
+  const pendingOverlayRef = useRef<Map<string, { title: string; icon?: string }>>(new Map())
   // Latest-value refs let our captured-once subscribe callbacks return current values.
   const poeVersionRef = useRef(props.poeVersion)
   const leagueRef = useRef(props.league)
@@ -99,6 +91,8 @@ export function PluginHost(props: PluginHostProps): JSX.Element | null {
         subscribeCurrentItem: (h) => onSubscribeCurrentItemRef.current(h),
         subscribeCurrentZone: (h) => onSubscribeCurrentZoneRef.current(h),
         subscribeLeagueChange: (h) => onSubscribeLeagueChangeRef.current(h),
+        onLogLine: (h) => window.api.onLogLine(h),
+        getRecentLogLines: (count) => window.api.getRecentLogLines(count),
         openExternal: (url) => onOpenExternalRef.current(url),
         storage: {
           get: (key) => window.api.pluginStorageGet(m.id, key),
@@ -109,7 +103,7 @@ export function PluginHost(props: PluginHostProps): JSX.Element | null {
         registerTab: (pluginId, opts) => {
           setTabs((prev) => {
             if (prev.find((t) => t.pluginId === pluginId)) return prev
-            return [...prev, { pluginId, ...opts }]
+            return [...prev, { pluginId, ...opts, overlay: pendingOverlayRef.current.get(pluginId) }]
           })
         },
         registerHotkey: (pluginId, opts, handler) => {
@@ -118,6 +112,19 @@ export function PluginHost(props: PluginHostProps): JSX.Element | null {
         },
         openTab: (pluginId) => onOpenPluginTabRef.current(pluginId),
         copyAndEvaluateItem: () => onCopyAndEvaluateItemRef.current(),
+        registerOverlay: (pluginId, opts) => {
+          pendingOverlayRef.current.set(pluginId, { title: opts.title, icon: opts.icon })
+          setTabs((prev) =>
+            prev.map((t) => (t.pluginId === pluginId ? { ...t, overlay: { title: opts.title, icon: opts.icon } } : t)),
+          )
+          void window.api.pluginRegisterOverlay(pluginId, {
+            title: opts.title,
+            hotkeyLabel: opts.hotkeyLabel,
+            defaultSize: opts.defaultSize,
+          })
+        },
+        openOverlay: (pluginId) => void window.api.pluginOpenOverlay(pluginId),
+        closeOverlay: (pluginId) => void window.api.pluginCloseOverlay(pluginId),
       })
       // PluginActivate may be async; await the result so any rejection lands in catch.
       await mod.default(ctx)
@@ -157,6 +164,7 @@ export function PluginHost(props: PluginHostProps): JSX.Element | null {
     return window.api.onPluginUninstalled((pluginId) => {
       setTabs((prev) => prev.filter((t) => t.pluginId !== pluginId))
       pluginHotkeyHandlersRef.current.delete(pluginId)
+      pendingOverlayRef.current.delete(pluginId)
       void window.api.pluginUnregisterHotkey(pluginId)
       onPluginUnloadedRef.current?.(pluginId)
     })

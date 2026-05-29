@@ -80,21 +80,26 @@ const EXPECTED_SDK_EXPORTS = [
 // is what a running plugin actually touches (the type side is in types.ts /
 // types.test.ts; this catches implementation drift away from that type).
 const EXPECTED_CONTEXT_KEYS = [
+  'closeOverlay',
   'copyAndEvaluateItem',
   'fetch',
   'getCurrentItem',
   'getCurrentZone',
   'getLeague',
   'getPoeVersion',
+  'getRecentLogLines',
   'log',
   'onCurrentItem',
   'onCurrentZone',
   'onLeagueChange',
+  'onLogLine',
   'openExternal',
+  'openOverlay',
   'openTab',
   'pluginId',
   'pluginVersion',
   'registerHotkey',
+  'registerOverlay',
   'registerTab',
   'storage',
 ].sort()
@@ -111,6 +116,8 @@ function stubDeps(): PluginContextFactoryDeps {
     subscribeCurrentItem: () => unsubscribe,
     subscribeCurrentZone: () => unsubscribe,
     subscribeLeagueChange: () => unsubscribe,
+    onLogLine: () => unsubscribe,
+    getRecentLogLines: async () => [],
     openExternal: () => {},
     storage: {
       get: async () => null,
@@ -122,6 +129,9 @@ function stubDeps(): PluginContextFactoryDeps {
     registerHotkey: () => {},
     openTab: () => {},
     copyAndEvaluateItem: async () => null,
+    registerOverlay: () => {},
+    openOverlay: () => {},
+    closeOverlay: () => {},
   }
 }
 

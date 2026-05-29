@@ -339,6 +339,16 @@ export const api = {
     ipcRenderer.on('zone-changed', handler)
     return () => ipcRenderer.removeListener('zone-changed', handler)
   },
+  onLogLine: (cb: (line: string) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, line: string): void => cb(line)
+    ipcRenderer.send('client-log:subscribe')
+    ipcRenderer.on('client-log:line', handler)
+    return () => {
+      ipcRenderer.removeListener('client-log:line', handler)
+      ipcRenderer.send('client-log:unsubscribe')
+    }
+  },
+  getRecentLogLines: (count?: number): Promise<string[]> => ipcRenderer.invoke('client-log:recent-lines', count),
   onOverlayDetach: (cb: () => void): (() => void) => {
     const handler = (): void => cb()
     ipcRenderer.on('overlay-detach', handler)
@@ -694,6 +704,10 @@ export const api = {
       entryUrl: string
     }>
   > => ipcRenderer.invoke('plugins:list-installed'),
+  getInstalledPlugin: (
+    pluginId: string,
+  ): Promise<{ manifest: import('../plugin-sdk/src/types').PluginManifest; entryUrl: string } | null> =>
+    ipcRenderer.invoke('plugins:get-installed', pluginId),
   pluginStorageGet: (pluginId: string, key: string): Promise<unknown> =>
     ipcRenderer.invoke('plugins:storage-get', pluginId, key),
   pluginStorageSet: (pluginId: string, key: string, value: unknown): Promise<void> =>
@@ -703,7 +717,7 @@ export const api = {
   pluginStorageKeys: (pluginId: string): Promise<string[]> => ipcRenderer.invoke('plugins:storage-keys', pluginId),
   pluginRegisterHotkey: (pluginId: string, label: string): Promise<void> =>
     ipcRenderer.invoke('plugins:register-hotkey', pluginId, label),
-  pluginListRegisteredHotkeys: (): Promise<Array<{ id: string; label: string }>> =>
+  pluginListRegisteredHotkeys: (): Promise<Array<{ action: string; pluginId: string; label: string }>> =>
     ipcRenderer.invoke('plugins:list-registered-hotkeys'),
   pluginInstallUnpacked: (): Promise<{ ok: true; id: string } | { ok: false; error: string }> =>
     ipcRenderer.invoke('plugins:install-unpacked'),
@@ -738,9 +752,25 @@ export const api = {
     ipcRenderer.on('plugin-uninstalled', listener)
     return () => ipcRenderer.off('plugin-uninstalled', listener)
   },
+  onPluginHotkeysChanged: (cb: () => void): (() => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.on('plugin-hotkeys-changed', handler)
+    return () => ipcRenderer.removeListener('plugin-hotkeys-changed', handler)
+  },
+  onPluginOverlayInit: (cb: (pluginId: string) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, id: string): void => cb(id)
+    ipcRenderer.on('plugin-overlay:init', handler)
+    return () => ipcRenderer.removeListener('plugin-overlay:init', handler)
+  },
   pluginTriggerMainHotkey: (): Promise<import('../shared/types').PoeItem | null> =>
     ipcRenderer.invoke('plugins:trigger-main-hotkey'),
   pluginShowOverlay: (): Promise<void> => ipcRenderer.invoke('plugins:show-overlay'),
+  pluginRegisterOverlay: (
+    pluginId: string,
+    opts: { title: string; hotkeyLabel?: string; defaultSize?: { width: number; height: number } },
+  ): Promise<void> => ipcRenderer.invoke('plugins:register-overlay', pluginId, opts),
+  pluginOpenOverlay: (pluginId: string): Promise<void> => ipcRenderer.invoke('plugins:open-overlay', pluginId),
+  pluginCloseOverlay: (pluginId: string): Promise<void> => ipcRenderer.invoke('plugins:close-overlay', pluginId),
 }
 
 contextBridge.exposeInMainWorld('api', api)

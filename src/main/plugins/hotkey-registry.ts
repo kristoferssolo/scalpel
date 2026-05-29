@@ -15,7 +15,24 @@ export function removePluginHotkey(pluginId: string): void {
   registeredPluginHotkeys.delete(pluginId)
 }
 
+/** Registry for plugin overlay-toggle hotkeys. Keyed by plugin id; value
+ *  carries the label shown in the Settings > Macros row. */
+const registeredOverlayHotkeys = new Map<string, { label: string }>()
+
+export function setPluginOverlayHotkey(pluginId: string, label: string): void {
+  registeredOverlayHotkeys.set(pluginId, { label })
+}
+
+export function getRegisteredOverlayHotkeys(): ReadonlyMap<string, { label: string }> {
+  return registeredOverlayHotkeys
+}
+
+export function removePluginOverlayHotkey(pluginId: string): void {
+  registeredOverlayHotkeys.delete(pluginId)
+}
+
 /** Test-only: clear all in-memory registrations. */
 export function _resetForTests(): void {
   registeredPluginHotkeys.clear()
+  registeredOverlayHotkeys.clear()
 }

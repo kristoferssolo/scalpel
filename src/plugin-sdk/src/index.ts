@@ -12,6 +12,7 @@ export type {
   PluginManifest,
   PluginStorage,
   RegisterHotkeyOptions,
+  RegisterOverlayOptions,
   RegisterTabOptions,
   ScalpelPluginContext,
 } from './types'
