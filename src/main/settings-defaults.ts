@@ -22,6 +22,7 @@ export const DEFAULT_APP_SETTINGS = {
   chatCommands: [],
   appMacros: [],
   stashScrollEnabled: false,
+  stashScrollModifier: 'Ctrl',
   poeVersion: 1,
   regexPresetsPoe1: [],
   regexPresetsPoe2: [],
@@ -44,6 +45,7 @@ export function backfillAppSettings(store: Store<AppSettings>): void {
   if (store.get('reloadOnSave') === undefined) store.set('reloadOnSave', true)
   if (store.get('useCurrentZoneAreaLevel') === undefined) store.set('useCurrentZoneAreaLevel', false)
   if (store.get('stashScrollEnabled') === undefined) store.set('stashScrollEnabled', false)
+  if (store.get('stashScrollModifier') === undefined) store.set('stashScrollModifier', 'Ctrl')
   if (store.get('openSide') === undefined) store.set('openSide', 'both')
   if (store.get('mainPanelMode') === undefined) store.set('mainPanelMode', 'overlay')
   if ((store.get('tradeStatus') as string) === 'any') store.set('tradeStatus', 'available')

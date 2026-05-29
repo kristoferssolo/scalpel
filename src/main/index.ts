@@ -705,35 +705,39 @@ app.whenReady().then(() => {
     const next: CheatSheetsSettings = { ...cs, ...patch }
     writeActiveProfileSetting(store, 'cheatSheets', next)
   }
-  registerCheatSheetsOverlay({
-    storedAnchor: () => getProfileBackedSetting(store, 'cheatSheets')?.windowAnchor,
-    onAnchorChanged: (anchor) => patchCheatSheets({ windowAnchor: anchor }),
-  })
-  // Hide the main overlay before showing the cheat sheet (keeps things tidy if
-  // the user hotkeys the cheat sheet while the main overlay was open).
-  setCheatSheetsBeforeShow(() => hideOverlay())
-  applyCheatSheetHotkeys(getProfileBackedSetting(store, 'cheatSheets'))
-  registerWhiteboardOverlay()
-  registerRegexRemoteOverlay({
-    onAnchorChanged: (anchor) => {
-      getRegexRemoteOverlay()?.send('regex-remote:mount-changed', regexRemoteFlushLeft(anchor))
-      // A user drag/resize focuses the pad (and a drag's mouseup never reaches
-      // the renderer, so the cursor-leave handoff can miss it). Hand focus back
-      // to PoE here too so the pad never sits holding OS focus after a move.
-      try {
-        OverlayController.focusTarget()
-      } catch {}
-    },
-    getTargetBounds: () => OverlayController.targetBounds,
-    getPanelState: () => getCurrentPanelState(),
-  })
-  registerPinnedZoneOverlay({
-    storedAnchor: () => getProfileBackedSetting(store, 'cheatSheets')?.pinnedAnchor,
-    onAnchorChanged: (anchor) => patchCheatSheets({ pinnedAnchor: anchor }),
-  })
-  applyPinnedZoneEnabled(getProfileBackedSetting(store, 'cheatSheets')?.pinned === true)
-  subscribeToPoeMoves()
-  setStashScrollEnabled(store.get('stashScrollEnabled') ?? false)
+  if (mainPanelMode === 'overlay') {
+    registerCheatSheetsOverlay({
+      storedAnchor: () => getProfileBackedSetting(store, 'cheatSheets')?.windowAnchor,
+      onAnchorChanged: (anchor) => patchCheatSheets({ windowAnchor: anchor }),
+    })
+    // Hide the main overlay before showing the cheat sheet (keeps things tidy if
+    // the user hotkeys the cheat sheet while the main overlay was open).
+    setCheatSheetsBeforeShow(() => hideOverlay())
+    applyCheatSheetHotkeys(getProfileBackedSetting(store, 'cheatSheets'))
+    registerWhiteboardOverlay()
+    registerRegexRemoteOverlay({
+      onAnchorChanged: (anchor) => {
+        getRegexRemoteOverlay()?.send('regex-remote:mount-changed', regexRemoteFlushLeft(anchor))
+        // A user drag/resize focuses the pad (and a drag's mouseup never reaches
+        // the renderer, so the cursor-leave handoff can miss it). Hand focus back
+        // to PoE here too so the pad never sits holding OS focus after a move.
+        try {
+          OverlayController.focusTarget()
+        } catch {}
+      },
+      getTargetBounds: () => OverlayController.targetBounds,
+      getPanelState: () => getCurrentPanelState(),
+    })
+    registerPinnedZoneOverlay({
+      storedAnchor: () => getProfileBackedSetting(store, 'cheatSheets')?.pinnedAnchor,
+      onAnchorChanged: (anchor) => patchCheatSheets({ pinnedAnchor: anchor }),
+    })
+    applyPinnedZoneEnabled(getProfileBackedSetting(store, 'cheatSheets')?.pinned === true)
+    subscribeToPoeMoves()
+    setStashScrollEnabled(store.get('stashScrollEnabled') ?? false)
+  } else {
+    setStashScrollEnabled(false)
+  }
   setStashScrollModifier(store.get('stashScrollModifier') ?? 'Ctrl')
   setOpenSide(store.get('openSide') ?? 'both')
 
