@@ -180,6 +180,12 @@ export interface PoeItem {
   mapMoreMaps?: number
   mapMoreDivCards?: number
   mapReward?: string
+  /** PoE2 waystone properties (augmented values from the property block). */
+  mapRevives?: number
+  mapDropChance?: number
+  mapGold?: number
+  mapMagicMonsters?: number
+  mapRareMonsters?: number
   physDamageMin?: number
   physDamageMax?: number
   eleDamageAvg?: number

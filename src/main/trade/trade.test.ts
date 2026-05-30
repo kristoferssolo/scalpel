@@ -322,6 +322,33 @@ describe('searchTrade filter-group dispatch', () => {
     expect(body.query.type).toBeUndefined()
   })
 
+  it('PoE2 Waystone routes to map.waystone category with an enabled tier map_filter', async () => {
+    setPoeVersion(2)
+    const waystone = {
+      name: '',
+      baseType: 'Waystone (Tier 15)',
+      itemClass: 'Waystones',
+      rarity: 'Rare',
+    }
+    const waystoneFilters: StatFilter[] = [
+      { id: 'map.map_tier', text: 'Tier: 15', type: 'map', enabled: true, value: 15, min: 15, max: 15 },
+      { id: 'map.map_iir', text: 'Rarity: 60', type: 'map', enabled: false, value: 60, min: 54, max: null },
+    ]
+    await searchTrade('Fate of the Vaal', waystone, waystoneFilters, {
+      tradeStatus: 'any',
+      tradePriceOption: 'exalted_divine',
+    })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    expect(req).toBeDefined()
+    const body = parseCapturedBody(req)
+    expect(body.query.filters.type_filters.filters.category).toEqual({ option: 'map.waystone' })
+    expect(body.query.type).toBeUndefined()
+    // Enabled tier lands in map_filters; disabled rarity does not.
+    const mapFilters = (body.query.filters as Record<string, { filters: Record<string, unknown> }>).map_filters
+    expect(mapFilters.filters.map_tier).toEqual({ min: 15, max: 15 })
+    expect(mapFilters.filters.map_iir).toBeUndefined()
+  })
+
   it('unique captured beast searches by type only (no name field)', async () => {
     setPoeVersion(1)
     // Beasts arrive from clipboard with rarity Unique, itemClass Stackable Currency,

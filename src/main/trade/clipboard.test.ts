@@ -637,6 +637,40 @@ describe('parseItemText', () => {
       expect(item.explicits).toContain('19% reduced Charges per use')
     })
 
+    it('parses a PoE2 Waystone property block and monster affixes', () => {
+      const text = [
+        'Item Class: Waystones',
+        'Rarity: Rare',
+        'Ghost Frontier',
+        'Waystone (Tier 15)',
+        '--------',
+        'Revives Available: 1 (augmented)',
+        'Item Rarity: +60% (augmented)',
+        'Pack Size: +16% (augmented)',
+        'Waystone Drop Chance: +80% (augmented)',
+        '--------',
+        'Item Level: 82',
+        '--------',
+        '{ Prefix Modifier "Frostbitten" (Tier: 1) }',
+        'Monsters deal 29(15-19)% of Damage as Extra Cold',
+        '{ Suffix Modifier "of Drought" (Tier: 1) }',
+        'Players gain 35(35-30)% reduced Flask Charges',
+        '--------',
+        'Can be used in a Map Device, allowing you to enter a Map. Waystones can only be used once.',
+      ].join('\n')
+
+      const item = parseItemText(text)!
+      expect(item.itemClass).toBe('Waystones')
+      expect(item.mapTier).toBe(15)
+      expect(item.mapRarity).toBe(60)
+      expect(item.mapPackSize).toBe(16) // "Pack Size:" label, not "Monster Pack Size:"
+      expect(item.mapRevives).toBe(1)
+      expect(item.mapDropChance).toBe(80)
+      expect(item.mapQuantity).toBeUndefined() // PoE2 waystones have no Item Quantity line
+      // Monster affixes still flow through as explicits.
+      expect(item.explicits).toContain('Monsters deal 29% of Damage as Extra Cold')
+    })
+
     it('parses a Flask', () => {
       const text = [
         'Item Class: Flasks',

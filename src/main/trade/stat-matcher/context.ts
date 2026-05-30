@@ -16,6 +16,7 @@ export interface ItemInfo {
   mirrored: boolean
   identified?: boolean
   influence?: string[]
+  mapTier?: number
   mapQuantity?: number
   mapRarity?: number
   mapPackSize?: number
@@ -23,6 +24,11 @@ export interface ItemInfo {
   mapMoreCurrency?: number
   mapMoreMaps?: number
   mapMoreDivCards?: number
+  mapRevives?: number
+  mapDropChance?: number
+  mapGold?: number
+  mapMagicMonsters?: number
+  mapRareMonsters?: number
   enchants?: string[]
   imbues?: string[]
   memoryStrands?: number

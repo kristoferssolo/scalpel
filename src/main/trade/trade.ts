@@ -728,7 +728,19 @@ export async function searchTrade(
   }
 
   // Add map property filters (only real map_filter keys, skip display-only ones)
-  const validMapKeys = new Set(['map_iiq', 'map_iir', 'map_packsize', 'map_completion_reward'])
+  const validMapKeys = new Set([
+    'map_iiq',
+    'map_iir',
+    'map_packsize',
+    'map_completion_reward',
+    // PoE2 waystone property filters
+    'map_tier',
+    'map_revives',
+    'map_bonus',
+    'map_gold',
+    'map_magic_monsters',
+    'map_rare_monsters',
+  ])
   const mapPropFilters = statFilters.filter(
     (f) => f.type === 'map' && f.enabled && validMapKeys.has(f.id.replace('map.', '')),
   )

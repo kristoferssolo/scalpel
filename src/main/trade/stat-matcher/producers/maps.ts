@@ -4,6 +4,7 @@ import type { StatFilter } from '../../trade'
 type MapItemInfo = {
   itemClass?: string
   rarity?: string
+  mapTier?: number
   mapQuantity?: number
   mapRarity?: number
   mapPackSize?: number
@@ -12,6 +13,11 @@ type MapItemInfo = {
   mapMoreMaps?: number
   mapMoreDivCards?: number
   mapReward?: string
+  mapRevives?: number
+  mapDropChance?: number
+  mapGold?: number
+  mapMagicMonsters?: number
+  mapRareMonsters?: number
 }
 
 // Map property chips (Item Quantity, Rarity, Pack Size, More X) and 8-mod corrupted maps
@@ -102,6 +108,36 @@ export function buildMapFilters(itemInfo: MapItemInfo | undefined, advancedMods?
         type: 'map',
         option: itemInfo.mapReward,
       })
+  }
+
+  // PoE2 waystones: surface the property block as map_filter chips. Trade2 keys:
+  // map_tier, map_iir, map_iiq, map_packsize, map_revives, map_bonus (drop chance),
+  // map_gold, map_magic_monsters, map_rare_monsters. The random per-waystone
+  // monster affixes still flow through the normal explicit matcher. Tier defaults
+  // on (the dominant price axis); the rest are opt-in so the search isn't
+  // over-constrained.
+  if (itemInfo && itemInfo.itemClass === 'Waystones' && itemInfo.rarity === 'Rare') {
+    const wsMin = (v: number) => Math.floor(v * 0.9)
+    const pushChip = (id: string, label: string, value: number, enabled: boolean, exact = false) =>
+      out.push({
+        id,
+        text: `${label}: ${value}`,
+        value,
+        min: exact ? value : wsMin(value),
+        max: exact ? value : null,
+        enabled,
+        type: 'map',
+      })
+    if (itemInfo.mapTier) pushChip('map.map_tier', 'Tier', itemInfo.mapTier, true, true)
+    if (itemInfo.mapRarity) pushChip('map.map_iir', 'Rarity', itemInfo.mapRarity, false)
+    if (itemInfo.mapQuantity) pushChip('map.map_iiq', 'Quantity', itemInfo.mapQuantity, false)
+    if (itemInfo.mapPackSize) pushChip('map.map_packsize', 'Pack Size', itemInfo.mapPackSize, false)
+    if (itemInfo.mapRevives) pushChip('map.map_revives', 'Revives', itemInfo.mapRevives, false)
+    if (itemInfo.mapDropChance) pushChip('map.map_bonus', 'Drop Chance', itemInfo.mapDropChance, false)
+    if (itemInfo.mapGold) pushChip('map.map_gold', 'Gold', itemInfo.mapGold, false)
+    if (itemInfo.mapMagicMonsters)
+      pushChip('map.map_magic_monsters', 'Magic Monsters', itemInfo.mapMagicMonsters, false)
+    if (itemInfo.mapRareMonsters) pushChip('map.map_rare_monsters', 'Rare Monsters', itemInfo.mapRareMonsters, false)
   }
 
   // 8-mod corrupted maps (4 prefix + 4 suffix)

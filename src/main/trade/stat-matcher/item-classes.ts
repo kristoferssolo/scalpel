@@ -51,6 +51,9 @@ export const ITEM_CLASS_TO_CATEGORY: Record<string, string> = {
   // PoE2 precursor tablets. Affixes are explicit map mods but the clipboard
   // phrases them differently than the trade stat text (see the tablet producer).
   Tablet: 'map.tablet',
+  // PoE2 waystones (the maps of PoE2). Property block (tier/rarity/packsize/...)
+  // searches via map_filters; monster affixes via the normal explicit matcher.
+  Waystones: 'map.waystone',
 }
 
 const ARMOUR_CLASSES = new Set(['Helmets', 'Body Armours', 'Gloves', 'Boots', 'Shields'])

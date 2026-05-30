@@ -45,6 +45,7 @@ describe('ITEM_CLASS_TO_CATEGORY', () => {
     expect(ITEM_CLASS_TO_CATEGORY.Foci).toBe('armour.focus')
     expect(ITEM_CLASS_TO_CATEGORY.Relics).toBe('sanctum.relic')
     expect(ITEM_CLASS_TO_CATEGORY.Tablet).toBe('map.tablet')
+    expect(ITEM_CLASS_TO_CATEGORY.Waystones).toBe('map.waystone')
   })
 
   it('excludes PoE2 categories that have zero live listings (Claws, Daggers, Flails, 1H/2H Swords+Axes, Trap Tools)', () => {
@@ -1148,6 +1149,39 @@ describe('matchItemMods', () => {
         makeItemInfo({ rarity: 'Magic', itemClass: 'Rings' }),
       )
       expect(filters.find((f) => f.id === 'explicit.stat_2777224821')).toBeUndefined()
+    })
+  })
+
+  describe('waystone property chips', () => {
+    it('emits map_filter chips for a rare waystone, tier enabled and exact', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({
+          itemClass: 'Waystones',
+          rarity: 'Rare',
+          mapTier: 15,
+          mapRarity: 60,
+          mapPackSize: 16,
+          mapRevives: 1,
+          mapDropChance: 80,
+        }),
+      )
+      const tier = filters.find((f) => f.id === 'map.map_tier')
+      expect(tier).toBeDefined()
+      expect(tier?.type).toBe('map')
+      expect(tier?.enabled).toBe(true)
+      expect(tier?.min).toBe(15)
+      expect(tier?.max).toBe(15) // exact tier
+      // Other props surface but are opt-in (disabled by default).
+      const rarity = filters.find((f) => f.id === 'map.map_iir')
+      expect(rarity?.value).toBe(60)
+      expect(rarity?.enabled).toBe(false)
+      expect(filters.find((f) => f.id === 'map.map_packsize')).toBeDefined()
+      expect(filters.find((f) => f.id === 'map.map_revives')?.value).toBe(1)
+      expect(filters.find((f) => f.id === 'map.map_bonus')?.value).toBe(80)
     })
   })
 

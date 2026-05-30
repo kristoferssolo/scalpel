@@ -249,7 +249,14 @@ export function parseItemText(text: string): PoeItem | null {
   // Map properties (Item Quantity, Rarity, Pack Size, More X)
   const mapQuantity = extractNum(allLines, 'Item Quantity:')
   const mapRarity = extractNum(allLines, 'Item Rarity:')
-  const mapPackSize = extractNum(allLines, 'Monster Pack Size:')
+  // PoE1 maps label it "Monster Pack Size:", PoE2 waystones just "Pack Size:".
+  const mapPackSize = extractNum(allLines, 'Monster Pack Size:') ?? extractNum(allLines, 'Pack Size:')
+  // PoE2 waystone-only property lines.
+  const mapRevives = extractNum(allLines, 'Revives Available:')
+  const mapDropChance = extractNum(allLines, 'Waystone Drop Chance:')
+  const mapGold = extractNum(allLines, 'Gold Found:')
+  const mapMagicMonsters = extractNum(allLines, 'Magic Monsters:')
+  const mapRareMonsters = extractNum(allLines, 'Rare Monsters:')
   const rewardLine = allLines.find((l) => l.startsWith('Reward:'))
   const mapReward = rewardLine
     ? rewardLine
@@ -571,6 +578,11 @@ export function parseItemText(text: string): PoeItem | null {
     ...(mapMoreCurrency != null ? { mapMoreCurrency } : {}),
     ...(mapMoreMaps != null ? { mapMoreMaps } : {}),
     ...(mapMoreDivCards != null ? { mapMoreDivCards } : {}),
+    ...(mapRevives != null ? { mapRevives } : {}),
+    ...(mapDropChance != null ? { mapDropChance } : {}),
+    ...(mapGold != null ? { mapGold } : {}),
+    ...(mapMagicMonsters != null ? { mapMagicMonsters } : {}),
+    ...(mapRareMonsters != null ? { mapRareMonsters } : {}),
     ...(physDamageMin != null ? { physDamageMin, physDamageMax } : {}),
     ...(eleDamageAvg != null ? { eleDamageAvg } : {}),
     ...(chaosDamageAvg != null ? { chaosDamageAvg } : {}),
