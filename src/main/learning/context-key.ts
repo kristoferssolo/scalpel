@@ -6,7 +6,15 @@ import type { LearningContext } from './types'
 
 export const GLOBAL_KEY = 'g'
 
-const TWO_HAND_CLASSES = new Set(['Bows', 'Staves', 'Two Hand Axes', 'Two Hand Maces', 'Two Hand Swords', 'Warstaves'])
+const TWO_HAND_CLASSES = new Set([
+  'Bows',
+  'Staves',
+  'Two Hand Axes',
+  'Two Hand Maces',
+  'Two Hand Swords',
+  'Warstaves',
+  'Quarterstaves',
+])
 // Weapon classes used to cast spells rather than make attacks.
 const CASTER_CLASSES = new Set(['Wands', 'Sceptres', 'Staves', 'Warstaves'])
 

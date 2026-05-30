@@ -247,6 +247,29 @@ describe('searchTrade filter-group dispatch', () => {
     expect(body.query.filters.type_filters.filters.category).toEqual({ option: 'jewel.cluster' })
   })
 
+  it('PoE2 rare Quarterstaff routes to weapon.warstaff category, not a base-type-only search', async () => {
+    setPoeVersion(2)
+    // The in-game clipboard reports "Item Class: Quarterstaves"; the trade
+    // category id is still weapon.warstaff. Before the fix the class name was
+    // keyed as "Warstaves", so the lookup missed and the query fell back to
+    // query.type = baseType, restricting results to the same base.
+    const quarterstaff = {
+      name: '',
+      baseType: 'Slicing Quarterstaff',
+      itemClass: 'Quarterstaves',
+      rarity: 'Rare',
+    }
+    await searchTrade('Fate of the Vaal', quarterstaff, [], {
+      tradeStatus: 'any',
+      tradePriceOption: 'exalted_divine',
+    })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    expect(req).toBeDefined()
+    const body = parseCapturedBody(req)
+    expect(body.query.filters.type_filters.filters.category).toEqual({ option: 'weapon.warstaff' })
+    expect(body.query.type).toBeUndefined()
+  })
+
   it('unique captured beast searches by type only (no name field)', async () => {
     setPoeVersion(1)
     // Beasts arrive from clipboard with rarity Unique, itemClass Stackable Currency,

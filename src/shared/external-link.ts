@@ -110,6 +110,7 @@ const NINJA_WEAPON_CLASSES = new Set([
   'Spears',
   'Flails',
   'Foci',
+  'Quarterstaves',
 ])
 /** Currency-like classes (everything that the clipboard buckets as "Stackable
  *  Currency" plus the Map Fragments / Delve socketables). Subcategorized

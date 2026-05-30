@@ -42,6 +42,9 @@ export const ITEM_CLASS_TO_CATEGORY: Record<string, string> = {
   Foci: 'armour.focus',
   'Fishing Rods': 'weapon.rod',
   Talismans: 'weapon.talisman',
+  // PoE2 clipboard reports "Quarterstaves" where PoE1 reports "Warstaves";
+  // both map to the same trade category.
+  Quarterstaves: 'weapon.warstaff',
 }
 
 const ARMOUR_CLASSES = new Set(['Helmets', 'Body Armours', 'Gloves', 'Boots', 'Shields'])
@@ -61,6 +64,7 @@ const WEAPON_CLASSES = new Set([
   'Two Hand Swords',
   'Wands',
   'Warstaves',
+  'Quarterstaves',
   'Rune Daggers',
 ])
 

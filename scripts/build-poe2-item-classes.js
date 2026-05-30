@@ -75,7 +75,7 @@ const CLASS_NAME_MAP = {
   'Two Hand Mace': 'Two Hand Maces',
   'Two Hand Sword': 'Two Hand Swords',
   Wand: 'Wands',
-  Warstaff: 'Warstaves',
+  Warstaff: 'Quarterstaves',
 }
 
 async function loadCachedJson(url, cachePath) {
