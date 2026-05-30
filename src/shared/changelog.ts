@@ -1,5 +1,19 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.10-rc1',
+    notes: [
+      'Added a regex remote sister overlay you can bind to a hotkey, so your regex strings can pop out on demand.',
+      'Reworked the regex UX that nearly everyone hated.',
+      'Added a Chaos-only price option to PoE2 trade search.',
+      'Fixed relics not price checking.',
+      'Improved price checking for quarterstaves.',
+      'Fixed your PoE2 character lurching when a hotkey fired by releasing the movement key first.',
+      'Fixed online filter sync and allowed skipping the filter directory.',
+      'Fixed errors when launching a game you had not set up yet by giving it default profiles.',
+      'Fixed the Linux AppImage artifact name.',
+    ],
+  },
+  {
     version: '0.9.9',
     notes: [
       'Expanded the plugin SDK - plugins can now read the live game log (zones, deaths, whispers, and more) and open their own pop-out overlay windows, not just a tab.',
