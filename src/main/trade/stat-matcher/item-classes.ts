@@ -48,6 +48,9 @@ export const ITEM_CLASS_TO_CATEGORY: Record<string, string> = {
   // PoE2 Trial-of-the-Sekhemas relics. Their affixes live under the trade API's
   // sanctum.* stat family (see the relic producer), not explicit.*.
   Relics: 'sanctum.relic',
+  // PoE2 precursor tablets. Affixes are explicit map mods but the clipboard
+  // phrases them differently than the trade stat text (see the tablet producer).
+  Tablet: 'map.tablet',
 }
 
 const ARMOUR_CLASSES = new Set(['Helmets', 'Body Armours', 'Gloves', 'Boots', 'Shields'])

@@ -20,6 +20,7 @@ import { emitPseudoFilters } from './producers/pseudo-emit'
 import { buildRelicFilters } from './producers/relics'
 import { buildSocketFilters } from './producers/sockets'
 import { buildStoredExperienceFilters } from './producers/stored-experience'
+import { buildTabletFilters } from './producers/tablets'
 import { buildTimelessFilters } from './producers/timeless'
 import { buildUltimatumFilters } from './producers/ultimatum'
 import { buildWeaponDpsFilters } from './producers/weapon-dps'
@@ -55,6 +56,7 @@ export function matchItemMods(
   const implicitsFilters = processImplicits(ctx)
   const explicitsFilters = processExplicits(ctx)
   const relicFilters = buildRelicFilters(ctx)
+  const tabletFilters = buildTabletFilters(ctx)
   const pseudoFilters = emitPseudoFilters(ctx.pseudoAccumulator, ctx.pct)
 
   // Quality normalization: scale stats to 20% quality if item is below 20%
@@ -129,6 +131,7 @@ export function matchItemMods(
     ...implicitsFilters,
     ...explicitsFilters,
     ...relicFilters,
+    ...tabletFilters,
   ]
 
   return postProcessInscribedUltimatum(combined, itemInfo)

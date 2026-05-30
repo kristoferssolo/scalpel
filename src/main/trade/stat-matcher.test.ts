@@ -44,6 +44,7 @@ describe('ITEM_CLASS_TO_CATEGORY', () => {
     expect(ITEM_CLASS_TO_CATEGORY.Spears).toBe('weapon.spear')
     expect(ITEM_CLASS_TO_CATEGORY.Foci).toBe('armour.focus')
     expect(ITEM_CLASS_TO_CATEGORY.Relics).toBe('sanctum.relic')
+    expect(ITEM_CLASS_TO_CATEGORY.Tablet).toBe('map.tablet')
   })
 
   it('excludes PoE2 categories that have zero live listings (Claws, Daggers, Flails, 1H/2H Swords+Axes, Trap Tools)', () => {
@@ -1113,6 +1114,40 @@ describe('matchItemMods', () => {
         makeItemInfo({ rarity: 'Rare', itemClass: 'Rings' }),
       )
       expect(filters.find((f) => f.type === 'sanctum')).toBeUndefined()
+    })
+  })
+
+  describe('tablet (precursor tablet) mods', () => {
+    // Tablet affixes are explicit map mods, but the clipboard phrases them
+    // differently from the trade stat text. buildTabletFilters maps the clipboard
+    // phrasing to the trade explicit id via the EE2-derived tablet-mods table.
+    it('maps tablet clipboard phrasings to their trade explicit stat ids', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['36% increased Quantity of Waystones found in Map', 'Map is inhabited by 1 additional Rogue Exile'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Magic', itemClass: 'Tablet', baseType: 'Overseer Tablet' }),
+      )
+      const waystones = filters.find((f) => f.id === 'explicit.stat_2777224821')
+      const exiles = filters.find((f) => f.id === 'explicit.stat_3550168289')
+      expect(waystones).toBeDefined()
+      expect(waystones?.value).toBe(36)
+      expect(waystones?.min).toBe(32) // floor(36 * 0.9)
+      expect(waystones?.enabled).toBe(true)
+      expect(exiles).toBeDefined()
+      expect(exiles?.value).toBe(1)
+    })
+
+    it('does not run the tablet map for non-tablet items', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['36% increased Quantity of Waystones found in Map'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Magic', itemClass: 'Rings' }),
+      )
+      expect(filters.find((f) => f.id === 'explicit.stat_2777224821')).toBeUndefined()
     })
   })
 

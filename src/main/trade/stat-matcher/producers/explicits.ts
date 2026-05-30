@@ -25,12 +25,14 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
     pct,
     pseudoAccumulator,
     isRelic,
+    isTablet,
   } = ctx
   const out: StatFilter[] = []
 
-  // Relic affixes are matched against the sanctum.* stat list by buildRelicFilters.
-  // Running them through the explicit matcher risks false partial-text matches.
-  for (const mod of isGemItem || isRelic ? [] : explicits) {
+  // Relic affixes are matched against the sanctum.* stat list by buildRelicFilters;
+  // tablet affixes by buildTabletFilters (clipboard phrasing differs from trade text).
+  // Running either through the explicit matcher risks false or missing matches.
+  for (const mod of isGemItem || isRelic || isTablet ? [] : explicits) {
     let isCrafted = /\s*\(crafted\)\s*$/i.test(mod)
     let cleaned = mod.replace(/\s*\(crafted\)\s*$/i, '').trim()
     // Skip timeless jewel mods handled by the timeless chip system

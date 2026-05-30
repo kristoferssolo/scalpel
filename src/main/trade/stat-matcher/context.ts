@@ -73,6 +73,7 @@ export interface MatchContext {
   isGemItem: boolean
   isTimelessJewel: boolean
   isRelic: boolean
+  isTablet: boolean
   // mutable accumulator (implicits + explicits push, pseudo-emit reads)
   pseudoAccumulator: Record<string, PseudoAccumulatorEntry>
 }
@@ -91,6 +92,7 @@ export function deriveContext(input: {
   const isGemItem = !!itemInfo && SKILL_GEM_CLASSES.has(itemInfo.itemClass)
   const isTimelessJewel = itemInfo?.baseType === 'Timeless Jewel'
   const isRelic = itemInfo?.itemClass === 'Relics'
+  const isTablet = itemInfo?.itemClass === 'Tablet'
   const hasDefenses =
     !!defenses &&
     (defenses.armour > 0 ||
@@ -111,6 +113,7 @@ export function deriveContext(input: {
     isGemItem,
     isTimelessJewel,
     isRelic,
+    isTablet,
     pseudoAccumulator: {},
   }
 }

@@ -20,7 +20,7 @@ interface CapturedTradeBody {
       weapon_filters: CapturedTradeFilterGroup
     }
     name?: string
-    stats: Array<{ filters: Array<{ id: string }> }>
+    stats: Array<{ type: string; filters: Array<{ id: string }> }>
     type?: string
   }
 }
@@ -298,8 +298,28 @@ describe('searchTrade filter-group dispatch', () => {
     const body = parseCapturedBody(req)
     expect(body.query.filters.type_filters.filters.category).toEqual({ option: 'sanctum.relic' })
     expect(body.query.type).toBeUndefined()
-    const andGroup = body.query.stats.find((g: { type: string }) => g.type === 'and')
-    expect(andGroup.filters.map((f: { id: string }) => f.id)).toContain('sanctum.stat_1583320325')
+    const andGroup = body.query.stats.find((g) => g.type === 'and')
+    expect(andGroup).toBeDefined()
+    expect(andGroup?.filters.map((f) => f.id)).toContain('sanctum.stat_1583320325')
+  })
+
+  it('PoE2 Tablet routes to map.tablet category, not a base-type-only search', async () => {
+    setPoeVersion(2)
+    const tablet = {
+      name: '',
+      baseType: 'Overseer Tablet',
+      itemClass: 'Tablet',
+      rarity: 'Magic',
+    }
+    await searchTrade('Fate of the Vaal', tablet, [], {
+      tradeStatus: 'any',
+      tradePriceOption: 'exalted_divine',
+    })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    expect(req).toBeDefined()
+    const body = parseCapturedBody(req)
+    expect(body.query.filters.type_filters.filters.category).toEqual({ option: 'map.tablet' })
+    expect(body.query.type).toBeUndefined()
   })
 
   it('unique captured beast searches by type only (no name field)', async () => {
