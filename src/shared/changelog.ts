@@ -1,5 +1,13 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.10-rc3',
+    notes: [
+      'Fixed PoE2 tablets not price checking.',
+      'Fixed PoE2 charm mods not showing in the price checker.',
+      'Added PoE2 waystone price checking by tier and item properties.',
+    ],
+  },
+  {
     version: '0.9.10-rc2',
     notes: ['Fixed PoE2 elemental damage not accumulating in weapon DPS due to PoE1/PoE2 clipboard differences.'],
   },
