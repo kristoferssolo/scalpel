@@ -43,6 +43,7 @@ describe('ITEM_CLASS_TO_CATEGORY', () => {
     expect(ITEM_CLASS_TO_CATEGORY.Crossbows).toBe('weapon.crossbow')
     expect(ITEM_CLASS_TO_CATEGORY.Spears).toBe('weapon.spear')
     expect(ITEM_CLASS_TO_CATEGORY.Foci).toBe('armour.focus')
+    expect(ITEM_CLASS_TO_CATEGORY.Relics).toBe('sanctum.relic')
   })
 
   it('excludes PoE2 categories that have zero live listings (Claws, Daggers, Flails, 1H/2H Swords+Axes, Trap Tools)', () => {
@@ -1072,6 +1073,46 @@ describe('matchItemMods', () => {
       const f = filters.find((x) => x.id === 'enchant.stat_3086156145')!
       expect(f.min).toBe(3)
       expect(f.max).toBeNull()
+    })
+  })
+
+  describe('relic (sanctum) mods', () => {
+    // Relic affixes live under sanctum.* on the trade API, not explicit.*. Before
+    // the fix the explicit matcher found nothing and the price checker showed no
+    // searchable chips for relics. Real ids from the live PoE2 stats catalog.
+    const RELIC_STATS = [
+      { id: 'sanctum.stat_1583320325', text: '#% increased Honour restored', type: 'sanctum' },
+      { id: 'sanctum.stat_1680962389', text: '#% increased quantity of Relics dropped by Monsters', type: 'sanctum' },
+    ]
+
+    it('matches relic prefix/suffix mods to sanctum stats and enables them', () => {
+      _setStatEntriesForTests(RELIC_STATS)
+      const filters = matchItemMods(
+        ['10% increased Honour restored', '7% increased quantity of Relics dropped by Monsters'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Magic', itemClass: 'Relics', baseType: 'Urn Relic' }),
+      )
+      const honour = filters.find((f) => f.id === 'sanctum.stat_1583320325')
+      const quantity = filters.find((f) => f.id === 'sanctum.stat_1680962389')
+      expect(honour).toBeDefined()
+      expect(honour?.type).toBe('sanctum')
+      expect(honour?.enabled).toBe(true)
+      expect(honour?.value).toBe(10)
+      expect(honour?.min).toBe(9) // floor(10 * 0.9)
+      expect(quantity).toBeDefined()
+      expect(quantity?.value).toBe(7)
+    })
+
+    it('does not match relic stats for non-relic items', () => {
+      _setStatEntriesForTests(RELIC_STATS)
+      const filters = matchItemMods(
+        ['10% increased Honour restored'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Rings' }),
+      )
+      expect(filters.find((f) => f.type === 'sanctum')).toBeUndefined()
     })
   })
 

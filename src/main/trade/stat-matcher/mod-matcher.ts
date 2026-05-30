@@ -33,7 +33,7 @@ const INDEXABLE_SUPPORT_RE = /^[a-z]+\.indexable_support_\d+/
 export function matchModToStat(
   modText: string,
   preferLocal = false,
-  modType: 'explicit' | 'crafted' | 'implicit' | 'enchant' | 'imbued' = 'explicit',
+  modType: 'explicit' | 'crafted' | 'implicit' | 'enchant' | 'imbued' | 'sanctum' = 'explicit',
   preferIndexableSupport = false,
 ): { statId: string; value: number | null; option?: number } | null {
   // Check direct mappings first (for mods with completely different trade API wording)
@@ -50,7 +50,7 @@ export function matchModToStat(
 function _matchModToStat(
   modText: string,
   preferLocal = false,
-  modType: 'explicit' | 'crafted' | 'implicit' | 'enchant' | 'imbued' = 'explicit',
+  modType: 'explicit' | 'crafted' | 'implicit' | 'enchant' | 'imbued' | 'sanctum' = 'explicit',
   preferIndexableSupport = false,
 ): { statId: string; value: number | null; option?: number } | null {
   const statEntries: StatEntry[] = getStatEntries()

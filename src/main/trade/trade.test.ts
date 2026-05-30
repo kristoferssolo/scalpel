@@ -270,6 +270,38 @@ describe('searchTrade filter-group dispatch', () => {
     expect(body.query.type).toBeUndefined()
   })
 
+  it('PoE2 Relic routes to sanctum.relic category and sends sanctum stat filters', async () => {
+    setPoeVersion(2)
+    const relic = {
+      name: '',
+      baseType: 'Urn Relic',
+      itemClass: 'Relics',
+      rarity: 'Magic',
+    }
+    const relicStats: StatFilter[] = [
+      {
+        id: 'sanctum.stat_1583320325',
+        text: '10% increased Honour restored',
+        type: 'sanctum',
+        enabled: true,
+        value: 10,
+        min: 9,
+        max: null,
+      },
+    ]
+    await searchTrade('Fate of the Vaal', relic, relicStats, {
+      tradeStatus: 'any',
+      tradePriceOption: 'exalted_divine',
+    })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    expect(req).toBeDefined()
+    const body = parseCapturedBody(req)
+    expect(body.query.filters.type_filters.filters.category).toEqual({ option: 'sanctum.relic' })
+    expect(body.query.type).toBeUndefined()
+    const andGroup = body.query.stats.find((g: { type: string }) => g.type === 'and')
+    expect(andGroup.filters.map((f: { id: string }) => f.id)).toContain('sanctum.stat_1583320325')
+  })
+
   it('unique captured beast searches by type only (no name field)', async () => {
     setPoeVersion(1)
     // Beasts arrive from clipboard with rarity Unique, itemClass Stackable Currency,

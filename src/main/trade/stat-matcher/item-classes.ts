@@ -45,6 +45,9 @@ export const ITEM_CLASS_TO_CATEGORY: Record<string, string> = {
   // PoE2 clipboard reports "Quarterstaves" where PoE1 reports "Warstaves";
   // both map to the same trade category.
   Quarterstaves: 'weapon.warstaff',
+  // PoE2 Trial-of-the-Sekhemas relics. Their affixes live under the trade API's
+  // sanctum.* stat family (see the relic producer), not explicit.*.
+  Relics: 'sanctum.relic',
 }
 
 const ARMOUR_CLASSES = new Set(['Helmets', 'Body Armours', 'Gloves', 'Boots', 'Shields'])

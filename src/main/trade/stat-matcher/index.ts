@@ -17,6 +17,7 @@ import { buildLogbookFilters } from './producers/logbook'
 import { buildMapFilters } from './producers/maps'
 import { buildMiscFilters } from './producers/misc'
 import { emitPseudoFilters } from './producers/pseudo-emit'
+import { buildRelicFilters } from './producers/relics'
 import { buildSocketFilters } from './producers/sockets'
 import { buildStoredExperienceFilters } from './producers/stored-experience'
 import { buildTimelessFilters } from './producers/timeless'
@@ -53,6 +54,7 @@ export function matchItemMods(
 
   const implicitsFilters = processImplicits(ctx)
   const explicitsFilters = processExplicits(ctx)
+  const relicFilters = buildRelicFilters(ctx)
   const pseudoFilters = emitPseudoFilters(ctx.pseudoAccumulator, ctx.pct)
 
   // Quality normalization: scale stats to 20% quality if item is below 20%
@@ -126,6 +128,7 @@ export function matchItemMods(
     ...miscFilters,
     ...implicitsFilters,
     ...explicitsFilters,
+    ...relicFilters,
   ]
 
   return postProcessInscribedUltimatum(combined, itemInfo)
