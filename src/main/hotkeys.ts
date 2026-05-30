@@ -128,11 +128,26 @@ function matchesCombo(
   return e.keycode === c.keycode && e.ctrlKey === c.ctrl && e.shiftKey === c.shift && e.altKey === c.alt
 }
 
+/** PoE2 binds W/A/S/D to movement, so a hotkey that shares one of those keys
+ *  (the defaults are Ctrl+Shift+D and Ctrl+Shift+A) makes the character lurch:
+ *  globalShortcut doesn't reliably swallow the keydown before it reaches the
+ *  game, and the game keeps moving until it sees a keyup. Inject a keyup for the
+ *  non-modifier key the instant the hotkey fires so movement stops immediately.
+ *  Modifiers are left held - they don't move the character, they're tracked by
+ *  heldModifiers, and the follow-up Ctrl+Alt+C copy relies on them. Mirrors
+ *  Exiled-Exchange-2's keepModKeys release. */
+function releaseHotkeyKey(combo: KeyCombo | null): void {
+  if (!combo) return
+  uIOhook.keyToggle(combo.keycode, 'up')
+}
+
 function fireTrigger(): void {
   const now = Date.now()
   if (now - lastTriggerFireAt < DEDUPE_MS) return
   lastTriggerFireAt = now
-  if (!injecting && onTrigger) onTrigger()
+  if (injecting) return
+  releaseHotkeyKey(triggerCombo)
+  if (onTrigger) onTrigger()
 }
 
 /** True when PoE has foreground focus or one of Scalpel's overlay windows is
@@ -149,7 +164,9 @@ function firePriceCheck(): void {
   const now = Date.now()
   if (now - lastPriceCheckFireAt < DEDUPE_MS) return
   lastPriceCheckFireAt = now
-  if (!injecting && onPriceCheck) onPriceCheck()
+  if (injecting) return
+  releaseHotkeyKey(priceCheckCombo)
+  if (onPriceCheck) onPriceCheck()
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -360,6 +377,7 @@ export function setChatCommands(
     const autoSubmit = c.autoSubmit !== false
     chatCommandHotkeys.push({ accelerator: c.hotkey, command: c.command, autoSubmit, scope: c.scope })
     if (suspendDepth > 0) continue
+    const combo = parseAccelerator(c.hotkey)
     try {
       globalShortcut.register(c.hotkey, () => {
         if (injecting || isTypingInOverlay()) return
@@ -368,6 +386,7 @@ export function setChatCommands(
         // route a press to the wrong app's keystroke injection. Gate on
         // PoE/overlay focus so unrelated apps see the raw key. Issues #18, #21.
         if (!hasPoeOrOverlayFocus()) return
+        releaseHotkeyKey(combo)
         sendChatCommand(c.command, autoSubmit)
       })
     } catch (e) {
@@ -397,10 +416,12 @@ export function setSecondaryOverlayHotkeys(hotkeys: OverlayHotkey[]): void {
   if (suspendDepth > 0) return
   for (const { accelerator, handler } of hotkeys) {
     if (!accelerator) continue
+    const combo = parseAccelerator(accelerator)
     try {
       if (
         globalShortcut.register(accelerator, () => {
           if (isTypingInOverlay()) return
+          releaseHotkeyKey(combo)
           handler()
         })
       ) {
@@ -430,9 +451,11 @@ export function setAppMacros(
   for (const m of macros) {
     if (!m.hotkey || !m.action) continue
     if (!scopeAppliesTo(appMacroEffectiveScope(m), version)) continue
+    const combo = parseAccelerator(m.hotkey)
     try {
       globalShortcut.register(m.hotkey, () => {
         if (injecting || isTypingInOverlay() || !onAppMacro) return
+        releaseHotkeyKey(combo)
         onAppMacro(m.action, m.tag, m.presetId)
       })
       appMacroAccelerators.push(m.hotkey)
