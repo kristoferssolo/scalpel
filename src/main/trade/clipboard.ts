@@ -296,7 +296,7 @@ export function parseItemText(text: string): PoeItem | null {
   const armour = extractNum(allLines, 'Armour:') ?? 0
   const evasion = extractNum(allLines, 'Evasion Rating:') ?? 0
   const energyShield = extractNum(allLines, 'Energy Shield:') ?? 0
-  const ward = extractNum(allLines, 'Ward:') ?? 0
+  const ward = extractNum(allLines, 'Runic Ward:') ?? extractNum(allLines, 'Ward:') ?? 0
   const block = extractNum(allLines, 'Chance to Block:') ?? 0
 
   // Weapon damage. Strip thousands-separator commas first so big rolls like
@@ -659,6 +659,7 @@ function parseModSections(sections: string[], explicits: string[], implicits: st
     'Armour:',
     'Energy Shield:',
     'Ward:',
+    'Runic Ward:',
     'Stack Size:',
     'Corrupted',
     'Unidentified',

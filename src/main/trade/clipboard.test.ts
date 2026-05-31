@@ -192,6 +192,42 @@ describe('parseItemText', () => {
       expect(item.reqStr).toBe(180)
     })
 
+    it('parses PoE1 Ward header into item.ward', () => {
+      const text = [
+        'Item Class: Body Armours',
+        'Rarity: Rare',
+        'Arcane Wrap',
+        "Occultist's Vestment",
+        '--------',
+        'Ward: 220',
+        '--------',
+        'Item Level: 80',
+        '--------',
+        '+30 to Intelligence',
+      ].join('\n')
+
+      const item = parseItemText(text)!
+      expect(item.ward).toBe(220)
+    })
+
+    it('parses PoE2 Runic Ward header into item.ward', () => {
+      const text = [
+        'Item Class: Body Armours',
+        'Rarity: Rare',
+        'Arcane Wrap',
+        "Occultist's Vestment",
+        '--------',
+        'Runic Ward: 220',
+        '--------',
+        'Item Level: 80',
+        '--------',
+        '+30 to Intelligence',
+      ].join('\n')
+
+      const item = parseItemText(text)!
+      expect(item.ward).toBe(220)
+    })
+
     it('parses a Unique item', () => {
       const text = [
         'Item Class: Rings',

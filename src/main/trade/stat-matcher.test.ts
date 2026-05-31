@@ -101,6 +101,22 @@ describe('matchItemMods', () => {
       expect(wardChip?.value).toBe(200)
     })
 
+    it('normalizes ward to 20% quality when quality < 20', () => {
+      const filters = matchItemMods(
+        [],
+        [],
+        { armour: 0, evasion: 0, energyShield: 0, ward: 100, block: 0 },
+        makeItemInfo({ quality: 10 }),
+      )
+      const wardChip = filters.find((f) => f.id === 'defence.ward')!
+      // qualityNorm = 1.2 / (1 + 10/100) = 1.2 / 1.1 ~= 1.0909
+      // 100 * 1.0909 = 109 (rounded)
+      // version defaults to 1 so label is 'Ward'
+      expect(wardChip.value).toBe(109)
+      expect(wardChip.text).toContain('(20 quality)')
+      expect(wardChip.text).toContain('Ward:')
+    })
+
     it('generates block chip when block > 0', () => {
       const filters = matchItemMods(
         [],

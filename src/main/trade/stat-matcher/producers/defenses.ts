@@ -1,3 +1,4 @@
+import { getPoeVersion } from '../../../game-state'
 import type { StatFilter } from '../../trade'
 
 // Add defense filters as special "defence" type
@@ -41,12 +42,14 @@ export function buildDefenseFilters(
         enabled: true,
         type: 'defence',
       })
-    if (defenses.ward > 0)
+    const wardLabel = getPoeVersion() === 2 ? 'Runic Ward' : 'Ward'
+    const wd = Math.round(defenses.ward * qualityNorm)
+    if (wd > 0)
       out.push({
         id: 'defence.ward',
-        text: `Ward: ${defenses.ward}`,
-        value: defenses.ward,
-        min: Math.floor(defenses.ward * pct),
+        text: `${wardLabel}: ${wd}${qualityNorm > 1 ? ' (20 quality)' : ''}`,
+        value: wd,
+        min: Math.floor(wd * pct),
         max: null,
         enabled: true,
         type: 'defence',
