@@ -26,6 +26,7 @@ const TAB_FILL_OFF = 'rgba(239,83,80,0.85)'
 const TAB_FILL_FIXED = 'rgba(255,255,255,0.12)'
 
 export function ViewTab({ settings, update, updateMany }: Props): JSX.Element {
+  const [startupMainPanelMode] = useState(settings.mainPanelMode)
   // Custom scale mode is auto-enabled when the saved scale isn't one of the presets,
   // and toggled by the Custom/preset buttons otherwise.
   const [customScale, setCustomScale] = useState<boolean>(
@@ -77,6 +78,31 @@ export function ViewTab({ settings, update, updateMany }: Props): JSX.Element {
   return (
     <>
       <div className="settings-section-title mt-3">Customize View</div>
+
+      <section>
+        <label>Main panel mode</label>
+        <div className="flex gap-1.5 mt-[6px]">
+          {(
+            [
+              ['overlay', 'Overlay'],
+              ['standalone', 'Standalone window'],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => update('mainPanelMode', value)}
+              className={`text-[11px] px-3 py-1.5 ${
+                settings.mainPanelMode === value ? 'bg-accent text-bg-solid' : 'text-text-dim'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {settings.mainPanelMode !== startupMainPanelMode && (
+          <div className="mt-2 text-[11px] text-text-dim">Restart Scalpel to apply this mode.</div>
+        )}
+      </section>
 
       <section>
         <label>Show/Hide Tabs</label>

@@ -44,3 +44,24 @@ test('clamps off-screen saved position on startup when onboarding completed', as
     await scalpel.cleanup()
   }
 })
+
+test('launches standalone overlay renderer with preload API available', async () => {
+  const scalpel = await launchScalpelE2E({
+    seedConfig: { mainPanelMode: 'standalone', onboardingCompleted: true },
+  })
+  try {
+    const overlay =
+      scalpel.app.windows().find((page) => page.url().includes('/index.html')) ??
+      (await scalpel.app.waitForEvent('window', {
+        predicate: (page) => page.url().includes('/index.html'),
+        timeout: 5000,
+      }))
+    await overlay.waitForLoadState('domcontentloaded')
+    await expect.poll(() => overlay.evaluate(() => typeof window.api?.getSettings)).toBe('function')
+    await expect
+      .poll(() => overlay.evaluate(() => window.api.getOverlayState().then((state) => state.mainPanelMode)))
+      .toBe('standalone')
+  } finally {
+    await scalpel.cleanup()
+  }
+})

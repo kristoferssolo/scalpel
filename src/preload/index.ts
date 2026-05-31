@@ -10,6 +10,7 @@ import type {
   GameVariant,
   HistoryEntry,
   Manifest,
+  MainPanelMode,
   OverlayData,
   PoeProfileSummary,
   ProfileSettingKey,
@@ -190,6 +191,7 @@ export const api = {
     poeVersion: 1 | 2
     panelState: PanelState
     gameBounds: { gameWidth: number; gameHeight: number; sidebarWidth: number } | null
+    mainPanelMode: MainPanelMode
   }> => ipcRenderer.invoke('get-overlay-state'),
   getIconCache: (): Promise<Record<string, string>> => ipcRenderer.invoke('get-icon-cache'),
   onIconCacheUpdated: (cb: (added: Record<string, string>) => void): (() => void) => {
