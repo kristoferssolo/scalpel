@@ -18,7 +18,6 @@ import type {
   Zone,
 } from '../shared/types'
 import type { BoardLibrary, BoardSnapshot, BoardState } from '../shared/whiteboard-types'
-import type { PanelState } from '../shared/panel-state'
 
 export const api = {
   // Manifest
@@ -188,7 +187,6 @@ export const api = {
   closeOverlay: (): void => ipcRenderer.send('close-overlay'),
   getOverlayState: (): Promise<{
     poeVersion: 1 | 2
-    panelState: PanelState
     gameBounds: { gameWidth: number; gameHeight: number; sidebarWidth: number } | null
   }> => ipcRenderer.invoke('get-overlay-state'),
   getIconCache: (): Promise<Record<string, string>> => ipcRenderer.invoke('get-icon-cache'),
@@ -338,11 +336,6 @@ export const api = {
     const handler = (_: Electron.IpcRendererEvent, version: 1 | 2): void => cb(version)
     ipcRenderer.on('poe-version', handler)
     return () => ipcRenderer.removeListener('poe-version', handler)
-  },
-  onPanelState: (cb: (state: PanelState) => void): (() => void) => {
-    const handler = (_: Electron.IpcRendererEvent, state: PanelState): void => cb(state)
-    ipcRenderer.on('panel-state', handler)
-    return () => ipcRenderer.removeListener('panel-state', handler)
   },
   onZoneChanged: (cb: (zone: Zone | null) => void): (() => void) => {
     const handler = (_: Electron.IpcRendererEvent, zone: Zone | null): void => cb(zone)

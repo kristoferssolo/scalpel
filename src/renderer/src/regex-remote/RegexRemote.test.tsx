@@ -24,7 +24,7 @@ const apply = vi.fn()
 beforeEach(() => {
   apply.mockReset()
   ;(window as unknown as { api: unknown }).api = {
-    getOverlayState: () => Promise.resolve({ poeVersion: 1, panelState: {}, gameBounds: null }),
+    getOverlayState: () => Promise.resolve({ poeVersion: 1, gameBounds: null }),
     getRegexPresets: () => Promise.resolve([]),
     getSettings: () => Promise.resolve({ appMacros: [] }),
     onRegexPresetsChanged: () => () => {},
@@ -59,9 +59,7 @@ describe('RegexRemote', () => {
 
   it('uses PoE2 generator order when poeVersion is 2', async () => {
     window.api.getOverlayState = () =>
-      Promise.resolve({ poeVersion: 2, panelState: {}, gameBounds: null }) as ReturnType<
-        typeof window.api.getOverlayState
-      >
+      Promise.resolve({ poeVersion: 2, gameBounds: null }) as ReturnType<typeof window.api.getOverlayState>
     window.api.getRegexPresets = () =>
       Promise.resolve([
         preset({ id: 'w1', name: 'Red Maps', generator: 'waystones' }),

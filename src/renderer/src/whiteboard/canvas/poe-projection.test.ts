@@ -3,14 +3,12 @@ import {
   CAMERA_CONSTANTS,
   groundDistance,
   groundToScreen,
-  panelClipNdcX,
   playfieldRect,
   projectCircle,
   rightmostPx,
   screenToGround,
   unitsToMetres,
 } from './poe-projection'
-import { POE_SIDEBAR_RATIO } from '../../../../shared/poe-geometry'
 
 describe('CAMERA_CONSTANTS', () => {
   it('has PoE1 and PoE2 filled', () => {
@@ -80,12 +78,12 @@ describe('projectCircle', () => {
   const size = { w: 1920, h: 1080 }
   it('returns the requested segment count for a modest ring near center', () => {
     const center = screenToGround(1, { x: 0.5, y: 0.5 }, size)!
-    const pts = projectCircle(1, center, 20, size, 0, 64)
+    const pts = projectCircle(1, center, 20, size, 64)
     expect(pts).toHaveLength(64)
   })
   it('projects a ground circle wider than it is tall (isometric foreshortening)', () => {
     const center = screenToGround(1, { x: 0.5, y: 0.5 }, size)!
-    const pts = projectCircle(1, center, 20, size, 0, 64)
+    const pts = projectCircle(1, center, 20, size, 64)
     const xs = pts.map((p) => p.x)
     const ys = pts.map((p) => p.y)
     const widthN = Math.max(...xs) - Math.min(...xs)
@@ -94,7 +92,7 @@ describe('projectCircle', () => {
   })
   it('projects a ring for PoE2 too', () => {
     const center = screenToGround(2, { x: 0.5, y: 0.5 }, size)!
-    expect(projectCircle(2, center, 20, size, 0, 64)).toHaveLength(64)
+    expect(projectCircle(2, center, 20, size, 64)).toHaveLength(64)
   })
 })
 
@@ -121,44 +119,5 @@ describe('rightmostPx', () => {
   })
   it('is null for an empty array', () => {
     expect(rightmostPx([], { w: 1000, h: 1000 })).toBeNull()
-  })
-})
-
-describe('clipNdcX shift', () => {
-  const size = { w: 1920, h: 1080 } // 16:9 -> playfield width == size.w
-
-  it('shifts projected x by clipNdcX * width / 2 and leaves y unchanged', () => {
-    const g = screenToGround(1, { x: 0.5, y: 0.5 }, size)!
-    const base = groundToScreen(1, g, size)!
-    const shifted = groundToScreen(1, g, size, 0.1)!
-    expect(shifted.x - base.x).toBeCloseTo(0.05, 6) // 0.1 * 1920/2 / 1920
-    expect(shifted.y).toBeCloseTo(base.y, 6)
-  })
-
-  it('round-trips screenToGround <-> groundToScreen with the same clip', () => {
-    const clip = 0.1
-    const g = screenToGround(1, { x: 0.5, y: 0.5 }, size, clip)!
-    const back = groundToScreen(1, g, size, clip)!
-    expect(back.x).toBeCloseTo(0.5, 6)
-    expect(back.y).toBeCloseTo(0.5, 6)
-  })
-})
-
-describe('panelClipNdcX', () => {
-  const size = { w: 1920, h: 1080 } // 16:9 -> playfield aspect 16/9
-  // POE_SIDEBAR_RATIO is divided by the playfield aspect, so the screen shift ends up
-  // height-proportional (half the side panel's width).
-  const expected = POE_SIDEBAR_RATIO / (16 / 9)
-
-  it('shifts +/- the aspect-divided base for one panel, 0 for both/neither', () => {
-    expect(panelClipNdcX(1, { leftPanelOpen: true, rightPanelOpen: false }, size)).toBeCloseTo(expected, 6)
-    expect(panelClipNdcX(1, { leftPanelOpen: false, rightPanelOpen: true }, size)).toBeCloseTo(-expected, 6)
-    expect(panelClipNdcX(1, { leftPanelOpen: true, rightPanelOpen: true }, size)).toBe(0)
-    expect(panelClipNdcX(1, { leftPanelOpen: false, rightPanelOpen: false }, size)).toBe(0)
-  })
-
-  it('shifts PoE2 identically to PoE1 (same sidebar ratio drives both)', () => {
-    expect(panelClipNdcX(2, { leftPanelOpen: true, rightPanelOpen: false }, size)).toBeCloseTo(expected, 6)
-    expect(panelClipNdcX(2, { leftPanelOpen: false, rightPanelOpen: true }, size)).toBeCloseTo(-expected, 6)
   })
 })

@@ -10,7 +10,6 @@ interface Props {
   size: GameSize
   version: 1 | 2 | null
   listening?: boolean
-  clipNdcX?: number
 }
 
 export const RulerElement = memo(function RulerElement({
@@ -18,11 +17,10 @@ export const RulerElement = memo(function RulerElement({
   size,
   version,
   listening = true,
-  clipNdcX = 0,
 }: Props): JSX.Element | null {
   if (version === null) return null
-  const aN = groundToScreen(version, element.a, size, clipNdcX)
-  const bN = groundToScreen(version, element.b, size, clipNdcX)
+  const aN = groundToScreen(version, element.a, size)
+  const bN = groundToScreen(version, element.b, size)
   if (!aN || !bN) return null
 
   const ax = aN.x * size.w

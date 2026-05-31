@@ -34,13 +34,13 @@ export function updateRadiusEnd(s: RadiusSession, cursorPx: { x: number; y: numb
   s.cursorPx = { ...cursorPx }
 }
 
-export function commitRadius(s: RadiusSession, size: GameSize, clipNdcX = 0): RadiusRingElement | null {
+export function commitRadius(s: RadiusSession, size: GameSize): RadiusRingElement | null {
   const dx = s.cursorPx.x - s.centerPx.x
   const dy = s.cursorPx.y - s.centerPx.y
   if (Math.abs(dx) < COMMIT_THRESHOLD_PX && Math.abs(dy) < COMMIT_THRESHOLD_PX) return null
 
-  const center = screenToGround(s.version, { x: s.centerPx.x / size.w, y: s.centerPx.y / size.h }, size, clipNdcX)
-  const edge = screenToGround(s.version, { x: s.cursorPx.x / size.w, y: s.cursorPx.y / size.h }, size, clipNdcX)
+  const center = screenToGround(s.version, { x: s.centerPx.x / size.w, y: s.centerPx.y / size.h }, size)
+  const edge = screenToGround(s.version, { x: s.cursorPx.x / size.w, y: s.cursorPx.y / size.h }, size)
   if (!center || !edge) return null
 
   return {

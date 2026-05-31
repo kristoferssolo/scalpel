@@ -1,6 +1,4 @@
-import type { PanelState } from '../../../../shared/panel-state'
 import type { Pt } from '../../../../shared/whiteboard-types'
-import { POE_SIDEBAR_RATIO } from '../../../../shared/poe-geometry'
 import type { GameSize } from './coords'
 
 /** Camera/render constants for one PoE game version. Distances are in the
@@ -48,20 +46,6 @@ export const CAMERA_CONSTANTS: Record<1 | 2, PoeCameraConstants | null> = {
   },
 }
 
-/** Signed NDC-x clip term for the current panel state. The game re-centers the
- *  playfield away from the open panel, so a left panel shifts the world right
- *  (+) and a right panel shifts it left (-); both-open or neither = no shift.
- *  POE_SIDEBAR_RATIO (panel width / height, shared with the snap-ghost math)
- *  divided by the playfield aspect makes the screen shift height-proportional -
- *  half the side panel's width - matching the game. PoE1 and PoE2 re-center
- *  identically, so the same ratio drives both. */
-export function panelClipNdcX(version: 1 | 2, panel: PanelState, size: GameSize): number {
-  if (panel.leftPanelOpen === panel.rightPanelOpen) return 0
-  const pf = playfieldRect(version, size)
-  const c = POE_SIDEBAR_RATIO / (pf.width / pf.height)
-  return panel.leftPanelOpen ? c : -c
-}
-
 export interface PlayfieldRect {
   left: number
   top: number
@@ -72,20 +56,20 @@ export interface PlayfieldRect {
 /** The world-rendering region inside the game window: full height, width
  *  clamped to maxAspect and centered. Matches the rangefinder's
  *  `min(clientWidth, 2.4*height)` rule. */
-export function playfieldRect(version: 1 | 2, size: GameSize, clipNdcX = 0): PlayfieldRect {
+export function playfieldRect(version: 1 | 2, size: GameSize): PlayfieldRect {
   const c = CAMERA_CONSTANTS[version]
   const maxAspect = c?.maxAspect ?? size.w / size.h
   const width = Math.min(size.w, maxAspect * size.h)
-  return { left: (size.w - width) / 2 + (clipNdcX * width) / 2, top: 0, width, height: size.h }
+  return { left: (size.w - width) / 2, top: 0, width, height: size.h }
 }
 
 /** Inverse projection: a normalized (0-1 of full window) screen point to the
  *  ground plane (z=0) in world units. Closed-form port of the rangefinder's
  *  `mousePositionOnPlane`. Null for unsupported version / no plane hit. */
-export function screenToGround(version: 1 | 2, p: Pt, size: GameSize, clipNdcX = 0): Pt | null {
+export function screenToGround(version: 1 | 2, p: Pt, size: GameSize): Pt | null {
   const c = CAMERA_CONSTANTS[version]
   if (!c) return null
-  const pf = playfieldRect(version, size, clipNdcX)
+  const pf = playfieldRect(version, size)
   const aspect = pf.width / pf.height
   const t = Math.tan((c.fovDeg * Math.PI) / 180 / 2)
 
@@ -122,10 +106,10 @@ interface ForwardParams {
 /** Precompute the per-call invariants for forward projection (camera consts,
  *  playfield rect, fov tangent, camera-angle sin/cos). Hoisted so a batch like
  *  projectCircle computes them once rather than per point. Null if unsupported. */
-function forwardParams(version: 1 | 2, size: GameSize, clipNdcX = 0): ForwardParams | null {
+function forwardParams(version: 1 | 2, size: GameSize): ForwardParams | null {
   const c = CAMERA_CONSTANTS[version]
   if (!c) return null
-  const pf = playfieldRect(version, size, clipNdcX)
+  const pf = playfieldRect(version, size)
   const a = (c.cameraAngleDeg * Math.PI) / 180
   return {
     c,
@@ -150,8 +134,8 @@ function projectGround(p: ForwardParams, g: Pt, size: GameSize): Pt | null {
 
 /** Forward projection: a ground-plane world point to a normalized (0-1 of full
  *  window) screen point. Null for unsupported version / behind the camera. */
-export function groundToScreen(version: 1 | 2, g: Pt, size: GameSize, clipNdcX = 0): Pt | null {
-  const p = forwardParams(version, size, clipNdcX)
+export function groundToScreen(version: 1 | 2, g: Pt, size: GameSize): Pt | null {
+  const p = forwardParams(version, size)
   if (!p) return null
   return projectGround(p, g, size)
 }
@@ -176,18 +160,9 @@ export function rightmostPx(pointsNorm: Pt[], size: GameSize): { x: number; y: n
 
 /** Project a ground circle (center + radius in world units) to an array of
  *  normalized screen points tracing the on-screen ellipse. Segments behind the
- *  camera are dropped; an unsupported version yields an empty array. Note the
- *  optional `clipNdcX` (panel-shift) param precedes `segments` in the argument
- *  list. */
-export function projectCircle(
-  version: 1 | 2,
-  center: Pt,
-  radiusUnits: number,
-  size: GameSize,
-  clipNdcX = 0,
-  segments = 64,
-): Pt[] {
-  const p = forwardParams(version, size, clipNdcX)
+ *  camera are dropped; an unsupported version yields an empty array. */
+export function projectCircle(version: 1 | 2, center: Pt, radiusUnits: number, size: GameSize, segments = 64): Pt[] {
+  const p = forwardParams(version, size)
   if (!p) return []
   const pts: Pt[] = []
   for (let i = 0; i < segments; i++) {

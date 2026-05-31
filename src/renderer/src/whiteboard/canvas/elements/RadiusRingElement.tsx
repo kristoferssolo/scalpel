@@ -10,7 +10,6 @@ interface Props {
   size: GameSize
   version: 1 | 2 | null
   listening?: boolean
-  clipNdcX?: number
 }
 
 export const RadiusRingElement = memo(function RadiusRingElement({
@@ -18,12 +17,11 @@ export const RadiusRingElement = memo(function RadiusRingElement({
   size,
   version,
   listening = true,
-  clipNdcX = 0,
 }: Props): JSX.Element | null {
   if (version === null) return null
-  const ringNorm = projectCircle(version, element.center, element.radius, size, clipNdcX)
+  const ringNorm = projectCircle(version, element.center, element.radius, size)
   if (ringNorm.length < 3) return null
-  const centerNorm = groundToScreen(version, element.center, size, clipNdcX)
+  const centerNorm = groundToScreen(version, element.center, size)
   if (!centerNorm) return null
 
   const right = rightmostPx(ringNorm, size)

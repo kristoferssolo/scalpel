@@ -21,10 +21,9 @@ export function applyRingEdit(
   cursorNorm: Pt,
   size: GameSize,
   version: 1 | 2 | null,
-  clipNdcX = 0,
 ): RadiusRingElement {
   if (version === null) return el
-  const g = screenToGround(version, cursorNorm, size, clipNdcX)
+  const g = screenToGround(version, cursorNorm, size)
   if (!g) return el
   if (edit.kind === 'ring-radius') {
     return { ...el, radius: Math.max(MIN_RADIUS_UNITS, groundDistance(el.center, g)) }
@@ -41,10 +40,9 @@ export function applyRulerEdit(
   cursorNorm: Pt,
   size: GameSize,
   version: 1 | 2 | null,
-  clipNdcX = 0,
 ): RulerElement {
   if (version === null) return el
-  const g = screenToGround(version, cursorNorm, size, clipNdcX)
+  const g = screenToGround(version, cursorNorm, size)
   if (!g) return el
   if (edit.kind === 'ruler-a') return { ...el, a: g }
   if (edit.kind === 'ruler-b') return { ...el, b: g }

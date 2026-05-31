@@ -61,7 +61,7 @@ function rotatedAabb(bbox: RectPx, rotationRad: number): RectPx {
  *  bake their transform into points so they have no rotation field to apply.
  *  `version` is required only for the projection-based kinds (ruler/radiusRing);
  *  omit it (or pass null) and those return a zero box - i.e. not marquee-hittable. */
-export function elementAabbPx(el: WhiteboardElement, size: GameSize, version?: 1 | 2 | null, clipNdcX = 0): RectPx {
+export function elementAabbPx(el: WhiteboardElement, size: GameSize, version?: 1 | 2 | null): RectPx {
   if (el.type === 'stroke') {
     if (el.points.length === 0) return { x: 0, y: 0, w: 0, h: 0 }
     let xMin = el.points[0].x
@@ -92,8 +92,8 @@ export function elementAabbPx(el: WhiteboardElement, size: GameSize, version?: 1
   }
   if (el.type === 'ruler') {
     if (version == null) return { x: 0, y: 0, w: 0, h: 0 }
-    const a = groundToScreen(version, el.a, size, clipNdcX)
-    const b = groundToScreen(version, el.b, size, clipNdcX)
+    const a = groundToScreen(version, el.a, size)
+    const b = groundToScreen(version, el.b, size)
     if (!a || !b) return { x: 0, y: 0, w: 0, h: 0 }
     const ax = a.x * size.w
     const ay = a.y * size.h
@@ -103,7 +103,7 @@ export function elementAabbPx(el: WhiteboardElement, size: GameSize, version?: 1
   }
   if (el.type === 'radiusRing') {
     if (version == null) return { x: 0, y: 0, w: 0, h: 0 }
-    const pts = projectCircle(version, el.center, el.radius, size, clipNdcX)
+    const pts = projectCircle(version, el.center, el.radius, size)
     if (pts.length === 0) return { x: 0, y: 0, w: 0, h: 0 }
     let xMin = Infinity
     let yMin = Infinity
@@ -134,11 +134,10 @@ export function elementsInMarquee(
   marqueePx: RectPx,
   size: GameSize,
   version?: 1 | 2 | null,
-  clipNdcX = 0,
 ): string[] {
   const ids: string[] = []
   for (const el of elements) {
-    if (aabbIntersects(elementAabbPx(el, size, version, clipNdcX), marqueePx)) ids.push(el.id)
+    if (aabbIntersects(elementAabbPx(el, size, version), marqueePx)) ids.push(el.id)
   }
   return ids
 }
