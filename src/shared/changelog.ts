@@ -1,24 +1,16 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
-    version: '0.9.10-rc3',
-    notes: [
-      'Fixed PoE2 tablets not price checking.',
-      'Fixed PoE2 charm mods not showing in the price checker.',
-      'Added PoE2 waystone price checking by tier and item properties.',
-    ],
-  },
-  {
-    version: '0.9.10-rc2',
-    notes: ['Fixed PoE2 elemental damage not accumulating in weapon DPS due to PoE1/PoE2 clipboard differences.'],
-  },
-  {
-    version: '0.9.10-rc1',
+    version: '0.9.10',
     notes: [
       'Added a regex remote sister overlay you can bind to a hotkey, so your regex strings can pop out on demand.',
       'Reworked the regex UX that nearly everyone hated.',
       'Added a Chaos-only price option to PoE2 trade search.',
+      'Added PoE2 waystone price checking by tier and item properties.',
       'Fixed relics not price checking.',
       'Improved price checking for quarterstaves.',
+      'Fixed PoE2 tablets not price checking.',
+      'Fixed PoE2 charm mods not showing in the price checker.',
+      'Fixed PoE2 elemental damage not accumulating in weapon DPS due to PoE1/PoE2 clipboard differences.',
       'Fixed your PoE2 character lurching when a hotkey fired by releasing the movement key first.',
       'Fixed online filter sync and allowed skipping the filter directory.',
       'Fixed errors when launching a game you had not set up yet by giving it default profiles.',
