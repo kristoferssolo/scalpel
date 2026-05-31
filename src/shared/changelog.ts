@@ -1,5 +1,23 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.11-rc1',
+    notes: [
+      'Added runic ward support to the price checker.',
+      'Added support for decimal affix values in the price checker.',
+      'Added a vendor regex tab and a tablet regex tab in PoE2.',
+      'Added a crafting-ready chip, now on by default for PoE2 trade.',
+      'Trade search now re-runs on hover when you have changed filters since the last search.',
+      'Added charm support to belts.',
+      'More regex chip UX cleanup.',
+      'Fixed whiteboard rulers causing lag in passthrough.',
+      'Fixed various local mods not price checking correctly.',
+      'Fixed an Oxford comma breaking hybrid mod price-check matching.',
+      'Fixed magic items showing more than one open prefix or suffix chip.',
+      'Fixed desecrated and unknown mod qualifiers merging affixes together.',
+      'Fixed copying an equipped item failing when the hotkey holds Shift.',
+    ],
+  },
+  {
     version: '0.9.10',
     notes: [
       'Added a regex remote sister overlay you can bind to a hotkey, so your regex strings can pop out on demand.',
