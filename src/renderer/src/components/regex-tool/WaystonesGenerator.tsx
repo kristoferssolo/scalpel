@@ -46,6 +46,7 @@ export const WaystonesGenerator = forwardRef<GeneratorHandle, GeneratorProps>(fu
     sharedNewChip,
     sharedSavePanel,
     sharedSavedPresets,
+    onPanelOpen,
   },
   ref,
 ) {
@@ -156,6 +157,10 @@ export const WaystonesGenerator = forwardRef<GeneratorHandle, GeneratorProps>(fu
   useImperativeHandle(
     ref,
     () => ({
+      closePanels: () => {
+        setSearchOpen(false)
+        setSearch('')
+      },
       getPresetPayload: () => ({
         avoid: [...avoid],
         want: [...want],
@@ -296,9 +301,15 @@ export const WaystonesGenerator = forwardRef<GeneratorHandle, GeneratorProps>(fu
               </>
             }
             active={searchOpen}
+            solidInactive
             onClick={() => {
-              setSearchOpen((v) => !v)
-              if (searchOpen) setSearch('')
+              if (searchOpen) {
+                setSearchOpen(false)
+                setSearch('')
+              } else {
+                setSearchOpen(true)
+                onPanelOpen?.()
+              }
             }}
           />
           {sharedSaveChip}

@@ -59,6 +59,7 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
     sharedNewChip,
     sharedSavePanel,
     sharedSavedPresets,
+    onPanelOpen,
   },
   ref,
 ) {
@@ -85,6 +86,10 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
   useImperativeHandle(
     ref,
     () => ({
+      closePanels: () => {
+        setSearchOpen(false)
+        setSearch('')
+      },
       getPresetPayload: () => ({
         avoid: [],
         want: [],
@@ -160,9 +165,15 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
               </>
             }
             active={searchOpen}
+            solidInactive
             onClick={() => {
-              setSearchOpen((v) => !v)
-              if (searchOpen) setSearch('')
+              if (searchOpen) {
+                setSearchOpen(false)
+                setSearch('')
+              } else {
+                setSearchOpen(true)
+                onPanelOpen?.()
+              }
             }}
           />
           {sharedSaveChip}

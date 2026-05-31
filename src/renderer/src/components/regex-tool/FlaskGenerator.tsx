@@ -95,6 +95,7 @@ export const FlaskGenerator = forwardRef<GeneratorHandle, GeneratorProps>(functi
     sharedNewChip,
     sharedSavePanel,
     sharedSavedPresets,
+    onPanelOpen,
   },
   ref,
 ) {
@@ -152,6 +153,15 @@ export const FlaskGenerator = forwardRef<GeneratorHandle, GeneratorProps>(functi
   const [suffixCollapsed, setSuffixCollapsed] = useState<Set<string>>(new Set())
 
   const searchOpen = panel === 'search'
+
+  // Collapse the container's Save/Load when this generator opens its search panel.
+  const onPanelOpenRef = useRef(onPanelOpen)
+  useEffect(() => {
+    onPanelOpenRef.current = onPanelOpen
+  }, [onPanelOpen])
+  useEffect(() => {
+    if (panel !== null) onPanelOpenRef.current?.()
+  }, [panel])
 
   // ---- Derived values --------------------------------------------------------
   const resolvedIlevel = ilevel ?? 85
@@ -229,6 +239,7 @@ export const FlaskGenerator = forwardRef<GeneratorHandle, GeneratorProps>(functi
   useImperativeHandle(
     ref,
     () => ({
+      closePanels: () => setPanel(null),
       getPresetPayload: () => ({
         selectedPrefix: [...selectedPrefix],
         selectedSuffix: [...selectedSuffix],
@@ -283,6 +294,7 @@ export const FlaskGenerator = forwardRef<GeneratorHandle, GeneratorProps>(functi
               </>
             }
             active={searchOpen}
+            solidInactive
             onClick={() => {
               setPanel(searchOpen ? null : 'search')
               if (searchOpen) setSearch('')

@@ -11,6 +11,14 @@ interface FilterChipProps {
   icon?: string
   /** Controls cycle behavior and badge labels. Defaults to 'yesno'. */
   mode?: 'yesno' | 'minmax'
+  /** Render the inactive state with the prominent "action button" look (subtle
+   *  white fill, transparent border, full opacity, accent text) instead of the
+   *  dim default. Used for the regex-tool Search/Save/Load action chips so they
+   *  read as available rather than disabled. Does not affect the active state. */
+  solidInactive?: boolean
+  /** Greyed-out, non-interactive state (e.g. Load when there is nothing to load).
+   *  Takes precedence over active/solidInactive and swallows clicks. */
+  disabled?: boolean
 }
 
 const TERNARY_GREEN = '#5ba85b'
@@ -45,6 +53,8 @@ export function FilterChip({
   color = 'var(--accent)',
   icon,
   mode = 'yesno',
+  solidInactive = false,
+  disabled = false,
 }: FilterChipProps): JSX.Element {
   // Ternary/minmax mode is enabled when an `onChange` handler is provided -- this lets
   // us distinguish "ternary chip with current state = any" from "binary chip"
@@ -60,6 +70,7 @@ export function FilterChip({
   const isAccent = effectiveColor === 'var(--accent)'
 
   const handleClick = (): void => {
+    if (disabled) return
     if (ternary) onChange?.(nextTernary(state, mode))
     else onClick?.()
   }
@@ -69,18 +80,33 @@ export function FilterChip({
       onClick={handleClick}
       className="flex items-center gap-1 px-[10px] py-1 rounded-full cursor-pointer text-[11px] font-semibold select-none relative overflow-visible"
       style={{
-        background: effectiveActive
-          ? isAccent
-            ? 'rgba(200,169,110,0.13)'
-            : `${effectiveColor}22`
-          : 'rgba(0,0,0,0.25)',
-        border: effectiveActive
-          ? isAccent
-            ? '2px solid rgba(200,169,110,0.4)'
-            : `2px solid ${effectiveColor}66`
-          : '2px solid var(--border)',
-        opacity: effectiveActive ? 1 : 0.5,
-        color: effectiveActive ? effectiveColor : 'var(--text-dim)',
+        cursor: disabled ? 'default' : undefined,
+        background: disabled
+          ? 'rgba(0,0,0,0.25)'
+          : effectiveActive
+            ? isAccent
+              ? 'rgba(200,169,110,0.13)'
+              : `${effectiveColor}22`
+            : solidInactive
+              ? 'rgba(255,255,255,0.08)'
+              : 'rgba(0,0,0,0.25)',
+        border: disabled
+          ? '2px solid var(--border)'
+          : effectiveActive
+            ? isAccent
+              ? '2px solid rgba(200,169,110,0.4)'
+              : `2px solid ${effectiveColor}66`
+            : solidInactive
+              ? '2px solid transparent'
+              : '2px solid var(--border)',
+        opacity: disabled ? 0.35 : effectiveActive || solidInactive ? 1 : 0.5,
+        color: disabled
+          ? 'var(--text-dim)'
+          : effectiveActive
+            ? effectiveColor
+            : solidInactive
+              ? 'var(--accent)'
+              : 'var(--text-dim)',
       }}
     >
       {icon && effectiveActive && (

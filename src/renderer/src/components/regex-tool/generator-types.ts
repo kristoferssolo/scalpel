@@ -17,6 +17,10 @@ export interface GeneratorHandle {
   /** Set the generator's regex text directly. Only meaningful for free-text
    *  generators (Custom), where the container's output bar doubles as the input. */
   setRegexText?(text: string): void
+  /** Close any of the generator's own expandable panels (search, and Maps'
+   *  tier/trade). The container calls this when it opens the Save or Load panel so
+   *  only one chip's panel is open at a time across the whole chip row. */
+  closePanels?(): void
 }
 
 /** Shared props every regex generator accepts. The container passes `shared*` render
@@ -41,6 +45,10 @@ export interface GeneratorProps {
   sharedSavePanel: React.ReactNode
   /** SavedPresets strip (collapsible), rendered wherever the generator places it. */
   sharedSavedPresets: React.ReactNode
+  /** Generators call this when they open one of their own panels (search, tier,
+   *  trade) so the container closes its Save/Load panels -- enforcing one-open-at-
+   *  a-time across the whole chip row. */
+  onPanelOpen?: () => void
 }
 
 /** Registry entry describing a generator. Add a new one here and create a matching

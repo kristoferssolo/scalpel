@@ -52,6 +52,7 @@ export const MapsGenerator = forwardRef<GeneratorHandle, GeneratorProps>(functio
     sharedNewChip,
     sharedSavePanel,
     sharedSavedPresets,
+    onPanelOpen,
   },
   ref,
 ) {
@@ -91,6 +92,16 @@ export const MapsGenerator = forwardRef<GeneratorHandle, GeneratorProps>(functio
   const searchOpen = panel === 'search'
   const showTierPicker = panel === 'tier'
   const showTradeResults = panel === 'trade'
+  // Tell the container to collapse Save/Load whenever one of this generator's own
+  // panels opens, so only one chip is open at a time across the row. Ref keeps the
+  // callback identity out of the effect deps.
+  const onPanelOpenRef = useRef(onPanelOpen)
+  useEffect(() => {
+    onPanelOpenRef.current = onPanelOpen
+  }, [onPanelOpen])
+  useEffect(() => {
+    if (panel !== null) onPanelOpenRef.current?.()
+  }, [panel])
   const [search, setSearch] = useState('')
   const [showAllTiers, setShowAllTiers] = useState(false)
   const [avoidCollapsed, setAvoidCollapsed] = useState<Set<string>>(
@@ -274,6 +285,7 @@ export const MapsGenerator = forwardRef<GeneratorHandle, GeneratorProps>(functio
   useImperativeHandle(
     ref,
     () => ({
+      closePanels: () => setPanel(null),
       getPresetPayload: () => ({
         avoid: [...avoid],
         want: [...want],
@@ -346,6 +358,7 @@ export const MapsGenerator = forwardRef<GeneratorHandle, GeneratorProps>(functio
               </>
             }
             active={searchOpen}
+            solidInactive
             onClick={() => {
               openPanel('search')
               if (searchOpen) setSearch('')

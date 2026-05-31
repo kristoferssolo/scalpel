@@ -154,7 +154,12 @@ export function RegexGenerator({ settings, update, tryHotkey }: Props): JSX.Elem
   useEffect(() => {
     window.api.getRegexPresets().then((loaded) => {
       setPresets(loaded)
-      if (loaded.some((p) => (p.generator ?? 'maps') === generator)) setLoadOpen(true)
+      // Auto-open Load (and close Save) when the generator already has presets, so
+      // returning users land on their saved set; one panel open at a time.
+      if (loaded.some((p) => (p.generator ?? 'maps') === generator)) {
+        setLoadOpen(true)
+        setSaveOpen(false)
+      }
     })
   }, [])
 
@@ -296,6 +301,41 @@ export function RegexGenerator({ settings, update, tryHotkey }: Props): JSX.Elem
     pendingIdRef.current = null
   }
 
+  // Load is disabled when the active generator has no saved presets to show.
+  const loadable = presets.some((p) => (p.generator ?? 'maps') === generator)
+
+  // One-open-at-a-time across the chip row. Opening Save/Load closes the other and
+  // tells the active generator to collapse its own panels (search/tier/trade).
+  const openSave = (): void => {
+    const next = !saveOpen
+    setSaveOpen(next)
+    if (next) {
+      setLoadOpen(false)
+      activeHandleRef.current?.closePanels?.()
+    }
+  }
+  const openLoad = (): void => {
+    const next = !loadOpen
+    setLoadOpen(next)
+    if (next) {
+      setSaveOpen(false)
+      activeHandleRef.current?.closePanels?.()
+    }
+  }
+  // Passed to generators: when they open one of their panels, collapse Save/Load.
+  const closeSharedPanels = (): void => {
+    setSaveOpen(false)
+    setLoadOpen(false)
+  }
+
+  // If the active generator becomes unloadable while Load is open, fall back to Save.
+  useEffect(() => {
+    if (!loadable && loadOpen) {
+      setLoadOpen(false)
+      setSaveOpen(true)
+    }
+  }, [loadable, loadOpen])
+
   // ---- Shared chrome rendered as render-props slots the active generator composes. --
   const sharedSaveChip = (
     <FilterChip
@@ -305,7 +345,8 @@ export function RegexGenerator({ settings, update, tryHotkey }: Props): JSX.Elem
         </>
       }
       active={saveOpen}
-      onClick={() => setSaveOpen((v) => !v)}
+      solidInactive
+      onClick={openSave}
     />
   )
   const sharedLoadChip = (
@@ -316,23 +357,24 @@ export function RegexGenerator({ settings, update, tryHotkey }: Props): JSX.Elem
         </>
       }
       active={loadOpen}
-      onClick={() => setLoadOpen((v) => !v)}
+      solidInactive
+      disabled={!loadable}
+      onClick={openLoad}
     />
   )
+  // Rendered as a FilterChip (always-inactive + solidInactive) so it is exactly the
+  // same element/box-model as the Search/Save/Load chips it sits beside -- a bespoke
+  // <button> rendered a hair shorter than the chip <div>s.
   const sharedNewChip = (
-    <button
+    <FilterChip
+      label={
+        <>
+          <Plus size={12} theme="outline" fill="currentColor" /> Start New Regex
+        </>
+      }
+      solidInactive
       onClick={clearAll}
-      className="flex items-center gap-1 px-[10px] py-1 rounded-full cursor-pointer text-[11px] font-semibold select-none text-accent"
-      style={{ background: 'rgba(255,255,255,0.08)', border: '2px solid transparent' }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.15)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
-      }}
-    >
-      <Plus size={12} theme="outline" fill="currentColor" /> Start New Regex
-    </button>
+    />
   )
 
   const sharedSavePanel = (
@@ -401,6 +443,7 @@ export function RegexGenerator({ settings, update, tryHotkey }: Props): JSX.Elem
     sharedNewChip,
     sharedSavePanel,
     sharedSavedPresets,
+    onPanelOpen: closeSharedPanels,
   }
 
   // Extension point: add a case here to render a new generator. Each generator owns its
