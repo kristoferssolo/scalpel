@@ -451,6 +451,40 @@ describe('matchItemMods', () => {
       expect(openPrefix?.value).toBe(1) // 2 max - 1 prefix = 1 open
     })
 
+    it('caps magic items at 1 prefix / 1 suffix (suffix-only -> open prefix, no open suffix)', () => {
+      const advancedMods: AdvancedMod[] = [
+        { type: 'suffix', name: 'of Calamity', tier: 1, tags: [], lines: ['+3% to Critical Hit Chance'], ranges: [] },
+      ]
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Magic', itemClass: 'Bows', sockets: '' }),
+        advancedMods,
+      )
+      const openPrefix = filters.find((f) => f.id === 'pseudo.pseudo_number_of_empty_prefix_mods')
+      const openSuffix = filters.find((f) => f.id === 'pseudo.pseudo_number_of_empty_suffix_mods')
+      expect(openPrefix).toBeDefined()
+      expect(openPrefix?.value).toBe(1) // 1 max - 0 prefixes = 1 open
+      expect(openSuffix).toBeUndefined() // 1 max - 1 suffix = 0 open, no chip
+    })
+
+    it('generates no open affix chips for a fully-rolled magic item', () => {
+      const advancedMods: AdvancedMod[] = [
+        { type: 'prefix', name: 'Obliterator', tier: 1, tags: [], lines: ['some prefix'], ranges: [] },
+        { type: 'suffix', name: 'of Calamity', tier: 1, tags: [], lines: ['some suffix'], ranges: [] },
+      ]
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Magic', itemClass: 'Bows', sockets: '' }),
+        advancedMods,
+      )
+      expect(filters.find((f) => f.id === 'pseudo.pseudo_number_of_empty_prefix_mods')).toBeUndefined()
+      expect(filters.find((f) => f.id === 'pseudo.pseudo_number_of_empty_suffix_mods')).toBeUndefined()
+    })
+
     it('does not generate open affix chips for unique items', () => {
       const advancedMods: AdvancedMod[] = [
         { type: 'prefix', name: 'Mod1', tier: 1, tags: [], lines: ['some mod'], ranges: [] },

@@ -85,10 +85,12 @@ export function buildMiscFilters(
   if (advancedMods && advancedMods.length > 0 && itemInfo.rarity !== 'Unique') {
     const prefixCount = advancedMods.filter((m) => m.type === 'prefix' && !m.crafted).length
     const suffixCount = advancedMods.filter((m) => m.type === 'suffix' && !m.crafted).length
-    // Max affixes depends on item: normal equipment has 3/3, jewels have 2/2
+    // Max affixes per slot: Magic items cap at 1 prefix + 1 suffix regardless of
+    // base; rare gear is 3, rare jewels 2.
     const isJewel = itemInfo.itemClass === 'Jewels' || itemInfo.itemClass === 'Abyss Jewels'
-    const maxPrefixes = isJewel ? 2 : 3
-    const maxSuffixes = isJewel ? 2 : 3
+    const maxAffix = itemInfo.rarity === 'Magic' ? 1 : isJewel ? 2 : 3
+    const maxPrefixes = maxAffix
+    const maxSuffixes = maxAffix
     const openPrefixes = maxPrefixes - prefixCount
     const openSuffixes = maxSuffixes - suffixCount
     if (openPrefixes > 0) {
