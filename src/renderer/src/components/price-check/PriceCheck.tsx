@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from 'react'
 import type { PriceCheckProps, StatFilter, Listing, BulkListing } from './types'
+import { searchSignature } from './search-signature'
 import { getTradeUrls } from '../../../../shared/endpoints'
 import { getGameFeatures } from '../../../../shared/game-features'
 import {
@@ -168,6 +169,7 @@ export function PriceCheck({
     void loadMore()
   }, [queryId, remainingIds.length, loadingMore])
   const autoSearched = useRef(false)
+  const lastSearchedSig = useRef<string>('')
   const [isBulk, setIsBulk] = useState<boolean | null>(null)
   const [bulkListings, setBulkListings] = useState<BulkListing[]>([])
 
@@ -254,6 +256,13 @@ export function PriceCheck({
 
   const searchName = selectedUnique ?? item.name
 
+  const currentSig = useMemo(
+    () => searchSignature(filters, { listedTime, priceOption, statusOption }),
+    [filters, listedTime, priceOption, statusOption],
+  )
+  // Only dirty after a search has run, not while one is in progress, and never for bulk.
+  const searchDirty = searched && !searching && !isBulk && currentSig !== lastSearchedSig.current
+
   const doBulkSearch = async (): Promise<void> => {
     setSearching(true)
     setError(null)
@@ -300,6 +309,7 @@ export function PriceCheck({
       }
       setCollapsedVisibleIndices(enabledIndices)
     }
+    lastSearchedSig.current = searchSignature(filters, { listedTime, priceOption, statusOption })
     try {
       const result = await window.api.tradeSearch(
         {
@@ -783,12 +793,16 @@ export function PriceCheck({
         <div className="flex gap-[6px]">
           <button
             onClick={() => (isBulk ? doBulkSearch() : doSearch())}
+            onMouseEnter={() => {
+              if (searchDirty) void doSearch()
+            }}
             disabled={searching}
             className="flex-1 px-4 py-2 text-xs font-semibold border-none rounded"
             style={{
               background: searching ? 'rgba(255,255,255,0.1)' : 'var(--accent)',
               color: searching ? 'var(--text-dim)' : '#171821',
               cursor: searching ? 'default' : 'pointer',
+              boxShadow: searchDirty ? '0 0 4px 0 var(--accent)' : undefined,
             }}
           >
             {searching ? 'Searching...' : searched ? 'Search Again' : 'Search Trade'}
