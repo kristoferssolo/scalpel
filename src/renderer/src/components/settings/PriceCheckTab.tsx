@@ -114,6 +114,11 @@ export function PriceCheckTab({ settings, update, updateProfile, tryHotkey }: Pr
           onChange={(val) => update('tradeDefaultToBase', val)}
         />
         <SettingToggleBox
+          label='PoE2: default white/magic items to "Crafting Ready" (base + ilvl + affixes)'
+          checked={settings.tradePoe2CraftingReadyDefault ?? true}
+          onChange={(val) => update('tradePoe2CraftingReadyDefault', val)}
+        />
+        <SettingToggleBox
           label="Don't hide mods I uncheck"
           checked={settings.tradeKeepUncheckedVisible ?? false}
           onChange={(val) => update('tradeKeepUncheckedVisible', val)}

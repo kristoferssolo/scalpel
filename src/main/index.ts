@@ -198,6 +198,7 @@ const store = new Store<AppSettings>({
     priceCheckDefaultPercent: 90,
     adaptiveDefaultsMode: 'eager',
     tradeDefaultToBase: false,
+    tradePoe2CraftingReadyDefault: true,
     chatCommands: [],
     appMacros: [],
     stashScrollEnabled: false,

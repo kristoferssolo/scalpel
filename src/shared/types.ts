@@ -488,6 +488,9 @@ export interface AppSettings {
   tradeResultsView?: 'default' | 'open-all' | 'shrinkydink'
   priceCheckDefaultPercent: number
   tradeDefaultToBase: boolean
+  /** PoE2 only: default white/magic items to the "Crafting Ready" preset
+   *  (Base mode + explicit affixes) on price-check open. Defaults to on. */
+  tradePoe2CraftingReadyDefault?: boolean
   tradeKeepUncheckedVisible?: boolean
   tradeNeverAutoSearch?: boolean
   chatCommands: Array<{ hotkey: string; command: string; autoSubmit?: boolean; scope?: MacroScope }>

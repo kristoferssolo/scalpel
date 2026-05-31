@@ -26,7 +26,14 @@ import { BulkListings } from './BulkListings'
 import { ListingRowsSkeleton } from './PriceCheckSkeleton'
 import { RateLimitBar } from './RateLimitBar'
 import { DismissibleTip } from '../../shared/DismissibleTip'
-import { BASE_DEFAULT_ITEM_CLASSES, applyBaseModeToFilters, shouldIncludeImplicitsInBase } from './base-mode'
+import {
+  BASE_DEFAULT_ITEM_CLASSES,
+  CRAFTING_READY_EXCLUDED_CLASSES,
+  applyBaseModeToFilters,
+  applyCraftingReadyToFilters,
+  isCraftingReadyState,
+  shouldIncludeImplicitsInBase,
+} from './base-mode'
 import { applyLearnedDecisions } from './learned-decisions'
 import type { ListedTime, PriceOption, ResultsView, StatusOption } from './search-settings'
 import { LISTED_TIME_OPTIONS, getPriceOptions, primaryCurrencySwap, STATUS_OPTIONS } from './search-settings'
@@ -177,6 +184,18 @@ export function PriceCheck({
     setFilters((prev) => applyBaseModeToFilters(prev, item.rarity, item.corrupted))
   }
 
+  // Gear-only: maps/tablets/relics/flasks are isEquipment but their explicit "affixes" are
+  // map/monster/sanctum mods, not craftable gear prefixes/suffixes. Mirrored items are excluded
+  // too -- the preset chip is hidden for them, so applying it would leave no way to toggle off.
+  const craftingReadyEligible =
+    poeVersion === 2 &&
+    (item.rarity === 'Normal' || item.rarity === 'Magic') &&
+    !item.mirrored &&
+    !CRAFTING_READY_EXCLUDED_CLASSES.has(item.itemClass)
+  const applyCraftingReady = (): void => {
+    setFilters((prev) => applyCraftingReadyToFilters(prev, item.rarity, item.corrupted))
+  }
+
   // Check if this is a bulk exchange item on mount
   useEffect(() => {
     window.api.checkBulkItem(item.name, item.baseType, item.itemClass, item.rarity).then(setIsBulk)
@@ -210,18 +229,23 @@ export function PriceCheck({
       setSettingsLoaded(true)
       const isClassDefault = BASE_DEFAULT_ITEM_CLASSES.has(item.itemClass)
       const isUnique = item.rarity === 'Unique'
-      const keepRowsVisible = isUnique || !!s.tradeDefaultToBase
-      const useBaseMode = isClassDefault || keepRowsVisible
+      // Crafting Ready wins for eligible PoE2 white/magic items (it is a superset of
+      // Base that keeps the affixes on). Gated by the global setting (default on).
+      const craftingReadyDefault = craftingReadyEligible && (s.tradePoe2CraftingReadyDefault ?? true)
+      const keepRowsVisible = isUnique || !!s.tradeDefaultToBase || craftingReadyDefault
+      const useBaseMode = !craftingReadyDefault && (isClassDefault || keepRowsVisible)
       if (keepRowsVisible) {
-        // Keep rows visible that are enabled pre-Base OR that learning will enable.
+        // Keep rows visible that are enabled pre-preset OR that learning will enable.
         baseModeExpandedIndices.current = new Set(
           filters.map((f, i) => (f.enabled || learnedDecisions?.[f.id] === true ? i : -1)).filter((i) => i >= 0),
         )
       }
-      // Learning is the final layer: apply it on top of the (optionally base-moded) defaults.
+      // Learning is the final layer: apply it on top of the (optionally preset) defaults.
       setFilters((prev) => {
-        const based = useBaseMode ? applyBaseModeToFilters(prev, item.rarity, item.corrupted) : prev
-        return applyLearnedDecisions(based, learnedDecisions)
+        let seeded = prev
+        if (craftingReadyDefault) seeded = applyCraftingReadyToFilters(prev, item.rarity, item.corrupted)
+        else if (useBaseMode) seeded = applyBaseModeToFilters(prev, item.rarity, item.corrupted)
+        return applyLearnedDecisions(seeded, learnedDecisions)
       })
       baseModeApplied.current = true
       defaultsApplied.current = true
@@ -559,6 +583,33 @@ export function PriceCheck({
                   />
                 )
               })()}
+              {/* Crafting Ready chip -- PoE2 white/magic gear only. Base + ilvl + explicit affixes. */}
+              {craftingReadyEligible &&
+                (() => {
+                  const active = isCraftingReadyState(filters, includeImplicits)
+                  return (
+                    <FilterChip
+                      label="Crafting Ready"
+                      active={active}
+                      onClick={() => {
+                        applyCraftingReady()
+                        // Promote implicit/enchant and explicit rows into the visible set so
+                        // the affixes we just enabled aren't hidden behind "more filters".
+                        if (collapsedVisibleIndices) {
+                          const promoted = new Set(collapsedVisibleIndices)
+                          filters.forEach((f, i) => {
+                            if (
+                              f.type === 'explicit' ||
+                              (includeImplicits && (f.type === 'implicit' || f.type === 'enchant'))
+                            )
+                              promoted.add(i)
+                          })
+                          setCollapsedVisibleIndices(promoted)
+                        }
+                      }}
+                    />
+                  )
+                })()}
               {/* Filter chips (sockets, quality, ilvl, influence, etc.) */}
               {filters.map((f, i) => {
                 if (f.type !== 'socket' && f.type !== 'misc') return null
