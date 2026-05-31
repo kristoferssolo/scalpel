@@ -1168,6 +1168,56 @@ describe('matchItemMods', () => {
     })
   })
 
+  describe('charm slots (singular trade text vs plural item text)', () => {
+    // The PoE2 trade API stores these singular ("# Charm Slot", "Has # Charm Slot"),
+    // but a belt with 2+ slots reads "Charm Slots". Without the plural->singular
+    // text variant the anchored pattern never matches and the price checker shows
+    // no chip for the slot count. Real ids from the live PoE2 stats catalog.
+    const CHARM_SLOT_STATS = [
+      { id: 'implicit.stat_1416292992', text: 'Has # Charm Slot', type: 'implicit' },
+      { id: 'explicit.stat_2582079000', text: '# Charm Slot', type: 'explicit' },
+    ]
+
+    it('matches the plural "Has 2 Charm Slots" belt implicit', () => {
+      _setStatEntriesForTests(CHARM_SLOT_STATS)
+      const filters = matchItemMods(
+        [],
+        ['Has 2 Charm Slots'],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Belts' }),
+      )
+      const slot = filters.find((f) => f.id === 'implicit.stat_1416292992')
+      expect(slot).toBeDefined()
+      expect(slot?.value).toBe(2)
+    })
+
+    it('matches the plural "+2 Charm Slots" explicit', () => {
+      _setStatEntriesForTests(CHARM_SLOT_STATS)
+      const filters = matchItemMods(
+        ['+2 Charm Slots'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Belts' }),
+      )
+      const slot = filters.find((f) => f.id === 'explicit.stat_2582079000')
+      expect(slot).toBeDefined()
+      expect(slot?.value).toBe(2)
+    })
+
+    it('still matches the singular "Has 1 Charm Slot" form', () => {
+      _setStatEntriesForTests(CHARM_SLOT_STATS)
+      const filters = matchItemMods(
+        [],
+        ['Has 1 Charm Slot'],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Belts' }),
+      )
+      const slot = filters.find((f) => f.id === 'implicit.stat_1416292992')
+      expect(slot).toBeDefined()
+      expect(slot?.value).toBe(1)
+    })
+  })
+
   describe('tablet (precursor tablet) mods', () => {
     // Tablet affixes are explicit map mods, but the clipboard phrases them
     // differently from the trade stat text. buildTabletFilters maps the clipboard

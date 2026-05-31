@@ -56,6 +56,9 @@ function generateTextVariants(text: string): string[] {
     [/Flasks constantly apply their/g, 'Flask constantly applies its'],
     [/Skills are Jewel Sockets/g, 'Skill is a Jewel Socket'],
     [/Flasks/gi, 'Flask'],
+    // Trade API stores the singular "Has # Charm Slot" / "# Charm Slot"; an item
+    // with 2+ slots reads "Charm Slots", so without this it never matches.
+    [/Charm Slots/gi, 'Charm Slot'],
     [/Charges/gi, 'Charge'],
     [/Effects/gi, 'Effect'],
     [/Sockets/gi, 'Socket'],
