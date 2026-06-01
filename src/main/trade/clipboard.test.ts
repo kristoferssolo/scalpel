@@ -1312,6 +1312,64 @@ describe('parseItemText', () => {
     })
   })
 
+  // ---------------------------------------------------------------------------
+  // PoE2 enchantment headers ({ Enhancement } / { Corruption Enhancement })
+  // ---------------------------------------------------------------------------
+
+  describe('PoE2 enhancement headers', () => {
+    it('captures a { Corruption Enhancement } implicit as an enchant', () => {
+      const text = [
+        'Item Class: Sceptres',
+        'Rarity: Unique',
+        'Font of Power',
+        'Omen Sceptre',
+        '--------',
+        'Item Level: 68',
+        '--------',
+        '{ Corruption Enhancement }',
+        '24(15-25)% increased Spirit',
+        '--------',
+        '{ Unique Modifier }',
+        '34(30-50)% increased Spirit',
+        '--------',
+        'Corrupted',
+      ].join('\n')
+
+      const item = parseItemText(text)!
+      expect(item.enchants).toContain('24% increased Spirit')
+      // The unique explicit still flows through advanced-mod parsing unchanged.
+      expect(item.explicits).toContain('34% increased Spirit')
+      // The corruption enchant must NOT leak into explicits/implicits.
+      expect(item.explicits).not.toContain('24% increased Spirit')
+      expect(item.implicits).not.toContain('24% increased Spirit')
+    })
+
+    it('captures { Enhancement } anointments and strips the Unscalable Value suffix', () => {
+      const text = [
+        'Item Class: Amulets',
+        'Rarity: Normal',
+        'Twisted Amulet',
+        '--------',
+        'Item Level: 73',
+        '--------',
+        '{ Enhancement }',
+        'Allocates Sigil of Ice — Unscalable Value',
+        '{ Enhancement }',
+        'Allocates Inherited Strength — Unscalable Value',
+        '--------',
+        '{ Implicit Modifier }',
+        '-1 Prefix Modifier allowed',
+      ].join('\n')
+
+      const item = parseItemText(text)!
+      expect(item.enchants).toContain('Allocates Sigil of Ice')
+      expect(item.enchants).toContain('Allocates Inherited Strength')
+      // The genuine implicit still parses through the normal header path.
+      expect(item.implicits).toContain('-1 Prefix Modifier allowed')
+      expect(item.enchants).not.toContain('Allocates Sigil of Ice — Unscalable Value')
+    })
+  })
+
   describe('heist parsing', () => {
     it('parses heist job requirement from a contract (no unmet suffix)', () => {
       const text = [

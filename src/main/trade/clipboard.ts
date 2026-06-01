@@ -110,6 +110,24 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// PoE2's advanced clipboard format tags enchantments under { Enhancement }
+// headers and corruption implicits under { Corruption Enhancement } headers
+// (optionally followed by a tag), instead of the (enchant) line suffix the
+// rest of the parser keys off. The trade API stores both under the enchant.*
+// stat family, so the stat lines beneath these headers belong in enchants[].
+const ENHANCEMENT_HEADER = /^\{\s*(?:Corruption\s+)?Enhancement\b[^}]*\}$/i
+
+/** Strip advanced-mod roll-range notation ("41(39-42)%" -> "41%"), variant
+ *  alternatives ("Bladefall(Fireball-Divine Blast)" -> "Bladefall"), and the
+ *  trailing "Unscalable Value" suffix from a single advanced-mod stat line. */
+function cleanAdvancedModLine(line: string): string {
+  return line
+    .replace(/(-?\d+(?:\.\d+)?)\(-?\d+(?:\.\d+)?(?:--?\d+(?:\.\d+)?)?\)/g, '$1')
+    .replace(/([a-zA-Z]\w*)\s*\([^)]*\)/g, '$1')
+    .replace(/\s*[—–-]+\s*Unscalable Value$/i, '')
+    .trim()
+}
+
 /** Cheap scan for the prefix/suffix names in advanced-mod headers, e.g.
  *   { Prefix Modifier "Sanguine" (Tier: 11) -- Life }
  *   { Suffix Modifier "of the Troll" (Tier: 6) -- Life }
@@ -483,9 +501,24 @@ export function parseItemText(text: string): PoeItem | null {
   // Parse enchant and imbue lines
   const imbues: string[] = []
   for (const section of sections) {
+    let inEnhancement = false
     for (const line of section.split('\n').map((l) => l.trim())) {
+      if (!line) continue
+      // Advanced-mod headers set the context for the stat lines beneath them.
+      // A { Enhancement } / { Corruption Enhancement } header means the lines
+      // that follow are enchants; any other header (or a non-header line) ends
+      // that context so unrelated mods aren't swept in.
+      if (line.startsWith('{')) {
+        inEnhancement = ENHANCEMENT_HEADER.test(line)
+        continue
+      }
       if (line.endsWith('(enchant)') && !line.startsWith('(')) {
         enchants.push(line.replace(/\s*\(enchant\)$/, '').trim())
+        continue
+      }
+      if (inEnhancement && !line.startsWith('(')) {
+        enchants.push(cleanAdvancedModLine(line))
+        continue
       }
       if (line.startsWith('Supported by Level')) {
         imbues.push(line)
@@ -504,13 +537,7 @@ export function parseItemText(text: string): PoeItem | null {
     for (const am of advancedMods) {
       const stripped = am.lines
         .filter((l) => !l.startsWith('(')) // Skip parenthetical descriptions
-        .map((l) =>
-          l
-            .replace(/(-?\d+(?:\.\d+)?)\(-?\d+(?:\.\d+)?(?:--?\d+(?:\.\d+)?)?\)/g, '$1') // Strip roll ranges: 18(15-20) and fixed 18(15)
-            .replace(/([a-zA-Z]\w*)\s*\([^)]*\)/g, '$1') // Strip variant alternatives e.g. Bladefall(Fireball-Divine Blast) -> Bladefall, Ghost Reaver() -> Ghost Reaver
-            .replace(/\s*[\u2014\u2013-]+\s*Unscalable Value$/i, '') // Strip "— Unscalable Value" suffix
-            .trim(),
-        )
+        .map(cleanAdvancedModLine)
         .filter(Boolean)
       // For multi-line mods: push both the joined version (for genuine multi-line stats like
       // "Passives granting Fire Resistance...\nalso grant increased Maximum Life...") AND
