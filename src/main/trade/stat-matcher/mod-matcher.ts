@@ -35,12 +35,13 @@ export function matchModToStat(
   preferLocal = false,
   modType: 'explicit' | 'crafted' | 'implicit' | 'enchant' | 'imbued' | 'sanctum' = 'explicit',
   preferIndexableSupport = false,
+  preferJewel = false,
 ): { statId: string; value: number | null; option?: number; aggregated?: boolean } | null {
   // Check direct mappings first (for mods with completely different trade API wording)
   const directKey = modText.toLowerCase().trim()
   if (DIRECT_MOD_MAPPINGS[directKey]) return DIRECT_MOD_MAPPINGS[directKey]
 
-  const result = _matchModToStat(modText, preferLocal, modType, preferIndexableSupport)
+  const result = _matchModToStat(modText, preferLocal, modType, preferIndexableSupport, preferJewel)
   if (result && STAT_ID_REMAPS[result.statId]) {
     result.statId = STAT_ID_REMAPS[result.statId]
   }
@@ -52,6 +53,7 @@ function _matchModToStat(
   preferLocal = false,
   modType: 'explicit' | 'crafted' | 'implicit' | 'enchant' | 'imbued' | 'sanctum' = 'explicit',
   preferIndexableSupport = false,
+  preferJewel = false,
 ): { statId: string; value: number | null; option?: number; aggregated?: boolean } | null {
   const statEntries: StatEntry[] = getStatEntries()
   const typePrefix = `${modType}.`
@@ -81,13 +83,23 @@ function _matchModToStat(
       aggregated?: boolean
       _textLen: number
     } | null = null
+    let jewelMatch: {
+      statId: string
+      value: number | null
+      option?: number
+      aggregated?: boolean
+      _textLen: number
+    } | null = null
 
     for (const entry of statEntries) {
       if (!entry.id.startsWith(typePrefix)) continue
       if (BLOCKED_STAT_IDS.has(entry.id)) continue
       if (preferIndexableSupport ? !INDEXABLE_SUPPORT_RE.test(entry.id) : INDEXABLE_SUPPORT_RE.test(entry.id)) continue
       const isLocal = entry.text.includes('(Local)')
-      const textForPattern = isLocal ? entry.text.replace(/\s*\(Local\)/, '') : entry.text
+      const isJewel = entry.text.includes('(Jewel)')
+      let textForPattern = entry.text
+      if (isLocal) textForPattern = textForPattern.replace(/\s*\(Local\)/, '')
+      else if (isJewel) textForPattern = textForPattern.replace(/\s*\(Jewel\)/, '')
       const pattern = statTextToPattern(textForPattern)
       const match = normalizedVariant.match(pattern)
       if (match) {
@@ -126,14 +138,17 @@ function _matchModToStat(
         }
         if (isLocal) {
           if (!localMatch || entry.text.length > localMatch._textLen) localMatch = result
+        } else if (isJewel) {
+          if (!jewelMatch || entry.text.length > jewelMatch._textLen) jewelMatch = result
         } else {
           if (!nonLocalMatch || entry.text.length > nonLocalMatch._textLen) nonLocalMatch = result
         }
       }
     }
 
-    const result =
-      preferLocal && localMatch ? localMatch : !preferLocal && nonLocalMatch ? nonLocalMatch : nonLocalMatch
+    let result = nonLocalMatch
+    if (preferLocal && localMatch) result = localMatch
+    else if (preferJewel && jewelMatch) result = jewelMatch
     if (result) return result
   }
 

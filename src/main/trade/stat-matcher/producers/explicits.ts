@@ -59,7 +59,8 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
       if (advMod?.randomSupport) isRandomSupport = true
     }
     const useLocal = hasLocalMods && isLocalMod(cleaned, isWeapon)
-    const matched = matchModToStat(cleaned, useLocal, isCrafted ? 'crafted' : 'explicit', isRandomSupport)
+    const isJewelItem = itemInfo?.itemClass === 'Jewels'
+    const matched = matchModToStat(cleaned, useLocal, isCrafted ? 'crafted' : 'explicit', isRandomSupport, isJewelItem)
     if (matched) {
       const lowPriority = isLowPriority(cleaned)
 

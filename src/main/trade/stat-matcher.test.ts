@@ -1651,6 +1651,40 @@ describe('matchItemMods', () => {
       expect(filters.find((f) => f.id === 'explicit.stat_210067635')).toBeUndefined()
     })
   })
+
+  describe('jewel vs global variant selection', () => {
+    it('jewel picks the (Jewel) variant and preserves the roll value', () => {
+      _setStatEntriesForTests([
+        { id: 'explicit.stat_1604736568', text: 'Recover #% of maximum Mana on Kill (Jewel)', type: 'explicit' },
+        { id: 'explicit.stat_1030153674', text: 'Recover #% of maximum Mana on Kill', type: 'explicit' },
+      ])
+      const filters = matchItemMods(
+        ['Recover 5% of maximum Mana on Kill'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Jewels' }),
+      )
+      const jewelFilter = filters.find((f) => f.id === 'explicit.stat_1604736568')
+      expect(jewelFilter).toBeDefined()
+      expect(jewelFilter?.value).toBe(5)
+      expect(filters.find((f) => f.id === 'explicit.stat_1030153674')).toBeUndefined()
+    })
+
+    it('non-jewel item picks the global variant and not the (Jewel) one', () => {
+      _setStatEntriesForTests([
+        { id: 'explicit.stat_1604736568', text: 'Recover #% of maximum Mana on Kill (Jewel)', type: 'explicit' },
+        { id: 'explicit.stat_1030153674', text: 'Recover #% of maximum Mana on Kill', type: 'explicit' },
+      ])
+      const filters = matchItemMods(
+        ['Recover 5% of maximum Mana on Kill'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Amulets' }),
+      )
+      expect(filters.find((f) => f.id === 'explicit.stat_1030153674')).toBeDefined()
+      expect(filters.find((f) => f.id === 'explicit.stat_1604736568')).toBeUndefined()
+    })
+  })
 })
 
 // ─── matchModToStat: requires stat entries (network-dependent) ───────────────
