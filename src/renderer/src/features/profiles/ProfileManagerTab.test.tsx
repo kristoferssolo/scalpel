@@ -116,13 +116,12 @@ describe('ProfileManagerTab', () => {
     expect(window.api.renameProfile).not.toHaveBeenCalled()
   })
 
-  it('applies dev restart-to-switch settings after one confirmed click', async () => {
+  it('retargets in-process on cross-game profile switch', async () => {
     const profiles = [
       profile({ id: 'poe1', name: 'PoE1 mapper', gameVariant: 1, active: true }),
       profile({ id: 'poe2', name: 'PoE2 mapper', gameVariant: 2 }),
     ]
     installApi(profiles)
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     const nextSettings = settings({ poeVersion: 2, activeProfileId: 'poe2' })
     vi.mocked(window.api.setActiveProfile)
@@ -130,7 +129,7 @@ describe('ProfileManagerTab', () => {
       .mockImplementationOnce(async () => {
         profiles[0].active = false
         profiles[1].active = true
-        return { ok: true, settings: nextSettings, devRestartRequired: true }
+        return { ok: true, settings: nextSettings }
       })
     const onSettingsChange = vi.fn()
 
@@ -141,9 +140,6 @@ describe('ProfileManagerTab', () => {
 
     await waitFor(() => expect(onSettingsChange).toHaveBeenCalledWith(nextSettings))
     expect(window.api.setActiveProfile).toHaveBeenCalledTimes(2)
-    expect(
-      await screen.findByText('Profile selected. Restart the dev app to attach to the selected game.'),
-    ).toBeInTheDocument()
   })
 
   it('delegates Edit clicks to the app-level route handler', async () => {

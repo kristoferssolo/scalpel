@@ -91,10 +91,10 @@ function ProfileManagerStoryboard({
       setProfiles((prev) => prev.filter((p) => p.id !== id))
     },
     getSettings: async () => currentSettings,
-    setActiveProfile: async (id: string) => {
+    setActiveProfile: async (id: string, restartIfNeeded?: boolean) => {
       const selected = profiles.find((p) => p.id === id)
       if (!selected) return { ok: false, error: 'Profile not found' }
-      if (selected.gameVariant !== currentSettings.poeVersion) {
+      if (selected.gameVariant !== currentSettings.poeVersion && !restartIfNeeded) {
         return { ok: false, requiresRestart: true, targetGame: selected.gameVariant }
       }
       const next = { ...currentSettings, activeProfileId: id }

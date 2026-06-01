@@ -125,13 +125,9 @@ export function AppWindow(): JSX.Element {
   const editProfile = async (profile: PoeProfileSummary): Promise<void> => {
     const result = await window.api.setActiveProfile(profile.id)
     if (!result.ok && 'requiresRestart' in result) {
-      const confirmed = window.confirm(
-        `Editing this PoE${profile.gameVariant} profile requires restarting Scalpel so the overlay can attach to the correct game. Restart now?`,
-      )
-      if (!confirmed) return
-      const restartResult = await window.api.setActiveProfile(profile.id, true)
-      if (!restartResult.ok || !('settings' in restartResult)) return
-      setSettings(restartResult.settings)
+      const targetResult = await window.api.setActiveProfile(profile.id, true)
+      if (!targetResult.ok || !('settings' in targetResult)) return
+      setSettings(targetResult.settings)
       setSettingsTabRequest((prev) => ({ tab: 'filter', n: (prev?.n ?? 0) + 1 }))
       goTo('settings')
       return

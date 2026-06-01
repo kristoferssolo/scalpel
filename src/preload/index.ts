@@ -51,8 +51,7 @@ export const api = {
     id: string,
     restartIfNeeded = false,
   ): Promise<
-    | { ok: true; settings: RuntimeSettings; devRestartRequired?: true }
-    | { ok: true; restarting: true; devRestartRequired?: true }
+    | { ok: true; settings: RuntimeSettings }
     | { ok: false; requiresRestart: true; targetGame: GameVariant }
     | { ok: false; error: string }
   > => ipcRenderer.invoke('set-active-profile', id, restartIfNeeded),

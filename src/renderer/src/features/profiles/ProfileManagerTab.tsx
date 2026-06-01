@@ -47,22 +47,15 @@ export function ProfileManagerTab({
     setError(null)
     const result = await window.api.setActiveProfile(profile.id)
     if (!result.ok && 'requiresRestart' in result) {
-      const confirmed = window.confirm(
-        `Switching to a PoE${result.targetGame} profile requires restarting Scalpel so the overlay can attach to the correct game. Restart now?`,
-      )
-      if (!confirmed) return
-      const restartResult = await window.api.setActiveProfile(profile.id, true)
-      if (!restartResult.ok) {
+      const targetResult = await window.api.setActiveProfile(profile.id, true)
+      if (!targetResult.ok) {
         setError('Could not switch profile.')
         return
       }
-      if ('settings' in restartResult) {
-        onSettingsChange(restartResult.settings)
+      if ('settings' in targetResult) {
+        onSettingsChange(targetResult.settings)
         setSwitchedFilterName(inGameFilterName(profile))
         await reloadProfiles()
-      }
-      if ('devRestartRequired' in restartResult) {
-        setError('Profile selected. Restart the dev app to attach to the selected game.')
       }
       return
     }

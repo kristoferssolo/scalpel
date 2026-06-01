@@ -7,6 +7,7 @@ declare global {
       SCALPEL_DEBUG_LOG?: string
       SCALPEL_E2E?: string
       SCALPEL_E2E_USER_DATA?: string
+      SCALPEL_SMOKE_USER_DATA?: string
     }
   }
 }
