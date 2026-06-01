@@ -1,3 +1,4 @@
+import { getPoeVersion } from '../../../game-state'
 import { SKILL_GEM_CLASSES } from '../../../../shared/poe-item'
 import type { AdvancedMod } from '../../../../shared/types'
 import type { StatFilter } from '../../trade'
@@ -97,13 +98,17 @@ export function buildMiscFilters(
   }
 
   // Open prefix/suffix chips (from advanced mod data, non-uniques only).
-  // Crafted affixes count as "empty" since they're replaceable -- a crafted suffix
-  // plus a literally-empty suffix is counted as 2 open suffixes for pricing purposes.
+  // PoE1: crafted affixes count as "empty" since a bench craft is scour-able -- a
+  // crafted suffix plus a literally-empty suffix is counted as 2 open suffixes.
+  // PoE2: crafted affixes aren't trivially replaced, so they occupy their slot like
+  // any other affix and are not counted as open.
   // Normal (white) items are skipped: every affix is open by definition, so the
   // chips just restate what the rarity already implies.
   if (advancedMods && advancedMods.length > 0 && itemInfo.rarity !== 'Unique' && itemInfo.rarity !== 'Normal') {
-    const prefixCount = advancedMods.filter((m) => m.type === 'prefix' && !m.crafted).length
-    const suffixCount = advancedMods.filter((m) => m.type === 'suffix' && !m.crafted).length
+    const craftedOccupies = getPoeVersion() === 2
+    const occupies = (m: AdvancedMod): boolean => craftedOccupies || !m.crafted
+    const prefixCount = advancedMods.filter((m) => m.type === 'prefix' && occupies(m)).length
+    const suffixCount = advancedMods.filter((m) => m.type === 'suffix' && occupies(m)).length
     // Max affixes per slot: Magic items cap at 1 prefix + 1 suffix regardless of
     // base; rare gear is 3, rare jewels 2.
     const isJewel = itemInfo.itemClass === 'Jewels' || itemInfo.itemClass === 'Abyss Jewels'

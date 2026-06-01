@@ -523,6 +523,46 @@ describe('matchItemMods', () => {
       expect(filters.find((f) => f.id === 'pseudo.pseudo_number_of_empty_suffix_mods')).toBeUndefined()
     })
 
+    it('counts a crafted affix as open in PoE1 but occupied in PoE2', () => {
+      const advancedMods: AdvancedMod[] = [
+        { type: 'prefix', name: 'Mod1', tier: 1, tags: [], lines: ['some prefix'], ranges: [] },
+        {
+          type: 'suffix',
+          name: 'of Calamity',
+          tier: 1,
+          tags: [],
+          lines: ['+3% to Critical Hit Chance'],
+          ranges: [],
+          crafted: true,
+        },
+      ]
+      const run = () =>
+        matchItemMods(
+          [],
+          [],
+          undefined,
+          makeItemInfo({ rarity: 'Rare', itemClass: 'Rings', sockets: '' }),
+          advancedMods,
+        )
+
+      const prev = getPoeVersion()
+      try {
+        setPoeVersion(1)
+        const poe1 = run()
+        // PoE1: crafted suffix is scour-able, so it doesn't occupy a slot.
+        expect(poe1.find((f) => f.id === 'pseudo.pseudo_number_of_empty_suffix_mods')?.value).toBe(3)
+
+        setPoeVersion(2)
+        const poe2 = run()
+        // PoE2: crafted suffix occupies its slot like any other affix.
+        expect(poe2.find((f) => f.id === 'pseudo.pseudo_number_of_empty_suffix_mods')?.value).toBe(2)
+        // Prefix count is unaffected by version (no crafted prefix here).
+        expect(poe2.find((f) => f.id === 'pseudo.pseudo_number_of_empty_prefix_mods')?.value).toBe(2)
+      } finally {
+        setPoeVersion(prev)
+      }
+    })
+
     it('does not generate open affix chips for unique items', () => {
       const advancedMods: AdvancedMod[] = [
         { type: 'prefix', name: 'Mod1', tier: 1, tags: [], lines: ['some mod'], ranges: [] },
