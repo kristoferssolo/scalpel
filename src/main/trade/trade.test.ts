@@ -88,6 +88,7 @@ vi.mock('./stat-matcher', async (orig) => {
 
 import {
   buildGemTypeField,
+  isBulkExchangeItem,
   searchTrade,
   searchNeedsLogin,
   stripTradeTokens,
@@ -682,5 +683,20 @@ describe('searchTrade pseudo emission', () => {
   it('searchNeedsLogin: false on PoE1 even for an otherwise-weighted pseudo id', () => {
     setPoeVersion(1)
     expect(searchNeedsLogin([addsElePseudo])).toBe(false)
+  })
+})
+
+describe('isBulkExchangeItem (PoE2 slug-gated routing)', () => {
+  it('routes an exchange-eligible item to bulk when it has an exchange ID', () => {
+    setPoeVersion(2)
+    // Verisium is stackable currency with a seeded exchange slug.
+    expect(isBulkExchangeItem('Stackable Currency', 'Verisium', 'Verisium')).toBe(true)
+  })
+
+  it('does NOT route an exchange-eligible item to bulk when it has no exchange ID', () => {
+    setPoeVersion(2)
+    // Panther Idol is class-eligible (Idols) but isn't on the exchange / has no
+    // slug -- it should fall through to regular search (AngeBanner still shows).
+    expect(isBulkExchangeItem('Idols', 'Panther Idol', 'Panther Idol')).toBe(false)
   })
 })

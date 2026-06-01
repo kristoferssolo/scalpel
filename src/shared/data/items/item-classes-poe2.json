@@ -2,6 +2,9 @@
   "Amulets": {
     "bases": [
       {
+        "name": "Absent Amulet"
+      },
+      {
         "name": "Amber Amulet"
       },
       {
@@ -11,7 +14,13 @@
         "name": "Bloodstone Amulet"
       },
       {
+        "name": "Corona Amulet"
+      },
+      {
         "name": "Crimson Amulet"
+      },
+      {
+        "name": "Distorted Amulet"
       },
       {
         "name": "Dusk Amulet"
@@ -26,6 +35,9 @@
         "name": "Jade Amulet"
       },
       {
+        "name": "Lament Amulet"
+      },
+      {
         "name": "Lapis Amulet"
       },
       {
@@ -38,6 +50,9 @@
         "name": "Penumbra Amulet"
       },
       {
+        "name": "Portent Amulet"
+      },
+      {
         "name": "Solar Amulet"
       },
       {
@@ -45,6 +60,12 @@
       },
       {
         "name": "Tenebrous Amulet"
+      },
+      {
+        "name": "Twisted Amulet"
+      },
+      {
+        "name": "Veridical Chain"
       }
     ],
     "size": [
@@ -61,7 +82,13 @@
         "name": "Fine Belt"
       },
       {
+        "name": "Forking Belt"
+      },
+      {
         "name": "Heavy Belt"
+      },
+      {
+        "name": "Invoking Belt"
       },
       {
         "name": "Linen Belt"
@@ -80,6 +107,12 @@
       },
       {
         "name": "Rawhide Belt"
+      },
+      {
+        "name": "Sinew Belt"
+      },
+      {
+        "name": "Stalking Belt"
       },
       {
         "name": "Utility Belt"
@@ -106,6 +139,9 @@
       },
       {
         "name": "Anchorite Garb"
+      },
+      {
+        "name": "Ancient Mail"
       },
       {
         "name": "Armoured Vest"
@@ -230,6 +266,9 @@
         "name": "Grand Regalia"
       },
       {
+        "name": "Grasping Mail"
+      },
+      {
         "name": "Hatungo Garb"
       },
       {
@@ -314,6 +353,9 @@
         "name": "Ornate Plate"
       },
       {
+        "name": "Ornate Ringmail"
+      },
+      {
         "name": "Patchwork Vest"
       },
       {
@@ -330,6 +372,9 @@
       },
       {
         "name": "Plated Vestments"
+      },
+      {
+        "name": "Primal Markings"
       },
       {
         "name": "Quilted Vest"
@@ -499,6 +544,9 @@
     "bases": [
       {
         "name": "Adherent Leggings"
+      },
+      {
+        "name": "Ancient Leggings"
       },
       {
         "name": "Apostle Leggings"
@@ -812,6 +860,9 @@
         "name": "Guardian Bow"
       },
       {
+        "name": "Heartwood Shortbow"
+      },
+      {
         "name": "Heavy Bow"
       },
       {
@@ -1011,6 +1062,9 @@
         "name": "Tense Crossbow"
       },
       {
+        "name": "Trarthan Cannon"
+      },
+      {
         "name": "Twin Crossbow"
       },
       {
@@ -1103,6 +1157,9 @@
       },
       {
         "name": "Ancient Cuffs"
+      },
+      {
+        "name": "Ancient Gauntlets"
       },
       {
         "name": "Ancient Mitts"
@@ -1335,7 +1392,7 @@
         "name": "Vaal Wraps"
       },
       {
-        "name": "Verisium Cuffs"
+        "name": "Kalguuran Cuffs"
       },
       {
         "name": "War Wraps"
@@ -1353,6 +1410,9 @@
     "bases": [
       {
         "name": "Ancestral Tiara"
+      },
+      {
+        "name": "Ancient Visor"
       },
       {
         "name": "Armoured Cap"
@@ -1474,7 +1534,7 @@
         "name": "Freebooter Cap"
       },
       {
-        "name": "Gladiatoral Helm"
+        "name": "Cassis Helm"
       },
       {
         "name": "Gladiatorial Helm"
@@ -1621,6 +1681,9 @@
       },
       {
         "name": "Swathed Cap"
+      },
+      {
+        "name": "Tenebrous Crown"
       },
       {
         "name": "Trapper Hood"
@@ -1827,6 +1890,9 @@
         "name": "Amethyst Ring"
       },
       {
+        "name": "Biostatic Ring"
+      },
+      {
         "name": "Breach Ring"
       },
       {
@@ -1842,10 +1908,22 @@
         "name": "Gold Ring"
       },
       {
+        "name": "Grasping Ring"
+      },
+      {
         "name": "Iron Ring"
       },
       {
+        "name": "Kinetic Ring"
+      },
+      {
         "name": "Lazuli Ring"
+      },
+      {
+        "name": "Mnemonic Ring"
+      },
+      {
+        "name": "Oneiric Ring"
       },
       {
         "name": "Pearl Ring"
@@ -1872,7 +1950,13 @@
         "name": "Topaz Ring"
       },
       {
+        "name": "Two-Stone Ring"
+      },
+      {
         "name": "Unset Ring"
+      },
+      {
+        "name": "Vitalic Ring"
       }
     ],
     "size": [
@@ -1973,6 +2057,9 @@
       },
       {
         "name": "Fur-lined Targe"
+      },
+      {
+        "name": "Glacial Fortress"
       },
       {
         "name": "Glowering Crest Shield"
@@ -2082,6 +2169,9 @@
       },
       {
         "name": "Vaal Tower Shield"
+      },
+      {
+        "name": "Venerable Defender"
       },
       {
         "name": "Wayward Crest Shield"
@@ -2199,6 +2289,9 @@
         "name": "Paralysing Staff"
       },
       {
+        "name": "Perching Staff"
+      },
+      {
         "name": "Permafrost Staff"
       },
       {
@@ -2305,6 +2398,9 @@
   "Two Hand Maces": {
     "bases": [
       {
+        "name": "Aberrant Sledge"
+      },
+      {
         "name": "Anvil Maul"
       },
       {
@@ -2400,7 +2496,13 @@
         "name": "Galvanic Wand"
       },
       {
+        "name": "Runic Fork"
+      },
+      {
         "name": "Siphoning Wand"
+      },
+      {
+        "name": "Twisted Wand"
       },
       {
         "name": "Volatile Wand"
@@ -2481,6 +2583,9 @@
       },
       {
         "name": "Striking Quarterstaff"
+      },
+      {
+        "name": "Warding Quarterstaff"
       },
       {
         "name": "Waxing Quarterstaff"

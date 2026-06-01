@@ -137,7 +137,7 @@ const POE2_RULES: BulkExchangeRules = {
     'Map Fragments',
     'Pinnacle Keys',
     'Vault Keys',
-    'Omens',
+    'Omen',
   ]),
   exceptions: new Set<string>(),
   baseTypes: new Set<string>(),

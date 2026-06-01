@@ -1224,11 +1224,14 @@ export function isBulkExchangeItem(itemClass: string, name: string, baseType: st
   // Beasts are "Stackable Currency" but have rarity Rare/Unique and need regular trade
   if (itemClass === 'Stackable Currency' && (_rarity === 'Rare' || _rarity === 'Unique')) return false
 
-  // PoE2 routing: anything sold at Ange's exchange goes through bulk, and the
-  // final check below catches the rest via exchange-ID presence. The shared
-  // eligibility table is the user-facing source of truth for "what you'd
-  // trade in bulk" -- PoE1 uses the same predicate via Faustus elsewhere.
-  if (getPoeVersion() === 2 && isVendorExchangeItem(2, itemClass, baseType, _rarity)) return true
+  // PoE2 routing: an Ange-exchange item only goes through bulk if we actually
+  // have its exchange ID. Eligible-but-no-ID items (e.g. new bases not yet on
+  // the exchange) fall through to regular search so the user sees real listings
+  // as a price reference -- the AngeBanner still surfaces independently (it
+  // keys off isVendorExchangeItem), so they're still told to check Ange.
+  if (getPoeVersion() === 2 && isVendorExchangeItem(2, itemClass, baseType, _rarity)) {
+    return getBulkExchangeId(name, baseType) != null
+  }
 
   const bulkClasses = new Set([
     'Currency',
