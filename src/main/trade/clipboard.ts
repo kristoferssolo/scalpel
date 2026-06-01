@@ -848,10 +848,10 @@ function parseAdvancedMods(text: string): AdvancedMod[] {
     const match = line.match(headerPattern)
     if (match) {
       if (currentMod) mods.push(currentMod)
-      const modPrefix = match[1].trim().toLowerCase() // e.g. "fractured", "master crafted", ""
+      const modPrefix = match[1].trim().toLowerCase() // e.g. "fractured", "master crafted" (PoE1) / "crafted" (PoE2), ""
       const modType = match[2].toLowerCase() // e.g. "prefix", "suffix", "implicit", "unique"
       const isFractured = modPrefix === 'fractured'
-      const isCrafted = modPrefix === 'master crafted'
+      const isCrafted = modPrefix === 'master crafted' || modPrefix === 'crafted'
       const isEldritch = modPrefix === 'searing exarch' || modPrefix === 'eater of worlds'
       const isFoulborn = modPrefix === 'foulborn'
       const rawTags = match[5] ?? ''

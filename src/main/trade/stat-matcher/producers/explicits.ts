@@ -1,3 +1,4 @@
+import { getPoeVersion } from '../../../game-state'
 import { BENEFICIAL_NEGATIVE_KEYWORDS } from '../../../../shared/data/trade/beneficial-negatives'
 import { isClusterJewel } from '../../../../shared/poe-item'
 import type { StatFilter } from '../../trade'
@@ -28,6 +29,11 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
     isTablet,
   } = ctx
   const out: StatFilter[] = []
+  // PoE2's trade API has no crafted.* stat category - crafted mods are queried as
+  // explicit.* like any other affix. They also aren't trivially re-rolled the way PoE1
+  // bench crafts are, so they're enabled by default. The crafted flag still drives the
+  // display color; only trade matching/enablement diverge.
+  const isPoe2 = getPoeVersion() === 2
 
   // Relic affixes are matched against the sanctum.* stat list by buildRelicFilters;
   // tablet affixes by buildTabletFilters (clipboard phrasing differs from trade text).
@@ -60,7 +66,15 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
     }
     const useLocal = hasLocalMods && isLocalMod(cleaned, isWeapon)
     const isJewelItem = itemInfo?.itemClass === 'Jewels'
-    const matched = matchModToStat(cleaned, useLocal, isCrafted ? 'crafted' : 'explicit', isRandomSupport, isJewelItem)
+    // In PoE2 a crafted mod trades as an explicit (no crafted.* stats exist).
+    const craftedForTrade = isCrafted && !isPoe2
+    const matched = matchModToStat(
+      cleaned,
+      useLocal,
+      craftedForTrade ? 'crafted' : 'explicit',
+      isRandomSupport,
+      isJewelItem,
+    )
     if (matched) {
       const lowPriority = isLowPriority(cleaned)
 
@@ -159,7 +173,7 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
       // otherwise contribute to total ele res / total life same as a regular roll.
       if (isFractured && matched.statId.startsWith('explicit.')) {
         matched.statId = `fractured.${matched.statId.split('.').slice(1).join('.')}`
-      } else if (isCrafted && matched.statId.startsWith('explicit.')) {
+      } else if (craftedForTrade && matched.statId.startsWith('explicit.')) {
         matched.statId = `crafted.${matched.statId.split('.').slice(1).join('.')}`
       }
 
@@ -173,7 +187,7 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
           isFractured ||
           isFoulborn ||
           (!lowPriority &&
-            !isCrafted &&
+            !craftedForTrade &&
             !pseudoList &&
             !isHybridCompanion &&
             !(hasDefenses && isDefenseMod(cleaned)) &&

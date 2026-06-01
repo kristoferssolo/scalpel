@@ -7,6 +7,7 @@ vi.mock('electron', () => ({
   },
 }))
 
+import { getPoeVersion, setPoeVersion } from '../game-state'
 import type { AdvancedMod } from '../../shared/types'
 import { _setStatEntriesForTests, ITEM_CLASS_TO_CATEGORY, matchItemMods, matchModToStat } from './stat-matcher'
 
@@ -1471,6 +1472,49 @@ describe('matchItemMods', () => {
       const fracturedRow = filters.find((f) => f.id === 'fractured.stat_3261801346')
       expect(fracturedRow).toBeDefined()
       expect(fracturedRow?.type).toBe('fractured')
+    })
+  })
+
+  describe('PoE2 crafted mods', () => {
+    // PoE2's trade API has no crafted.* stat category, and PoE2 crafted mods aren't
+    // trivially re-rolled like PoE1 bench crafts. So they query as explicit.* and are
+    // enabled by default, while the crafted flag still drives the display color.
+    it('queries as explicit, enabled by default, but keeps crafted type', () => {
+      const prev = getPoeVersion()
+      setPoeVersion(2)
+      try {
+        _setStatEntriesForTests([
+          { id: 'explicit.stat_518292764', text: '#% to Critical Hit Chance', type: 'explicit' },
+        ])
+        const advancedMods: AdvancedMod[] = [
+          {
+            type: 'suffix',
+            name: 'of Calamity',
+            tier: 3,
+            tags: ['Attack', 'Critical'],
+            lines: ['+5% to Critical Hit Chance'],
+            ranges: [{ value: 5, min: 3, max: 5 }],
+            fractured: false,
+            crafted: true,
+            eldritch: false,
+            foulborn: false,
+          },
+        ]
+        const filters = matchItemMods(
+          ['+5% to Critical Hit Chance'],
+          [],
+          undefined,
+          makeItemInfo({ rarity: 'Rare', itemClass: 'Rings' }),
+          advancedMods,
+        )
+        const row = filters.find((f) => f.id === 'explicit.stat_518292764')
+        expect(row).toBeDefined()
+        expect(row?.type).toBe('crafted')
+        expect(row?.enabled).toBe(true)
+        expect(filters.some((f) => f.id.startsWith('crafted.'))).toBe(false)
+      } finally {
+        setPoeVersion(prev)
+      }
     })
   })
 

@@ -1315,6 +1315,27 @@ describe('parseItemText', () => {
       expect(craftedMod).toBeDefined()
     })
 
+    it('handles PoE2 crafted mods (bare "Crafted" qualifier)', () => {
+      const text = [
+        'Item Class: Quarterstaves',
+        'Rarity: Rare',
+        'Demon Spell',
+        'Skullcrusher Quarterstaff',
+        '--------',
+        'Item Level: 77',
+        '--------',
+        '{ Suffix Modifier "of the Arid" (Tier: 3) — Mana, Physical, Attack }',
+        'Leeches 6.21(6-6.9)% of Physical Damage as Mana',
+        '{ Crafted Suffix Modifier "of Calamity" (Tier: 3) — Attack, Critical }',
+        '+3.46(3.11-3.8)% to Critical Hit Chance',
+      ].join('\n')
+
+      const item = parseItemText(text)!
+      const craftedMod = item.advancedMods?.find((m) => m.crafted)
+      expect(craftedMod).toBeDefined()
+      expect(craftedMod?.name).toBe('of Calamity')
+    })
+
     it('rebuilds implicits and explicits from advanced mods', () => {
       const text = [
         'Item Class: Rings',
