@@ -1,7 +1,6 @@
 import Store from 'electron-store'
 import type {
   AppSettings,
-  GameVariant,
   PoeProfile,
   PoeProfileSummary,
   ProfileSettingKey,
@@ -9,7 +8,9 @@ import type {
   RegexPreset,
   RuntimeSettings,
 } from '../../shared/types'
+import type { GameVariant } from '../../shared/game-variant'
 import { getProfileStore, type ProfileStore } from './store'
+import { gameDisplayName } from '../../shared/game-variant'
 
 export type ProfileChangedSetting =
   | { key: 'activeProfile'; value: PoeProfile | null; reason: 'activation' | 'edit' | 'migration' }
@@ -163,7 +164,7 @@ export function ensureProfileForGame(store: Store<AppSettings>, variant: GameVar
   if (existing.length > 0) return existing[0]!
 
   const profile = profileStore().createProfile({
-    name: `Path of Exile ${variant === 2 ? '2' : '1'}`,
+    name: gameDisplayName(variant),
     gameVariant: variant,
   })
   store.set(lastProfileIdKey(variant), profile.id)
@@ -224,7 +225,7 @@ export function writeLastUsedProfileSettingByGameVariant<K extends ProfileSettin
 ): ProfileChangedSetting[] {
   let profile = findLastUsedProfileByGameVariant(store, variant)
   if (!profile) {
-    profile = profileStore().createProfile({ name: `Path of Exile ${variant}`, gameVariant: variant })
+    profile = profileStore().createProfile({ name: gameDisplayName(variant), gameVariant: variant })
     store.set(lastProfileIdKey(variant), profile.id)
     if (!store.get(ACTIVE_PROFILE_ID_KEY)) store.set(ACTIVE_PROFILE_ID_KEY, profile.id)
   }

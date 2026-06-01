@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { GameVariant, PoeProfileSummary, RuntimeSettings } from '../../../../shared/types'
+import type { PoeProfileSummary, RuntimeSettings } from '../../../../shared/types'
+import type { GameVariant } from '../../../../shared/game-variant'
 import { DismissibleTip } from '../../shared/DismissibleTip'
 
 function filterName(profile: PoeProfileSummary): string {

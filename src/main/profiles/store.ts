@@ -2,7 +2,9 @@ import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync, unlink
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 import type Store from 'electron-store'
-import type { AppSettings, PoeProfile, GameVariant, LegacyAppSettings } from '../../shared/types'
+import type { AppSettings, PoeProfile, LegacyAppSettings } from '../../shared/types'
+import type { GameVariant } from '../../shared/game-variant'
+import { gameDisplayName } from '../../shared/game-variant'
 
 let _instance: ProfileStore | null = null
 
@@ -59,7 +61,7 @@ export class ProfileStore {
   ): Pick<PoeProfile, 'name' | 'league' | 'tradePriceOption' | 'cheatSheets'> {
     const isPoe2 = variant === 2
     return {
-      name: `Path of Exile ${isPoe2 ? '2' : '1'}`,
+      name: gameDisplayName(variant),
       league: isPoe2 ? 'Runes of Aldur' : 'Mirage',
       tradePriceOption: isPoe2 ? 'exalted_divine' : 'chaos_divine',
       cheatSheets: { globalHotkey: '', categories: [], pinned: false },

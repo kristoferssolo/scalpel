@@ -9,7 +9,7 @@ import { loadTierData, refreshTierData } from './tier-data'
 import { loadPremiumMods, refreshPremiumMods } from './premium-mods'
 import { closeAllOverlaysOnPoeExit, isAnyScalpelWindowFocused, isInsideAnySecondaryOverlay } from './windowing'
 import { POE_SIDEBAR_RATIO } from '../shared/poe-geometry'
-
+import { GAME_TITLES } from '../shared/game-variant'
 let overlayWindow: BrowserWindow | null = null
 let overlayVisible = false
 let mouseOverPanel = false
@@ -20,6 +20,7 @@ let lastAttachAt = 0
 let lastDetachAt = 0
 let lastMoveResizeAt = 0
 let lastOverlayError: string | null = null
+let retargeting = false
 let onGameFocus: (() => void) | null = null
 let onGameBlur: (() => void) | null = null
 let overlayAttachedVersion: 1 | 2 = 1
@@ -256,18 +257,6 @@ uIOhook.on(
   }),
 )
 
-const POE_WINDOW_TITLES: Record<1 | 2, string> = {
-  1: 'Path of Exile',
-  2: 'Path of Exile 2',
-}
-
-/** The PoE version the overlay's native tracker bound to at createOverlayWindow
- *  time. electron-overlay-window attaches once per process, so this is fixed for
- *  the process lifetime; switching games must relaunch to rebind. Onboarding
- *  reads this to decide whether finishing on the other game needs a relaunch. */
-export function getOverlayAttachedVersion(): 1 | 2 {
-  return overlayAttachedVersion
-}
 
 export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
   setPoeVersion(version)
@@ -346,12 +335,21 @@ export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
     return origIsVisible()
   }
 
-  // Attach to the PoE game window — syncs overlay bounds automatically
-  OverlayController.attachByTitle(overlayWindow, POE_WINDOW_TITLES[getPoeVersion()])
+  // Attach to the PoE game window — syncs overlay bounds automatically.
+  // Pass both titles so the native tracker can find either PoE1 or PoE2 without a restart.
+  OverlayController.attachByTitles(overlayWindow, [GAME_TITLES[1], GAME_TITLES[2]])
 
   OverlayController.events.on('attach', (ev) => {
     lastAttachAt = Date.now()
     try {
+      // During a retarget, poeVersion was already set by retargetForGame()
+      // so we skip titleIndex inference. At startup (both titles), the index
+      // tells us which PoE actually has focus (0 = PoE1, 1 = PoE2).
+      if (!retargeting) {
+        if (ev.titleIndex === 0) setPoeVersion(1)
+        else if (ev.titleIndex === 1) setPoeVersion(2)
+      }
+      retargeting = false
       if (overlayWindow && !overlayWindow.isDestroyed()) {
         overlayWindow.webContents.send('poe-version', getPoeVersion())
         startClientLogWatcher(overlayWindow)
@@ -371,10 +369,11 @@ export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
   OverlayController.events.on('detach', () => {
     lastDetachAt = Date.now()
     try {
-      // PoE window was destroyed (player quit / crashed). The library
-      // already hides the main overlay's BrowserWindow; we still need to
-      // clear our renderer-side overlay state and hide every secondary
-      // overlay using the same paths the Esc handler uses.
+      if (retargeting) {
+        // Retarget detach — skip cleanup, keep retargeting flag
+        // so the subsequent attach handler also skips version inference.
+        return
+      }
       hideOverlay()
       closeAllOverlaysOnPoeExit()
     } catch (err) {
@@ -472,6 +471,16 @@ export function hideOverlay(): void {
   // OverlayController manages window visibility and would re-show it, causing flicker)
   overlayWindow.webContents.send('overlay-hide')
   OverlayController.focusTarget()
+}
+
+/** Switch overlay attachment to a different PoE version in-process.
+ *  Tells the native tracker to detach from the current game and look
+ *  for the new title instead — no app relaunch needed. */
+export function retargetForGame(target: 1 | 2): void {
+  retargeting = true
+  hideOverlay()
+  setPoeVersion(target)
+  OverlayController.setTargetTitles([GAME_TITLES[target]])
 }
 
 /** Send reload command to PoE, then re-apply interactive state so overlay stays usable */

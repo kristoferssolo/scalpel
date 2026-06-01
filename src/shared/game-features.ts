@@ -31,7 +31,7 @@ export interface GameFeatures {
   filterFolderHint: string
 }
 
-import type { GameVariant } from './types'
+import type { GameVariant } from './game-variant'
 
 const FEATURES_BY_VERSION: Record<GameVariant, GameFeatures> = {
   1: {

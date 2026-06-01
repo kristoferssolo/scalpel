@@ -144,7 +144,8 @@ import {
   toggleRegexRemote,
 } from './regex-remote'
 import { detectPanelStateOnce, getCurrentPanelState } from './panel-detection'
-import type { AppSettings, CheatSheetsSettings, GameVariant, LegacyAppSettings, RegexPreset } from '../shared/types'
+import type { AppSettings, CheatSheetsSettings, LegacyAppSettings, RegexPreset } from '../shared/types'
+import type { GameVariant } from '../shared/game-variant'
 import { initProfileStore } from './profiles/store'
 import {
   ACTIVE_PROFILE_ID_KEY,
@@ -390,8 +391,6 @@ function buildTrayContextMenu(): Menu {
     {
       label: m.tray_switch_game({ game: other }),
       click: () => {
-        // requestGameSwitch shows the app window and sends the prompt; the
-        // renderer's GameSwitchModal handles the user's response.
         requestGameSwitch(store, other)
       },
     },

@@ -19,7 +19,8 @@ import { applyPinnedZoneEnabled, getPinnedZoneOverlay } from './pinned-zone'
 import { updateOnlineSyncDir } from './online-sync'
 import { refreshPrices } from './trade/prices'
 import { setUpdateChannel } from './update/updater'
-import type { AppSettings, CheatSheetsSettings, GameVariant, PoeProfile, RuntimeSettings } from '../shared/types'
+import type { AppSettings, CheatSheetsSettings, PoeProfile, RuntimeSettings } from '../shared/types'
+import type { GameVariant } from '../shared/game-variant'
 import {
   ACTIVE_PROFILE_ID_KEY,
   PROFILE_VERSION_KEY,

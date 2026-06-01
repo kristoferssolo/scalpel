@@ -8,7 +8,6 @@ import type {
   FilterChange,
   FilterListEntry,
   FilterVersion,
-  GameVariant,
   HistoryEntry,
   Manifest,
   OverlayData,
@@ -18,6 +17,7 @@ import type {
   RuntimeSettings,
   Zone,
 } from '../shared/types'
+import type { GameVariant } from '../shared/game-variant'
 import type { BoardLibrary, BoardSnapshot, BoardState } from '../shared/whiteboard-types'
 
 export const api = {

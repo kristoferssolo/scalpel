@@ -2,8 +2,7 @@
 
 import type { MacroScope } from './macro-scope'
 import type { ThemePalette } from './theme/palette'
-
-export type GameVariant = 1 | 2
+import type { GameVariant } from './game-variant'
 
 /** UI language. Keep in sync with `locales` in project.inlang/settings.json --
  *  the Paraglide runtime is the authority at runtime; this mirrors it for the
