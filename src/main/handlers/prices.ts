@@ -44,6 +44,9 @@ const STACKABLE_CLASSES = new Set([
  *  class sheet. Lazy because getPoeVersion() isn't meaningful at module load
  *  time -- we resolve on first use, by which point game-state has been set. */
 let _baseToClass: Record<string, string> | null = null
+export function invalidateBaseToClass(): void {
+  _baseToClass = null
+}
 function getBaseToClass(): Record<string, string> {
   if (_baseToClass === null) {
     const map: Record<string, string> = {}

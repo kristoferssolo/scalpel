@@ -35,6 +35,11 @@ export function getStatsFetched(): boolean {
   return statsFetched
 }
 
+export function invalidateStatsCache(): void {
+  statEntries = []
+  statsFetched = false
+}
+
 /** Internal setter used by the test hook in index.ts. Sets entries and marks
  *  stats as fetched. Does NOT touch the pseudo map -- that coordination
  *  happens in index.ts. */

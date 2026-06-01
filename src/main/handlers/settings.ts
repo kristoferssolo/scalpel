@@ -8,6 +8,8 @@ import { getColorFrequencies } from '../filter-state'
 import { refreshPrices } from '../trade/prices'
 import { refreshLeagues } from '../trade/leagues'
 import { retargetForGame } from '../overlay'
+import { invalidateBaseToClass } from './prices'
+import { invalidateStatsCache } from '../trade/stat-matcher/stats-cache'
 import {
   applyProfileHydrationSideEffects,
   applyProfileSettingForGame,
@@ -122,6 +124,8 @@ export function register(store: Store<AppSettings>): void {
 
       applySetting(store, 'activeProfileId', id, event.sender)
       retargetForGame(profile.gameVariant)
+      invalidateStatsCache()
+      invalidateBaseToClass()
       return { ok: true as const, settings: getEffectiveSettings(store) }
     }
 

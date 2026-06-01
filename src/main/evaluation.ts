@@ -14,6 +14,7 @@ import type {
 import { getCurrentZone } from './client-log'
 import { snapshotClipboard } from './clipboard-preserve'
 import { getProfileBackedSetting } from './profiles/profile-settings'
+import { invalidateBaseToClass } from './handlers/prices'
 import {
   evaluateBlock,
   findMatchingBlocks,
@@ -36,6 +37,7 @@ import {
   refreshPrices,
 } from './trade/prices'
 import { ensureStatsLoaded, matchItemMods } from './trade/trade'
+import { invalidateStatsCache } from './trade/stat-matcher/stats-cache'
 import { beginSession, decisionsForSession } from './learning'
 
 // ---- Tier group builder ----------------------------------------------------
@@ -400,6 +402,8 @@ async function ensureCorrectGameForHotkey(store: Store<AppSettings>): Promise<bo
   if (v === getPoeVersion()) return true
   // Wrong PoE focused — retarget overlay in-process
   retargetForGame(v)
+  invalidateStatsCache()
+  invalidateBaseToClass()
   return false
 }
 
