@@ -515,6 +515,21 @@ describe('matchItemMods', () => {
       const openPrefix = filters.find((f) => f.id === 'pseudo.pseudo_number_of_empty_prefix_mods')
       expect(openPrefix).toBeUndefined()
     })
+
+    it('does not generate open affix chips for normal (white) items', () => {
+      const advancedMods: AdvancedMod[] = [
+        { type: 'implicit', name: '', tier: 0, tags: [], lines: ['some implicit'], ranges: [] },
+      ]
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Normal', itemClass: 'Rings', sockets: '' }),
+        advancedMods,
+      )
+      expect(filters.find((f) => f.id === 'pseudo.pseudo_number_of_empty_prefix_mods')).toBeUndefined()
+      expect(filters.find((f) => f.id === 'pseudo.pseudo_number_of_empty_suffix_mods')).toBeUndefined()
+    })
   })
 
   describe('gem filters', () => {

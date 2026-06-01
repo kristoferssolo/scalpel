@@ -187,12 +187,14 @@ export function PriceCheck({
   }
 
   // Gear-only: maps/tablets/relics/flasks are isEquipment but their explicit "affixes" are
-  // map/monster/sanctum mods, not craftable gear prefixes/suffixes. Mirrored items are excluded
-  // too -- the preset chip is hidden for them, so applying it would leave no way to toggle off.
+  // map/monster/sanctum mods, not craftable gear prefixes/suffixes. Mirrored and corrupted
+  // items are excluded too -- they can't be crafted on, and the preset chip is hidden for
+  // them, so applying it would leave no way to toggle off.
   const craftingReadyEligible =
     poeVersion === 2 &&
     (item.rarity === 'Normal' || item.rarity === 'Magic') &&
     !item.mirrored &&
+    !item.corrupted &&
     !CRAFTING_READY_EXCLUDED_CLASSES.has(item.itemClass)
   const applyCraftingReady = (): void => {
     setFilters((prev) => applyCraftingReadyToFilters(prev, item.rarity, item.corrupted))
@@ -546,9 +548,11 @@ export function PriceCheck({
                   />
                 )
               })()}
-              {/* Base chip -- non-mirrored */}
+              {/* Base chip -- hidden for mirrored items, which can't be crafted on.
+                  Keyed off the item property, not the mirrored search chip's state,
+                  so toggling that filter on a non-mirrored item doesn't drop the chip. */}
               {(() => {
-                if (filters.some((f) => f.id === 'misc.mirrored' && f.chipState === 'yes')) return null
+                if (item.mirrored) return null
 
                 // Base mode signature: basetype chip on, no mod-style filters
                 // active. ilvl is expected for non-uniques (rare crafting

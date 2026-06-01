@@ -82,7 +82,9 @@ export function buildMiscFilters(
   // Open prefix/suffix chips (from advanced mod data, non-uniques only).
   // Crafted affixes count as "empty" since they're replaceable -- a crafted suffix
   // plus a literally-empty suffix is counted as 2 open suffixes for pricing purposes.
-  if (advancedMods && advancedMods.length > 0 && itemInfo.rarity !== 'Unique') {
+  // Normal (white) items are skipped: every affix is open by definition, so the
+  // chips just restate what the rarity already implies.
+  if (advancedMods && advancedMods.length > 0 && itemInfo.rarity !== 'Unique' && itemInfo.rarity !== 'Normal') {
     const prefixCount = advancedMods.filter((m) => m.type === 'prefix' && !m.crafted).length
     const suffixCount = advancedMods.filter((m) => m.type === 'suffix' && !m.crafted).length
     // Max affixes per slot: Magic items cap at 1 prefix + 1 suffix regardless of
