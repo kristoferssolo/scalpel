@@ -1,11 +1,18 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
-    version: '0.9.12-rc1',
+    version: '0.9.12-rc2',
     notes: [
+      'Added support for the all the new items in PoE2 0.5.',
+      "Added support for unidentified item tiers in the price checker, defaulting to the tier's min and max values.",
+      'Added support for plus-or-minus affix lines in the price checker.',
       'Fixed PoE2 corruption enchantments and anointments not price checking.',
       "Fixed unusable items (such as runes raising a requirement you can't meet) shifting the item name and breaking price checks.",
       'White, mirrored, and corrupted items no longer show price-check chips that cannot apply to them.',
       'Fixed the base chip flickering and shifting the layout when toggling the mirrored filter.',
+      'Fixed PoE2 crafted mods being miscolored and counted as an open affix in the price checker.',
+      'Fixed unidentified uniques being searched by name instead of base type.',
+      'Fixed the unidentified unique candidates panel collapsing when you select a filter.',
+      'Unidentified unique candidates now show their value in divines once it exceeds one divine.',
     ],
   },
   {
