@@ -14,7 +14,7 @@ import type {
 import { getCurrentZone } from '../client-log'
 import { snapshotClipboard } from './clipboard-preserve'
 import { getProfileBackedSetting } from '../profiles/profile-settings'
-import { switchGameContext } from '../game-switch/context'
+import { performGameSwitch } from '../game-switch/context'
 import {
   evaluateBlock,
   findMatchingBlocks,
@@ -399,7 +399,7 @@ async function ensureCorrectGameForHotkey(store: Store<AppSettings>): Promise<bo
   const v = await detectFocusedPoeVersion()
   if (!v) return false
   if (v === getPoeVersion()) return true
-  switchGameContext(store, v)
+  performGameSwitch(store, v)
   return false
 }
 

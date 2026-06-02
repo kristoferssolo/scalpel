@@ -156,7 +156,8 @@ import {
   hydrateActiveProfileSettings,
   writeActiveProfileSetting,
 } from './profiles/profile-settings'
-import { switchGameContext } from './game-switch/context'
+import { performGameSwitch } from './game-switch/context'
+import { startAutoGameWatcher, stopAutoGameWatcher, onAutoGameSwitch } from './game-switch/watcher'
 
 // ---- Linux display-server setup --------------------------------------------
 
@@ -383,7 +384,7 @@ function getAppIcon(): Electron.NativeImage {
   return nativeImage.createFromPath(iconPath)
 }
 
-function buildTrayContextMenu(): Menu {
+function buildTrayMenu(): Menu {
   const current = store.get(PROFILE_VERSION_KEY) === 2 ? 2 : 1
   const other: GameVariant = current === 1 ? 2 : 1
 
@@ -411,16 +412,16 @@ function buildTrayContextMenu(): Menu {
   ])
 }
 
-/** Re-apply the tray menu with current strings (e.g. after a language change). */
-function refreshTrayMenu(): void {
-  tray?.setContextMenu(buildTrayContextMenu())
+function rebuildTrayMenu(): void {
+  if (!tray || tray.isDestroyed()) return
+  tray.setContextMenu(buildTrayMenu())
 }
 
 function createTray(): void {
   const icon = getAppIcon()
   tray = new Tray(icon)
   tray.setToolTip('Scalpel')
-  tray.setContextMenu(buildTrayContextMenu())
+  tray.setContextMenu(buildTrayMenu())
 
   // Left-click opens app window
   tray.on('click', () => showAppWindow())
@@ -508,6 +509,11 @@ function startLiveServices(): void {
     if (aw) wins.push(aw)
     return wins
   })
+
+  // Poll OS foreground window and auto-switch game context when the user focuses
+  // the other PoE. 500ms poll, 1s cooldown between switches.
+  startAutoGameWatcher(store)
+  onAutoGameSwitch(() => rebuildTrayMenu())
 }
 
 app.whenReady().then(() => {
@@ -516,7 +522,7 @@ app.whenReady().then(() => {
   // relaunches to swap versions if needed (ensureCorrectGameForHotkey).
   if (!IS_E2E)
     createOverlayWindow((store.get(PROFILE_VERSION_KEY) as GameVariant) ?? 1, (detected) => {
-      switchGameContext(store, detected)
+      performGameSwitch(store, detected)
     })
   // Let the secondary-overlay system know about the main overlay window so its
   // isAnyScalpelWindowFocused predicate can include it.
@@ -801,6 +807,7 @@ app.on('before-quit', () => {
 
 app.on('will-quit', () => {
   recordMainBreadcrumb('will-quit')
+  stopAutoGameWatcher()
   stopHotkeyListener()
   stopOnlineSync()
   recordMainBreadcrumb('will-quit complete')

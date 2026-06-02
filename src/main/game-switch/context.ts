@@ -1,5 +1,6 @@
+import type { WebContents } from 'electron'
 import type Store from 'electron-store'
-import type { AppSettings } from '../../shared/types'
+import type { AppSettings, RuntimeSettings } from '../../shared/types'
 import type { GameVariant } from '../../shared/game-variant'
 import { applyCheatSheetHotkeys } from '../cheat-sheets/index'
 import { clearFilterState, loadFilter } from '../filter/state'
@@ -13,10 +14,10 @@ import {
   switchActiveProfileByGameVariant,
   type ProfileChangedSetting,
 } from '../profiles/profile-settings'
+import { broadcastSettingUpdates } from '../settings/broadcast'
 import { refreshLeagues } from '../trade/leagues'
 import { refreshPrices } from '../trade/prices'
 import { invalidateStatsCache } from '../trade/stat-matcher/stats-cache'
-import type { RuntimeSettings } from '../../shared/types'
 
 export interface GameSwitchResult {
   changes: ProfileChangedSetting[]
@@ -30,7 +31,6 @@ export interface GameSwitchResult {
 export function switchGameContext(store: Store<AppSettings>, target: GameVariant): GameSwitchResult {
   const previous = getEffectiveSettings(store)
 
-  // Switch active profile to last-used (or default) profile for the target game.
   const changes = switchActiveProfileByGameVariant(store, target)
 
   const profile = getActiveProfile(store)
@@ -52,7 +52,6 @@ export function switchGameContext(store: Store<AppSettings>, target: GameVariant
   invalidateStatsCache()
   invalidateBaseToClass()
 
-  // Background: refresh league list if stale (hourly cooldown).
   const lastFetched = (store.get('leaguesFetchedAt' as keyof AppSettings) as number) ?? 0
   if (Date.now() - lastFetched > 60 * 60 * 1000) {
     void refreshLeagues(store)
@@ -60,4 +59,17 @@ export function switchGameContext(store: Store<AppSettings>, target: GameVariant
 
   const current = getEffectiveSettings(store)
   return { changes, previous, current }
+}
+
+/** Switch game context and broadcast setting/profile changes to all renderers.
+ *  Use this instead of raw `switchGameContext` whenever settings changes must be
+ *  visible in the UI (tray switch, hotkey auto-detect, startup attach, watcher). */
+export function performGameSwitch(
+  store: Store<AppSettings>,
+  target: GameVariant,
+  sender?: WebContents | null,
+): GameSwitchResult {
+  const result = switchGameContext(store, target)
+  broadcastSettingUpdates(sender ?? null, result.changes, result.previous, result.current)
+  return result
 }
