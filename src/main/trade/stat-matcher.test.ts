@@ -8,7 +8,7 @@ vi.mock('electron', () => ({
   },
 }))
 
-import { getPoeVersion, setPoeVersion } from '../game-state'
+import { getPoeVersion, setPoeVersion } from '../game-switch/state'
 import type { AdvancedMod } from '../../shared/types'
 import type { ModTier, TierDataset } from '../../shared/data/tiers/types'
 import { _setTierDataForTests } from '../tier-data'

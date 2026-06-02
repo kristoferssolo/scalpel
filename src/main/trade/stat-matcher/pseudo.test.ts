@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { _setStatEntries } from './stats-cache'
 import { PSEUDO_WEIGHT_GROUPS, _resetPseudoMap, ensurePseudoMapBuilt } from './pseudo'
-import { getPoeVersion, setPoeVersion } from '../../game-state'
+import { getPoeVersion, setPoeVersion } from '../../game-switch/state'
 
 describe('PSEUDO_WEIGHT_GROUPS', () => {
   beforeEach(() => {

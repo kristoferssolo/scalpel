@@ -1,4 +1,4 @@
-import { getPoeVersion } from '../../game-state'
+import { getPoeVersion } from '../../game-switch/state'
 import { getStatEntries } from './stats-cache'
 
 // Pseudo stat mappings: combine individual mods into pseudo totals. A single

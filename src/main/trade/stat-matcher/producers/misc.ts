@@ -1,4 +1,4 @@
-import { getPoeVersion } from '../../../game-state'
+import { getPoeVersion } from '../../../game-switch/state'
 import { SKILL_GEM_CLASSES } from '../../../../shared/poe-item'
 import type { AdvancedMod } from '../../../../shared/types'
 import type { StatFilter } from '../../trade'
