@@ -171,6 +171,19 @@ export function StatFilterRow({
       document.body.classList.remove('scrubbing')
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
+      // The browser fires a click after this press on the common ancestor of the
+      // mousedown/mouseup targets - which is the row, whose click toggles it. Drag
+      // ends are often off the chip, so a chip-level handler can't catch it. Swallow
+      // the next click globally (capture phase) so the scrub never toggles the row.
+      const swallowClick = (ce: MouseEvent): void => {
+        ce.stopPropagation()
+        ce.preventDefault()
+        window.removeEventListener('click', swallowClick, true)
+      }
+      window.addEventListener('click', swallowClick, true)
+      // Safety net: if no click is synthesized, drop the listener on the next tick
+      // so it never eats an unrelated later click.
+      setTimeout(() => window.removeEventListener('click', swallowClick, true), 0)
     }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)

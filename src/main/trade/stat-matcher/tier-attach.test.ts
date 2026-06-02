@@ -8,8 +8,10 @@ const data: TierDataset = {
   mods: [
     { n: 'Hale', l: 1, g: 'IncreasedLife', s: [['base_maximum_life', 3, 9]], t: '' },
     { n: 'Healthy', l: 6, g: 'IncreasedLife', s: [['base_maximum_life', 10, 19]], t: '' },
+    { n: 'Quick', l: 1, g: 'MovementVelocity', s: [['base_movement_velocity_+%', 25, 25]], t: '' },
+    { n: 'Fast', l: 10, g: 'MovementVelocity', s: [['base_movement_velocity_+%', 30, 30]], t: '' },
   ],
-  pools: [{ IncreasedLife: [0, 1] }],
+  pools: [{ IncreasedLife: [0, 1], MovementVelocity: [2, 3] }],
   bases: { 'Iron Ring': 0 },
 }
 
@@ -69,6 +71,23 @@ describe('attachTierLadder', () => {
     expect(tiers?.map((t) => t.range)).toEqual([
       { min: 3, max: 9 },
       { min: 10, max: 19 },
+    ])
+  })
+
+  it('resolves a fixed-value (rangeless) mod by its literal value', () => {
+    // "30% increased Movement Speed" prints no bracket, so ranges is empty; match
+    // on value against the fixed-point tier (min === max === 30).
+    const tiers = attachTierLadder({
+      baseType: 'Iron Ring',
+      ranges: [],
+      value: 30,
+      tier: 1,
+      aggregated: false,
+      rarity: 'Rare',
+    })
+    expect(tiers?.map((t) => t.range)).toEqual([
+      { min: 25, max: 25 },
+      { min: 30, max: 30 },
     ])
   })
 })

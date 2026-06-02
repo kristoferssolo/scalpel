@@ -192,6 +192,7 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
       const tierLadder = attachTierLadder({
         baseType: itemInfo?.baseType,
         ranges: advModRanges,
+        value: matched.value,
         tier: matchedTier,
         aggregated: matched.aggregated ?? false,
         rarity: itemInfo?.rarity,
