@@ -359,6 +359,7 @@ These render the standard Scalpel settings-row chrome (label on the left, contro
 - `ScalpelPluginContext`, `PluginActivate`, `PluginManifest`
 - `RegisterTabOptions`, `RegisterHotkeyOptions`, `PluginStorage`
 - `PoeItem`, `Zone`, `RelatedRef`, `RelatedEntry`, `GameFeatures`, `TrendDirection`
+- `ModTier`, `TierLadder`, `TierStat` - data shape for an affix's tier ladder (tier number, roll range, required level)
 
 ## Project setup
 

@@ -61,6 +61,8 @@ export default async function activate(ctx: ScalpelPluginContext): Promise<void>
 
 **Item economy:** `getDustInfo`, `findRelated`, `RARITY_COLORS`.
 
+**Item tiers:** `ModTier`, `TierLadder`, `TierStat` types (an affix's tier-ladder shape: tier number, roll range, required level).
+
 **Stateless components:** `<Toggle>`, `<Notice>`, `<ErrorBanner>`.
 
 ## Log tail and overlay windows
