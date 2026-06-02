@@ -1,7 +1,7 @@
 import { desktopCapturer, screen } from 'electron'
 import { OverlayController } from 'electron-overlay-window'
 import type { PanelState } from '../../shared/panel-state'
-import { getPoeVersion } from '../game-state'
+import { getPoeVersion } from '../game-switch/state'
 import { type BitmapView, matchPatchFuzzy, votePanels } from './match'
 import { PANEL_SAMPLES } from './panel-samples'
 

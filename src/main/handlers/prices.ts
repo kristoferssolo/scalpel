@@ -6,10 +6,10 @@ import uniqueInfoData from '../../shared/data/items/unique-info.json'
 import { TRANSFIGURED_GEM_DISC } from '../../shared/data/trade/transfigured-gems'
 import { defaultPoeItem } from '../../shared/poe-item'
 import type { AppSettings, FilterBlock, FilterFile, PoeItem, SearchableItem } from '../../shared/types'
-import { evaluateAndSend, preloadPriceCheck, runPriceCheck } from '../evaluation'
+import { evaluateAndSend, preloadPriceCheck, runPriceCheck } from '../evaluation/index'
 import { findMatchingBlocks } from '../filter/matcher'
-import { getCurrentFilter, onFilterLoaded } from '../filter-state'
-import { getPoeVersion } from '../game-state'
+import { getCurrentFilter, onFilterLoaded } from '../filter/state'
+import { getPoeVersion } from '../game-switch/state'
 import { getProfileBackedSetting } from '../profiles/profile-settings'
 import { loadIconCache } from '../trade/icon-cache'
 import {
@@ -40,22 +40,17 @@ const STACKABLE_CLASSES = new Set([
   'Misc Map Items',
 ])
 
-/** Reverse map: base type -> item class, built lazily from the active game's
- *  class sheet. Lazy because getPoeVersion() isn't meaningful at module load
- *  time -- we resolve on first use, by which point game-state has been set. */
-let _baseToClass: Record<string, string> | null = null
-export function invalidateBaseToClass(): void {
-  _baseToClass = null
-}
+import { getBaseToClassCache, invalidateBaseToClass, setBaseToClassCache } from './base-to-class-cache'
+export { invalidateBaseToClass } from './base-to-class-cache'
 function getBaseToClass(): Record<string, string> {
-  if (_baseToClass === null) {
-    const map: Record<string, string> = {}
-    for (const [cls, { bases }] of Object.entries(getItemClasses(getPoeVersion()))) {
-      for (const b of bases) map[b.name] = cls
-    }
-    _baseToClass = map
+  const cached = getBaseToClassCache()
+  if (cached) return cached
+  const map: Record<string, string> = {}
+  for (const [cls, { bases }] of Object.entries(getItemClasses(getPoeVersion()))) {
+    for (const b of bases) map[b.name] = cls
   }
-  return _baseToClass
+  setBaseToClassCache(map)
+  return map
 }
 
 /** Div card name -> reward text, built once from static economy data. */

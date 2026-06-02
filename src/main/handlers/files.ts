@@ -4,7 +4,7 @@ import { BrowserWindow, dialog, ipcMain } from 'electron'
 import type Store from 'electron-store'
 import type { AppSettings, FilterListEntry } from '../../shared/types'
 import { getAppWindow } from '../app-window'
-import { setCloseOnClickOutside, showOverlay } from '../overlay'
+import { setCloseOnClickOutside, showOverlay } from '../overlay/index'
 
 export function register(store: Store<AppSettings>): void {
   const defaultFilterFolderForActiveGame = (): string => {

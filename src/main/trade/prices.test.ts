@@ -6,7 +6,7 @@ vi.mock('electron', () => ({
   net: { request: vi.fn() },
 }))
 
-vi.mock('../manifest', () => ({
+vi.mock('../manifest/index', () => ({
   getManifest: () => ({ ninjaLeagues: { poe1: {}, poe2: {} }, poe2NinjaCategories: {} }),
   refreshManifest: vi.fn(),
 }))

@@ -16,7 +16,7 @@ vi.mock('../trade/prices', () => ({
 }))
 // `../evaluation` and `./editing` pull in electron and the overlay; we don't touch
 // those code paths here, so stub them too.
-vi.mock('../evaluation', () => ({
+vi.mock('../evaluation/index', () => ({
   evaluateAndSend: vi.fn(),
   preloadPriceCheck: vi.fn(),
   runPriceCheck: vi.fn(),
@@ -26,7 +26,7 @@ vi.mock('electron', () => ({
 }))
 
 import { parseFilterFile } from '../filter/parser'
-import { setCurrentFilter } from '../filter-state'
+import { setCurrentFilter } from '../filter/state'
 import { refreshPrices } from '../trade/prices'
 import {
   __resetSearchableCache,

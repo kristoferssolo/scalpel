@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import type Store from 'electron-store'
 import type { AppSettings, FilterAction, FilterBlock, FilterChange, PoeItem } from '../../shared/types'
-import { evaluateAndSend } from '../evaluation'
+import { evaluateAndSend } from '../evaluation/index'
 import { describeIntent } from '../filter/intent-describe'
 import { getIntents, record } from '../filter/intent-recorder'
 import {
@@ -11,9 +11,9 @@ import {
   updateStrandThresholds,
   writeBlockEdit,
 } from '../filter/writer'
-import { getCurrentFilter, loadFilter } from '../filter-state'
-import { captureSnapshot } from '../history'
-import { reloadFilterInGame } from '../overlay'
+import { getCurrentFilter, loadFilter } from '../filter/state'
+import { captureSnapshot } from '../evaluation/history'
+import { reloadFilterInGame } from '../overlay/index'
 import { getProfileBackedSetting } from '../profiles/profile-settings'
 
 // ---- History description helpers -------------------------------------------

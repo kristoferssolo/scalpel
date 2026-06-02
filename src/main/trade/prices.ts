@@ -7,8 +7,8 @@ import { POE_NINJA_API } from '../../shared/endpoints'
 import type { NinjaItemRef } from '../../shared/external-link'
 import { deriveItemVariant } from '../../shared/external-link'
 import type { PriceEntry, PriceInfo } from '../../shared/types'
-import { getPoeVersion } from '../game-state'
-import { getManifest } from '../manifest'
+import { getPoeVersion } from '../game-switch/state'
+import { getManifest } from '../manifest/index'
 import { fetchAndBuildPoe2PriceMap, fetchPoe2PricesFromProxy, type Poe2PriceResult } from './prices.poe2'
 
 const staticUniquesByVersion: Record<1 | 2, Record<string, string[]>> = {

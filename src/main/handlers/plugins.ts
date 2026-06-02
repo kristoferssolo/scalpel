@@ -2,10 +2,15 @@ import { BrowserWindow, dialog, ipcMain } from 'electron'
 import type Store from 'electron-store'
 import type { PluginManifest } from '../../plugin-sdk/src/types'
 import type { AppSettings } from '../../shared/types'
-import { refreshAppMacros } from '../app-macros'
-import { runMainHotkeyFlow } from '../evaluation'
-import { getOverlayWindow, showOverlay } from '../overlay'
-import { disposePluginOverlay, hidePluginOverlay, registerPluginOverlay, showPluginOverlay } from '../plugin-overlay'
+import { refreshAppMacros } from '../app/macros'
+import { runMainHotkeyFlow } from '../evaluation/index'
+import { getOverlayWindow, showOverlay } from '../overlay/index'
+import {
+  disposePluginOverlay,
+  hidePluginOverlay,
+  registerPluginOverlay,
+  showPluginOverlay,
+} from '../plugin-overlay/index'
 import {
   getRegisteredOverlayHotkeys,
   getRegisteredPluginHotkeys,

@@ -2,15 +2,20 @@ export type DiagnosticSource =
   | 'main'
   | 'app'
   | 'overlay'
+  | 'overlay/index'
   | 'whiteboard'
+  | 'whiteboard/index'
   | 'cheat-sheets'
   | 'cheat-sheet-preview'
   | 'pinned-zone'
+  | 'pinned-zone/index'
   | 'secondary-overlay-canvas'
   | 'renderer'
   | 'plugin'
   | 'plugin-overlay'
+  | 'plugin-overlay/index'
   | 'regex-remote'
+  | 'regex/index'
 
 export interface SerializedDiagnosticError {
   name?: string

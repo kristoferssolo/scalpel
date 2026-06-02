@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, net, session, shell } from 'electron'
 import type Store from 'electron-store'
 import { getTradeUrls, POE_WEBSITE } from '../../shared/endpoints'
 import type { AppSettings, AuthResult } from '../../shared/types'
-import { getPoeVersion } from '../game-state'
+import { getPoeVersion } from '../game-switch/state'
 import { getProfileBackedSetting } from '../profiles/profile-settings'
 import type { BulkExchangeResult, StatFilter, TradeResult } from '../trade/trade'
 import {

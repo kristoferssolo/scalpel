@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { endgameAreaLevel } from '../../shared/poe-item'
-import { getPoeVersion } from '../game-state'
+import { getPoeVersion } from '../game-switch/state'
 import { parseItemText } from './clipboard'
 
 describe('parseItemText', () => {

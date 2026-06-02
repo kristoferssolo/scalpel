@@ -98,7 +98,7 @@ import {
   _resetRateLimitsForTests,
   type StatFilter,
 } from './trade'
-import { setPoeVersion } from '../game-state'
+import { setPoeVersion } from '../game-switch/state'
 import { matchItemMods, _setStatEntriesForTests } from './stat-matcher'
 
 // Shared rare-body-armour fixture for the searchTrade describes below. The

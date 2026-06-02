@@ -3,19 +3,15 @@ import type Store from 'electron-store'
 import type { AppSettings, RegexPreset } from '../../shared/types'
 import type { GameVariant } from '../../shared/game-variant'
 import { backfillPresetNames } from './regex-preset-names'
-import { broadcastToWindows } from '../window-broadcast'
-import { getColorFrequencies } from '../filter-state'
+import { broadcastToWindows } from '../overlay/broadcast'
+import { getColorFrequencies } from '../filter/state'
 import { refreshPrices } from '../trade/prices'
 import { refreshLeagues } from '../trade/leagues'
-import { retargetForGame } from '../overlay'
+import { retargetForGame } from '../overlay/index'
 import { invalidateBaseToClass } from './prices'
 import { invalidateStatsCache } from '../trade/stat-matcher/stats-cache'
-import {
-  applyProfileHydrationSideEffects,
-  applyProfileSettingForGame,
-  applySetting,
-  broadcastSettingUpdates,
-} from '../settings-write'
+import { applyProfileHydrationSideEffects, applyProfileSettingForGame, applySetting } from '../settings/write'
+import { broadcastSettingUpdates } from '../settings/broadcast'
 import {
   createProfile,
   deleteProfileAndChooseFallback,

@@ -1,6 +1,6 @@
 import { app, net } from 'electron'
 import { getTradeUrls } from '../../../shared/endpoints'
-import { getPoeVersion } from '../../game-state'
+import { getPoeVersion } from '../../game-switch/state'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

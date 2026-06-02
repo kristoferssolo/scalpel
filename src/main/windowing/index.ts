@@ -1,7 +1,7 @@
 import { app, type BrowserWindow, screen } from 'electron'
 import { OverlayController } from 'electron-overlay-window'
 import { uIOhook } from 'uiohook-napi'
-import { guardNativeListener } from '../diagnostics'
+import { guardNativeListener } from '../diagnostics/index'
 import { hideAllOnPoeBlur, isAnyScalpelWindowFocused } from './focus'
 import { prewarmSnapCanvas, type Rect, setSnapGhost } from './snap-canvas'
 import { fireOnLeaveScalpel, type OverlayState, overlays } from './state'

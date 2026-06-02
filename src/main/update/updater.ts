@@ -16,8 +16,8 @@ import { ELECTRON_RELEASES, GITHUB_RELEASES_API } from '../../shared/endpoints'
 import type { InstallManifest } from '../../shared/types'
 import { findBrickedMatch } from '../../shared/version-match'
 import { selectListRelease } from './select-release'
-import { recordMainBreadcrumb, registerDiagnosticProvider } from '../diagnostics'
-import { stopHotkeyListener } from '../hotkeys'
+import { recordMainBreadcrumb, registerDiagnosticProvider } from '../diagnostics/index'
+import { stopHotkeyListener } from '../hotkeys/index'
 
 const CHECK_DELAY = 5000
 const CHECK_INTERVAL = 60_000

@@ -79,11 +79,11 @@ import {
 import { refreshPrices, invalidatePriceCache } from './trade/prices'
 import { onRateLimitUpdate } from './trade/trade'
 import { refreshLeagues } from './trade/leagues'
-import { requestGameSwitch } from './game-switch'
+import { requestGameSwitch } from './game-switch/tray'
 import { startOnlineSync, stopOnlineSync } from './online-sync'
 import { initUpdater } from './update/updater'
 import { applyPendingUpdate } from './update/update-swap'
-import { getCurrentFilter, loadFilter, onFilterLoaded } from './filter-state'
+import { getCurrentFilter, loadFilter, onFilterLoaded } from './filter/state'
 import {
   createHotkeyHandler,
   createPriceCheckHandler,
@@ -94,17 +94,17 @@ import {
 import { initLearning } from './learning'
 import { initMainLocale } from './locale'
 import { m } from '../shared/paraglide/messages.js'
-import { snapshotClipboard } from './clipboard-preserve'
+import { snapshotClipboard } from './evaluation/clipboard-preserve'
 import * as tradeHandlers from './handlers/trade'
 import * as settingsHandlers from './handlers/settings'
 import * as learningHandlers from './handlers/learning'
 import * as filesHandlers from './handlers/files'
 import * as editingHandlers from './handlers/editing'
 import * as versionsHandlers from './handlers/versions'
-import * as onlineSyncHandlers from './handlers/online-sync'
+import * as onlineSyncHandlers from './online-sync/handler'
 import * as pricesHandlers from './handlers/prices'
-import { register as registerCheatSheets } from './handlers/cheat-sheets'
-import { register as registerWhiteboard } from './handlers/whiteboard'
+import { register as registerCheatSheets } from './cheat-sheets/handler'
+import { register as registerWhiteboard } from './whiteboard/handler'
 import { register as registerClipboard } from './handlers/clipboard'
 import { register as registerManifest } from './handlers/manifest'
 import { register as registerPlugins } from './handlers/plugins'
@@ -113,7 +113,7 @@ import { registerGameConfigHandlers } from './handlers/game-config'
 import { registerPluginPriceHandlers } from './handlers/plugin-prices'
 import { flushAll as flushPluginStorage } from './plugins/storage'
 import { refreshManifest } from './manifest'
-import { registerCheatSheetProtocol } from './cheat-sheet-protocol'
+import { registerCheatSheetProtocol } from './cheat-sheets/protocol'
 import { registerScalpelInternalProtocol, registerScalpelInternalSchemePrivileges } from './plugins/protocol'
 import { registerScalpelPluginProtocol, registerScalpelPluginSchemePrivileges } from './plugins/plugin-protocol'
 import {
@@ -134,15 +134,15 @@ import {
   setOnLeaveScalpel,
   subscribeToPoeMoves,
 } from './windowing'
-import { initAppMacrosRefresh, withPluginHotkeys } from './app-macros'
-import { runRegexMacroMigration } from './regex-macro-migration'
+import { initAppMacrosRefresh, withPluginHotkeys } from './app/macros'
+import { runRegexMacroMigration } from './regex/migration'
 import {
   applyRegexPreset,
   getRegexRemoteOverlay,
   leftDockFracX,
   registerRegexRemoteOverlay,
   toggleRegexRemote,
-} from './regex-remote'
+} from './regex/index'
 import { detectPanelStateOnce, getCurrentPanelState } from './panel-detection'
 import type { AppSettings, CheatSheetsSettings, LegacyAppSettings, RegexPreset } from '../shared/types'
 import type { GameVariant } from '../shared/game-variant'
@@ -156,6 +156,7 @@ import {
   hydrateActiveProfileSettings,
   writeActiveProfileSetting,
 } from './profiles/profile-settings'
+import { switchGameContext } from './game-switch/context'
 
 // ---- Linux display-server setup --------------------------------------------
 
@@ -513,7 +514,10 @@ app.whenReady().then(() => {
   // Seed the overlay with the last-known game version so attachByTitle waits for
   // that window. The hotkey handler re-detects the focused PoE on every fire and
   // relaunches to swap versions if needed (ensureCorrectGameForHotkey).
-  if (!IS_E2E) createOverlayWindow((store.get(PROFILE_VERSION_KEY) as GameVariant) ?? 1)
+  if (!IS_E2E)
+    createOverlayWindow((store.get(PROFILE_VERSION_KEY) as GameVariant) ?? 1, (detected) => {
+      switchGameContext(store, detected)
+    })
   // Let the secondary-overlay system know about the main overlay window so its
   // isAnyScalpelWindowFocused predicate can include it.
   setMainOverlayGetter(getOverlayWindow)
@@ -604,7 +608,7 @@ app.whenReady().then(() => {
   // leave the pad hidden).
   let regexRemoteToggleBusy = false
 
-  ipcMain.handle('regex-remote:mount-state', () => regexRemoteFlushLeft(getOverlayAnchor('regex-remote')))
+  ipcMain.handle('regex-remote:mount-state', () => regexRemoteFlushLeft(getOverlayAnchor('regex/index')))
 
   ipcMain.on('regex-remote:apply', (_event, presetId: string) => {
     applyRegexPreset(presetId, {
@@ -678,7 +682,7 @@ app.whenReady().then(() => {
         toggleRegexRemote()
         getRegexRemoteOverlay()?.send(
           'regex-remote:mount-changed',
-          regexRemoteFlushLeft(getOverlayAnchor('regex-remote')),
+          regexRemoteFlushLeft(getOverlayAnchor('regex/index')),
         )
       })
       return
