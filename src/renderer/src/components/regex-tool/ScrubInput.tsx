@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { SortFour } from '@icon-park/react'
+import { scrubAccumulate } from './scrub-math'
 
 interface ScrubInputProps {
   value: number | null
@@ -75,9 +76,7 @@ export function ScrubInput({
       if (!scrubRef.current) return
       const dx = me.clientX - lastX
       lastX = me.clientX
-      const magnitude = Math.abs(accumulator)
-      const speed = magnitude >= 1000 ? 5 : magnitude >= 100 ? 2 : magnitude >= 10 ? 1 : 0.5
-      accumulator += (dx * speed * effectiveStep) / 3
+      accumulator = scrubAccumulate(accumulator, dx, effectiveStep)
       const clamped = Math.min(max, Math.max(min, accumulator))
       const snapped = snapToPrecision(Math.round(clamped / effectiveStep) * effectiveStep)
       onChange(snapped !== 0 ? snapped : null)

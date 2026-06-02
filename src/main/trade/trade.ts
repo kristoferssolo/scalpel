@@ -184,6 +184,12 @@ export interface StatFilter {
   foulborn?: boolean
   modTier?: number // mod tier if known (from advanced mod data)
   modRange?: { min: number; max: number } // possible roll range for this mod
+  /** Resolved tier ladder for scrubbable affixes (single-stat or trade-averaged,
+   *  non-Unique). Attached by the explicits producer; absent when not scrubbable. */
+  tierLadder?: import('../../shared/data/tiers/types').ModTier[]
+  /** Quality magnitude multiplier (e.g. 1.2) for a quality-increased mod; the tierLadder
+   *  ranges are unmodified, so the renderer multiplies by this for the modified search-value space. */
+  tierQualityMult?: number
   /** True when `value` was synthesized by averaging/summing/computing multiple
    *  numbers (e.g. "Adds # to #" averages, weapon DPS) rather than read as a
    *  single literal number. Such values have no meaningful decimal precision,

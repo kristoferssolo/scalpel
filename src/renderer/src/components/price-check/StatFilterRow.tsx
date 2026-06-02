@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Star } from '@icon-park/react'
+import { SortFour, Star } from '@icon-park/react'
 import { ScrubInput } from '../regex-tool/ScrubInput'
+import { scrubAccumulate, snapToStep } from '../regex-tool/scrub-math'
 import { LearnedIcon } from './LearnedIcon'
 import { divCardArtMap, RARITY_COLORS } from '../../shared/constants'
 import { getModColor, MOD_BOLD_TYPES, uniqueToBase } from './constants'
 import type { StatFilter } from './types'
 import { zebraRowBg } from '../../shared/utils'
+import { valueToTier } from '../../../../shared/data/tiers/resolve'
 
 /** Tint static-box text by the value's item type. Used by Ultimatum chips
  *  whose value is a literal item name - unique flasks for Sacrifice, unique
@@ -120,15 +122,59 @@ export function StatFilterRow({
   const [hovered, setHovered] = useState(false)
   const hasTier = f.modTier != null && f.modTier > 0
   const hasRange = !!f.modRange
-  const showChip = hovered && (hasTier || hasRange)
-  const chipText =
-    hasTier && hasRange
-      ? `T${f.modTier}: (${formatRange(f.modRange!)})`
-      : hasRange
-        ? `(${formatRange(f.modRange!)})`
-        : hasTier
-          ? `T${f.modTier}`
-          : ''
+  const ladder = f.tierLadder && f.tierLadder.length > 0 ? f.tierLadder : null
+  const mult = f.tierQualityMult && f.tierQualityMult > 0 ? f.tierQualityMult : 1
+  const ladderMin = ladder ? ladder[0].range.min * mult : 0
+  const ladderMax = ladder ? ladder[ladder.length - 1].range.max * mult : 0
+  const step = decimals > 0 ? 1 / 10 ** decimals : 1
+
+  // Live chip text: when a ladder is present, reflect the tier the current min sits in.
+  // Divide by mult to map the current modified min back to the unmodified ladder space.
+  const liveTier = ladder ? valueToTier(ladder, (f.min ?? ladderMin) / mult) : null
+  const fmt = (n: number): string => (Number.isInteger(n) ? String(n) : n.toFixed(decimals || 1))
+  // Split the chip into the tier token (bolded) and the range (normal weight).
+  const tierLabel = ladder ? `T${liveTier!.tier}` : hasTier ? `T${f.modTier}` : ''
+  const rangeLabel = ladder
+    ? `(${fmt(liveTier!.range.min)}-${fmt(liveTier!.range.max)})`
+    : hasRange
+      ? `(${formatRange(f.modRange!)})`
+      : ''
+  // Brighten the accent badge for better tiers: the worst tier in the ladder gets
+  // 50% opacity, the best (lowest tier number) gets 100%, linear in between.
+  const tierNums = ladder ? ladder.map((t) => t.tier) : []
+  const bestNum = tierNums.length ? Math.min(...tierNums) : 0
+  const worstNum = tierNums.length ? Math.max(...tierNums) : 0
+  const tierOpacity =
+    ladder && liveTier && worstNum > bestNum ? 0.5 + (0.5 * (worstNum - liveTier.tier)) / (worstNum - bestNum) : 1
+  const showChip = (hovered || !!ladder) && (hasTier || hasRange || !!ladder)
+
+  const startTierScrub = (e: React.MouseEvent): void => {
+    if (!ladder) return
+    e.preventDefault()
+    e.stopPropagation()
+    // Scrubbing a disabled row implies the user wants it - turn it on.
+    if (!f.enabled) toggleFilter(i)
+    document.body.style.cursor = 'ew-resize'
+    document.body.classList.add('scrubbing')
+    let lastX = e.clientX
+    let acc = f.min ?? ladderMin
+    const onMove = (me: MouseEvent): void => {
+      const dx = me.clientX - lastX
+      lastX = me.clientX
+      acc = scrubAccumulate(acc, dx, step)
+      const clamped = Math.min(ladderMax, Math.max(ladderMin, acc))
+      updateFilterMin(i, String(snapToStep(clamped, step, decimals)))
+      updateFilterMax(i, '')
+    }
+    const onUp = (): void => {
+      document.body.style.cursor = ''
+      document.body.classList.remove('scrubbing')
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
 
   return (
     <div
@@ -173,10 +219,32 @@ export function StatFilterRow({
         {f.text}
         {showChip && (
           <span
-            className="inline-flex items-center px-[5px] py-[1px] rounded text-[9px] font-semibold bg-black/35 text-text-dim whitespace-nowrap shrink-0 ml-[2px]"
-            style={{ lineHeight: 1.2 }}
+            onMouseDown={ladder ? startTierScrub : undefined}
+            title={ladder ? 'Drag to scrub tier' : undefined}
+            className="inline-flex items-center gap-[4px] px-[5px] py-[2px] rounded text-[11px] leading-none bg-black/35 text-text-dim whitespace-nowrap shrink-0 ml-[3px]"
+            style={{ cursor: ladder ? 'ew-resize' : 'default' }}
           >
-            {chipText}
+            {/* Tier + range share one inline run so they sit on the same text
+                baseline regardless of badge box height or font metrics. */}
+            <span>
+              {tierLabel && (
+                <span
+                  className="inline-block rounded-[2px] px-[2px] py-[1px] font-bold leading-none text-[#171821]"
+                  style={{ background: 'var(--accent)', opacity: ladder ? tierOpacity : 1 }}
+                >
+                  {tierLabel}
+                </span>
+              )}
+              {rangeLabel && <span className={`relative -top-[1px]${tierLabel ? ' ml-[4px]' : ''}`}>{rangeLabel}</span>}
+            </span>
+            {ladder && (
+              <SortFour
+                size={11}
+                theme="outline"
+                fill="currentColor"
+                style={{ transform: 'rotate(90deg)', opacity: 0.5 }}
+              />
+            )}
           </span>
         )}
       </span>

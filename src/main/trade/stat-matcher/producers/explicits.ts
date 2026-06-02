@@ -1,4 +1,5 @@
 import { getPoeVersion } from '../../../game-state'
+import { attachTierLadder } from './tier-attach'
 import { BENEFICIAL_NEGATIVE_KEYWORDS } from '../../../../shared/data/trade/beneficial-negatives'
 import { isClusterJewel } from '../../../../shared/poe-item'
 import type { StatFilter } from '../../trade'
@@ -98,6 +99,9 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
       let isFixedValue = false
       let matchedTier: number | undefined
       let matchedRange: { min: number; max: number } | undefined
+      let advModRanges: Array<{ value: number; min: number; max: number }> | undefined
+      let advModName: string | undefined
+      let advModMult: number | undefined
       if (advancedMods && matched.value != null) {
         const rawCleaned = mod.replace(/\s*\(crafted\)\s*$/i, '').trim()
         const advMod = findAdvMod(advancedMods, cleaned, 'explicit', rawCleaned)
@@ -107,6 +111,10 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
           if (!range && advMod.ranges.length === 0) isFixedValue = true
           if (advMod.tier > 0) matchedTier = advMod.tier
           if (range && range.min !== range.max) matchedRange = { min: range.min, max: range.max }
+          // Capture the full per-stat ranges and mod name for tier-ladder resolution.
+          advModRanges = advMod.ranges
+          advModName = advMod.name
+          advModMult = advMod.magnitudeMultiplier
         }
       }
       // For negative values: "reduced" mods use min (trade API expects min for beneficial reduction),
@@ -177,6 +185,14 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
         matched.statId = `crafted.${matched.statId.split('.').slice(1).join('.')}`
       }
 
+      const tierLadder = attachTierLadder({
+        baseType: itemInfo?.baseType,
+        ranges: advModRanges,
+        tier: matchedTier,
+        aggregated: matched.aggregated ?? false,
+        rarity: itemInfo?.rarity,
+        name: advModName,
+      })
       out.push({
         id: matched.statId,
         text: isFractured ? `${cleaned} (Fractured)` : cleaned,
@@ -199,6 +215,8 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
         foulborn: isFoulborn || undefined,
         modTier: matchedTier,
         modRange: matchedRange,
+        tierLadder,
+        tierQualityMult: advModMult,
       })
       // For fractured mods, also add the unfractured (explicit) version, disabled by default
       if (isFractured) {
@@ -214,6 +232,8 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
           aggregated: matched.aggregated,
           modTier: matchedTier,
           modRange: matchedRange,
+          tierLadder,
+          tierQualityMult: advModMult,
         })
       }
     }

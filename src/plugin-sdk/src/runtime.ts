@@ -43,6 +43,7 @@ export { getGameFeatures } from '../../shared/game-features'
 export { isTownOrHideout } from '../../shared/is-town-or-hideout'
 export { defaultPoeItem, isClusterJewel, isSkillGem, SKILL_GEM_CLASSES } from '../../shared/poe-item'
 export { RARITY_COLORS } from '../../shared/rarity-colors'
+export type { ModTier, TierLadder, TierStat } from '../../shared/data/tiers/types'
 export type { PoeItem, Zone } from '../../shared/types'
 export { compareVersions, versionMatches } from '../../shared/version-match'
 

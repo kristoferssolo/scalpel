@@ -1,4 +1,5 @@
 import type { PoeItem, PriceInfo } from '../../../../shared/types'
+import type { ModTier } from '../../../../shared/data/tiers/types'
 
 export interface StatFilter {
   id: string
@@ -18,6 +19,12 @@ export interface StatFilter {
   foulborn?: boolean
   modTier?: number
   modRange?: { min: number; max: number }
+  /** Resolved tier ladder for scrubbable affixes (single-stat or trade-averaged,
+   *  non-Unique). Attached by the main-process matcher; absent when not scrubbable. */
+  tierLadder?: ModTier[]
+  /** Quality magnitude multiplier (e.g. 1.2) for a quality-increased mod; the tierLadder
+   *  ranges are unmodified, so the renderer multiplies by this for the modified search-value space. */
+  tierQualityMult?: number
   /** True when `value` was synthesized by averaging/summing/computing multiple
    *  numbers (e.g. "Adds # to #" averages, weapon DPS) rather than read as a
    *  single literal number. Such values have no meaningful decimal precision,

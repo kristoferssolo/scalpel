@@ -86,6 +86,15 @@ export const CHEAT_SHEET_PREFAB_BASE_URL =
  *  acts as the offline fallback. New leagues only need a push to main. */
 export const MANIFEST_URL = 'https://raw.githubusercontent.com/scalpelpoe/scalpel/main/manifest.json'
 
+/** Runtime-fetched tier-data manifest (hash + schemaVersion). Polled on a timer;
+ *  when its hash changes the client downloads the active game's tier JSON below.
+ *  Bundled copies under src/shared/data/tiers are the offline fallback. */
+export const TIER_DATA_MANIFEST_URL =
+  'https://raw.githubusercontent.com/scalpelpoe/scalpel/main/src/shared/data/tiers/tier-manifest.json'
+
+/** Base URL for the per-game tier datasets. Append `tiers-poe1.json` / `tiers-poe2.json`. */
+export const TIER_DATA_BASE_URL = 'https://raw.githubusercontent.com/scalpelpoe/scalpel/main/src/shared/data/tiers/'
+
 /** "Powered by..." attribution links shown under the regex output bar. The
  *  underlying mod / regex data ships from these projects; we point users at the
  *  source so they can compare against the upstream tools and contribute upstream. */

@@ -17,6 +17,7 @@
     "dev": "npm run build:internal-assets && node scripts/sync-regex-data.js & electron-vite dev",
     "build": "npm run build:internal-assets && electron-vite build",
     "build:internal-assets": "node scripts/build-internal-assets.mjs",
+    "build-tier-data": "node scripts/build-tier-data.js",
     "sync-regex": "node scripts/sync-regex-data.js",
     "sync-prefabs": "node scripts/sync-prefabs.js",
     "dist:win": "npm run build && electron-builder --win --x64",
