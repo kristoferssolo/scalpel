@@ -490,6 +490,64 @@ describe('searchTrade filter-group dispatch', () => {
     expect(miscFilters).toBeDefined()
     expect(miscFilters.filters.unidentified_tier).toEqual({ min: 2, max: 4 })
   })
+
+  it('PoE1 enabled weapon.damage filter lands under weapon_filters.damage', async () => {
+    setPoeVersion(1)
+    const sword = {
+      name: '',
+      baseType: 'Jewelled Foil',
+      itemClass: 'Thrusting One Hand Swords',
+      rarity: 'Rare',
+    }
+    const damageFilter: StatFilter[] = [
+      {
+        id: 'weapon.damage',
+        text: 'Damage: 200',
+        type: 'weapon',
+        enabled: true,
+        value: 200,
+        min: 180,
+        max: null,
+        aggregated: true,
+      },
+    ]
+    await searchTrade('Mirage', sword, damageFilter, { tradeStatus: 'any', tradePriceOption: 'chaos_divine' })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    const body = parseCapturedBody(req)
+    expect(body.query.filters.weapon_filters).toBeDefined()
+    expect(body.query.filters.weapon_filters.filters.damage).toEqual({ min: 180 })
+  })
+
+  it('PoE2 enabled weapon.damage filter lands under equipment_filters.damage', async () => {
+    setPoeVersion(2)
+    const quarterstaff = {
+      name: '',
+      baseType: 'Slicing Quarterstaff',
+      itemClass: 'Quarterstaves',
+      rarity: 'Rare',
+    }
+    const damageFilter: StatFilter[] = [
+      {
+        id: 'weapon.damage',
+        text: 'Damage: 200',
+        type: 'weapon',
+        enabled: true,
+        value: 200,
+        min: 180,
+        max: null,
+        aggregated: true,
+      },
+    ]
+    await searchTrade('Fate of the Vaal', quarterstaff, damageFilter, {
+      tradeStatus: 'any',
+      tradePriceOption: 'exalted_divine',
+    })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    const body = parseCapturedBody(req)
+    expect(body.query.filters.equipment_filters).toBeDefined()
+    expect(body.query.filters.equipment_filters.filters.damage).toEqual({ min: 180 })
+    expect(body.query.filters.weapon_filters).toBeUndefined()
+  })
 })
 
 describe('searchTrade pseudo emission', () => {

@@ -235,6 +235,92 @@ describe('matchItemMods', () => {
       expect(cdps.value).toBe(80)
       expect(cdps.enabled).toBe(false)
     })
+
+    it('generates Damage chip (no aps) with correct value, disabled by default', () => {
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({
+          physDamageMin: 100,
+          physDamageMax: 200,
+          eleDamageAvg: 50,
+          chaosDamageAvg: 0,
+          attacksPerSecond: 1.5,
+          quality: 20,
+        }),
+      )
+      // physAvg = 150, qualityNorm = 1 (quality >= 20), eleAvg = 50, chaosAvg = 0
+      // damage = 150 + 50 + 0 = 200
+      const damageChip = filters.find((f) => f.id === 'weapon.damage')!
+      expect(damageChip).toBeDefined()
+      expect(damageChip.value).toBe(200)
+      expect(damageChip.enabled).toBe(false)
+      expect(damageChip.type).toBe('weapon')
+      expect(damageChip.aggregated).toBe(true)
+
+      // Damage = totalDps / aps relationship
+      const totalDpsChip = filters.find((f) => f.id === 'weapon.dps')!
+      expect(damageChip.value).toBe((totalDpsChip.value as number) / 1.5)
+    })
+
+    it('emits Damage chip even when attacksPerSecond is undefined', () => {
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({
+          physDamageMin: 100,
+          physDamageMax: 200,
+          eleDamageAvg: 50,
+          quality: 20,
+          // no attacksPerSecond
+        }),
+      )
+      // physAvg = 150, eleAvg = 50 -> damage = 200
+      const damageChip = filters.find((f) => f.id === 'weapon.damage')!
+      expect(damageChip).toBeDefined()
+      expect(damageChip.value).toBe(200)
+      expect(damageChip.enabled).toBe(false)
+      // No DPS chips without aps
+      expect(filters.find((f) => f.id === 'weapon.dps')).toBeUndefined()
+    })
+
+    it('Damage chip label includes (20 quality) when quality is below 20', () => {
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({
+          physDamageMin: 100,
+          physDamageMax: 200,
+          attacksPerSecond: 1.0,
+          quality: 0,
+        }),
+      )
+      // qualityNorm = 1.2, physAvg = 150 * 1.2 = 180, damage = 180
+      const damageChip = filters.find((f) => f.id === 'weapon.damage')!
+      expect(damageChip).toBeDefined()
+      expect(damageChip.value).toBe(180)
+      expect(damageChip.text).toContain('(20 quality)')
+    })
+
+    it('does not emit Damage chip when all damage values are zero', () => {
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({
+          physDamageMin: 0,
+          physDamageMax: 0,
+          eleDamageAvg: 0,
+          chaosDamageAvg: 0,
+          attacksPerSecond: 1.5,
+          quality: 20,
+        }),
+      )
+      expect(filters.find((f) => f.id === 'weapon.damage')).toBeUndefined()
+    })
   })
 
   describe('socket/link chips', () => {

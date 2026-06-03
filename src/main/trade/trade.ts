@@ -631,6 +631,7 @@ export async function searchTrade(
       'weapon.dps': 'dps',
       'weapon.aps': 'aps',
       'weapon.crit': 'crit',
+      'weapon.damage': 'damage',
     }
     for (const f of weaponDpsFilters) {
       const key = idMap[f.id]

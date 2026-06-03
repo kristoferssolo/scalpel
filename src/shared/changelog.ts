@@ -2,6 +2,7 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
     version: '0.9.12-rc3',
     notes: [
+      'Added a "Damage" weapon stat to the price checker for builds where attack speed does not matter (off by default).',
       'Added draggable tier chips that scrub price-check affix minimums across their roll range.',
       'Added PoE2 "Damage as Extra" pseudo rows that sum your elemental and chaos as-extra affixes.',
     ],
