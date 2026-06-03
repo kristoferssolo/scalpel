@@ -1,5 +1,21 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.12-rc4',
+    notes: [
+      'Added an Extra Features page (on by default, hideable) to gather the optional tools in one place.',
+      'Added hover price tooltips across the price-check chips and a current-price footer on the poe.ninja graph.',
+      "Added an onboarding tip nudging WASD players toward a hotkey that doesn't share a movement key.",
+      'Added the ability to hide plugin tabs in settings like normal tabs can be.',
+      'Fixed a multiline mod (such as Yoke of Suffering) being parsed as three separate affixes.',
+      'Fixed Voices jewels dropping their "Allocates ... Sinister Jewel sockets" line in the price checker.',
+      'Improved tier-chip scrubbing on small values, and fixed it toggling the row off on use and skipping fixed-value tiers like movement speed.',
+      'Fixed a layout shift when typing in the macro input.',
+      'Fixed profile loading causing the incorrect cheat sheet prefabs to show.',
+      'Dev mode now has its own settings tab (in the app, not the overlay) instead of a hidden toggle.',
+      'Plugin developers can now remove their unpacked plugins.',
+    ],
+  },
+  {
     version: '0.9.12-rc3',
     notes: [
       'Added a "Damage" weapon stat to the price checker for builds where attack speed does not matter (off by default).',
