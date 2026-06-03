@@ -707,6 +707,12 @@ export const api = {
       entryUrl: string
     }>
   > => ipcRenderer.invoke('plugins:list-installed'),
+  listUnpackedPlugins: (): Promise<
+    Array<{
+      manifest: import('../plugin-sdk/src/types').PluginManifest
+      entryUrl: string
+    }>
+  > => ipcRenderer.invoke('plugins:list-unpacked'),
   getInstalledPlugin: (
     pluginId: string,
   ): Promise<{ manifest: import('../plugin-sdk/src/types').PluginManifest; entryUrl: string } | null> =>

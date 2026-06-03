@@ -16,7 +16,7 @@ import {
 } from '../plugins/hotkey-registry'
 import { installFromRegistry } from '../plugins/install-from-registry'
 import { installUnpacked } from '../plugins/install-unpacked'
-import { getInstalledPlugins } from '../plugins/manager'
+import { getInstalledPlugins, getUnpackedPlugins } from '../plugins/manager'
 import { PLUGIN_ID_PATTERN } from '../plugins/manifest-validator'
 import { pluginEntryUrl } from '../plugins/plugin-protocol'
 import { fetchRegistry } from '../plugins/registry'
@@ -35,6 +35,13 @@ export function register(store: Store<AppSettings>, isElevated: () => boolean = 
 
   ipcMain.handle('plugins:list-installed', (): InstalledPluginIpc[] => {
     return getInstalledPlugins().map((p) => ({
+      manifest: p.manifest,
+      entryUrl: pluginEntryUrl(p.manifest.id),
+    }))
+  })
+
+  ipcMain.handle('plugins:list-unpacked', (): InstalledPluginIpc[] => {
+    return getUnpackedPlugins().map((p) => ({
       manifest: p.manifest,
       entryUrl: pluginEntryUrl(p.manifest.id),
     }))

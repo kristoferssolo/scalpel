@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useState } from 'react'
+import type { PluginManifest } from '../../../../plugin-sdk/src/types'
 import type { AppSettings } from '../../../../shared/types'
 
 interface Props {
@@ -9,6 +11,23 @@ interface Props {
 export function DeveloperSection({ settings, update, onError }: Props): JSX.Element {
   const enabled = !!settings.developerMode
 
+  const [unpacked, setUnpacked] = useState<PluginManifest[]>([])
+
+  const refresh = useCallback(async () => {
+    const list = await window.api.listUnpackedPlugins()
+    setUnpacked(list.map((p) => p.manifest))
+  }, [])
+
+  useEffect(() => {
+    void refresh()
+    const unsubInstalled = window.api.onPluginInstalled(() => void refresh())
+    const unsubUninstalled = window.api.onPluginUninstalled(() => void refresh())
+    return () => {
+      unsubInstalled()
+      unsubUninstalled()
+    }
+  }, [refresh])
+
   const installPlugin = async (): Promise<void> => {
     const r = await window.api.pluginInstallUnpacked()
     if (!r.ok) {
@@ -16,6 +35,16 @@ export function DeveloperSection({ settings, update, onError }: Props): JSX.Elem
       return
     }
     onError(`Installed plugin "${r.id}". Restart Scalpel to load it.`, 'warn')
+  }
+
+  const remove = async (id: string, name: string): Promise<void> => {
+    const r = await window.api.pluginUninstall(id)
+    if (!r.ok) {
+      onError(r.error)
+      return
+    }
+    onError(`Removed "${name}".`, 'warn')
+    void refresh()
   }
 
   return (
@@ -49,6 +78,34 @@ export function DeveloperSection({ settings, update, onError }: Props): JSX.Elem
           >
             Load unpacked plugin
           </button>
+          <div className="flex flex-col gap-1 mt-1">
+            <span className="text-xs text-zinc-400">Loaded unpacked plugins</span>
+            <span className="text-[10px] text-zinc-500">
+              Removing only deletes Scalpel's copy. Your source directory is untouched.
+            </span>
+            {unpacked.length === 0 ? (
+              <span className="text-xs text-zinc-500">None loaded.</span>
+            ) : (
+              <div className="flex flex-col gap-1">
+                {unpacked.map((manifest) => (
+                  <div
+                    key={manifest.id}
+                    className="flex items-center justify-between gap-2 px-2 py-1.5 rounded bg-white/[0.04]"
+                  >
+                    <span className="text-xs text-zinc-200">
+                      {manifest.name} <span className="font-mono text-[10px] text-zinc-500">v{manifest.version}</span>
+                    </span>
+                    <button
+                      className="btn-bounce px-2 py-1 text-[11px] bg-zinc-700 hover:bg-zinc-600 rounded"
+                      onClick={() => void remove(manifest.id, manifest.name)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
