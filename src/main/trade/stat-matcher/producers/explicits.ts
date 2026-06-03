@@ -14,6 +14,20 @@ const TINCTURE_STAT_REMAP: Record<string, string> = {
   'explicit.stat_2448920197': 'explicit.stat_3529940209', // "#% increased effect" -> tincture-specific variant
 }
 
+/** Collapse the junk rows produced when a single stat wraps across multiple
+ *  clipboard lines. clipboard.ts emits each physical line AND the joined whole
+ *  for multi-line advanced mods; the grammatical fragments ("...type among",
+ *  "your Ailments on them") are a prefix/suffix of the trade stat text, so the
+ *  substring fallback in mod-matcher resolves them to the SAME stat id as the
+ *  joined row but with a null value. The joined row carries the real value, so a
+ *  same-id sibling with a null value (and no option) is always that artifact --
+ *  drop it. Genuine hybrid mods are unaffected: their lines match DIFFERENT stat
+ *  ids, so no value-bearing sibling shares the fragment's id. */
+export function dropFragmentDuplicates(rows: StatFilter[]): StatFilter[] {
+  const idsWithValue = new Set(rows.filter((r) => r.value != null).map((r) => r.id))
+  return rows.filter((r) => r.value != null || r.option != null || !idsWithValue.has(r.id))
+}
+
 export function processExplicits(ctx: MatchContext): StatFilter[] {
   const {
     explicits,
@@ -244,5 +258,5 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
     }
   }
 
-  return out
+  return dropFragmentDuplicates(out)
 }

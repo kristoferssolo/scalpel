@@ -2030,6 +2030,52 @@ describe('matchModToStat (PoE2 stat text without leading sign)', () => {
     expect(result?.statId).toBe('explicit.stat_2222186378')
     expect(result?.value).toBe(1)
   })
+
+  describe('multi-line wrapped mods', () => {
+    // A single stat that wraps across two clipboard lines (e.g. Yoke of Suffering's
+    // "Enemies take #% increased Damage for each Elemental Ailment type among your
+    // Ailments on them") arrives from clipboard.ts as three explicit strings: each
+    // physical line plus the "\n"-joined whole. The two fragments are a prefix and a
+    // suffix of the trade stat text, so the substring fallback matches them with a null
+    // value -- producing junk duplicate rows alongside the real (joined) row. The
+    // matcher must collapse these to a single row carrying the real value.
+    const WRAPPED_EXPLICITS = [
+      'Enemies take 17% increased Damage for each Elemental Ailment type among',
+      'your Ailments on them',
+      'Enemies take 17% increased Damage for each Elemental Ailment type among\nyour Ailments on them',
+    ]
+
+    it('emits a single explicit row for a stat that wraps across two clipboard lines', () => {
+      _setStatEntriesForTests([
+        {
+          id: 'explicit.stat_yoke',
+          text: 'Enemies take #% increased Damage for each Elemental Ailment type among your Ailments on them',
+          type: 'explicit',
+        },
+      ])
+      const filters = matchItemMods(WRAPPED_EXPLICITS, [], undefined, makeItemInfo({ rarity: 'Unique' }))
+      const yokeRows = filters.filter((f) => f.id === 'explicit.stat_yoke')
+      expect(yokeRows).toHaveLength(1)
+      expect(yokeRows[0].value).toBe(17)
+    })
+
+    it('still keeps both stats of a genuine hybrid mod (distinct stat ids)', () => {
+      // Hybrid mods (two independent stats under one affix header) match different
+      // stat ids, so the dedup must not collapse them.
+      _setStatEntriesForTests([
+        { id: 'explicit.stat_area', text: '#% increased Area Damage', type: 'explicit' },
+        { id: 'explicit.stat_fireres', text: '+#% to Fire Resistance', type: 'explicit' },
+      ])
+      const filters = matchItemMods(
+        ['25% increased Area Damage', '+44% to Fire Resistance'],
+        [],
+        undefined,
+        makeItemInfo(),
+      )
+      expect(filters.find((f) => f.id === 'explicit.stat_area')?.value).toBe(25)
+      expect(filters.find((f) => f.id === 'explicit.stat_fireres')?.value).toBe(44)
+    })
+  })
 })
 
 describe('matchModToStat (Unscalable Value prefix/suffix fallback)', () => {
