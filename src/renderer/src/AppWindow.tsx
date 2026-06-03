@@ -273,6 +273,7 @@ export function AppWindow(): JSX.Element {
                 onBack={() => goTo(backStepFromHotkey(selectedGames, importedOnline))}
                 stepNum={sharedBase + 1}
                 totalSteps={total}
+                showWasdTip={selectedGames.poe2}
               />
             </SlideIn>
           )}
@@ -285,6 +286,7 @@ export function AppWindow(): JSX.Element {
                 onBack={() => goTo('hotkey')}
                 stepNum={sharedBase + 2}
                 totalSteps={total}
+                showWasdTip={selectedGames.poe2}
               />
             </SlideIn>
           )}

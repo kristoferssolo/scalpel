@@ -258,6 +258,7 @@ export function HotkeyStep({
   stepNum,
   totalSteps,
   onBackToSettings,
+  showWasdTip,
 }: {
   settings: AppSettings
   onUpdate: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void
@@ -266,6 +267,7 @@ export function HotkeyStep({
   stepNum: number
   totalSteps: number
   onBackToSettings?: () => void
+  showWasdTip?: boolean
 }): JSX.Element {
   return (
     <div>
@@ -276,8 +278,22 @@ export function HotkeyStep({
         subtitle="This key combo activates the overlay while you're in game. Hover an item and press it to analyze your filter."
       />
       <HotkeyField value={settings.hotkey} onChange={(acc) => onUpdate('hotkey', acc)} />
+      <WasdHotkeyTip show={showWasdTip} />
       <NavButtons onBack={onBack} onNext={onNext} onBackToSettings={onBackToSettings} />
     </div>
+  )
+}
+
+/** PoE2 binds W/A/S/D to movement, so a hotkey sharing one of those letters makes
+ *  the character lurch when fired. We can't fully suppress it (the game reads raw
+ *  key state), so nudge WASD players toward a combo without those letters. */
+function WasdHotkeyTip({ show }: { show?: boolean }): JSX.Element | null {
+  if (!show) return null
+  return (
+    <p className="text-[10px] text-text-dim flex items-center gap-1 m-0 ml-1 mt-1.5">
+      <Info size={12} theme="two-tone" fill={['currentColor', 'rgba(255,255,255,0.2)']} className="flex shrink-0" />
+      Tip: If you play WASD, it's best to choose a hotkey combo without those letters.
+    </p>
   )
 }
 
@@ -289,6 +305,7 @@ export function PriceCheckHotkeyStep({
   stepNum,
   totalSteps,
   onBackToSettings,
+  showWasdTip,
 }: {
   settings: AppSettings
   onUpdate: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void
@@ -297,6 +314,7 @@ export function PriceCheckHotkeyStep({
   stepNum: number
   totalSteps: number
   onBackToSettings?: () => void
+  showWasdTip?: boolean
 }): JSX.Element {
   return (
     <div>
@@ -307,6 +325,7 @@ export function PriceCheckHotkeyStep({
         subtitle="This key combo is used to... price check items. You should know how to use this one."
       />
       <HotkeyField value={settings.priceCheckHotkey} onChange={(acc) => onUpdate('priceCheckHotkey', acc)} />
+      <WasdHotkeyTip show={showWasdTip} />
       <NavButtons onBack={onBack} onNext={onNext} onBackToSettings={onBackToSettings} />
     </div>
   )
