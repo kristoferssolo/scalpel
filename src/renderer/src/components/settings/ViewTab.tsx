@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { AppSettings, HideableTabKey } from '../../../../shared/types'
 import { ScrubInput } from '../regex-tool/ScrubInput'
 import { SettingToggleBox } from './SettingToggleBox'
@@ -42,6 +42,33 @@ export function ViewTab({ settings, update, updateMany }: Props): JSX.Element {
     if (next.has(key)) next.delete(key)
     else next.add(key)
     update('hiddenTabs', [...next])
+  }
+
+  // Plugin-contributed tabs are dynamic, so they're fetched from the main-side
+  // registry (works identically in the overlay and the standalone app window)
+  // rather than hardcoded like the built-in tabs above.
+  const [pluginTabs, setPluginTabs] = useState<Array<{ pluginId: string; label: string; icon: string }>>([])
+  useEffect(() => {
+    let alive = true
+    const load = (): void => {
+      void window.api.pluginListRegisteredTabs().then((tabs) => {
+        if (alive) setPluginTabs(tabs)
+      })
+    }
+    load()
+    const off = window.api.onPluginTabsChanged(load)
+    return () => {
+      alive = false
+      off()
+    }
+  }, [])
+
+  const hiddenPlugins = new Set<string>(settings.hiddenPluginTabIds ?? [])
+  const togglePluginHidden = (id: string): void => {
+    const next = new Set(hiddenPlugins)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    update('hiddenPluginTabIds', [...next])
   }
 
   const TOGGLEABLE: Array<{ key: HideableTabKey; icon: React.ReactNode; title: string; show: boolean }> = [
@@ -104,6 +131,23 @@ export function ViewTab({ settings, update, updateMany }: Props): JSX.Element {
               >
                 <span style={darkenPoere ? { filter: 'brightness(0.1)', display: 'flex' } : undefined}>{t.icon}</span>
               </button>
+            )
+          })}
+          {pluginTabs.map((t) => {
+            const isHidden = hiddenPlugins.has(t.pluginId)
+            return (
+              <button
+                key={t.pluginId}
+                onClick={() => togglePluginHidden(t.pluginId)}
+                title={t.label}
+                className={`${TAB_BUTTON_BASE} [&_svg]:w-4 [&_svg]:h-4 [&_svg]:block`}
+                style={{
+                  background: isHidden ? TAB_FILL_OFF : TAB_FILL_ON,
+                  color: isHidden ? '#fff' : '#171821',
+                  border: 'none',
+                }}
+                dangerouslySetInnerHTML={{ __html: t.icon }}
+              />
             )
           })}
           {FIXED_PREVIEW.map((b) => (

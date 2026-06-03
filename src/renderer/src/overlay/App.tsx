@@ -843,6 +843,7 @@ export default function App(): JSX.Element {
                 features={features}
                 hasPriceCheckData={!!priceCheckData}
                 hiddenTabs={new Set((settings?.hiddenTabs ?? []).filter(isHideableTabKey))}
+                hiddenPluginTabIds={new Set(settings?.hiddenPluginTabIds ?? [])}
                 pluginTabs={pluginTabs.map((t) => ({ pluginId: t.pluginId, label: t.label, icon: t.icon }))}
                 onSetView={setView}
                 onClose={close}

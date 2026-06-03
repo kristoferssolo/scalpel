@@ -14,6 +14,7 @@ import {
   setPluginHotkey,
   setPluginOverlayHotkey,
 } from '../plugins/hotkey-registry'
+import { getRegisteredPluginTabs, removePluginTab, setPluginTab } from '../plugins/tab-registry'
 import { installFromRegistry } from '../plugins/install-from-registry'
 import { installUnpacked } from '../plugins/install-unpacked'
 import { getInstalledPlugins, getUnpackedPlugins } from '../plugins/manager'
@@ -31,6 +32,14 @@ export interface InstalledPluginIpc {
 export function register(store: Store<AppSettings>, isElevated: () => boolean = () => false): void {
   const notifyHotkeysChanged = (): void => {
     getOverlayWindow()?.webContents.send('plugin-hotkeys-changed')
+  }
+
+  // Broadcast to ALL windows (not just the overlay) so the standalone app-window
+  // settings refresh their plugin-tab toggles live on hot-install/uninstall.
+  const notifyTabsChanged = (): void => {
+    for (const win of BrowserWindow.getAllWindows()) {
+      win.webContents.send('plugin-tabs-changed')
+    }
   }
 
   ipcMain.handle('plugins:list-installed', (): InstalledPluginIpc[] => {
@@ -93,6 +102,22 @@ export function register(store: Store<AppSettings>, isElevated: () => boolean = 
       label,
     }))
     return [...actions, ...overlayRows]
+  })
+
+  ipcMain.handle('plugins:register-tab', (_evt, pluginId: string, label: string, icon: string) => {
+    if (!PLUGIN_ID_PATTERN.test(pluginId)) throw new Error('invalid plugin id')
+    setPluginTab(pluginId, label, icon)
+    notifyTabsChanged()
+  })
+
+  ipcMain.handle('plugins:unregister-tab', (_evt, pluginId: string) => {
+    if (!PLUGIN_ID_PATTERN.test(pluginId)) throw new Error('invalid plugin id')
+    removePluginTab(pluginId)
+    notifyTabsChanged()
+  })
+
+  ipcMain.handle('plugins:list-registered-tabs', () => {
+    return Array.from(getRegisteredPluginTabs(), ([pluginId, { label, icon }]) => ({ pluginId, label, icon }))
   })
 
   ipcMain.handle('plugins:install-unpacked', async (evt) => {
@@ -181,6 +206,8 @@ export function register(store: Store<AppSettings>, isElevated: () => boolean = 
       disposePluginOverlay(pluginId)
       removePluginHotkey(pluginId)
       removePluginOverlayHotkey(pluginId)
+      removePluginTab(pluginId)
+      notifyTabsChanged()
       refreshAppMacros()
       notifyHotkeysChanged()
     }

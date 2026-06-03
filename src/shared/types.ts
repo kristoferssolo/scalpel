@@ -507,6 +507,10 @@ export interface AppSettings {
   /** Title-bar tab keys the user has hidden. Toggleable from View settings.
    *  'settings' and 'close' are never hidden. */
   hiddenTabs?: HideableTabKey[]
+  /** Plugin ids whose contributed title-bar tab is hidden. Arbitrary plugin id
+   *  strings (no typed tuple like hiddenTabs); stale ids for uninstalled plugins
+   *  are harmless and never match a live registered tab. */
+  hiddenPluginTabIds?: string[]
   /** When true, enables developer tooling (e.g. Load unpacked plugin button). */
   developerMode?: boolean
   /** Optional override for the plugin registry URL. Defaults to the

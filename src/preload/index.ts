@@ -728,6 +728,11 @@ export const api = {
     ipcRenderer.invoke('plugins:register-hotkey', pluginId, label),
   pluginListRegisteredHotkeys: (): Promise<Array<{ action: string; pluginId: string; label: string }>> =>
     ipcRenderer.invoke('plugins:list-registered-hotkeys'),
+  pluginRegisterTab: (pluginId: string, label: string, icon: string): Promise<void> =>
+    ipcRenderer.invoke('plugins:register-tab', pluginId, label, icon),
+  pluginUnregisterTab: (pluginId: string): Promise<void> => ipcRenderer.invoke('plugins:unregister-tab', pluginId),
+  pluginListRegisteredTabs: (): Promise<Array<{ pluginId: string; label: string; icon: string }>> =>
+    ipcRenderer.invoke('plugins:list-registered-tabs'),
   pluginInstallUnpacked: (): Promise<{ ok: true; id: string } | { ok: false; error: string }> =>
     ipcRenderer.invoke('plugins:install-unpacked'),
   pluginFetchRegistry: (): Promise<
@@ -765,6 +770,11 @@ export const api = {
     const handler = (): void => cb()
     ipcRenderer.on('plugin-hotkeys-changed', handler)
     return () => ipcRenderer.removeListener('plugin-hotkeys-changed', handler)
+  },
+  onPluginTabsChanged: (cb: () => void): (() => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.on('plugin-tabs-changed', handler)
+    return () => ipcRenderer.removeListener('plugin-tabs-changed', handler)
   },
   onRegexPresetsChanged: (cb: () => void): (() => void) => {
     const handler = (): void => cb()
