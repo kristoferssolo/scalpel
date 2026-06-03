@@ -350,10 +350,10 @@ export function createOverlayWindow(
       // tells us which PoE actually has focus (0 = PoE1, 1 = PoE2).
       if (!retargeting) {
         if (ev.titleIndex === 0) {
-          if (getPoeVersion() !== 1) onGameVersionChange?.(1)
+          if (getPoeVersion() !== 1) setImmediate(() => onGameVersionChange?.(1))
           setPoeVersion(1)
         } else if (ev.titleIndex === 1) {
-          if (getPoeVersion() !== 2) onGameVersionChange?.(2)
+          if (getPoeVersion() !== 2) setImmediate(() => onGameVersionChange?.(2))
           setPoeVersion(2)
         }
       }

@@ -19,6 +19,7 @@ import { broadcastSettingUpdates } from '../settings/broadcast'
 import { refreshLeagues } from '../trade/leagues'
 import { refreshPrices } from '../trade/prices'
 import { invalidateStatsCache } from '../trade/stat-matcher/stats-cache'
+import { setPoeVersion } from './state'
 
 function isValidLeagueForGame(store: Store<AppSettings>, league: string, variant: GameVariant): boolean {
   const key = variant === 2 ? 'leaguesPoe2' : 'leaguesPoe1'
@@ -34,9 +35,13 @@ export interface GameSwitchResult {
 }
 
 /** Single coordinator for every game-switch path. Updates the persistent
- *  settings / active profile synchronously, retargets the overlay, invalidates
- *  trade caches, then fires background network / disk work. */
+ *  settings / active profile synchronously, invalidates trade caches, then
+ *  fires background network / disk work. Does NOT retarget the native overlay
+ *  — callers that need overlay attachment changes must additionally call
+ *  `retargetForGame`. */
 export function switchGameContext(store: Store<AppSettings>, target: GameVariant): GameSwitchResult {
+  setPoeVersion(target)
+
   const previous = getEffectiveSettings(store)
 
   const changes = switchActiveProfileByGameVariant(store, target)
@@ -55,8 +60,6 @@ export function switchGameContext(store: Store<AppSettings>, target: GameVariant
     applyPinnedZoneEnabled(false)
   }
 
-  retargetForGame(target)
-
   invalidateStatsCache()
   invalidateBaseToClass()
 
@@ -69,15 +72,18 @@ export function switchGameContext(store: Store<AppSettings>, target: GameVariant
   return { changes, previous, current }
 }
 
-/** Switch game context and broadcast setting/profile changes to all renderers.
- *  Use this instead of raw `switchGameContext` whenever settings changes must be
- *  visible in the UI (tray switch, hotkey auto-detect, startup attach, watcher). */
+/** Switch game context, retarget the native overlay to the new game, and
+ *  broadcast setting/profile changes to all renderers. Use this for user-
+ *  initiated or watcher-driven game switches that must move overlay attachment.
+ *  Do NOT call this from inside a native overlay attach callback — use
+ *  `switchGameContext` directly instead. */
 export function performGameSwitch(
   store: Store<AppSettings>,
   target: GameVariant,
   sender?: WebContents | null,
 ): GameSwitchResult {
   const result = switchGameContext(store, target)
+  retargetForGame(target)
   broadcastSettingUpdates(sender ?? null, result.changes, result.previous, result.current)
   return result
 }

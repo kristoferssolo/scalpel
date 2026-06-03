@@ -156,7 +156,7 @@ import {
   hydrateActiveProfileSettings,
   writeActiveProfileSetting,
 } from './profiles/profile-settings'
-import { performGameSwitch } from './game-switch/context'
+import { performGameSwitch, switchGameContext } from './game-switch/context'
 import { startAutoGameWatcher, stopAutoGameWatcher, onAutoGameSwitch } from './game-switch/watcher'
 
 // ---- Linux display-server setup --------------------------------------------
@@ -537,7 +537,7 @@ app.whenReady().then(() => {
   // relaunches to swap versions if needed (ensureCorrectGameForHotkey).
   if (!IS_E2E)
     createOverlayWindow((store.get(PROFILE_VERSION_KEY) as GameVariant) ?? 1, (detected) => {
-      performGameSwitch(store, detected)
+      switchGameContext(store, detected)
     })
   // Let the secondary-overlay system know about the main overlay window so its
   // isAnyScalpelWindowFocused predicate can include it.
