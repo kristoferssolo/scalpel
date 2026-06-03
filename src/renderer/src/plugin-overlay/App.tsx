@@ -78,6 +78,11 @@ export function App({ pluginId }: { pluginId: string }): JSX.Element {
           delete: (key: string): Promise<void> => window.api.pluginStorageDelete(pluginId, key),
           keys: (): Promise<string[]> => window.api.pluginStorageKeys(pluginId),
         },
+        gameConfig: {
+          read: () => window.api.gameConfigRead(),
+          write: (content: string) => window.api.gameConfigWrite(content),
+          onChange: (handler: () => void) => window.api.onGameConfigChange(handler),
+        },
         openExternal: (url) => window.api.openExternal(url),
         log: (...args: unknown[]) => {
           if (window.__SCALPEL_DEBUG_LOG) {

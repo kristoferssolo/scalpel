@@ -352,6 +352,18 @@ export const api = {
     }
   },
   getRecentLogLines: (count?: number): Promise<string[]> => ipcRenderer.invoke('client-log:recent-lines', count),
+  gameConfigRead: (): Promise<{ content: string; path: string }> => ipcRenderer.invoke('plugins:game-config-read'),
+  gameConfigWrite: (content: string): Promise<{ backupPath: string | null }> =>
+    ipcRenderer.invoke('plugins:game-config-write', content),
+  onGameConfigChange: (cb: () => void): (() => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.send('plugins:game-config-watch')
+    ipcRenderer.on('plugins:game-config-changed', handler)
+    return () => {
+      ipcRenderer.removeListener('plugins:game-config-changed', handler)
+      ipcRenderer.send('plugins:game-config-unwatch')
+    }
+  },
   onOverlayDetach: (cb: () => void): (() => void) => {
     const handler = (): void => cb()
     ipcRenderer.on('overlay-detach', handler)

@@ -100,6 +100,7 @@ import { register as registerClipboard } from './handlers/clipboard'
 import { register as registerManifest } from './handlers/manifest'
 import { register as registerPlugins } from './handlers/plugins'
 import { registerClientLogHandlers } from './handlers/client-log'
+import { registerGameConfigHandlers } from './handlers/game-config'
 import { flushAll as flushPluginStorage } from './plugins/storage'
 import { refreshManifest } from './manifest'
 import { registerCheatSheetProtocol } from './cheat-sheet-protocol'
@@ -336,6 +337,7 @@ registerManifest()
 registerPlugins(store, isElevated)
 learningHandlers.register()
 registerClientLogHandlers()
+registerGameConfigHandlers()
 registerDiagnostics({ store, getAppWindow, showAppWindow })
 
 ipcMain.on('close-overlay', () => hideOverlay())

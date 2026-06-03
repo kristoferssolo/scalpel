@@ -59,6 +59,7 @@ export function createPluginContext(deps: PluginContextFactoryDeps): ScalpelPlug
       delete: (key: string): Promise<void> => deps.storage.delete(key),
       keys: (): Promise<string[]> => deps.storage.keys(),
     },
+    gameConfig: deps.gameConfig,
     openExternal: deps.openExternal,
     openTab: () => deps.openTab(deps.pluginId),
     copyAndEvaluateItem: () => deps.copyAndEvaluateItem(),

@@ -67,6 +67,23 @@ export interface RegisterHotkeyOptions {
   label: string
 }
 
+export interface GameConfigApi {
+  /** Read the detected game's config ini. Rejects if the file is missing. */
+  read(): Promise<{ content: string; path: string }>
+  /**
+   * Atomically overwrite the whole config file. On the first write of a session
+   * a timestamped `.bak` is created beside it; `backupPath` is that path, or
+   * null when no backup was written.
+   */
+  write(content: string): Promise<{ backupPath: string | null }>
+  /**
+   * Fire when the file changes on disk underneath you (the game rewriting it on
+   * exit, an external editor, ...). Debounced; does not fire for your own
+   * `write`. Returns an unsubscribe function.
+   */
+  onChange(handler: () => void): () => void
+}
+
 export interface ScalpelPluginContext {
   readonly pluginId: string
   readonly pluginVersion: string
@@ -139,6 +156,12 @@ export interface ScalpelPluginContext {
 
   fetch: typeof fetch
   storage: PluginStorage
+  /**
+   * Read / write / watch the running game's `_Config.ini`. The host resolves the
+   * path from the detected PoE version; plugins cannot name a path. This is the
+   * only file a plugin can touch on disk.
+   */
+  readonly gameConfig: GameConfigApi
   openExternal(url: string): void
   log(...args: unknown[]): void
 }

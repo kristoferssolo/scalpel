@@ -100,6 +100,11 @@ export function PluginHost(props: PluginHostProps): JSX.Element | null {
           delete: (key) => window.api.pluginStorageDelete(m.id, key),
           keys: () => window.api.pluginStorageKeys(m.id),
         },
+        gameConfig: {
+          read: () => window.api.gameConfigRead(),
+          write: (content) => window.api.gameConfigWrite(content),
+          onChange: (handler) => window.api.onGameConfigChange(handler),
+        },
         registerTab: (pluginId, opts) => {
           setTabs((prev) => {
             if (prev.find((t) => t.pluginId === pluginId)) return prev

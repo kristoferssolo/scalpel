@@ -133,6 +133,15 @@ interface ScalpelPluginContext {
     keys(): Promise<string[]>
   }
 
+  // Read / write / watch the running game's _Config.ini. The host resolves the
+  // path from the detected PoE version; plugins cannot name a path. This is the
+  // only file a plugin can touch on disk. See "Editing the game config" below.
+  gameConfig: {
+    read(): Promise<{ content: string; path: string }>
+    write(content: string): Promise<{ backupPath: string | null }>
+    onChange(handler: () => void): () => void
+  }
+
   // Utilities
   fetch: typeof fetch                  // standard browser fetch
   openExternal(url: string): void      // open URL in system browser
@@ -206,6 +215,31 @@ const levelUps = recent.filter((l) => l.includes('is now level')).length
 `onLogLine` fires once per newly appended line, in order, and returns an unsubscribe function. `getRecentLogLines(count?)` resolves to the most recent buffered lines (all of them, up to 200, when you pass no argument).
 
 Heads-up on privacy: `Client.txt` contains **all in-game chat, including private whispers and trade messages**, alongside zone changes and level-ups. The raw tail is handed to you ungated, so treat it accordingly - do not log or transmit lines you don't need.
+
+### Editing the game config
+
+`ctx.gameConfig` reads and writes the running game's `_Config.ini` (the file PoE
+keeps under `Documents\My Games\...`). The host resolves the path from the
+detected PoE version, so a plugin never names a path and can touch no other file.
+
+```tsx
+const { content, path } = await ctx.gameConfig.read()   // rejects if the file is missing
+const { backupPath } = await ctx.gameConfig.write(nextContent)
+const off = ctx.gameConfig.onChange(() => { /* file changed on disk - reload */ })
+```
+
+- `read()` resolves to `{ content, path }`, or rejects if the file does not exist.
+- `write(content)` overwrites the whole file atomically and resolves to
+  `{ backupPath }`. The first write of a session also copies the current file to a
+  timestamped `.bak` beside it (`backupPath` is that path; `null` on later writes).
+- `onChange(handler)` fires when the file changes on disk (e.g. the game rewriting
+  it on exit, or an external editor). It is debounced and never fires for your own
+  `write`. Returns an unsubscribe function.
+
+Heads-up: the game only reads this file at launch and rewrites the whole file from
+its in-memory state when it exits, so your edits apply at the next launch and can
+be clobbered if the game is running. Warn the user, prefer an explicit save, and
+use `onChange` to offer a reload when the file moves underneath you.
 
 ### Overlay windows
 

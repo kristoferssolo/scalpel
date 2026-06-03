@@ -30,6 +30,11 @@ const baseDeps = () => ({
     delete: vi.fn(async () => undefined),
     keys: vi.fn(async () => []),
   },
+  gameConfig: {
+    read: vi.fn(async () => ({ content: '', path: '' })),
+    write: vi.fn(async () => ({ backupPath: null })),
+    onChange: vi.fn(() => () => {}),
+  },
 })
 
 describe('createPluginContext', () => {
