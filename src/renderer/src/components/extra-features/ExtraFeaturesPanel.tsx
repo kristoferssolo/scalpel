@@ -73,10 +73,7 @@ export function ExtraFeaturesPanel({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1">
-        <h2 className="section-title" style={{ color: 'var(--accent)', fontSize: 16, fontWeight: 700 }}>
-          Extra Features
-        </h2>
-        <p className="text-[11px] text-text-dim">Scalpel includes more than the overlay you see. Set these up below.</p>
+        <h2 className="section-title">Additional Tools & Plugins</h2>
       </div>
 
       <FeatureCard
