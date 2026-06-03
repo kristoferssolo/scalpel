@@ -145,7 +145,10 @@ export function SettingsPanel({
         </div>
         <div className="flex flex-wrap gap-[6px]">
           {(TAB_KEYS as readonly TabKey[])
-            .filter((t) => t !== 'developer' || settings.developerMode)
+            // Developer tab is always reachable in the app window so the toggle
+            // can be flipped without hand-editing settings JSON; in the overlay
+            // it stays hidden until developerMode is on, to keep the in-game UI lean.
+            .filter((t) => t !== 'developer' || settings.developerMode || !isOverlay)
             .filter((t) => t !== 'profiles' || !isOverlay)
             .map((t) => (
               <button
