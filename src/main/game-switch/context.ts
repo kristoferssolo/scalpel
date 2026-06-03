@@ -2,6 +2,7 @@ import type { WebContents } from 'electron'
 import type Store from 'electron-store'
 import type { AppSettings, RuntimeSettings } from '../../shared/types'
 import type { GameVariant } from '../../shared/game-variant'
+import { getGameFeatures } from '../../shared/game-features'
 import { applyCheatSheetHotkeys } from '../cheat-sheets/index'
 import { clearFilterState, loadFilter } from '../filter/state'
 import { invalidateBaseToClass } from '../handlers/base-to-class-cache'
@@ -18,6 +19,13 @@ import { broadcastSettingUpdates } from '../settings/broadcast'
 import { refreshLeagues } from '../trade/leagues'
 import { refreshPrices } from '../trade/prices'
 import { invalidateStatsCache } from '../trade/stat-matcher/stats-cache'
+
+function isValidLeagueForGame(store: Store<AppSettings>, league: string, variant: GameVariant): boolean {
+  const key = variant === 2 ? 'leaguesPoe2' : 'leaguesPoe1'
+  const stored = store.get(key)
+  if (stored && stored.length > 0) return stored.includes(league)
+  return getGameFeatures(variant).leagues.includes(league)
+}
 
 export interface GameSwitchResult {
   changes: ProfileChangedSetting[]
@@ -37,7 +45,7 @@ export function switchGameContext(store: Store<AppSettings>, target: GameVariant
   if (profile) {
     if (profile.filterPath) loadFilter(profile.filterPath, 'Profile Activation')
     else clearFilterState()
-    if (profile.league) void refreshPrices(profile.league)
+    if (profile.league && isValidLeagueForGame(store, profile.league, target)) void refreshPrices(profile.league)
     updateOnlineSyncDir(profile.filterDir)
     if (profile.cheatSheets) applyCheatSheetHotkeys(profile.cheatSheets)
     applyPinnedZoneEnabled(profile.cheatSheets?.pinned === true)

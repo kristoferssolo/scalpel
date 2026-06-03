@@ -330,9 +330,13 @@ hydrateActiveProfileSettings(store)
 // time it's relaunched.
 if (!IS_E2E)
   app.whenReady().then(() => {
-    refreshLeagues(store, undefined, { force: true }).catch((err) =>
-      console.error('[leagues] launch refresh failed:', err),
-    )
+    refreshLeagues(store, undefined, { force: true })
+      .then((changed) => {
+        if (changed.some((k) => k === 'activeProfile')) {
+          refreshPrices(getProfileBackedSetting(store, 'league'))
+        }
+      })
+      .catch((err) => console.error('[leagues] launch refresh failed:', err))
   })
 
 runRegexMacroMigration(store)
@@ -469,9 +473,20 @@ function startLiveServices(): void {
   // Fetch manifest in background; bundled copy is the offline fallback
   refreshManifest().catch(() => {})
 
-  // Fetch prices in background, refresh every 10 minutes
-  refreshPrices(getProfileBackedSetting(store, 'league'))
-  setInterval(() => refreshPrices(getProfileBackedSetting(store, 'league')), 10 * 60 * 1000)
+  // Fetch prices in background, refresh every 10 minutes.
+  // Skip the initial fetch when the active league is clearly wrong for the
+  // current game (e.g. a PoE1 league on a PoE2 profile before migration).
+  // The launch league refresh will migrate the league then re-trigger prices.
+  const activeLeague = getProfileBackedSetting(store, 'league') as string
+  const leaguesKey: 'leaguesPoe1' | 'leaguesPoe2' = store.get(PROFILE_VERSION_KEY) === 2 ? 'leaguesPoe2' : 'leaguesPoe1'
+  const knownLeagues = store.get(leaguesKey) as string[] | undefined
+  const isValidLeague = activeLeague ? (knownLeagues?.length ? knownLeagues.includes(activeLeague) : true) : false
+  if (isValidLeague) refreshPrices(activeLeague)
+  const schedulePriceRefresh = () => {
+    const league = getProfileBackedSetting(store, 'league') as string
+    if (league) refreshPrices(league)
+  }
+  setInterval(schedulePriceRefresh, 10 * 60 * 1000)
 
   // After the OS wakes from sleep, Electron's network stack often bails on pending
   // requests with ERR_NETWORK_IO_SUSPENDED. Invalidate the price cache and re-fetch so
