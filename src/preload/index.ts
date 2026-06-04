@@ -512,6 +512,83 @@ export const api = {
     league: string
     remainingIds: string[]
   }> => ipcRenderer.invoke('map-regex-trade', params),
+  waystoneRegexTrade: (params: {
+    tier: number
+    avoidTexts: string[]
+    wantTexts: string[]
+    wantMode: 'any' | 'all'
+    wantValues: Record<number, number>
+    avoidValues: Record<number, number>
+    qualifiers: {
+      corrupted: boolean
+      uncorrupted: boolean
+      delirious: boolean
+      anyPack: boolean
+    }
+    quantities: {
+      packSize: number | null
+      monsterEffectiveness: number | null
+      monsterRarity: number | null
+      itemRarity: number | null
+      dropChance: number | null
+    }
+  }): Promise<{
+    total: number
+    listings: Array<{
+      id: string
+      price: { amount: number; currency: string } | null
+      account: string
+      characterName?: string
+      online: boolean
+      instantBuyout: boolean
+      icon?: string
+      indexed?: string
+      itemData?: {
+        name?: string
+        baseType?: string
+        rarity?: string
+        explicitMods?: string[]
+        implicitMods?: string[]
+        ilvl?: number
+        mapProperties?: Array<{ name: string; value: string }>
+      }
+    }>
+    queryId: string
+    league: string
+    remainingIds: string[]
+  }> => ipcRenderer.invoke('waystone-regex-trade', params),
+  tabletRegexTrade: (params: {
+    wantTexts: string[]
+    wantMode: 'any' | 'all'
+    wantValues: Record<number, number>
+    rarity: { normal: boolean; magic: boolean }
+    typeFlags: Record<string, boolean>
+    uses: { enabled: boolean; value: number }
+  }): Promise<{
+    total: number
+    listings: Array<{
+      id: string
+      price: { amount: number; currency: string } | null
+      account: string
+      characterName?: string
+      online: boolean
+      instantBuyout: boolean
+      icon?: string
+      indexed?: string
+      itemData?: {
+        name?: string
+        baseType?: string
+        rarity?: string
+        explicitMods?: string[]
+        implicitMods?: string[]
+        ilvl?: number
+        mapProperties?: Array<{ name: string; value: string }>
+      }
+    }>
+    queryId: string
+    league: string
+    remainingIds: string[]
+  }> => ipcRenderer.invoke('tablet-regex-trade', params),
   fetchMoreListings: (
     queryId: string,
     ids: string[],
