@@ -85,6 +85,8 @@ import {
   setEvaluationStore,
 } from './evaluation'
 import { initLearning } from './learning'
+import { initMainLocale } from './locale'
+import { m } from '../shared/paraglide/messages.js'
 import { snapshotClipboard } from './clipboard-preserve'
 import * as tradeHandlers from './handlers/trade'
 import * as settingsHandlers from './handlers/settings'
@@ -212,6 +214,7 @@ const store = new Store<AppSettings>({
     developerMode: false,
     themeId: 'default',
     customThemePalette: null,
+    locale: 'en',
     pluginRegistryUrl: undefined,
     startInTray: true,
     appWindowPosition: undefined,
@@ -233,6 +236,11 @@ if (store.get('themeId') === undefined) store.set('themeId', 'default')
 if (store.get('customThemePalette') === undefined) store.set('customThemePalette', null)
 if (store.get('adaptiveDefaultsMode') === undefined) store.set('adaptiveDefaultsMode', 'eager')
 if (store.get('startInTray') === undefined) store.set('startInTray', true)
+if (store.get('locale') === undefined) store.set('locale', 'en')
+
+// Install the Paraglide locale override for the main process and rebuild the
+// tray menu when the language changes so its labels stay localized.
+initMainLocale(store, () => refreshTrayMenu())
 
 const profileStore = initProfileStore(app.getPath('userData'))
 
@@ -364,18 +372,14 @@ function getAppIcon(): Electron.NativeImage {
   return nativeImage.createFromPath(iconPath)
 }
 
-function createTray(): void {
-  const icon = getAppIcon()
-  tray = new Tray(icon)
-  tray.setToolTip('Scalpel')
-
+function buildTrayContextMenu(): Menu {
   const current = store.get(PROFILE_VERSION_KEY) === 2 ? 2 : 1
   const other: GameVariant = current === 1 ? 2 : 1
 
-  const contextMenu = Menu.buildFromTemplate([
-    { label: `Current Game: PoE${current}`, enabled: false },
+  return Menu.buildFromTemplate([
+    { label: m.tray_current_game({ game: current }), enabled: false },
     {
-      label: `Switch to PoE${other}`,
+      label: m.tray_switch_game({ game: other }),
       click: () => {
         // requestGameSwitch shows the app window and sends the prompt; the
         // renderer's GameSwitchModal handles the user's response.
@@ -384,19 +388,30 @@ function createTray(): void {
     },
     { type: 'separator' },
     {
-      label: 'Settings',
+      label: m.tray_settings(),
       click: () => showAppWindow(),
     },
     {
-      label: 'Report a Bug',
+      label: m.tray_report_bug(),
       click: () => {
         createAndOpenBugReport().catch((err) => recordMainDiagnostic('bug-report', err))
       },
     },
     { type: 'separator' },
-    { label: 'Quit', click: () => app.quit() },
+    { label: m.tray_quit(), click: () => app.quit() },
   ])
-  tray.setContextMenu(contextMenu)
+}
+
+/** Re-apply the tray menu with current strings (e.g. after a language change). */
+function refreshTrayMenu(): void {
+  tray?.setContextMenu(buildTrayContextMenu())
+}
+
+function createTray(): void {
+  const icon = getAppIcon()
+  tray = new Tray(icon)
+  tray.setToolTip('Scalpel')
+  tray.setContextMenu(buildTrayContextMenu())
 
   // Left-click opens app window
   tray.on('click', () => showAppWindow())

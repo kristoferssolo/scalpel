@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { m } from '../../../shared/paraglide/messages.js'
 
 interface FilterInfoBannerProps {
   filterPath: string
@@ -51,7 +52,7 @@ export function FilterInfoBanner({
   return (
     <div className="flex items-center justify-between px-3.5 py-2 border-b border-border text-[11px] bg-bg-solid">
       <span className="text-text-dim truncate">
-        {hasUpdate && <span className="text-accent font-semibold mr-1.5">Filter Update Available</span>}
+        {hasUpdate && <span className="text-accent font-semibold mr-1.5">{m.filterbanner_update_available()}</span>}
         {!hasUpdate &&
           (isOnlineFilter ? (
             <strong className="text-text">{activeFile.slice(0, -'-local'.length)}</strong>
@@ -70,7 +71,9 @@ export function FilterInfoBanner({
                 onFilterUpdated(activeFile)
                 const s = result.stats
                 const changes = s ? s.userOnly || s.upstreamOnly + s.bothChanged + s.added + s.removed : 0
-                onMergeMessage(changes > 0 ? `${changes} Scalpel Changes Reapplied Successfully` : 'Filter Updated')
+                onMergeMessage(
+                  changes > 0 ? m.filterbanner_changes_reapplied({ changes }) : m.filterbanner_filter_updated(),
+                )
                 if (mergeMsgTimer.current) clearTimeout(mergeMsgTimer.current)
                 mergeMsgTimer.current = setTimeout(() => onMergeMessage(null), 10000)
               }
@@ -85,7 +88,7 @@ export function FilterInfoBanner({
               opacity: updatingFilter ? 0.5 : 1,
             }}
           >
-            {updatingFilter ? 'Updating...' : 'Update'}
+            {updatingFilter ? m.common_updating() : m.common_update()}
           </button>
         ) : mergeMessage ? (
           <span className="text-[11px] text-accent font-semibold shrink-0">{mergeMessage}</span>
@@ -101,7 +104,7 @@ export function FilterInfoBanner({
             className="shrink-0 text-[11px]"
             style={{ padding: '4px 12px', opacity: checkingUpdate ? 0.5 : 1 }}
           >
-            {checkingUpdate ? 'Checking...' : 'Check for Filter Updates'}
+            {checkingUpdate ? m.common_checking() : m.filterbanner_check_for_updates()}
           </button>
         ))}
     </div>

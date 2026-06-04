@@ -5,6 +5,11 @@ import type { ThemePalette } from './theme/palette'
 
 export type GameVariant = 1 | 2
 
+/** UI language. Keep in sync with `locales` in project.inlang/settings.json --
+ *  the Paraglide runtime is the authority at runtime; this mirrors it for the
+ *  settings contract. */
+export type AppLocale = 'en' | 'es' | 'de'
+
 export interface PoeProfile {
   schemaVersion: 1
   id: string
@@ -522,6 +527,10 @@ export interface AppSettings {
   themeId: string
   /** User's saved custom palette, used only when themeId === 'custom'. */
   customThemePalette: ThemePalette | null
+  /** UI language. Global - not mirrored per game. Defaults to 'en'. The renderer
+   *  mirrors this to localStorage for a synchronous pre-paint (see locale.tsx);
+   *  the main process reads it to localize tray/dialog strings. */
+  locale: AppLocale
   /** Controls the adaptive price-check defaults learning engine. 'eager' applies
    *  learned defaults after a little evidence; 'conservative' needs more evidence
    *  before changing a default; 'off' stops applying learned defaults but keeps

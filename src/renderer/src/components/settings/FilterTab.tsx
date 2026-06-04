@@ -4,6 +4,7 @@ import { FilterPicker } from '../FilterPicker'
 import { HistoryPanel } from '../HistoryPanel'
 import { HotkeyField } from './HotkeyField'
 import { SettingToggleBox } from './SettingToggleBox'
+import { m } from '../../../../shared/paraglide/messages.js'
 
 interface Props {
   settings: RuntimeSettings
@@ -33,11 +34,11 @@ export function FilterTab({
 
   return (
     <>
-      <div className="settings-section-title mt-3">Filter</div>
+      <div className="settings-section-title mt-3">{m.settings_filter_heading()}</div>
 
       {/* Filter folder & picker */}
       <section>
-        <label>Filter folder</label>
+        <label>{m.settings_filter_folder()}</label>
         <div className="mt-[6px]">
           <FilterPicker
             settings={settings}
@@ -49,14 +50,14 @@ export function FilterTab({
         </div>
         {isOverlay && !filterPath && (
           <p className="text-[11px] text-text-dim mt-1">
-            Typically: <code>{features.filterFolderHint}</code>
+            {m.settings_filter_folder_typically()} <code>{features.filterFolderHint}</code>
           </p>
         )}
       </section>
 
       {/* Filter hotkey */}
       <section>
-        <label>Filter hotkey</label>
+        <label>{m.settings_filter_hotkey()}</label>
         <div className="mt-[6px]">
           <HotkeyField
             value={settings.hotkey}
@@ -70,7 +71,7 @@ export function FilterTab({
 
       {/* Reload on save */}
       <SettingToggleBox
-        label="Automatically reload filter when switching an item's tier"
+        label={m.settings_reload_on_save()}
         checked={settings.reloadOnSave}
         onChange={(val) => update('reloadOnSave', val)}
       />
