@@ -2001,6 +2001,31 @@ describe('matchItemMods', () => {
   })
 })
 
+// ─── 100%-chance binary stat folding (PoE2) ──────────────────────────────────
+
+describe('chance-to binary stat folding', () => {
+  it('matches an over-rolled "#% chance to <effect>" to the valueless binary trade stat', () => {
+    // The Pandemonius prints "113% chance to Blind Chilled enemies on Hit" (100% base,
+    // over-rolled by corruption), but PoE2 trade folds the always-100% chance into a
+    // valueless binary stat "Blind Chilled enemies on Hit" (Pandemonius line missing).
+    _setStatEntriesForTests([
+      { id: 'explicit.stat_3450276548', text: 'Blind Chilled enemies on Hit', type: 'explicit' },
+    ])
+    const result = matchModToStat('113% chance to Blind Chilled enemies on Hit')
+    expect(result?.statId).toBe('explicit.stat_3450276548')
+    expect(result?.value).toBeNull()
+  })
+
+  it('still matches a real "#% chance to" stat with its rolled value (no false fold)', () => {
+    _setStatEntriesForTests([
+      { id: 'explicit.stat_318953428', text: '#% chance to Blind Enemies on Hit with Attacks', type: 'explicit' },
+    ])
+    const result = matchModToStat('25% chance to Blind Enemies on Hit with Attacks')
+    expect(result?.statId).toBe('explicit.stat_318953428')
+    expect(result?.value).toBe(25)
+  })
+})
+
 // ─── matchModToStat: requires stat entries (network-dependent) ───────────────
 
 describe('matchModToStat (requires stat entries)', () => {
