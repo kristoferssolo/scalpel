@@ -1,5 +1,6 @@
 import { Info } from '@icon-park/react'
 import { useEffect, useState } from 'react'
+import { Info } from '@icon-park/react'
 import { useAuth } from '../shared/use-auth'
 import appIcon from '../../../../resources/icon.png'
 import { getGameFeatures } from '../../../shared/game-features'
