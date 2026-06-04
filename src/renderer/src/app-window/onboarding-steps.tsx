@@ -1,3 +1,4 @@
+import { Info } from '@icon-park/react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../shared/use-auth'
 import appIcon from '../../../../resources/icon.png'
