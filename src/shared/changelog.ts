@@ -1,5 +1,15 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.13',
+    notes: [
+      'Added language support (English, Spanish, German) with a locale picker that persists across sessions.',
+      'Added a PoE2 waystone/tablet Trade tab with refreshed waystone data and a Quantity & yield section.',
+      'Perfect or overrolled unique affixes are now checked by default in the price checker.',
+      'Fixed game targeting/evaluation on a fresh start.',
+      'Fixed exceptional white items not price checking correctly.',
+    ],
+  },
+  {
     version: '0.9.12',
     notes: [
       'Added support for all the new items in PoE2 0.5.',
