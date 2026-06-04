@@ -1126,6 +1126,27 @@ describe('parseItemText', () => {
       expect(item.advancedMods?.[0].ranges).toEqual([{ value: 41, min: 39, max: 42 }])
     })
 
+    it('parses a corruption-overrolled single-value annotation as min === max', () => {
+      // An over-rolled fixed unique mod shows the base value as a single number in
+      // parens ("85(75)%"), not a range. It must still produce a range entry so the
+      // price checker can tell the roll exceeds the base (issue #378).
+      const text = [
+        'Item Class: Amulets',
+        'Rarity: Unique',
+        'The Pandemonius',
+        'Lapis Amulet',
+        '--------',
+        'Item Level: 81',
+        '--------',
+        '{ Unique Modifier — Damage, Elemental, Cold }',
+        'Damage Penetrates 85(75)% Cold Resistance',
+      ].join('\n')
+
+      const item = parseItemText(text)!
+      expect(item.explicits).toContain('Damage Penetrates 85% Cold Resistance')
+      expect(item.advancedMods?.[0].ranges).toEqual([{ value: 85, min: 75, max: 75 }])
+    })
+
     it('strips variant alternatives like Ghost Reaver()', () => {
       const text = [
         'Item Class: Body Armours',

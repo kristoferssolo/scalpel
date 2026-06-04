@@ -1925,6 +1925,80 @@ describe('matchItemMods', () => {
       expect(filters.find((f) => f.id === 'explicit.stat_1604736568')).toBeUndefined()
     })
   })
+
+  describe('perfectRoll flag (unique best-or-better rolls)', () => {
+    const STAT = { id: 'explicit.stat_ev', text: '#% increased Evasion Rating', type: 'explicit' as const }
+    // An advanced mod whose stripped line matches `${value}% increased Evasion Rating`,
+    // carrying the roll range in parens. `range` is matched by value, so pass it explicitly.
+    const advMod = (value: number, min: number, max: number): AdvancedMod[] => [
+      {
+        type: 'prefix',
+        name: 'Test',
+        tier: 1,
+        tags: [],
+        lines: [`${value}(${min}-${max})% increased Evasion Rating`],
+        ranges: [{ value, min, max }],
+      },
+    ]
+    const run = (value: number, min: number, max: number, rarity = 'Unique') => {
+      _setStatEntriesForTests([STAT])
+      return matchItemMods(
+        [`${value}% increased Evasion Rating`],
+        [],
+        undefined,
+        makeItemInfo({ rarity, itemClass: 'Body Armours' }),
+        advMod(value, min, max),
+      ).find((f) => f.id === STAT.id)
+    }
+
+    it('flags a perfect (== max) ranged unique roll', () => {
+      expect(run(30, 20, 30)?.perfectRoll).toBe(true)
+    })
+
+    it('flags an over-rolled (> max) ranged unique roll', () => {
+      expect(run(35, 20, 30)?.perfectRoll).toBe(true)
+    })
+
+    it('does not flag a sub-max ranged unique roll', () => {
+      expect(run(25, 20, 30)?.perfectRoll).toBeUndefined()
+    })
+
+    it('flags an over-rolled (> single value) fixed unique mod', () => {
+      expect(run(60, 50, 50)?.perfectRoll).toBe(true)
+    })
+
+    it('does not flag a fixed unique mod at its single value', () => {
+      expect(run(50, 50, 50)?.perfectRoll).toBeUndefined()
+    })
+
+    it('does not flag a perfect roll on a non-unique', () => {
+      expect(run(30, 20, 30, 'Rare')?.perfectRoll).toBeUndefined()
+    })
+
+    it('flags a corruption-overrolled single-value mod (The Pandemonius cold pen)', () => {
+      // "Damage Penetrates 85(75)% Cold Resistance" -- single-value paren, value > base.
+      _setStatEntriesForTests([
+        { id: 'explicit.stat_coldpen', text: 'Damage Penetrates #% Cold Resistance', type: 'explicit' },
+      ])
+      const filters = matchItemMods(
+        ['Damage Penetrates 85% Cold Resistance'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Amulets' }),
+        [
+          {
+            type: 'prefix',
+            name: 'Unique',
+            tier: 1,
+            tags: [],
+            lines: ['Damage Penetrates 85(75)% Cold Resistance'],
+            ranges: [{ value: 85, min: 75, max: 75 }],
+          },
+        ],
+      )
+      expect(filters.find((f) => f.id === 'explicit.stat_coldpen')?.perfectRoll).toBe(true)
+    })
+  })
 })
 
 // ─── matchModToStat: requires stat entries (network-dependent) ───────────────

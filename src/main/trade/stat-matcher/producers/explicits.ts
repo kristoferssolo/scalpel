@@ -116,6 +116,13 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
       let advModRanges: Array<{ value: number; min: number; max: number }> | undefined
       let advModName: string | undefined
       let advModMult: number | undefined
+      // A unique mod rolled at or above its best possible value. Ranged mods are "perfect"
+      // at the max and "over-rolled" (Vaal/corruption) above it; a fixed singular-value mod
+      // is special only when over-rolled strictly above its single value. Drives the
+      // price-check default-enable for uniques (issue #378). Negative/beneficial-negative
+      // rolls never satisfy `>= max`, so they stay off -- intentional, we only auto-enable
+      // clear best-or-better rolls.
+      let perfectRoll = false
       if (advancedMods && matched.value != null) {
         const rawCleaned = mod.replace(/\s*\(crafted\)\s*$/i, '').trim()
         const advMod = findAdvMod(advancedMods, cleaned, 'explicit', rawCleaned)
@@ -125,6 +132,9 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
           if (!range && advMod.ranges.length === 0) isFixedValue = true
           if (advMod.tier > 0) matchedTier = advMod.tier
           if (range && range.min !== range.max) matchedRange = { min: range.min, max: range.max }
+          if (range && itemInfo?.rarity === 'Unique' && matched.value != null) {
+            perfectRoll = range.min === range.max ? matched.value > range.max : matched.value >= range.max
+          }
           // Capture the full per-stat ranges and mod name for tier-ladder resolution.
           advModRanges = advMod.ranges
           advModName = advMod.name
@@ -232,6 +242,7 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
         option: matched.option,
         aggregated: matched.aggregated,
         foulborn: isFoulborn || undefined,
+        perfectRoll: perfectRoll || undefined,
         modTier: matchedTier,
         modRange: matchedRange,
         tierLadder,

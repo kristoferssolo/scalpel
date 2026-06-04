@@ -186,6 +186,10 @@ export interface StatFilter {
   displayValue?: string
   timelessLeaders?: string[] // all leader stat IDs for timeless count group
   foulborn?: boolean
+  /** True when a unique mod rolled at or above its best possible value (perfect, or
+   *  over-rolled by Vaal/corruption above the listed max / single value). Drives the
+   *  price-check default-enable for uniques (issue #378). */
+  perfectRoll?: boolean
   modTier?: number // mod tier if known (from advanced mod data)
   modRange?: { min: number; max: number } // possible roll range for this mod
   /** Resolved tier ladder for scrubbable affixes (single-stat or trade-averaged,

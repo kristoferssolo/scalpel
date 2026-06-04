@@ -907,13 +907,17 @@ function parseAdvancedMods(text: string): AdvancedMod[] {
         currentMod.randomSupport = true
       }
 
-      // Parse roll ranges: "41(39-42)%" or "+140(130-144)" or "-18(-20--10)%"
-      const rangeMatches = line.matchAll(/(-?\d+(?:\.\d+)?)\((-?\d+(?:\.\d+)?)-(-?\d+(?:\.\d+)?)\)/g)
+      // Parse roll ranges: "41(39-42)%", "+140(130-144)", "-18(-20--10)%", or the
+      // single-value form a corruption-overrolled fixed mod uses ("85(75)%" -- the
+      // value exceeds the listed base). The "-max" half is optional; when absent the
+      // base is a single value, so min === max (issue #378).
+      const rangeMatches = line.matchAll(/(-?\d+(?:\.\d+)?)\((-?\d+(?:\.\d+)?)(?:-(-?\d+(?:\.\d+)?))?\)/g)
       for (const rm of rangeMatches) {
+        const min = parseFloat(rm[2])
         currentMod.ranges.push({
           value: parseFloat(rm[1]),
-          min: parseFloat(rm[2]),
-          max: parseFloat(rm[3]),
+          min,
+          max: rm[3] !== undefined ? parseFloat(rm[3]) : min,
         })
       }
     }
