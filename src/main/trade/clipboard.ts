@@ -67,7 +67,11 @@ function cleanBaseType(
   itemClass?: string,
   affixNames?: { prefix?: string; suffix?: string },
 ): string {
-  const clean = rawBase.replace(/^Superior\s+/i, '')
+  // PoE2 prepends "Superior" (quality) or "Exceptional" (extra rune sockets) to
+  // a white base's name; neither is part of the actual base type, so peel them off
+  // before matching. "Advanced"/"Expert" are NOT stripped -- those are genuinely
+  // distinct PoE2 base types.
+  const clean = rawBase.replace(/^Superior\s+/i, '').replace(/^Exceptional\s+/i, '')
   if (rarity === 'Magic') {
     // First try bases specific to this item class for the active game (avoids
     // false matches and keeps PoE1/PoE2 base lists from shadowing each other).

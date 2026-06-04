@@ -353,6 +353,28 @@ describe('parseItemText', () => {
       expect(item.baseType).toBe('Ruby Ring')
     })
 
+    it('strips the PoE2 "Exceptional" extra-socket prefix from the base type', () => {
+      // PoE2 prepends "Exceptional" to a white base's name when it has extra rune
+      // sockets; it's not part of the base type, so the price checker must peel it
+      // off or the trade query finds no matching base. (issue #380)
+      const text = [
+        'Item Class: Gloves',
+        'Rarity: Normal',
+        'Exceptional Feathered Mitts',
+        '--------',
+        'Armour: 149',
+        '--------',
+        'Requires: Level 59, 73 Str',
+        '--------',
+        'Sockets: S S ',
+        '--------',
+        'Item Level: 82',
+      ].join('\n')
+
+      const item = parseItemText(text)!
+      expect(item.baseType).toBe('Feathered Mitts')
+    })
+
     it('parses a PoE2 Uncut Skill Gem with level in the name', () => {
       // PoE2 pastes report the gem level inline on the name line ("Uncut Skill
       // Gem (Level 20)") rather than in a body "Level:" line. `name` keeps the
