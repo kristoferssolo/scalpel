@@ -157,6 +157,7 @@ import {
   writeActiveProfileSetting,
 } from './profiles/profile-settings'
 import { performGameSwitch, switchGameContext } from './game-switch/context'
+import { onceStartupGameVariant } from './game-switch/startup-selection'
 import { startAutoGameWatcher, stopAutoGameWatcher, onAutoGameSwitch } from './game-switch/watcher'
 
 // ---- Linux display-server setup --------------------------------------------
@@ -531,12 +532,24 @@ function startLiveServices(): void {
   onAutoGameSwitch(() => rebuildTrayMenu())
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Before creating the overlay, detect which PoE game is actually running.
+  // On first run this prevents new users from being attached to PoE1 when
+  // they only launched PoE2. Subsequence runs respect the persisted setting
+  // unless the running game provides a stronger signal.
+  const initialVariant: GameVariant = await (IS_E2E
+    ? Promise.resolve((store.get(PROFILE_VERSION_KEY) as GameVariant) ?? 1)
+    : onceStartupGameVariant(store, { isFirstRun: !store.get('onboardingCompleted') }))
+
+  if (!IS_E2E && initialVariant !== (store.get(PROFILE_VERSION_KEY) as GameVariant)) {
+    switchGameContext(store, initialVariant)
+  }
+
   // Seed the overlay with the last-known game version so attachByTitle waits for
   // that window. The hotkey handler re-detects the focused PoE on every fire and
   // relaunches to swap versions if needed (ensureCorrectGameForHotkey).
   if (!IS_E2E)
-    createOverlayWindow((store.get(PROFILE_VERSION_KEY) as GameVariant) ?? 1, (detected) => {
+    createOverlayWindow(initialVariant, (detected) => {
       switchGameContext(store, detected)
     })
   // Let the secondary-overlay system know about the main overlay window so its

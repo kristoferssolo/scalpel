@@ -16,10 +16,11 @@ import {
   type ProfileChangedSetting,
 } from '../profiles/profile-settings'
 import { broadcastSettingUpdates } from '../settings/broadcast'
+import { initLearning } from '../learning'
 import { refreshLeagues } from '../trade/leagues'
 import { refreshPrices } from '../trade/prices'
 import { invalidateStatsCache } from '../trade/stat-matcher/stats-cache'
-import { setPoeVersion } from './state'
+import { getPoeVersion, setPoeVersion } from './state'
 
 function isValidLeagueForGame(store: Store<AppSettings>, league: string, variant: GameVariant): boolean {
   const key = variant === 2 ? 'leaguesPoe2' : 'leaguesPoe1'
@@ -40,6 +41,7 @@ export interface GameSwitchResult {
  *  — callers that need overlay attachment changes must additionally call
  *  `retargetForGame`. */
 export function switchGameContext(store: Store<AppSettings>, target: GameVariant): GameSwitchResult {
+  const changed = target !== getPoeVersion()
   setPoeVersion(target)
 
   const previous = getEffectiveSettings(store)
@@ -62,6 +64,10 @@ export function switchGameContext(store: Store<AppSettings>, target: GameVariant
 
   invalidateStatsCache()
   invalidateBaseToClass()
+
+  if (changed) {
+    initLearning(store, target)
+  }
 
   const lastFetched = (store.get('leaguesFetchedAt' as keyof AppSettings) as number) ?? 0
   if (Date.now() - lastFetched > 60 * 60 * 1000) {
