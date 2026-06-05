@@ -142,7 +142,7 @@ import {
   leftDockFracX,
   registerRegexRemoteOverlay,
   toggleRegexRemote,
-} from './regex/index'
+} from './regex'
 import { detectPanelStateOnce, getCurrentPanelState } from './panel-detection'
 import type { AppSettings, CheatSheetsSettings, LegacyAppSettings, RegexPreset } from '../shared/types'
 import type { GameVariant } from '../shared/game-variant'
@@ -156,7 +156,7 @@ import {
   hydrateActiveProfileSettings,
   writeActiveProfileSetting,
 } from './profiles/profile-settings'
-import { performGameSwitch, switchGameContext } from './game-switch/context'
+import { switchGameContext } from './game-switch/context'
 import { onceStartupGameVariant } from './game-switch/startup-selection'
 import { startAutoGameWatcher, stopAutoGameWatcher, onAutoGameSwitch } from './game-switch/watcher'
 
@@ -166,12 +166,17 @@ import { startAutoGameWatcher, stopAutoGameWatcher, onAutoGameSwitch } from './g
 // Scalpel's overlay attach (electron-overlay-window) and global input hook
 // (uiohook-napi) are X11-only. Relaunch under XWayland so they work at all,
 // mirroring awakened-poe-trade. Skip when a platform was already forced.
+// In dev mode, electron-vite doesn't forward CLI args to the Electron binary,
+// so the dev script sets ELECTRON_EXTRA_LAUNCH_ARGS before spawning.
 if (
   process.platform === 'linux' &&
   process.env.WAYLAND_DISPLAY &&
+  app.isPackaged &&
   !process.argv.some((a) => a.startsWith('--ozone-platform='))
 ) {
-  app.relaunch({ args: [...process.argv.slice(1), '--ozone-platform=x11'] })
+  const extraArgs = ['--ozone-platform=x11', '--disable-dev-shm-usage']
+  if (!process.argv.includes('--no-sandbox')) extraArgs.push('--no-sandbox')
+  app.relaunch({ args: [...process.argv.slice(1), ...extraArgs] })
   app.exit(0)
 }
 
@@ -333,7 +338,7 @@ if (!IS_E2E)
   app.whenReady().then(() => {
     refreshLeagues(store, undefined, { force: true })
       .then((changed) => {
-        if (changed.some((k) => k === 'activeProfile')) {
+        if (changed.includes('activeProfile')) {
           refreshPrices(getProfileBackedSetting(store, 'league'))
         }
       })
@@ -379,6 +384,7 @@ ipcMain.on('open-devtools', (event) => {
 // ---- System tray -----------------------------------------------------------
 
 let tray: Tray | null = null
+let trayAvailable = false
 
 function getAppIcon(): Electron.NativeImage {
   // In packaged app, resources/ is at process.resourcesPath; in dev, it's at project root
@@ -423,13 +429,24 @@ function rebuildTrayMenu(): void {
 }
 
 function createTray(): void {
-  const icon = getAppIcon()
-  tray = new Tray(icon)
-  tray.setToolTip('Scalpel')
-  tray.setContextMenu(buildTrayMenu())
+  try {
+    const icon = getAppIcon()
+    tray = new Tray(icon)
+    tray.setToolTip('Scalpel')
+    tray.setContextMenu(buildTrayMenu())
 
-  // Left-click opens app window
-  tray.on('click', () => showAppWindow())
+    // Left-click opens app window
+    tray.on('click', () => showAppWindow())
+    trayAvailable = true
+  } catch (err) {
+    tray = null
+    trayAvailable = false
+    recordMainDiagnostic('tray-creation', err)
+  }
+}
+
+function isTrayAvailable(): boolean {
+  return trayAvailable
 }
 
 // Must run before app is ready -- registers scheme privileges with Chromium
@@ -439,10 +456,10 @@ registerScalpelPluginSchemePrivileges()
 // ---- App lifecycle ---------------------------------------------------------
 
 const gotLock = IS_E2E || app.requestSingleInstanceLock()
-if (!gotLock) {
-  app.quit()
-} else {
+if (gotLock) {
   app.on('second-instance', () => showAppWindow())
+} else {
+  app.quit()
 }
 
 const installDir = IS_E2E ? process.cwd() : applyPendingUpdate()
@@ -479,10 +496,13 @@ function startLiveServices(): void {
   // current game (e.g. a PoE1 league on a PoE2 profile before migration).
   // The launch league refresh will migrate the league then re-trigger prices.
   const activeLeague = getProfileBackedSetting(store, 'league') as string
-  const leaguesKey: 'leaguesPoe1' | 'leaguesPoe2' = store.get(PROFILE_VERSION_KEY) === 2 ? 'leaguesPoe2' : 'leaguesPoe1'
-  const knownLeagues = store.get(leaguesKey) as string[] | undefined
-  const isValidLeague = activeLeague ? (knownLeagues?.length ? knownLeagues.includes(activeLeague) : true) : false
-  if (isValidLeague) refreshPrices(activeLeague)
+  const knownLeagues = store.get(store.get(PROFILE_VERSION_KEY) === 2 ? 'leaguesPoe2' : 'leaguesPoe1') as
+    | string[]
+    | undefined
+
+  if (activeLeague && (!knownLeagues?.length || knownLeagues.includes(activeLeague))) {
+    refreshPrices(activeLeague)
+  }
   const schedulePriceRefresh = () => {
     const league = getProfileBackedSetting(store, 'league') as string
     if (league) refreshPrices(league)
@@ -809,8 +829,11 @@ app.whenReady().then(async () => {
   if (!IS_E2E) startLiveServices()
 
   // Show onboarding/settings on first launch, otherwise respect startInTray.
-  // E2E harness always shows the window so the Playwright test can interact.
-  if (IS_E2E || !store.get('onboardingCompleted') || !store.get('startInTray')) {
+  // Dev mode always shows the window for easier debugging.
+  // If no system tray is available, always show the window (user can't untray).
+  const isDev = !app.isPackaged
+  const noTray = !isTrayAvailable()
+  if (isDev || IS_E2E || noTray || !store.get('onboardingCompleted') || !store.get('startInTray')) {
     showAppWindow()
   }
 })
