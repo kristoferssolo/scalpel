@@ -186,8 +186,8 @@ function isElevated(): boolean {
 
 const store = new Store<AppSettings>({
   defaults: {
-    hotkey: 'CommandOrControl+Shift+D',
-    priceCheckHotkey: 'CommandOrControl+Shift+A',
+    hotkey: 'CommandOrControl+D',
+    priceCheckHotkey: 'CommandOrControl+A',
     overlayOpacity: 0.95,
     overlayScale: 1,
     openSide: 'both',
