@@ -555,8 +555,10 @@ describe('matchItemMods', () => {
       const openSuffix = filters.find((f) => f.id === 'pseudo.pseudo_number_of_empty_suffix_mods')
       expect(openPrefix).toBeDefined()
       expect(openPrefix?.value).toBe(2) // 3 max - 1 prefix = 2 open
+      expect(openPrefix?.min).toBe(2) // min mirrors the open count, not a hardcoded 1
       expect(openSuffix).toBeDefined()
       expect(openSuffix?.value).toBe(1) // 3 max - 2 suffixes = 1 open
+      expect(openSuffix?.min).toBe(1)
     })
 
     it('uses 2 max affixes for jewels', () => {
