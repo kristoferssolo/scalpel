@@ -141,7 +141,7 @@ export function SettingsPanel({
             className="section-title"
             style={!isOverlay ? { color: 'var(--accent)', fontSize: 16, fontWeight: 700 } : undefined}
           >
-            {m.settings_title()}
+            {m.tray_settings()}
           </h2>
           <span className="text-[9px] text-accent opacity-60">
             {m.settings_beta_version({ version: __APP_VERSION__ })}

@@ -279,8 +279,8 @@ if (!IS_E2E)
     if (store.get('overlayScale') === 1 && !store.get('overlayScaleSet' as keyof AppSettings)) {
       const height = screen.getPrimaryDisplay().workAreaSize.height
       if (height >= 2160)
-        store.set('overlayScale', 2) // 4K
-      else if (height >= 1440) store.set('overlayScale', 1.5) // 1440p
+        store.set('overlayScale', 1.5) // 4K
+      else if (height >= 1440) store.set('overlayScale', 1.25) // 1440p
       // 1080p and below stays at 1
       store.set('overlayScaleSet' as keyof AppSettings, true)
     }

@@ -16,6 +16,33 @@ import {
 
 const MIRROR_KEY = 'scalpel:locale'
 
+const storage = new Map<string, string>()
+const storageStub: Storage = {
+  getItem: (key: string) => storage.get(key) ?? null,
+  setItem: (key: string, value: string) => {
+    storage.set(key, value)
+  },
+  removeItem: (key: string) => {
+    storage.delete(key)
+  },
+  clear: () => {
+    storage.clear()
+  },
+  get length() {
+    return storage.size
+  },
+  key: (index: number) => [...storage.keys()][index] ?? null,
+}
+
+function ensureLocalStorage(): void {
+  if (typeof localStorage === 'undefined' || typeof localStorage.clear !== 'function') {
+    Object.defineProperty(globalThis, 'localStorage', { value: storageStub, configurable: true })
+  }
+  if (typeof window !== 'undefined' && !window.localStorage) {
+    Object.defineProperty(window, 'localStorage', { value: globalThis.localStorage, configurable: true })
+  }
+}
+
 type Api = {
   getSettings: ReturnType<typeof vi.fn>
   setSetting: ReturnType<typeof vi.fn>
@@ -36,6 +63,8 @@ function installApi(overrides: Partial<Api> = {}): Api {
 let api: Api
 
 beforeEach(() => {
+  ensureLocalStorage()
+  localStorage.clear()
   _resetLocaleForTests()
   // Reinstall the Paraglide get/set overrides against the freshly reset state.
   bootstrapLocaleSync()
