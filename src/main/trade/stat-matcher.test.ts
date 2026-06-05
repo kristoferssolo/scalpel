@@ -2415,6 +2415,93 @@ describe('PoE2 Damage-as-Extra summary pseudos (end to end)', () => {
   })
 })
 
+describe('duplicate same-id explicit rows (rarity stat merge)', () => {
+  const RARITY_STAT = { id: 'explicit.stat_3917489142', text: '#% increased Rarity of Items found', type: 'explicit' }
+
+  it('PoE2: two rarity explicits merge into one row with summed value, enabled', () => {
+    const prev = getPoeVersion()
+    setPoeVersion(2)
+    try {
+      _setStatEntriesForTests([RARITY_STAT])
+      const filters = matchItemMods(
+        ['18% increased Rarity of Items found', '12% increased Rarity of Items found'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Rings' }),
+      )
+      const rarityRows = filters.filter((f) => f.id === RARITY_STAT.id)
+      expect(rarityRows).toHaveLength(1)
+      expect(rarityRows[0].value).toBe(30)
+      expect(rarityRows[0].enabled).toBe(true)
+      expect(rarityRows[0].min).toBe(27) // Math.floor(30 * 0.9)
+      expect(rarityRows[0].text).toContain('30')
+    } finally {
+      setPoeVersion(prev)
+    }
+  })
+
+  it('PoE1: two rarity explicits merge into one row with summed value, disabled (low-priority)', () => {
+    const prev = getPoeVersion()
+    setPoeVersion(1)
+    try {
+      _setStatEntriesForTests([RARITY_STAT])
+      const filters = matchItemMods(
+        ['18% increased Rarity of Items found', '12% increased Rarity of Items found'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Rings' }),
+      )
+      const rarityRows = filters.filter((f) => f.id === RARITY_STAT.id)
+      expect(rarityRows).toHaveLength(1)
+      expect(rarityRows[0].value).toBe(30)
+      expect(rarityRows[0].enabled).toBe(false)
+    } finally {
+      setPoeVersion(prev)
+    }
+  })
+
+  it('no spurious merge: single rarity roll (PoE2) passes through unchanged and is enabled', () => {
+    const prev = getPoeVersion()
+    setPoeVersion(2)
+    try {
+      _setStatEntriesForTests([RARITY_STAT])
+      const filters = matchItemMods(
+        ['18% increased Rarity of Items found'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Rings' }),
+      )
+      const rarityRows = filters.filter((f) => f.id === RARITY_STAT.id)
+      expect(rarityRows).toHaveLength(1)
+      expect(rarityRows[0].value).toBe(18)
+      expect(rarityRows[0].enabled).toBe(true)
+    } finally {
+      setPoeVersion(prev)
+    }
+  })
+
+  it('no spurious merge: two different stat ids both preserved', () => {
+    const LIFE_STAT = { id: 'explicit.stat_3299347043', text: '+# to maximum Life', type: 'explicit' }
+    _setStatEntriesForTests([RARITY_STAT, LIFE_STAT])
+    const prev = getPoeVersion()
+    setPoeVersion(2)
+    try {
+      const filters = matchItemMods(
+        ['18% increased Rarity of Items found', '+50 to maximum Life'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Rings' }),
+      )
+      const rarityRows = filters.filter((f) => f.id === RARITY_STAT.id)
+      const lifeRows = filters.filter((f) => f.id === LIFE_STAT.id)
+      expect(rarityRows).toHaveLength(1)
+      expect(lifeRows).toHaveLength(1)
+    } finally {
+      setPoeVersion(prev)
+    }
+  })
+})
+
 describe('parseAdvancedMods (Forbidden Shako randomSupport detection)', () => {
   // Sanity: the clipboard parser must set randomSupport=true on advanced mod blocks
   // whose lines start with "Socketed Gems are Supported by" AND carry the

@@ -14,6 +14,65 @@ const TINCTURE_STAT_REMAP: Record<string, string> = {
   'explicit.stat_2448920197': 'explicit.stat_3529940209', // "#% increased effect" -> tincture-specific variant
 }
 
+// Rarity is an important PoE2 mod that should default on, so it overrides the
+// low-priority default there (see classification.ts LOW_PRIORITY_PATTERNS).
+const RARITY_MOD = /rarity of items found/i
+
+/** Merge rows that share the same stat id by summing their values.
+ *  The trade index collapses duplicate explicit rolls (e.g. two "Rarity of Items found"
+ *  prefix+suffix) into a single magnitude, so emitting two separate rows produces wrong
+ *  price-check results. Single-id groups pass through unchanged.
+ *  Merged rows occupy the position of the first occurrence in the output. */
+function mergeDuplicateStats(rows: StatFilter[], pct: number): StatFilter[] {
+  // Map preserves insertion order, so grouping and then emitting map.values()
+  // keeps each merged row at its group's first-seen position.
+  const groups = new Map<string, StatFilter[]>()
+  for (const row of rows) {
+    const existing = groups.get(row.id)
+    if (existing) existing.push(row)
+    else groups.set(row.id, [row])
+  }
+
+  const result: StatFilter[] = []
+  for (const group of groups.values()) {
+    const first = group[0]
+    if (group.length === 1) {
+      result.push(first)
+      continue
+    }
+    // Sum values, recompute min/max from the summed value rather than the partial mins
+    const allNull = group.every((r) => r.value == null)
+    const sum = allNull ? null : group.reduce((acc, r) => acc + (r.value ?? 0), 0)
+    let mergedMin: number | null
+    if (sum == null) mergedMin = null
+    else if (sum >= 0) mergedMin = Math.floor(sum * pct)
+    else mergedMin = Math.ceil(sum * (2 - pct))
+    const nonNullMaxes = group.map((r) => r.max).filter((m): m is number => m != null)
+    const mergedMax = nonNullMaxes.length > 0 ? nonNullMaxes.reduce((a, b) => a + b, 0) : null
+    // text is display-only (the query uses value/min/max). The matcher parses the
+    // value from the first number in the text, so replacing the first occurrence of
+    // the old value reliably hits that number.
+    let mergedText = first.text
+    if (first.value != null && sum != null) {
+      mergedText = first.text.replace(String(Math.abs(first.value)), String(Math.abs(sum)))
+    }
+    result.push({
+      ...first,
+      value: sum,
+      min: mergedMin,
+      max: mergedMax,
+      enabled: group.some((r) => r.enabled === true),
+      text: mergedText,
+      modTier: undefined,
+      modRange: undefined,
+      tierLadder: undefined,
+      perfectRoll: undefined,
+      tierQualityMult: undefined,
+    })
+  }
+  return result
+}
+
 /** Collapse the junk rows produced when a single stat wraps across multiple
  *  clipboard lines. clipboard.ts emits each physical line AND the joined whole
  *  for multi-line advanced mods; the grammatical fragments ("...type among",
@@ -91,7 +150,7 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
       isJewelItem,
     )
     if (matched) {
-      const lowPriority = isLowPriority(cleaned)
+      const lowPriority = isLowPriority(cleaned) && !(isPoe2 && RARITY_MOD.test(cleaned))
 
       if (advancedMods && advMod) {
         // Apply magnitude multiplier from implicit (e.g. Cogwork Ring "25% increased Suffix Modifier magnitudes")
@@ -269,5 +328,5 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
     }
   }
 
-  return dropFragmentDuplicates(out)
+  return mergeDuplicateStats(dropFragmentDuplicates(out), pct)
 }
