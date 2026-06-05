@@ -77,6 +77,7 @@ function PluginHotkeyBindRow({
 
 function InstalledRow({
   manifest,
+  iconUrlFallback,
   busy,
   onUninstall,
   hotkeys,
@@ -85,6 +86,9 @@ function InstalledRow({
   tryHotkey,
 }: {
   manifest: PluginManifest
+  /** Registry iconUrl, used when the installed manifest omits its own (so the
+   *  installed row shows the same icon as the Browse list instead of an initial). */
+  iconUrlFallback?: string
   busy: boolean
   onUninstall: () => void
   hotkeys: Array<{ action: string; label: string }>
@@ -95,7 +99,7 @@ function InstalledRow({
   return (
     <div className="flex flex-col gap-2 px-3 py-2.5 rounded-[10px] bg-white/[0.04]">
       <div className={`${ROW_GRID} items-center`}>
-        <PluginIcon iconUrl={manifest.iconUrl} name={manifest.name} />
+        <PluginIcon iconUrl={manifest.iconUrl ?? iconUrlFallback} name={manifest.name} />
         <div className="min-w-0">
           <div className="flex items-center gap-x-2.5 flex-wrap leading-tight">
             <span className="text-[13.5px] font-semibold text-text truncate">{manifest.name}</span>
@@ -399,6 +403,7 @@ export function PluginsSection({ onError, settings, update, tryHotkey }: Props):
               <InstalledRow
                 key={manifest.id}
                 manifest={manifest}
+                iconUrlFallback={registry?.plugins?.find((e) => e.id === manifest.id)?.iconUrl}
                 busy={busyId === manifest.id}
                 onUninstall={() => void uninstall(manifest.id, manifest.name)}
                 hotkeys={registeredHotkeys
