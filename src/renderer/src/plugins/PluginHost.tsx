@@ -105,6 +105,11 @@ export function PluginHost(props: PluginHostProps): JSX.Element | null {
           write: (content) => window.api.gameConfigWrite(content),
           onChange: (handler) => window.api.onGameConfigChange(handler),
         },
+        prices: {
+          getPrices: (opts) => window.api.pricesGet(opts),
+          refresh: () => window.api.pricesRefresh(),
+          onChange: (handler) => window.api.onPricesChange(handler),
+        },
         registerTab: (pluginId, opts) => {
           setTabs((prev) => {
             if (prev.find((t) => t.pluginId === pluginId)) return prev

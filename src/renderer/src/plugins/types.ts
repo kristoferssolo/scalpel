@@ -24,6 +24,13 @@ export type PluginContextFactoryDeps = {
     write: (content: string) => Promise<{ backupPath: string | null }>
     onChange: (handler: () => void) => () => void
   }
+  prices: {
+    getPrices: (opts?: {
+      category?: string
+    }) => Promise<{ prices: import('../../../shared/types').PriceEntry[]; updatedAt: number | null }>
+    refresh: () => Promise<void>
+    onChange: (handler: () => void) => () => void
+  }
   registerTab: (
     pluginId: string,
     opts: {

@@ -99,6 +99,7 @@ const EXPECTED_CONTEXT_KEYS = [
   'openTab',
   'pluginId',
   'pluginVersion',
+  'prices',
   'registerHotkey',
   'registerOverlay',
   'registerTab',
@@ -129,6 +130,11 @@ function stubDeps(): PluginContextFactoryDeps {
     gameConfig: {
       read: async () => ({ content: '', path: '' }),
       write: async () => ({ backupPath: null }),
+      onChange: () => () => {},
+    },
+    prices: {
+      getPrices: async () => ({ prices: [], updatedAt: null }),
+      refresh: async () => {},
       onChange: () => () => {},
     },
     registerTab: () => {},

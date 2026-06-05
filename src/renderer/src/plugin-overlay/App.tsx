@@ -83,6 +83,11 @@ export function App({ pluginId }: { pluginId: string }): JSX.Element {
           write: (content: string) => window.api.gameConfigWrite(content),
           onChange: (handler: () => void) => window.api.onGameConfigChange(handler),
         },
+        prices: {
+          getPrices: (opts) => window.api.pricesGet(opts),
+          refresh: () => window.api.pricesRefresh(),
+          onChange: (handler) => window.api.onPricesChange(handler),
+        },
         openExternal: (url) => window.api.openExternal(url),
         log: (...args: unknown[]) => {
           if (window.__SCALPEL_DEBUG_LOG) {

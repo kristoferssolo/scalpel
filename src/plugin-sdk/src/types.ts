@@ -1,4 +1,5 @@
-import type { PoeItem, Zone } from '../../shared/types'
+import type { PoeItem, PriceEntry, Zone } from '../../shared/types'
+export type { PriceEntry }
 
 export interface PluginManifest {
   manifestVersion: 1
@@ -84,6 +85,25 @@ export interface GameConfigApi {
   onChange(handler: () => void): () => void
 }
 
+export interface PricesApi {
+  /**
+   * Read the current poe.ninja price snapshot for the detected game + league.
+   * Pass `category` to scope the result (e.g. `'currency'`); omit it for every
+   * priced item. `category === 'currency'` returns the currency orbs in both
+   * PoE1 and PoE2 (guaranteed); other slugs are ninja-derived per game.
+   * `updatedAt` is the epoch-ms of the last successful host fetch, or null.
+   */
+  getPrices(opts?: { category?: string }): Promise<{ prices: PriceEntry[]; updatedAt: number | null }>
+  /** Force the host to refetch ninja now, bypassing its cache TTL. */
+  refresh(): Promise<void>
+  /**
+   * Fire after the host price snapshot refreshes (e.g. after `refresh()` or the
+   * host's own periodic refetch completes). Does not fire on initial
+   * subscription. Returns an unsubscribe function.
+   */
+  onChange(handler: () => void): () => void
+}
+
 export interface ScalpelPluginContext {
   readonly pluginId: string
   readonly pluginVersion: string
@@ -162,6 +182,12 @@ export interface ScalpelPluginContext {
    * only file a plugin can touch on disk.
    */
   readonly gameConfig: GameConfigApi
+  /**
+   * Read the poe.ninja price data Scalpel already maintains (the same source
+   * powering Price Check). Read-only; the host owns fetching, so plugins never
+   * hit ninja directly (a renderer fetch would be CORS-blocked).
+   */
+  readonly prices: PricesApi
   openExternal(url: string): void
   log(...args: unknown[]): void
 }

@@ -60,6 +60,7 @@ export function createPluginContext(deps: PluginContextFactoryDeps): ScalpelPlug
       keys: (): Promise<string[]> => deps.storage.keys(),
     },
     gameConfig: deps.gameConfig,
+    prices: deps.prices,
     openExternal: deps.openExternal,
     openTab: () => deps.openTab(deps.pluginId),
     copyAndEvaluateItem: () => deps.copyAndEvaluateItem(),

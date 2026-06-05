@@ -604,6 +604,20 @@ export interface PriceInfo {
   ninjaCategory?: string
 }
 
+/** A single priced item exposed to plugins via the `ctx.prices` capability.
+ *  Distinct from the internal PriceInfo: it retains the display-case name and a
+ *  category slug the internal price map discards. `chaosValue` is the
+ *  baseline-equivalent count (chaos in PoE1, exalt in PoE2); `divineValue` is
+ *  the divine-equivalent when known. `category` is 'currency' for currency orbs
+ *  in both games (guaranteed); other slugs are ninja-derived. */
+export interface PriceEntry {
+  name: string
+  category: string
+  chaosValue: number
+  divineValue?: number
+  graph?: (number | null)[]
+}
+
 // ─── Item Search ────────────────────────────────────────────────────────────
 
 /** A row surfaced in the item-search combobox. The main process assembles these from

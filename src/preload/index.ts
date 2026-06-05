@@ -364,6 +364,20 @@ export const api = {
       ipcRenderer.send('plugins:game-config-unwatch')
     }
   },
+  pricesGet: (opts?: {
+    category?: string
+  }): Promise<{ prices: import('../shared/types').PriceEntry[]; updatedAt: number | null }> =>
+    ipcRenderer.invoke('plugins:prices-get', opts),
+  pricesRefresh: (): Promise<void> => ipcRenderer.invoke('plugins:prices-refresh'),
+  onPricesChange: (cb: () => void): (() => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.send('plugins:prices-watch')
+    ipcRenderer.on('plugins:prices-changed', handler)
+    return () => {
+      ipcRenderer.removeListener('plugins:prices-changed', handler)
+      ipcRenderer.send('plugins:prices-unwatch')
+    }
+  },
   onOverlayDetach: (cb: () => void): (() => void) => {
     const handler = (): void => cb()
     ipcRenderer.on('overlay-detach', handler)
