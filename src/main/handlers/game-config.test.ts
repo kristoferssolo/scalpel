@@ -10,7 +10,7 @@ vi.mock('electron', () => ({
     on: (ch: string, fn: (...a: unknown[]) => unknown) => onHandlers.set(ch, fn),
   },
 }))
-vi.mock('../game-state', () => ({ getPoeVersion: () => 2 }))
+vi.mock('../game-switch/state', () => ({ getPoeVersion: () => 2 }))
 
 let watchCb: (() => void) | null = null
 const closeMock = vi.fn()

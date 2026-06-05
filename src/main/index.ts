@@ -157,9 +157,9 @@ import {
   writeActiveProfileSetting,
 } from './profiles/profile-settings'
 import { switchGameContext } from './game-switch/context'
-import { broadcastSettingUpdates } from './settings/broadcast'
 import { onceStartupGameVariant } from './game-switch/startup-selection'
 import { startAutoGameWatcher, stopAutoGameWatcher, onAutoGameSwitch } from './game-switch/watcher'
+import { broadcastSettingUpdates } from './settings/broadcast'
 
 // ---- Linux display-server setup --------------------------------------------
 
@@ -167,15 +167,20 @@ import { startAutoGameWatcher, stopAutoGameWatcher, onAutoGameSwitch } from './g
 // Scalpel's overlay attach (electron-overlay-window) and global input hook
 // (uiohook-napi) are X11-only. Relaunch under XWayland so they work at all,
 // mirroring awakened-poe-trade. Skip when a platform was already forced.
-// In dev mode, electron-vite doesn't forward CLI args to the Electron binary,
-// so the dev script sets ELECTRON_EXTRA_LAUNCH_ARGS before spawning.
+// In dev mode, electron-vite only forwards ELECTRON_CLI_ARGS / args after `--`,
+// so the dev script passes the same switches there before spawning.
+if (process.platform === 'linux' && process.env.WAYLAND_DISPLAY) {
+  app.commandLine.appendSwitch('ozone-platform', 'x11')
+  app.commandLine.appendSwitch('gtk-version', '3')
+}
+
 if (
   process.platform === 'linux' &&
   process.env.WAYLAND_DISPLAY &&
   app.isPackaged &&
   !process.argv.some((a) => a.startsWith('--ozone-platform='))
 ) {
-  const extraArgs = ['--ozone-platform=x11', '--disable-dev-shm-usage']
+  const extraArgs = ['--ozone-platform=x11', '--gtk-version=3', '--disable-dev-shm-usage']
   if (!process.argv.includes('--no-sandbox')) extraArgs.push('--no-sandbox')
   app.relaunch({ args: [...process.argv.slice(1), ...extraArgs] })
   app.exit(0)
