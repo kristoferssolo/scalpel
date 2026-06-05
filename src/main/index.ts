@@ -157,6 +157,7 @@ import {
   writeActiveProfileSetting,
 } from './profiles/profile-settings'
 import { switchGameContext } from './game-switch/context'
+import { broadcastSettingUpdates } from './settings/broadcast'
 import { onceStartupGameVariant } from './game-switch/startup-selection'
 import { startAutoGameWatcher, stopAutoGameWatcher, onAutoGameSwitch } from './game-switch/watcher'
 
@@ -570,7 +571,8 @@ app.whenReady().then(async () => {
   // relaunches to swap versions if needed (ensureCorrectGameForHotkey).
   if (!IS_E2E)
     createOverlayWindow(initialVariant, (detected) => {
-      switchGameContext(store, detected)
+      const result = switchGameContext(store, detected)
+      broadcastSettingUpdates(null, result.changes, result.previous, result.current)
     })
   // Let the secondary-overlay system know about the main overlay window so its
   // isAnyScalpelWindowFocused predicate can include it.
