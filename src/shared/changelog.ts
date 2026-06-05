@@ -4,6 +4,7 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
     notes: [
       'Added language support (English, Spanish, German) with a locale picker that persists across sessions.',
       'Added a PoE2 waystone/tablet Trade tab with refreshed waystone data and a Quantity & yield section.',
+      'Plugin developers can now read poe.ninja prices read-only via the new ctx.prices capability.',
       'Perfect or overrolled unique affixes are now checked by default in the price checker.',
       'Fixed game targeting/evaluation on a fresh start.',
       'Fixed exceptional white items not price checking correctly.',
