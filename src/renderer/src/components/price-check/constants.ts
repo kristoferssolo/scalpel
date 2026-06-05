@@ -1,11 +1,6 @@
 import { RARITY_COLORS, iconMap, baseToClass, classSizes } from '../../shared/constants'
 import { formatPrice, getItemIcon } from '../../shared/utils'
-// CURRENCY_ICONS_* below are module-load-time currency-abbrev -> icon-url maps.
-// Both games share the same trade-API currency IDs (chaos, divine, exa, regal,
-// ...) but the icon art differs between versions, so we build one map per sheet
-// and dispatch on poeVersion via getCurrencyIconMap(v).
-import itemIconsPoe1 from '../../../../shared/data/items/item-icons-poe1.json'
-import itemIconsPoe2 from '../../../../shared/data/items/item-icons-poe2.json'
+export { getCurrencyIconMap } from '../../shared/currency-icons'
 import baseToUniques from '../../../../shared/data/items/unique-info.json'
 import elderIcon from '../../assets/influences/Elder-item-symbol.png'
 import shaperIcon from '../../assets/influences/Shaper-item-symbol.png'
@@ -53,54 +48,6 @@ const _baseToUniques = baseToUniques as Record<string, string[]>
 export const uniqueToBase: Record<string, string> = {}
 for (const [base, uniques] of Object.entries(_baseToUniques)) {
   for (const name of uniques) uniqueToBase[name] = base
-}
-
-// Map trade API currency keys to item-icons.json names. PoE1 version keeps its
-// existing full set; PoE2 version only maps the currencies that actually exist
-// in PoE2 and are in our static icon sheet. Missing entries fall back to text
-// rendering in TradeListings/BulkListings.
-function buildCurrencyIcons(icons: Record<string, string>): Record<string, string> {
-  const entries: Record<string, string> = {}
-  const pairs: Array<[string, string]> = [
-    ['chaos', 'Chaos Orb'],
-    ['divine', 'Divine Orb'],
-    ['exa', 'Exalted Orb'],
-    ['exalted', 'Exalted Orb'],
-    ['alch', 'Orb of Alchemy'],
-    ['alt', 'Orb of Alteration'],
-    ['mirror', 'Mirror of Kalandra'],
-    ['chrom', 'Chromatic Orb'],
-    ['blessed', 'Blessed Orb'],
-    ['fusing', 'Orb of Fusing'],
-    ['jewellers', "Jeweller's Orb"],
-    ['jew', "Jeweller's Orb"],
-    ['regal', 'Regal Orb'],
-    ['annul', 'Orb of Annulment'],
-    ['vaal', 'Vaal Orb'],
-    ['chance', 'Orb of Chance'],
-    ['aug', 'Orb of Augmentation'],
-    ['regret', 'Orb of Regret'],
-    ['scour', 'Orb of Scouring'],
-    ['transmute', 'Orb of Transmutation'],
-    ['wisdom', 'Scroll of Wisdom'],
-    ['portal', 'Portal Scroll'],
-    ['scrap', "Armourer's Scrap"],
-    ['whetstone', "Blacksmith's Whetstone"],
-    ['gcp', "Gemcutter's Prism"],
-    ['bauble', "Glassblower's Bauble"],
-  ]
-  for (const [key, name] of pairs) {
-    const url = icons[name]
-    if (url) entries[key] = url
-  }
-  return entries
-}
-
-const CURRENCY_ICONS_POE1: Record<string, string> = buildCurrencyIcons(itemIconsPoe1 as Record<string, string>)
-const CURRENCY_ICONS_POE2: Record<string, string> = buildCurrencyIcons(itemIconsPoe2 as Record<string, string>)
-
-export function getCurrencyIconMap(version: 1 | 2): Record<string, string> {
-  return version === 2 ? CURRENCY_ICONS_POE2 : CURRENCY_ICONS_POE1
 }
 
 export const SOCKET_IMGS: Record<string, string> = {

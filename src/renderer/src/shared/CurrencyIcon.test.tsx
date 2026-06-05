@@ -4,12 +4,9 @@ import { render } from '@testing-library/react'
 import { PoeVersionProvider } from './poe-version-context'
 import { CurrencyLabelsProvider } from './currency-labels-context'
 
-// Currency icon URLs come from imported PNGs; in vitest the imports resolve
-// to path strings. Mock the constants module wholesale - the component only
-// uses getCurrencyIconMap from it, so a partial mock is sufficient and avoids
-// having to resolve the influence-icon PNGs and item-icons JSON during the
-// real import.
-vi.mock('../components/price-check/constants', () => ({
+// Currency icon URLs come from imported static data; mock the shared map so the
+// component test only covers rendering behavior.
+vi.mock('./currency-icons', () => ({
   getCurrencyIconMap: () => ({
     chaos: 'chaos.png',
     divine: 'divine.png',
