@@ -40,7 +40,7 @@ const STACKABLE_CLASSES = new Set([
   'Misc Map Items',
 ])
 
-import { getBaseToClassCache, invalidateBaseToClass, setBaseToClassCache } from './base-to-class-cache'
+import { getBaseToClassCache, setBaseToClassCache } from './base-to-class-cache'
 export { invalidateBaseToClass } from './base-to-class-cache'
 function getBaseToClass(): Record<string, string> {
   const cached = getBaseToClassCache()

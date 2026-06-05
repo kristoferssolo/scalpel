@@ -3,7 +3,7 @@ import type { FSWatcher } from 'node:fs'
 import { app, ipcMain } from 'electron'
 import type { IpcMainEvent, WebContents } from 'electron'
 import { readGameConfig, resolveGameConfigPath, writeGameConfig } from '../game-config'
-import { getPoeVersion } from '../game-state'
+import { getPoeVersion } from '../game-switch/state'
 
 const backedUp = new Set<string>()
 const subscribers = new Set<WebContents>()

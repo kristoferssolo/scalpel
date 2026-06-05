@@ -257,7 +257,7 @@ if (store.get('locale') === undefined) store.set('locale', 'en')
 
 // Install the Paraglide locale override for the main process and rebuild the
 // tray menu when the language changes so its labels stay localized.
-initMainLocale(store, () => refreshTrayMenu())
+initMainLocale(store, () => rebuildTrayMenu())
 
 const profileStore = initProfileStore(app.getPath('userData'))
 

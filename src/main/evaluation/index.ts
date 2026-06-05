@@ -23,7 +23,7 @@ import {
   findStrandBreakpoints,
 } from '../filter/matcher'
 import { getCurrentFilter } from '../filter/state'
-import { detectFocusedPoeVersion, detectOpenPoeVersions } from '../game-switch/detector'
+import { detectFocusedPoeVersion } from '../game-switch/detector'
 import { getPoeVersion } from '../game-switch/state'
 import { sendCtrlCToPoE } from '../hotkeys'
 import { focusGameWindow, getOverlayWindow, isTypingInOverlay, showOverlay } from '../overlay'

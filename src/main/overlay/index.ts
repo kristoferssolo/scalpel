@@ -342,53 +342,59 @@ export function createOverlayWindow(
   // Pass both titles so the native tracker can find either PoE1 or PoE2 without a restart.
   OverlayController.attachByTitles(overlayWindow, [GAME_TITLES[1], GAME_TITLES[2]])
 
-  OverlayController.events.on('attach', (ev) => {
-    lastAttachAt = Date.now()
-    try {
-      // During a retarget, poeVersion was already set by retargetForGame()
-      // so we skip titleIndex inference. At startup (both titles), the index
-      // tells us which PoE actually has focus (0 = PoE1, 1 = PoE2).
-      if (!retargeting) {
-        if (ev.titleIndex === 0) {
-          if (getPoeVersion() !== 1) setImmediate(() => onGameVersionChange?.(1))
-          setPoeVersion(1)
-        } else if (ev.titleIndex === 1) {
-          if (getPoeVersion() !== 2) setImmediate(() => onGameVersionChange?.(2))
-          setPoeVersion(2)
+  OverlayController.events.on(
+    'attach',
+    guardNativeListener('overlay-attach', (ev) => {
+      lastAttachAt = Date.now()
+      try {
+        // During a retarget, poeVersion was already set by retargetForGame()
+        // so we skip titleIndex inference. At startup (both titles), the index
+        // tells us which PoE actually has focus (0 = PoE1, 1 = PoE2).
+        if (!retargeting) {
+          if (ev.titleIndex === 0) {
+            if (getPoeVersion() !== 1) setImmediate(() => onGameVersionChange?.(1))
+            setPoeVersion(1)
+          } else if (ev.titleIndex === 1) {
+            if (getPoeVersion() !== 2) setImmediate(() => onGameVersionChange?.(2))
+            setPoeVersion(2)
+          }
         }
+        retargeting = false
+        if (overlayWindow && !overlayWindow.isDestroyed()) {
+          overlayWindow.webContents.send('poe-version', getPoeVersion())
+          startClientLogWatcher(overlayWindow)
+        }
+        sendGameBounds(ev.width, ev.height)
+        mouseOverPanel = false
+        if (overlayVisible && overlayWindow && !overlayWindow.isDestroyed()) {
+          overlayWindow.setIgnoreMouseEvents(true)
+          if (currentInteractiveWindow === overlayWindow) currentInteractiveWindow = null
+          overlayWindow.webContents.send('skip-animation')
+        }
+      } catch (err) {
+        lastOverlayError = String(err)
+        console.error('[overlay] Error in attach handler:', err)
       }
-      retargeting = false
-      if (overlayWindow && !overlayWindow.isDestroyed()) {
-        overlayWindow.webContents.send('poe-version', getPoeVersion())
-        startClientLogWatcher(overlayWindow)
+    }),
+  )
+  OverlayController.events.on(
+    'detach',
+    guardNativeListener('overlay-detach', () => {
+      lastDetachAt = Date.now()
+      try {
+        if (retargeting) {
+          // Retarget detach — skip cleanup, keep retargeting flag
+          // so the subsequent attach handler also skips version inference.
+          return
+        }
+        hideOverlay()
+        closeAllOverlaysOnPoeExit()
+      } catch (err) {
+        lastOverlayError = String(err)
+        console.error('[overlay] Error in detach handler:', err)
       }
-      sendGameBounds(ev.width, ev.height)
-      mouseOverPanel = false
-      if (overlayVisible && overlayWindow && !overlayWindow.isDestroyed()) {
-        overlayWindow.setIgnoreMouseEvents(true)
-        if (currentInteractiveWindow === overlayWindow) currentInteractiveWindow = null
-        overlayWindow.webContents.send('skip-animation')
-      }
-    } catch (err) {
-      lastOverlayError = String(err)
-      console.error('[overlay] Error in attach handler:', err)
-    }
-  })
-  OverlayController.events.on('detach', () => {
-    lastDetachAt = Date.now()
-    try {
-      if (retargeting) {
-        // Retarget detach — skip cleanup, keep retargeting flag
-        // so the subsequent attach handler also skips version inference.
-        return
-      }
-      hideOverlay()
-      closeAllOverlaysOnPoeExit()
-    } catch (err) {
-      lastOverlayError = String(err)
-      console.error('[overlay] Error in detach handler:', err)
-    }
-  })
+    }),
+  )
   OverlayController.events.on(
     'focus',
     guardNativeListener('overlay-focus', () => {
@@ -418,15 +424,18 @@ export function createOverlayWindow(
       }
     }),
   )
-  OverlayController.events.on('moveresize', (ev) => {
-    lastMoveResizeAt = Date.now()
-    try {
-      sendGameBounds(ev.width, ev.height)
-    } catch (err) {
-      lastOverlayError = String(err)
-      console.error('[overlay] Error in moveresize handler:', err)
-    }
-  })
+  OverlayController.events.on(
+    'moveresize',
+    guardNativeListener('overlay-moveresize', (ev) => {
+      lastMoveResizeAt = Date.now()
+      try {
+        sendGameBounds(ev.width, ev.height)
+      } catch (err) {
+        lastOverlayError = String(err)
+        console.error('[overlay] Error in moveresize handler:', err)
+      }
+    }),
+  )
 
   return overlayWindow
 }

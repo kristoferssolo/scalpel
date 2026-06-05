@@ -8,6 +8,7 @@ import {
 } from '../../shared/cheat-sheet-window'
 import type { CheatSheetsSettings, OverlayAnchor } from '../../shared/types'
 import { forwardZoneChangesTo, sendCurrentZoneTo } from '../client-log'
+import { guardNativeListener } from '../diagnostics'
 import { setSecondaryOverlayHotkeys } from '../hotkeys/index'
 import {
   type Rect,
@@ -306,10 +307,13 @@ function registerPreviewHooks(): void {
   // Track PoE moves while a preview is visible. Without this a windowed-PoE
   // user dragging the game during a hover would see the preview detach and
   // stay at PoE's old bounds until the next mouseEnter.
-  OverlayController.events.on('moveresize', () => {
-    if (pendingPreviewSrc === null || !previewWin || previewWin.isDestroyed()) return
-    setBoundsToGame(previewWin)
-  })
+  OverlayController.events.on(
+    'moveresize',
+    guardNativeListener('cheat-sheets-moveresize', () => {
+      if (pendingPreviewSrc === null || !previewWin || previewWin.isDestroyed()) return
+      setBoundsToGame(previewWin)
+    }),
+  )
 }
 
 function ensurePreviewWindow(): BrowserWindow {
