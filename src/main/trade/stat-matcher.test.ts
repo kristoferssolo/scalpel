@@ -1972,6 +1972,53 @@ describe('matchItemMods', () => {
     })
   })
 
+  // The PoE2 trade API disambiguates "#% increased Duration" with a trailing
+  // category qualifier: "(Charm)", "(Flask)". The clipboard text on the item is
+  // the bare "X% increased Duration", so the matcher has to strip the qualifier
+  // and prefer the one matching the item's class -- otherwise the bare mod falls
+  // through to the substring fallback and grabs the longest "increased Duration..."
+  // stat (e.g. the Frenzy-charge poison-duration mod). See issue #397.
+  describe('charm/flask Duration qualifier selection', () => {
+    const DURATION_STATS = [
+      { id: 'explicit.stat_2541588185', text: '#% increased Duration (Charm)', type: 'explicit' },
+      { id: 'explicit.stat_1256719186', text: '#% increased Duration (Flask)', type: 'explicit' },
+      {
+        id: 'explicit.stat_3841138199',
+        text: "#% increased Duration of Poisons you inflict when you've consumed a Frenzy Charge Recently",
+        type: 'explicit',
+      },
+    ]
+
+    it('charm picks the (Charm) Duration variant, not the poison-duration mod', () => {
+      _setStatEntriesForTests(DURATION_STATS)
+      const filters = matchItemMods(
+        ['28% increased Duration'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Magic', itemClass: 'Charms' }),
+      )
+      const charmFilter = filters.find((f) => f.id === 'explicit.stat_2541588185')
+      expect(charmFilter).toBeDefined()
+      expect(charmFilter?.value).toBe(28)
+      expect(filters.find((f) => f.id === 'explicit.stat_3841138199')).toBeUndefined()
+      expect(filters.find((f) => f.id === 'explicit.stat_1256719186')).toBeUndefined()
+    })
+
+    it('flask picks the (Flask) Duration variant', () => {
+      _setStatEntriesForTests(DURATION_STATS)
+      const filters = matchItemMods(
+        ['20% increased Duration'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Magic', itemClass: 'Flasks' }),
+      )
+      const flaskFilter = filters.find((f) => f.id === 'explicit.stat_1256719186')
+      expect(flaskFilter).toBeDefined()
+      expect(flaskFilter?.value).toBe(20)
+      expect(filters.find((f) => f.id === 'explicit.stat_2541588185')).toBeUndefined()
+    })
+  })
+
   describe('perfectRoll flag (unique best-or-better rolls)', () => {
     const STAT = { id: 'explicit.stat_ev', text: '#% increased Evasion Rating', type: 'explicit' as const }
     // An advanced mod whose stripped line matches `${value}% increased Evasion Rating`,

@@ -15,6 +15,16 @@ const TINCTURE_STAT_REMAP: Record<string, string> = {
   'explicit.stat_2448920197': 'explicit.stat_3529940209', // "#% increased effect" -> tincture-specific variant
 }
 
+// Item class -> the trailing trade-stat qualifier its mods should prefer. The trade
+// API tags otherwise-identical display text (e.g. "#% increased Duration") with
+// "(Charm)"/"(Flask)"/"(Jewel)" to disambiguate; the clipboard carries only the bare
+// text, so we tell the matcher which qualified variant to pick (issue #397).
+const QUALIFIER_BY_ITEM_CLASS: Record<string, string> = {
+  Charms: 'Charm',
+  Flasks: 'Flask',
+  Jewels: 'Jewel',
+}
+
 // Rarity is an important PoE2 mod that should default on, so it overrides the
 // low-priority default there (see classification.ts LOW_PRIORITY_PATTERNS).
 const RARITY_MOD = /rarity of items found/i
@@ -177,7 +187,10 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
       if (advMod?.randomSupport) isRandomSupport = true
     }
     const useLocal = hasLocalMods && isLocalMod(cleaned, isWeapon)
-    const isJewelItem = itemInfo?.itemClass === 'Jewels'
+    // Trade stats that share display text across item categories carry a trailing
+    // qualifier ("#% increased Duration (Charm)" / "(Flask)", jewel-only globals as
+    // "(Jewel)"). Pass the item's category so the matcher picks the right variant.
+    const preferQualifier = QUALIFIER_BY_ITEM_CLASS[itemInfo?.itemClass ?? ''] ?? null
     // In PoE2 a crafted mod trades as an explicit (no crafted.* stats exist).
     const craftedForTrade = isCrafted && !isPoe2
     const matched = matchModToStat(
@@ -185,7 +198,7 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
       useLocal,
       craftedForTrade ? 'crafted' : 'explicit',
       isRandomSupport,
-      isJewelItem,
+      preferQualifier,
     )
     if (matched) {
       const lowPriority = isLowPriority(cleaned) && !(isPoe2 && RARITY_MOD.test(cleaned))
