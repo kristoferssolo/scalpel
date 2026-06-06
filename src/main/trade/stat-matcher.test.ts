@@ -1619,6 +1619,18 @@ describe('matchItemMods', () => {
       expect(filters.find((f) => f.id === INT.id)?.enabled).toBe(false)
     })
 
+    it('Str+Int hybrid with maximum Life but no maximum Mana: stays surfaced, not partially folded', () => {
+      // Only the Life half has a real contributor. An all-or-nothing fold avoids losing
+      // the Int->Mana half, so the hybrid row stays surfaced and Total Life reflects the
+      // real life mod only (60), NOT 60 + floor(20*0.5).
+      const filters = runWithStats([STR_INT, MAX_LIFE], ['+20 to Strength and Intelligence', '+60 to maximum Life'])
+      expect(filters.find((f) => f.id === TOTAL_MANA)).toBeUndefined()
+      expect(filters.find((f) => f.id === TOTAL_LIFE)?.value).toBe(60)
+      const hybrid = filters.find((f) => f.id === STR_INT.id)
+      expect(hybrid).toBeDefined()
+      expect(hybrid?.enabled).toBe(true)
+    })
+
     it('regression: two resistance mods still fold into pseudo_total_elemental_resistance (unchanged)', () => {
       const FIRE_RES = { id: 'explicit.stat_1671376347', text: '+#% to Fire Resistance', type: 'explicit' }
       const COLD_RES = { id: 'explicit.stat_4220027924', text: '+#% to Cold Resistance', type: 'explicit' }

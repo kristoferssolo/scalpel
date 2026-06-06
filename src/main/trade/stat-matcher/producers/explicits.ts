@@ -396,13 +396,15 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
     }
   }
 
-  // Attribute rows fold into Total Life/Mana only if that pseudo also has a real
-  // (non-attribute) contributor; otherwise the raw attribute row stays surfaced.
+  // Attribute rows fold into Total Life/Mana only when EVERY pseudo the mod feeds has
+  // a real (non-attribute) contributor. A partial fold (e.g. a Str+Int hybrid on an
+  // item with Life but no Mana) would lose the unfolded half and hide the row, so in
+  // that case leave the raw attribute row surfaced and accumulate nothing.
   for (const d of deferredAttr) {
-    const active = d.contributions.filter((c) => pseudosWithRealContributor.has(c.pseudoId))
-    if (active.length === 0) continue
-    accumulatePseudo(pseudoAccumulator, active, d.value, isWeapon)
-    if (!d.forced && active.some((c) => !c.keepSourceRow)) d.row.enabled = false
+    const allActive = d.contributions.every((c) => pseudosWithRealContributor.has(c.pseudoId))
+    if (!allActive) continue
+    accumulatePseudo(pseudoAccumulator, d.contributions, d.value, isWeapon)
+    if (!d.forced && d.contributions.some((c) => !c.keepSourceRow)) d.row.enabled = false
   }
 
   return mergeDuplicateStats(dropFragmentDuplicates(out), pct)
