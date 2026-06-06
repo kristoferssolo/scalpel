@@ -2,12 +2,13 @@ import { getPoeVersion } from '../../../game-state'
 import { attachTierLadder } from './tier-attach'
 import { BENEFICIAL_NEGATIVE_KEYWORDS } from '../../../../shared/data/trade/beneficial-negatives'
 import { isClusterJewel } from '../../../../shared/poe-item'
+import type { ModTier } from '../../../../shared/data/tiers/types'
 import type { StatFilter } from '../../trade'
 import { findAdvMod } from '../adv-mods'
 import { isDefenseMod, isLocalMod, isLowPriority } from '../classification'
 import type { MatchContext } from '../context'
 import { matchModToStat } from '../mod-matcher'
-import { accumulatePseudo, PSEUDO_CONTRIBUTIONS } from '../pseudo'
+import { accumulatePseudo, PSEUDO_CONTRIBUTIONS, type PseudoContribution } from '../pseudo'
 
 // Tinctures: disambiguate duplicate stat texts (e.g. "#% increased effect" has two stat IDs)
 const TINCTURE_STAT_REMAP: Record<string, string> = {
@@ -17,6 +18,35 @@ const TINCTURE_STAT_REMAP: Record<string, string> = {
 // Rarity is an important PoE2 mod that should default on, so it overrides the
 // low-priority default there (see classification.ts LOW_PRIORITY_PATTERNS).
 const RARITY_MOD = /rarity of items found/i
+
+// Off by default when a roll is this many tiers (or more) below the best tier the
+// item's ilvl could roll. Raise to be more lenient, lower to be stricter.
+const LOW_TIER_GAP = 2
+
+/** Tier-aware adjustment to a row's default-enabled state. Caller passes the
+ *  baseline `enabled` for an ordinary (non-structural, non-forced) explicit row.
+ *  - Low-tier-off: if a tierLadder + itemLevel are known, the row is turned off
+ *    when its tier is LOW_TIER_GAP+ below the best tier achievable at that ilvl.
+ *  - T1-on: a T1 roll is always on (overrides the quality default).
+ *  No ladder / no ilvl / no tier -> low-tier rule skipped. */
+export function resolveTierDefault(args: {
+  baseEnabled: boolean
+  matchedTier: number | undefined
+  tierLadder: ModTier[] | undefined
+  itemLevel: number | undefined
+}): boolean {
+  const { baseEnabled, matchedTier, tierLadder, itemLevel } = args
+  let enabled = baseEnabled
+  if (enabled && matchedTier != null && tierLadder && itemLevel != null) {
+    const achievable = tierLadder.filter((t) => t.ilvl <= itemLevel)
+    if (achievable.length > 0) {
+      const bestTier = Math.min(...achievable.map((t) => t.tier))
+      if (matchedTier - bestTier >= LOW_TIER_GAP) enabled = false
+    }
+  }
+  if (matchedTier === 1) enabled = true
+  return enabled
+}
 
 /** Merge rows that share the same stat id by summing their values.
  *  The trade index collapses duplicate explicit rolls (e.g. two "Rarity of Items found"
@@ -108,6 +138,14 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
   // bench crafts are, so they're enabled by default. The crafted flag still drives the
   // display color; only trade matching/enablement diverge.
   const isPoe2 = getPoeVersion() === 2
+
+  // Track which pseudos have at least one real (non-attribute-derived) contributor on this
+  // item, so the post-loop pass can decide whether to activate deferred attribute contributions.
+  const pseudosWithRealContributor = new Set<string>()
+  // Attribute mods (Str -> Life, Int -> Mana) are deferred until the full loop completes so
+  // we can check whether their target pseudo has a real contributor before folding them in.
+  const deferredAttr: Array<{ row: StatFilter; contributions: PseudoContribution[]; value: number; forced: boolean }> =
+    []
 
   // Relic affixes are matched against the sanctum.* stat list by buildRelicFilters;
   // tablet affixes by buildTabletFilters (clipboard phrasing differs from trade text).
@@ -233,12 +271,16 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
       const isPerMod = /\bper\b/i.test(cleaned)
       const isCluster = itemInfo ? isClusterJewel(itemInfo) : false
       const pseudoList = isCluster || isPerMod ? undefined : PSEUDO_CONTRIBUTIONS[matched.statId]
-      // A pseudo normally disables its source row (total-life/total-res replace it).
-      // keepSourceRow contributions (PoE2 "Damage as Extra" summaries) are additive,
-      // so they must NOT suppress the underlying mod row.
-      const suppressesSourceRow = pseudoList != null && pseudoList.some((c) => !c.keepSourceRow)
-      if (pseudoList && matched.value != null) {
-        accumulatePseudo(pseudoAccumulator, pseudoList, matched.value, isWeapon)
+      // Split contributions: real (non-attribute-derived) ones are processed immediately;
+      // attribute-derived ones (Str -> Life, Int -> Mana) are deferred until post-loop.
+      const realContribs = pseudoList?.filter((c) => !c.attributeDerived)
+      const attrContribs = pseudoList?.filter((c) => c.attributeDerived)
+      // Only real (non-attribute) contributions decide suppression up front; attribute
+      // contributions are deferred until we know whether their pseudo has a real contributor.
+      const suppressesSourceRow = realContribs != null && realContribs.some((c) => !c.keepSourceRow)
+      if (realContribs && realContribs.length > 0 && matched.value != null) {
+        accumulatePseudo(pseudoAccumulator, realContribs, matched.value, isWeapon)
+        for (const c of realContribs) pseudosWithRealContributor.add(c.pseudoId)
       }
 
       // Hybrid companion detection: if this mod shares an advanced mod block with a
@@ -281,22 +323,38 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
         rarity: itemInfo?.rarity,
         name: advModName,
       })
+      // T1 rolls: search the whole T1 bracket (its low value), not just this specific
+      // roll, so the search matches any T1 item regardless of where in the bracket it
+      // landed. Only when we have a ladder; negative mods keep their own min semantics.
+      if (matchedTier === 1 && minValue != null && !isNegative && tierLadder) {
+        const t1 = tierLadder.find((t) => t.tier === 1)
+        if (t1) minValue = Math.floor(t1.range.min)
+      }
+      const structurallyOff =
+        craftedForTrade ||
+        suppressesSourceRow ||
+        isHybridCompanion ||
+        (hasDefenses && isDefenseMod(cleaned)) ||
+        useLocal ||
+        itemInfo?.itemClass === 'Maps'
+      const forcedOn = isFractured || isFoulborn
+      const baseEnabled = forcedOn || (!lowPriority && !structurallyOff)
+      const enabledFinal =
+        forcedOn || structurallyOff
+          ? baseEnabled
+          : resolveTierDefault({
+              baseEnabled,
+              matchedTier,
+              tierLadder,
+              itemLevel: itemInfo?.itemLevel,
+            })
       out.push({
         id: matched.statId,
         text: isFractured ? `${cleaned} (Fractured)` : cleaned,
         value: matched.value,
         min: minValue,
         max: maxValue,
-        enabled:
-          isFractured ||
-          isFoulborn ||
-          (!lowPriority &&
-            !craftedForTrade &&
-            !suppressesSourceRow &&
-            !isHybridCompanion &&
-            !(hasDefenses && isDefenseMod(cleaned)) &&
-            !useLocal &&
-            !(itemInfo?.itemClass === 'Maps')),
+        enabled: enabledFinal,
         type: isFractured ? 'fractured' : isCrafted ? 'crafted' : 'explicit',
         option: matched.option,
         aggregated: matched.aggregated,
@@ -307,6 +365,16 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
         tierLadder,
         tierQualityMult: advModMult,
       })
+      // Defer attribute contributions (Str -> Life, Int -> Mana) until post-loop so we
+      // can check whether their target pseudo has a real contributor on this item.
+      if (attrContribs && attrContribs.length > 0 && matched.value != null) {
+        deferredAttr.push({
+          row: out[out.length - 1],
+          contributions: attrContribs,
+          value: matched.value,
+          forced: forcedOn,
+        })
+      }
       // For fractured mods, also add the unfractured (explicit) version, disabled by default
       if (isFractured) {
         const explicitId = `explicit.${matched.statId.split('.').slice(1).join('.')}`
@@ -326,6 +394,15 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
         })
       }
     }
+  }
+
+  // Attribute rows fold into Total Life/Mana only if that pseudo also has a real
+  // (non-attribute) contributor; otherwise the raw attribute row stays surfaced.
+  for (const d of deferredAttr) {
+    const active = d.contributions.filter((c) => pseudosWithRealContributor.has(c.pseudoId))
+    if (active.length === 0) continue
+    accumulatePseudo(pseudoAccumulator, active, d.value, isWeapon)
+    if (!d.forced && active.some((c) => !c.keepSourceRow)) d.row.enabled = false
   }
 
   return mergeDuplicateStats(dropFragmentDuplicates(out), pct)

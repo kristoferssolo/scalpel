@@ -9,7 +9,10 @@ vi.mock('electron', () => ({
 
 import { getPoeVersion, setPoeVersion } from '../game-state'
 import type { AdvancedMod } from '../../shared/types'
+import type { ModTier, TierDataset } from '../../shared/data/tiers/types'
+import { _setTierDataForTests } from '../tier-data'
 import { _setStatEntriesForTests, ITEM_CLASS_TO_CATEGORY, matchItemMods, matchModToStat } from './stat-matcher'
+import { resolveTierDefault } from './stat-matcher/producers/explicits'
 
 // Helper to build a minimal itemInfo object
 function makeItemInfo(overrides: Record<string, unknown> = {}) {
@@ -1533,14 +1536,22 @@ describe('matchItemMods', () => {
     const MAX_MANA = { id: 'explicit.stat_1050105434', text: '+# to maximum Mana', type: 'explicit' }
     const MAX_LIFE = { id: 'explicit.stat_3299347043', text: '+# to maximum Life', type: 'explicit' }
 
-    it('Strength contributes 0.5x to Total Life pseudo', () => {
+    // Attribute-only items: the raw attribute row surfaces; no pseudo is emitted because
+    // there is no real (maximum-Life / maximum-Mana) contributor to gate the fold-in.
+    it('lone Strength (no max-Life mod): Str row surfaced, no Total Life pseudo', () => {
       const filters = runWithStats([STR], ['+30 to Strength'])
-      expect(filters.find((f) => f.id === TOTAL_LIFE)?.value).toBe(15)
+      expect(filters.find((f) => f.id === TOTAL_LIFE)).toBeUndefined()
+      const strRow = filters.find((f) => f.id === STR.id)
+      expect(strRow).toBeDefined()
+      expect(strRow?.enabled).toBe(true)
     })
 
-    it('Intelligence contributes 0.5x to Total Mana pseudo', () => {
+    it('lone Intelligence (no max-Mana mod): Int row surfaced, no Total Mana pseudo', () => {
       const filters = runWithStats([INT], ['+40 to Intelligence'])
-      expect(filters.find((f) => f.id === TOTAL_MANA)?.value).toBe(20)
+      expect(filters.find((f) => f.id === TOTAL_MANA)).toBeUndefined()
+      const intRow = filters.find((f) => f.id === INT.id)
+      expect(intRow).toBeDefined()
+      expect(intRow?.enabled).toBe(true)
     })
 
     it('Dexterity does not contribute to Life or Mana pseudo', () => {
@@ -1549,40 +1560,43 @@ describe('matchItemMods', () => {
       expect(filters.find((f) => f.id === TOTAL_MANA)).toBeUndefined()
     })
 
-    it('Str+Int hybrid contributes to both Life and Mana', () => {
+    it('lone Str+Int hybrid: no pseudos emitted, row surfaced', () => {
       const filters = runWithStats([STR_INT], ['+20 to Strength and Intelligence'])
-      expect(filters.find((f) => f.id === TOTAL_LIFE)?.value).toBe(10)
-      expect(filters.find((f) => f.id === TOTAL_MANA)?.value).toBe(10)
+      expect(filters.find((f) => f.id === TOTAL_LIFE)).toBeUndefined()
+      expect(filters.find((f) => f.id === TOTAL_MANA)).toBeUndefined()
+      expect(filters.find((f) => f.id === STR_INT.id)).toBeDefined()
     })
 
-    it('Str+Dex hybrid contributes to Life only', () => {
+    it('lone Str+Dex hybrid: no Total Life pseudo, no Total Mana, row surfaced', () => {
       const filters = runWithStats([STR_DEX], ['+24 to Strength and Dexterity'])
-      expect(filters.find((f) => f.id === TOTAL_LIFE)?.value).toBe(12)
+      expect(filters.find((f) => f.id === TOTAL_LIFE)).toBeUndefined()
       expect(filters.find((f) => f.id === TOTAL_MANA)).toBeUndefined()
     })
 
-    it('Dex+Int hybrid contributes to Mana only', () => {
+    it('lone Dex+Int hybrid: no Total Mana pseudo, no Total Life, row surfaced', () => {
       const filters = runWithStats([DEX_INT], ['+24 to Dexterity and Intelligence'])
-      expect(filters.find((f) => f.id === TOTAL_MANA)?.value).toBe(12)
+      expect(filters.find((f) => f.id === TOTAL_MANA)).toBeUndefined()
       expect(filters.find((f) => f.id === TOTAL_LIFE)).toBeUndefined()
     })
 
-    it('all Attributes contributes to both Life and Mana', () => {
+    it('lone all Attributes: no pseudos emitted, row surfaced', () => {
       const filters = runWithStats([ALL_ATTR], ['+10 to all Attributes'])
-      expect(filters.find((f) => f.id === TOTAL_LIFE)?.value).toBe(5)
-      expect(filters.find((f) => f.id === TOTAL_MANA)?.value).toBe(5)
+      expect(filters.find((f) => f.id === TOTAL_LIFE)).toBeUndefined()
+      expect(filters.find((f) => f.id === TOTAL_MANA)).toBeUndefined()
+      expect(filters.find((f) => f.id === ALL_ATTR.id)).toBeDefined()
     })
 
-    it('floors the final Total Life value (single odd Str source)', () => {
-      // 25 * 0.5 = 12.5 -> floor to 12
+    it('lone Strength (odd value, no max-Life): Str row surfaced, no Total Life pseudo', () => {
+      // Previously tested flooring 25*0.5=12; now no pseudo should appear at all.
       const filters = runWithStats([STR], ['+25 to Strength'])
-      expect(filters.find((f) => f.id === TOTAL_LIFE)?.value).toBe(12)
+      expect(filters.find((f) => f.id === TOTAL_LIFE)).toBeUndefined()
+      expect(filters.find((f) => f.id === STR.id)).toBeDefined()
     })
 
-    it('pools Str sources before flooring (matches in-game pooling)', () => {
-      // Game pools Str (38) then halves -> 19. Flooring per-contribution would give 12 + 6 = 18.
+    it('two Strength mods (no max-Life): no Total Life pseudo (attribute-only, no real contributor)', () => {
+      // Previously verified pooling behavior; now with no real contributor no pseudo is emitted.
       const filters = runWithStats([STR], ['+25 to Strength', '+13 to Strength'])
-      expect(filters.find((f) => f.id === TOTAL_LIFE)?.value).toBe(19)
+      expect(filters.find((f) => f.id === TOTAL_LIFE)).toBeUndefined()
     })
 
     it('maximum Mana contributes 1:1 to Total Mana', () => {
@@ -1590,10 +1604,28 @@ describe('matchItemMods', () => {
       expect(filters.find((f) => f.id === TOTAL_MANA)?.value).toBe(50)
     })
 
-    it('Str + maximum Life roll combine into a single Total Life pseudo', () => {
-      // 60 (life) + 30 * 0.5 (Str) = 75
+    it('Str + maximum Life: folds into Total Life pseudo (value = life + floor(str*0.5))', () => {
+      // 60 (life) + 30 * 0.5 (Str) = 75; max-Life is the real contributor that gates the fold.
       const filters = runWithStats([STR, MAX_LIFE], ['+30 to Strength', '+60 to maximum Life'])
       expect(filters.find((f) => f.id === TOTAL_LIFE)?.value).toBe(75)
+      // Str source row should be suppressed (enabled: false)
+      expect(filters.find((f) => f.id === STR.id)?.enabled).toBe(false)
+    })
+
+    it('Int + maximum Mana: folds into Total Mana pseudo, Int row suppressed', () => {
+      // 50 (mana) + 40 * 0.5 (Int) = 70
+      const filters = runWithStats([INT, MAX_MANA], ['+40 to Intelligence', '+50 to maximum Mana'])
+      expect(filters.find((f) => f.id === TOTAL_MANA)?.value).toBe(70)
+      expect(filters.find((f) => f.id === INT.id)?.enabled).toBe(false)
+    })
+
+    it('regression: two resistance mods still fold into pseudo_total_elemental_resistance (unchanged)', () => {
+      const FIRE_RES = { id: 'explicit.stat_1671376347', text: '+#% to Fire Resistance', type: 'explicit' }
+      const COLD_RES = { id: 'explicit.stat_4220027924', text: '+#% to Cold Resistance', type: 'explicit' }
+      const filters = runWithStats([FIRE_RES, COLD_RES], ['+30% to Fire Resistance', '+25% to Cold Resistance'])
+      const pseudo = filters.find((f) => f.id === 'pseudo.pseudo_total_elemental_resistance')
+      expect(pseudo).toBeDefined()
+      expect(pseudo?.value).toBe(55)
     })
   })
 
@@ -2497,6 +2529,277 @@ describe('duplicate same-id explicit rows (rarity stat merge)', () => {
       expect(rarityRows).toHaveLength(1)
       expect(lifeRows).toHaveLength(1)
     } finally {
+      setPoeVersion(prev)
+    }
+  })
+})
+
+// ─── resolveTierDefault unit tests ───────────────────────────────────────────
+
+function makeTier(tier: number, ilvl: number): ModTier {
+  return { tier, ilvl, name: '', stats: [], range: { min: 0, max: 0 }, text: '' }
+}
+
+describe('resolveTierDefault', () => {
+  it('turns off a roll LOW_TIER_GAP+ tiers below best achievable (gap 3 >= 2)', () => {
+    // Ladder: T1 needs ilvl 70, T2 needs ilvl 50, T3 needs ilvl 30, T4 needs ilvl 10
+    const ladder: ModTier[] = [makeTier(1, 70), makeTier(2, 50), makeTier(3, 30), makeTier(4, 10)]
+    // ilvl 80: best achievable = T1; rolled T4 -> gap 3 >= 2 -> off
+    expect(resolveTierDefault({ baseEnabled: true, matchedTier: 4, tierLadder: ladder, itemLevel: 80 })).toBe(false)
+  })
+
+  it('leaves enabled when gap is below LOW_TIER_GAP (gap 1 < 2)', () => {
+    const ladder: ModTier[] = [makeTier(1, 70), makeTier(2, 50)]
+    // ilvl 80: best achievable = T1; rolled T2 -> gap 1 < 2 -> stays true
+    expect(resolveTierDefault({ baseEnabled: true, matchedTier: 2, tierLadder: ladder, itemLevel: 80 })).toBe(true)
+  })
+
+  it('T1 roll overrides baseEnabled false (quality default off -> on)', () => {
+    const ladder: ModTier[] = [makeTier(1, 70)]
+    expect(resolveTierDefault({ baseEnabled: false, matchedTier: 1, tierLadder: ladder, itemLevel: 80 })).toBe(true)
+  })
+
+  it('T1 roll with no ladder also overrides baseEnabled false', () => {
+    expect(resolveTierDefault({ baseEnabled: false, matchedTier: 1, tierLadder: undefined, itemLevel: 80 })).toBe(true)
+  })
+
+  it('low ilvl where rolled tier IS best achievable -> stays on', () => {
+    // Ladder: T1 needs ilvl 70, T2 needs ilvl 50, T3 needs ilvl 10
+    // ilvl 15: only T3 is achievable; rolled T3 -> gap 0 -> stays true
+    const ladder: ModTier[] = [makeTier(1, 70), makeTier(2, 50), makeTier(3, 10)]
+    expect(resolveTierDefault({ baseEnabled: true, matchedTier: 3, tierLadder: ladder, itemLevel: 15 })).toBe(true)
+  })
+
+  it('no tierLadder -> returns baseEnabled unchanged (true)', () => {
+    expect(resolveTierDefault({ baseEnabled: true, matchedTier: 4, tierLadder: undefined, itemLevel: 80 })).toBe(true)
+  })
+
+  it('no tierLadder -> returns baseEnabled unchanged (false)', () => {
+    expect(resolveTierDefault({ baseEnabled: false, matchedTier: 4, tierLadder: undefined, itemLevel: 80 })).toBe(false)
+  })
+
+  it('itemLevel undefined -> low-tier rule skipped, returns baseEnabled', () => {
+    const ladder: ModTier[] = [makeTier(1, 70), makeTier(2, 50), makeTier(3, 10)]
+    expect(resolveTierDefault({ baseEnabled: true, matchedTier: 3, tierLadder: ladder, itemLevel: undefined })).toBe(
+      true,
+    )
+  })
+})
+
+// ─── resolveTierDefault end-to-end wiring through matchItemMods ───────────────
+
+describe('tier-aware default enablement (e2e via matchItemMods)', () => {
+  // TierDataset ordering: idxList is ascending by value (worst tier first, best tier last).
+  // Tier numbers are derived from advTier: matched entry gets advTier, entries before it
+  // (lower value = worse) get higher numbers, entries after (higher value = better) get lower.
+  // So for a two-tier group where T2 has lower values, T2's entry must come FIRST at index 0.
+  //
+  // Use "increased Critical Strike Chance" (no pseudo contribution) to avoid suppressesSourceRow.
+  const CRIT_STAT_ID = 'explicit.stat_crit_e2e'
+
+  it('high-ilvl item: T2 roll (gap 1 < 2) stays enabled', () => {
+    // Two-tier dataset: Fledgling(ilvl20, lower vals) idx0, Sharp(ilvl60, higher vals) idx1.
+    // T2 advMod matched to Fledgling -> Fledgling=T2, Sharp=T1.
+    // Best achievable at ilvl80 is T1; gap = 2-1 = 1 < 2 -> stays on.
+    const dataset: TierDataset = {
+      schemaVersion: 1,
+      mods: [
+        { n: 'Fledgling', l: 20, g: 'CritChance', s: [['base_critical_strike_chance_+%', 10, 19]], t: '' },
+        { n: 'Sharp', l: 60, g: 'CritChance', s: [['base_critical_strike_chance_+%', 20, 30]], t: '' },
+      ],
+      pools: [{ CritChance: [0, 1] }],
+      bases: { 'Ruby Ring': 0 },
+    }
+    const prev = getPoeVersion()
+    setPoeVersion(1)
+    _setTierDataForTests(dataset)
+    try {
+      _setStatEntriesForTests([{ id: CRIT_STAT_ID, text: '#% increased Critical Strike Chance', type: 'explicit' }])
+      const advT2: AdvancedMod[] = [
+        {
+          type: 'suffix',
+          name: 'Fledgling',
+          tier: 2,
+          tags: [],
+          lines: ['15(10-19)% increased Critical Strike Chance'],
+          ranges: [{ value: 15, min: 10, max: 19 }],
+        },
+      ]
+      const filters = matchItemMods(
+        ['15% increased Critical Strike Chance'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', baseType: 'Ruby Ring', itemLevel: 80, itemClass: 'Rings' }),
+        advT2,
+      )
+      const row = filters.find((f) => f.id === CRIT_STAT_ID)
+      expect(row?.enabled).toBe(true)
+    } finally {
+      _setTierDataForTests(null)
+      setPoeVersion(prev)
+    }
+  })
+
+  it('high-ilvl item: T3 roll (gap 2) flips off', () => {
+    // Three-tier dataset, worst first: Dull(ilvl10) idx0, Fledgling(ilvl40) idx1, Sharp(ilvl60) idx2.
+    // T3 advMod matched to Dull -> Dull=T3, Fledgling=T2, Sharp=T1.
+    // Best achievable at ilvl80 is T1; gap = 3-1 = 2 >= 2 -> off.
+    const dataset3: TierDataset = {
+      schemaVersion: 1,
+      mods: [
+        { n: 'Dull', l: 10, g: 'CritChance3', s: [['base_critical_strike_chance_+%', 1, 9]], t: '' },
+        { n: 'Fledgling', l: 40, g: 'CritChance3', s: [['base_critical_strike_chance_+%', 10, 19]], t: '' },
+        { n: 'Sharp', l: 60, g: 'CritChance3', s: [['base_critical_strike_chance_+%', 20, 30]], t: '' },
+      ],
+      pools: [{ CritChance3: [0, 1, 2] }],
+      bases: { 'Ruby Ring': 0 },
+    }
+    const prev = getPoeVersion()
+    setPoeVersion(1)
+    _setTierDataForTests(dataset3)
+    try {
+      _setStatEntriesForTests([{ id: CRIT_STAT_ID, text: '#% increased Critical Strike Chance', type: 'explicit' }])
+      const advT3: AdvancedMod[] = [
+        {
+          type: 'suffix',
+          name: 'Dull',
+          tier: 3,
+          tags: [],
+          lines: ['5(1-9)% increased Critical Strike Chance'],
+          ranges: [{ value: 5, min: 1, max: 9 }],
+        },
+      ]
+      const filters = matchItemMods(
+        ['5% increased Critical Strike Chance'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', baseType: 'Ruby Ring', itemLevel: 80, itemClass: 'Rings' }),
+        advT3,
+      )
+      const row = filters.find((f) => f.id === CRIT_STAT_ID)
+      expect(row?.enabled).toBe(false)
+    } finally {
+      _setTierDataForTests(null)
+      setPoeVersion(prev)
+    }
+  })
+
+  it('T1 low-priority mod (rarity) flips on in PoE1', () => {
+    // Rarity mod is low-priority by default in PoE1. T1 should override that.
+    // Avarice(lower vals) at index 0, Greed(higher vals) at index 1.
+    // advMod tier=1 matched to Greed (idx1) -> Greed=T1, Avarice=T2.
+    const RARITY_ID = 'explicit.stat_rarity_e2e'
+    const rarityDataset: TierDataset = {
+      schemaVersion: 1,
+      mods: [
+        { n: 'Avarice', l: 20, g: 'Rarity', s: [['base_item_found_rarity_+%', 10, 29]], t: '' },
+        { n: 'Greed', l: 60, g: 'Rarity', s: [['base_item_found_rarity_+%', 30, 40]], t: '' },
+      ],
+      pools: [{ Rarity: [0, 1] }],
+      bases: { 'Gold Ring': 0 },
+    }
+    const prev = getPoeVersion()
+    setPoeVersion(1)
+    _setTierDataForTests(rarityDataset)
+    try {
+      _setStatEntriesForTests([{ id: RARITY_ID, text: '#% increased Rarity of Items found', type: 'explicit' }])
+      const advT1: AdvancedMod[] = [
+        {
+          type: 'suffix',
+          name: 'Greed',
+          tier: 1,
+          tags: [],
+          lines: ['35(30-40)% increased Rarity of Items found'],
+          ranges: [{ value: 35, min: 30, max: 40 }],
+        },
+      ]
+      const filters = matchItemMods(
+        ['35% increased Rarity of Items found'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', baseType: 'Gold Ring', itemLevel: 80, itemClass: 'Rings' }),
+        advT1,
+      )
+      const row = filters.find((f) => f.id === RARITY_ID)
+      // T1 override: should be enabled even though rarity is low-priority
+      expect(row?.enabled).toBe(true)
+    } finally {
+      _setTierDataForTests(null)
+      setPoeVersion(prev)
+    }
+  })
+
+  it('T1 roll: min uses T1 bracket low, not floor(value * pct)', () => {
+    // T1 bracket: [75, 85]. T2 bracket: [50, 60]. Rolled value: 80.
+    // floor(80 * 0.9) = 72, which is BELOW T1 min (75).
+    // The new behavior should set min = 75 (T1 bracket low).
+    // A T2 roll of 55 should still use floor(55 * 0.9) = 49.
+    const T1MIN_STAT_ID = 'explicit.stat_t1min_e2e'
+    const t1MinDataset: TierDataset = {
+      schemaVersion: 1,
+      mods: [
+        // T2 at lower values (index 0, worst first), T1 at higher values (index 1)
+        { n: 'Sturdy', l: 20, g: 'T1MinGroup', s: [['some_stat_id', 50, 60]], t: '' },
+        { n: 'Stalwart', l: 60, g: 'T1MinGroup', s: [['some_stat_id', 75, 85]], t: '' },
+      ],
+      pools: [{ T1MinGroup: [0, 1] }],
+      bases: { 'Sapphire Ring': 0 },
+    }
+    const prev = getPoeVersion()
+    setPoeVersion(1)
+    _setTierDataForTests(t1MinDataset)
+    try {
+      _setStatEntriesForTests([{ id: T1MIN_STAT_ID, text: '+# to some stat', type: 'explicit' }])
+
+      // --- T1 roll at 80 ---
+      const advT1: AdvancedMod[] = [
+        {
+          type: 'suffix',
+          name: 'Stalwart',
+          tier: 1,
+          tags: [],
+          lines: ['+80(75-85) to some stat'],
+          ranges: [{ value: 80, min: 75, max: 85 }],
+        },
+      ]
+      const t1Filters = matchItemMods(
+        ['+80 to some stat'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', baseType: 'Sapphire Ring', itemLevel: 80, itemClass: 'Rings' }),
+        advT1,
+      )
+      const t1Row = t1Filters.find((f) => f.id === T1MIN_STAT_ID)
+      expect(t1Row).toBeDefined()
+      expect(t1Row?.value).toBe(80)
+      // floor(80 * 0.9) = 72, but T1 bracket low is 75 -> min must be 75
+      expect(t1Row?.min).toBe(75)
+
+      // --- T2 roll at 55: still uses floor(55 * 0.9) = 49 ---
+      const advT2: AdvancedMod[] = [
+        {
+          type: 'suffix',
+          name: 'Sturdy',
+          tier: 2,
+          tags: [],
+          lines: ['+55(50-60) to some stat'],
+          ranges: [{ value: 55, min: 50, max: 60 }],
+        },
+      ]
+      const t2Filters = matchItemMods(
+        ['+55 to some stat'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', baseType: 'Sapphire Ring', itemLevel: 80, itemClass: 'Rings' }),
+        advT2,
+      )
+      const t2Row = t2Filters.find((f) => f.id === T1MIN_STAT_ID)
+      expect(t2Row).toBeDefined()
+      expect(t2Row?.value).toBe(55)
+      // T2 roll: min = floor(55 * 0.9) = 49
+      expect(t2Row?.min).toBe(49)
+    } finally {
+      _setTierDataForTests(null)
       setPoeVersion(prev)
     }
   })
