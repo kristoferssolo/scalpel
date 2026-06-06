@@ -256,6 +256,7 @@ export async function preloadPriceCheck(item: PoeItem, store: Store<AppSettings>
       baseType: item.baseType,
       rarity: item.rarity,
       itemClass: item.itemClass,
+      name: item.name,
       gemLevel: item.gemLevel,
       corrupted: item.corrupted,
       mirrored: item.mirrored,

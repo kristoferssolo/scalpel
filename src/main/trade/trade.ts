@@ -198,6 +198,9 @@ export interface StatFilter {
    *  over-rolled by Vaal/corruption above the listed max / single value). Drives the
    *  price-check default-enable for uniques (issue #378). */
   perfectRoll?: boolean
+  /** True when this mod is a curated "premium" mod for the item's unique name (premium-mods
+   *  manifest). Force-enabled by default and preserved through Base mode like foulborn/perfectRoll. */
+  premium?: boolean
   modTier?: number // mod tier if known (from advanced mod data)
   modRange?: { min: number; max: number } // possible roll range for this mod
   /** Resolved tier ladder for scrubbable affixes (single-stat or trade-averaged,

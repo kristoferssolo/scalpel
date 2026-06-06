@@ -584,6 +584,7 @@ export function PriceCheck({
                       f.type !== 'enchant' &&
                       !f.foulborn &&
                       !isPerfectUniqueRoll(f, item.rarity) &&
+                      !f.premium &&
                       f.enabled,
                   ).length === 0
 

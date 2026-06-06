@@ -24,6 +24,7 @@ import { buildTabletFilters } from './producers/tablets'
 import { buildTimelessFilters } from './producers/timeless'
 import { buildUltimatumFilters } from './producers/ultimatum'
 import { buildWeaponDpsFilters } from './producers/weapon-dps'
+import { _resetPremiumMatchCacheForTests } from './producers/premium'
 import { _resetPseudoMap, ensurePseudoMapBuilt } from './pseudo'
 import type { StatEntry } from './stats-cache'
 import { _setStatEntries } from './stats-cache'
@@ -40,6 +41,7 @@ export { ITEM_CLASS_TO_CATEGORY }
 export function _setStatEntriesForTests(entries: StatEntry[]): void {
   _setStatEntries(entries)
   _resetPseudoMap()
+  _resetPremiumMatchCacheForTests()
 }
 
 export function matchItemMods(

@@ -121,6 +121,16 @@ describe('applyBaseModeToFilters', () => {
     expect(result[0].enabled).toBe(true)
   })
 
+  it('keeps premium mods enabled (not clobbered) while disabling ordinary explicits', () => {
+    const input = [
+      f({ id: 'explicit.stat_premium', type: 'explicit', premium: true, enabled: true }),
+      f({ id: 'explicit.stat_other', type: 'explicit', enabled: true }),
+    ]
+    const result = applyBaseModeToFilters(input, 'Unique', false)
+    expect(result.find((r) => r.id === 'explicit.stat_premium')?.enabled).toBe(true)
+    expect(result.find((r) => r.id === 'explicit.stat_other')?.enabled).toBe(false)
+  })
+
   it('enables a perfect-or-over-rolled unique explicit pinned to the exact roll', () => {
     // perfectRoll covers both perfect and over-rolled; pin min to the actual value.
     const input = [

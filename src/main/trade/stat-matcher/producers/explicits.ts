@@ -1,4 +1,5 @@
 import { getPoeVersion } from '../../../game-state'
+import { isPremiumMod } from './premium'
 import { attachTierLadder } from './tier-attach'
 import { BENEFICIAL_NEGATIVE_KEYWORDS } from '../../../../shared/data/trade/beneficial-negatives'
 import { isClusterJewel } from '../../../../shared/poe-item'
@@ -229,21 +230,27 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
       // A unique mod rolled at or above its best possible value. Ranged mods are "perfect"
       // at the max and "over-rolled" (Vaal/corruption) above it; a fixed singular-value mod
       // is special only when over-rolled strictly above its single value. Drives the
-      // price-check default-enable for uniques (issue #378). Negative/beneficial-negative
-      // rolls never satisfy `>= max`, so they stay off -- intentional, we only auto-enable
-      // clear best-or-better rolls.
+      // price-check default-enable for uniques (issue #378). Uses the normalized range
+      // (see normRange below) so detrimental rolls on a sign-flipped reduced bracket are
+      // NOT mistaken for perfect.
       let perfectRoll = false
       if (advancedMods && matched.value != null) {
         const rawCleaned = mod.replace(/\s*\(crafted\)\s*$/i, '').trim()
         const advMod = findAdvMod(advancedMods, cleaned, 'explicit', rawCleaned)
         if (advMod) {
           const range = advMod.ranges.find((r) => r.value === matched.value || r.value === -(matched.value ?? 0))
-          if (range && range.min === range.max) isFixedValue = true
+          // "reduced" mods report a sign-flipped bracket ({min:20, max:-20}); normalize so
+          // min<=max before any consumer reads it (matchedRange -> modRange display+tint, the
+          // unique min-floor below, perfectRoll). advModRanges keeps the raw orientation for
+          // tier-ladder matching against RePoE's stored ranges.
+          const normRange = range ? { min: Math.min(range.min, range.max), max: Math.max(range.min, range.max) } : null
+          if (normRange && normRange.min === normRange.max) isFixedValue = true
           if (!range && advMod.ranges.length === 0) isFixedValue = true
           if (advMod.tier > 0) matchedTier = advMod.tier
-          if (range && range.min !== range.max) matchedRange = { min: range.min, max: range.max }
-          if (range && itemInfo?.rarity === 'Unique' && matched.value != null) {
-            perfectRoll = range.min === range.max ? matched.value > range.max : matched.value >= range.max
+          if (normRange && normRange.min !== normRange.max) matchedRange = { min: normRange.min, max: normRange.max }
+          if (normRange && itemInfo?.rarity === 'Unique' && matched.value != null) {
+            perfectRoll =
+              normRange.min === normRange.max ? matched.value > normRange.max : matched.value >= normRange.max
           }
           // Capture the full per-stat ranges and mod name for tier-ladder resolution.
           advModRanges = advMod.ranges
@@ -351,16 +358,23 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
         useLocal ||
         itemInfo?.itemClass === 'Maps'
       const forcedOn = isFractured || isFoulborn
-      const baseEnabled = forcedOn || (!lowPriority && !structurallyOff)
+      // A detrimental negative roll (value < 0 and not a beneficial negative like
+      // "reduced mana cost") is a downside, not a reason to buy. Default it off,
+      // overriding the ordinary / low-priority / PoE2-rarity-on reasons. Premium and
+      // fractured/foulborn still surface it.
+      const isDetrimental = isNegative && !isBeneficialNegative
+      const baseEnabled = forcedOn || (!lowPriority && !structurallyOff && !isDetrimental)
+      const isPremium = isPremiumMod(itemInfo, matched.statId)
       const enabledFinal =
-        forcedOn || structurallyOff
+        isPremium ||
+        (forcedOn || structurallyOff || isDetrimental
           ? baseEnabled
           : resolveTierDefault({
               baseEnabled,
               matchedTier,
               tierLadder,
               itemLevel: itemInfo?.itemLevel,
-            })
+            }))
       out.push({
         id: matched.statId,
         text: isFractured ? `${cleaned} (Fractured)` : cleaned,
@@ -373,6 +387,7 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
         aggregated: matched.aggregated,
         foulborn: isFoulborn || undefined,
         perfectRoll: perfectRoll || undefined,
+        premium: isPremium || undefined,
         modTier: matchedTier,
         modRange: matchedRange,
         tierLadder,

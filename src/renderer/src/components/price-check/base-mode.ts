@@ -82,6 +82,9 @@ export function applyBaseModeToFilters(
     // to that exact roll -- the search then finds equally-good-or-better copies. A learned
     // chip already returned above, so this defers to the user's own decision (issue #378).
     if (isPerfectUniqueRoll(f, rarity)) return { ...f, enabled: true, min: f.value, max: null }
+    // Premium mods (curated per-unique chase mods) are part of the base signature -- keep
+    // them ticked through Base mode, otherwise the override computed in main is clobbered.
+    if (f.premium) return { ...f, enabled: true }
     if (
       f.type === 'socket' ||
       f.type === 'misc' ||
