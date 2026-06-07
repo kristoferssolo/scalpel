@@ -19,6 +19,7 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
       'Fixed open affix chips searching their minimum instead of the actual rolled value.',
       'Fixed charm and flask increased Duration not matching its trade stat.',
       'Fixed PoE2 life regen ranking too high in the price checker.',
+      'Added missing PoE2 base types (flasks, charms, jewels, daggers, flails, swords, axes) so their magic/rare base types are no longer truncated (e.g. "Transcendent" instead of "Transcendent Life Flask"), which broke price checks.',
     ],
   },
   {
