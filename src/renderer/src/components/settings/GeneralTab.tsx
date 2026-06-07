@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Github } from '@icon-park/react'
 import type { AppSettings, ProfileSettingValue, RuntimeSettings } from '../../../../shared/types'
 import { getGameFeatures } from '../../../../shared/game-features'
 import { GITHUB_REPO_URL, KOFI_URL } from '../../../../shared/endpoints'
 import { reportDiagnosticError } from '../../shared/diagnostics'
+import { CollapsibleSection } from '../../shared/CollapsibleSection'
 import kofiIcon from '../../assets/other/kofi-logo.svg'
 import { SettingToggleBox } from './SettingToggleBox'
 import { LOCALE_LABELS, setAppLocale, SUPPORTED_LOCALES, useCurrentLocale } from '../../shared/locale'
@@ -22,6 +23,13 @@ export function GeneralTab({ settings, update, updateProfile, onShowOnboarding }
   const [reportMessage, setReportMessage] = useState<string | null>(null)
   const [reporting, setReporting] = useState(false)
   const [simulateCrash, setSimulateCrash] = useState(false)
+  const [debugLog, setDebugLog] = useState('')
+  const loadDebugLog = (): void => {
+    window.api.getDebugLog().then(setDebugLog)
+  }
+  useEffect(() => {
+    loadDebugLog()
+  }, [])
   const features = getGameFeatures(settings.poeVersion)
   const cachedLeagues = settings.poeVersion === 2 ? settings.leaguesPoe2 : settings.leaguesPoe1
   const leagueOptions: readonly string[] = cachedLeagues && cachedLeagues.length > 0 ? cachedLeagues : features.leagues
@@ -293,6 +301,24 @@ export function GeneralTab({ settings, update, updateProfile, onShowOnboarding }
           </div>
         </section>
       )}
+
+      <section>
+        <CollapsibleSection title={<span className="text-xs text-text-dim">Debug Log</span>}>
+          <div className="mt-2 flex flex-col gap-1.5">
+            <div className="flex gap-1.5">
+              <button onClick={loadDebugLog} className="text-[11px] px-3 py-1.5 text-text-dim">
+                Refresh
+              </button>
+              <button onClick={() => void window.api.openLogFolder()} className="text-[11px] px-3 py-1.5 text-text-dim">
+                Open log folder
+              </button>
+            </div>
+            <pre className="text-[10px] leading-[14px] text-text-dim bg-black/30 rounded p-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-words">
+              {debugLog || 'No log entries.'}
+            </pre>
+          </div>
+        </CollapsibleSection>
+      </section>
     </>
   )
 }

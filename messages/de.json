@@ -229,6 +229,7 @@
   "filterbanner_changes_reapplied": "{changes} Scalpel-Änderungen erfolgreich erneut angewendet",
   "filterbanner_filter_updated": "Filter aktualisiert",
   "filterbanner_check_for_updates": "Nach Filter-Updates suchen",
+  "filterbanner_load_online_to_sync": "Lade {name} im Spiel, um zu synchronisieren",
   "audit_tier_hidden": "Versteckt",
   "audit_tier_rest": "Rest",
   "audit_other_tier": "Andere Stufe prüfen",

@@ -5,6 +5,7 @@ import type {
   AppSettings,
   AuthResult,
   FilterBlock,
+  FilterChange,
   FilterListEntry,
   FilterVersion,
   GameVariant,
@@ -177,6 +178,8 @@ export const api = {
     ipcRenderer.send('diagnostics:renderer-error', payload),
   createBugReport: (): Promise<BugReportResult> => ipcRenderer.invoke('diagnostics:create-report'),
   showBugReport: (reportPath: string): Promise<void> => ipcRenderer.invoke('diagnostics:show-report', reportPath),
+  getDebugLog: (): Promise<string> => ipcRenderer.invoke('diagnostics:get-log'),
+  openLogFolder: (): Promise<void> => ipcRenderer.invoke('diagnostics:open-log-folder'),
   onDevDiagnosticError: (cb: (payload: RendererDiagnosticPayload) => void): (() => void) => {
     const handler = (_: Electron.IpcRendererEvent, payload: RendererDiagnosticPayload): void => cb(payload)
     ipcRenderer.on('diagnostics:dev-error', handler)
@@ -675,6 +678,10 @@ export const api = {
 
   // Online filter sync
   checkForOnlineUpdate: (): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke('check-online-update'),
+  getOnlineSyncStatus: (): Promise<{ hasOnlineSource: boolean }> => ipcRenderer.invoke('online-sync-status'),
+  getFilterResetAvailability: (): Promise<{ canReset: boolean }> => ipcRenderer.invoke('filter-reset-availability'),
+  resetFilterToOnline: (): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke('reset-filter-to-online'),
+  getFilterChanges: (): Promise<FilterChange[]> => ipcRenderer.invoke('get-filter-changes'),
   quickUpdateFilter: (): Promise<{
     ok: boolean
     error?: string

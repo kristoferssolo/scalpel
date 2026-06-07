@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { m } from '../../../shared/paraglide/messages.js'
 
 interface FilterInfoBannerProps {
@@ -39,6 +39,27 @@ export function FilterInfoBanner({
       if (checkingTimer.current) clearTimeout(checkingTimer.current)
     }
   }, [])
+
+  const [hasOnlineSource, setHasOnlineSource] = useState<boolean | null>(null)
+  const recheckSource = useCallback(() => {
+    const isLocal = filterPath
+      .replace(/^.*[\\/]/, '')
+      .replace(/\.filter$/i, '')
+      .endsWith('-local')
+    if (!isLocal) {
+      setHasOnlineSource(null)
+      return
+    }
+    window.api
+      .getOnlineSyncStatus()
+      .then((r) => setHasOnlineSource(r.hasOnlineSource))
+      .catch(() => setHasOnlineSource(null))
+  }, [filterPath])
+  useEffect(() => {
+    recheckSource()
+    window.addEventListener('focus', recheckSource)
+    return () => window.removeEventListener('focus', recheckSource)
+  }, [recheckSource])
 
   const activeFile = filterPath.replace(/^.*[\\/]/, '').replace(/\.filter$/i, '')
   const isOnlineFilter = activeFile.endsWith('-local')
@@ -92,6 +113,15 @@ export function FilterInfoBanner({
           </button>
         ) : mergeMessage ? (
           <span className="text-[11px] text-accent font-semibold shrink-0">{mergeMessage}</span>
+        ) : hasOnlineSource === false ? (
+          <button
+            onClick={recheckSource}
+            className="shrink-0 text-[11px] text-text-dim"
+            style={{ padding: '4px 12px' }}
+            title="Re-check after loading the filter in-game"
+          >
+            {m.filterbanner_load_online_to_sync({ name: activeFile.slice(0, -'-local'.length) })}
+          </button>
         ) : (
           <button
             onClick={async () => {

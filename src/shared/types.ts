@@ -104,6 +104,11 @@ export interface FilterBlock {
   continue: boolean
   lineStart: number
   lineEnd: number
+  /** 1-based line number of the block's last body line (Show/Hide/Minimal,
+   *  condition, action, or Continue). Unlike lineEnd it does NOT extend into the
+   *  inter-block content that follows the block. Used by the writer to keep
+   *  trailing blank lines / section comments out of a block's own range. */
+  bodyEndLine?: number
   /** Any comment line immediately above the block */
   leadingComment?: string
   /** The inline comment on the Show/Hide line (e.g. "%D9 $type->currency->fossil $tier->t1") */
@@ -117,6 +122,9 @@ export interface FilterFile {
   blocks: FilterBlock[]
   /** Raw lines — used to write back changes while preserving unmodified sections */
   rawLines: string[]
+  /** Dominant line ending of the source file. Writers join output with this so
+   *  CRLF/LF is preserved. Optional: literals that omit it default to '\n'. */
+  eol?: '\r\n' | '\n'
 }
 
 // ─── Item Types ───────────────────────────────────────────────────────────
@@ -654,6 +662,18 @@ export interface HistoryEntry {
   action: 'block-edit' | 'tier-move' | 'stack-threshold' | 'strand-threshold'
   /** Item name/baseType — used to show the item icon in the history panel */
   itemName?: string
+}
+
+/** A single human-readable Scalpel customization, derived from the intent log. */
+export interface FilterChange {
+  /** Stable key for rendering. */
+  id: string
+  /** Human-readable description of the change. */
+  description: string
+  /** Item base type for move-basetype changes (drives the row icon); absent otherwise. */
+  itemName?: string
+  /** Epoch ms when the intent was recorded. */
+  timestamp: number
 }
 
 // ─── Filter Versions ──────────────────────────────────────────────────────────

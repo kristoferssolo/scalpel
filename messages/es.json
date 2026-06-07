@@ -229,6 +229,7 @@
   "filterbanner_changes_reapplied": "{changes} cambios de Scalpel reaplicados correctamente",
   "filterbanner_filter_updated": "Filtro actualizado",
   "filterbanner_check_for_updates": "Buscar actualizaciones del filtro",
+  "filterbanner_load_online_to_sync": "Carga {name} en el juego para sincronizar",
   "audit_tier_hidden": "Oculto",
   "audit_tier_rest": "Resto",
   "audit_other_tier": "Auditar otro nivel",

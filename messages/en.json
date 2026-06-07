@@ -229,6 +229,7 @@
   "filterbanner_changes_reapplied": "{changes} Scalpel Changes Reapplied Successfully",
   "filterbanner_filter_updated": "Filter Updated",
   "filterbanner_check_for_updates": "Check for Filter Updates",
+  "filterbanner_load_online_to_sync": "Load {name} in-game to sync",
   "audit_tier_hidden": "Hidden",
   "audit_tier_rest": "Rest",
   "audit_other_tier": "Audit Other Tier",
