@@ -76,7 +76,7 @@ export function matchItemMods(
   const imbueFilters = buildImbueFilters(itemInfo)
 
   // Process enchant lines (cluster jewel enchantments)
-  const enchantFilters = buildEnchantFilters(itemInfo)
+  const enchantFilters = buildEnchantFilters(itemInfo, ctx.hasLocalMods)
 
   // Socket chips (rune, white, abyssal, links)
   const socketFilters = buildSocketFilters(itemInfo, advancedMods)

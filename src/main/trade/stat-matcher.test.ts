@@ -2322,6 +2322,60 @@ describe('matchModToStat (Unscalable Value prefix/suffix fallback)', () => {
     expect(result?.statId).toBe('explicit.stat_xxx')
     expect(result?.value).toBeNull()
   })
+
+  it('does NOT match a plain mod against a longer stat whose dropped prefix is descriptive (issue #399)', () => {
+    // A weapon "increased Attack Speed" corruption enchant has no global plain enchant
+    // stat in the trade API, so the suffix fallback used to grab the unrelated
+    // "Allies in your Presence have #% increased Attack Speed". The dropped prefix
+    // ("Allies in your Presence have") is descriptive text, not a hidden roll/chance
+    // chunk, so it must NOT be accepted.
+    _setStatEntriesForTests([
+      {
+        id: 'enchant.stat_1998951374',
+        text: 'Allies in your Presence have #% increased Attack Speed',
+        type: 'enchant',
+      },
+    ])
+    const result = matchModToStat('8% increased Attack Speed', false, 'enchant')
+    expect(result).toBeNull()
+  })
+
+  it('prefers the (Local) enchant stat for a weapon corruption enchant (issue #399)', () => {
+    // The correct trade stat for a weapon's "increased Attack Speed" corruption
+    // enchant is the "(Local)" enchant entry; the global "Allies in your Presence"
+    // lookalike must not win. preferLocal=true is passed for items with local affixes.
+    _setStatEntriesForTests([
+      { id: 'enchant.stat_210067635', text: '#% increased Attack Speed (Local)', type: 'enchant' },
+      {
+        id: 'enchant.stat_1998951374',
+        text: 'Allies in your Presence have #% increased Attack Speed',
+        type: 'enchant',
+      },
+    ])
+    const result = matchModToStat('8% increased Attack Speed', true, 'enchant')
+    expect(result?.statId).toBe('enchant.stat_210067635')
+    expect(result?.value).toBe(8)
+  })
+})
+
+describe('buildEnchantFilters via matchItemMods (weapon corruption enchant, issue #399)', () => {
+  it('routes a Widowhail attack-speed corruption enchant to the (Local) enchant stat', () => {
+    _setStatEntriesForTests([
+      { id: 'enchant.stat_210067635', text: '#% increased Attack Speed (Local)', type: 'enchant' },
+      {
+        id: 'enchant.stat_1998951374',
+        text: 'Allies in your Presence have #% increased Attack Speed',
+        type: 'enchant',
+      },
+    ])
+    const filters = matchItemMods([], [], undefined, {
+      ...makeItemInfo({ itemClass: 'Bows', baseType: 'Crude Bow', rarity: 'Unique', corrupted: true }),
+      enchants: ['8% increased Attack Speed'],
+    })
+    const enchant = filters.find((f) => f.type === 'enchant')
+    expect(enchant?.id).toBe('enchant.stat_210067635')
+    expect(enchant?.value).toBe(8)
+  })
 })
 
 describe('matchModToStat (Forbidden Shako indexable_support routing)', () => {

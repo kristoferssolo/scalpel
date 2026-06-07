@@ -211,7 +211,16 @@ function _matchModToStat(
       const statPlain = entry.text.replace(/#/g, '').replace(/\s+/g, ' ').trim().toLowerCase()
       const variantPlain = variant.replace(/\d+/g, '').replace(/\s+/g, ' ').trim().toLowerCase()
       if (variantPlain.length <= 10) continue
-      if (statPlain.startsWith(variantPlain) || statPlain.endsWith(variantPlain)) {
+      // The chunk this fallback lets the clipboard hide is always an unscalable
+      // roll/chance fragment (e.g. "#% chance to ", "by #% of their value"), which
+      // leaves a "%" behind once "#" is stripped. If the dropped end is descriptive
+      // text instead (e.g. "Allies in your Presence have"), this is a different stat,
+      // not a hidden-prefix variant -- reject it so a plain "increased Attack Speed"
+      // doesn't grab "Allies in your Presence have #% increased Attack Speed" (#399).
+      let dropped: string | null = null
+      if (statPlain.endsWith(variantPlain)) dropped = statPlain.slice(0, statPlain.length - variantPlain.length)
+      else if (statPlain.startsWith(variantPlain)) dropped = statPlain.slice(variantPlain.length)
+      if (dropped !== null && dropped.includes('%')) {
         if (!bestMatch || entry.text.length > bestMatch._textLen) {
           bestMatch = { statId: entry.id, value: null, _textLen: entry.text.length }
         }
