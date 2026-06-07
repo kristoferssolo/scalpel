@@ -2,6 +2,11 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
     version: '0.9.13',
     notes: [
+      'Massive changes to make filter editing cleaner and less error prone.',
+      'Filters now auto-repair on load if they get damaged, with a reversible checkpoint so the change can be undone.',
+      'Added a Reset Filter button that restores your local copy back to the online baseline.',
+      'Added a "Load online filter in-game to sync" banner when the filter cache is empty.',
+      'Added a collapsible Filter Changes list and a Debug Log viewer to the filter history view.',
       'Added language support (English, Spanish, German) with a locale picker that persists across sessions.',
       'Added a PoE2 waystone/tablet Trade tab with refreshed waystone data and a Quantity & yield section.',
       'Added an experimental update channel you can opt into for early builds.',
@@ -18,9 +23,10 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
       'Fixed double-rarity items pricing incorrectly by summing duplicate copies of the same roll; rarity is now on by default in PoE2.',
       'Fixed open affix chips searching their minimum instead of the actual rolled value.',
       'Fixed charm and flask increased Duration not matching its trade stat.',
-      'Fixed weapon corruption enchants (e.g. increased Attack Speed) matching the wrong global stat on trade instead of the local enchant.',
+      'Fixed issue with enchants on bows in price checker.',
+      'Fixed the PoE2 price-audit slider baseline label showing "c" instead of "ex".',
       'Fixed PoE2 life regen ranking too high in the price checker.',
-      'Added missing PoE2 base types (flasks, charms, jewels, daggers, flails, swords, axes) so their magic/rare base types are no longer truncated (e.g. "Transcendent" instead of "Transcendent Life Flask"), which broke price checks.',
+      'Fixed issue with base types missing causing parsing to sometimes break.',
     ],
   },
   {
