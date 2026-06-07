@@ -9,6 +9,7 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
       'Added a collapsible Filter Changes list and a Debug Log viewer to the filter history view.',
       'Added language support (English, Spanish, German) with a locale picker that persists across sessions.',
       'Added a PoE2 waystone/tablet Trade tab with refreshed waystone data and a Quantity & yield section.',
+      'Added a PoE2 Relic regex tab for Trial of the Sekhemas relic prefixes and suffixes.',
       'Added an experimental update channel you can opt into for early builds.',
       'Plugin developers can now read poe.ninja prices read-only via the new ctx.prices capability.',
       'Perfect or overrolled unique affixes are now checked by default in the price checker.',
