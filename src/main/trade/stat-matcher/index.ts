@@ -5,6 +5,7 @@ import { deriveContext } from './context'
 import { ITEM_CLASS_TO_CATEGORY } from './item-classes'
 import { buildAtzoatlFilters } from './producers/atzoatl'
 import { buildBaseTypeFilter } from './producers/base-type'
+import { buildRuneBaseFilter } from './producers/rune-base'
 import { buildDefenseFilters } from './producers/defenses'
 import { buildEnchantFilters } from './producers/enchants'
 import { processExplicits } from './producers/explicits'
@@ -84,6 +85,9 @@ export function matchItemMods(
   // Base type chip
   const baseTypeFilters = buildBaseTypeFilter(itemInfo)
 
+  // Rune-base chip (Runeforged / Runemastered toggle)
+  const runeBaseFilters = buildRuneBaseFilter(itemInfo)
+
   // Gem level, transfigured, and gem-quality chips
   const gemFilters = buildGemFilters(itemInfo)
 
@@ -122,6 +126,9 @@ export function matchItemMods(
     ...enchantFilters,
     ...mapFilters,
     ...socketFilters,
+    // Rune chip sits before the base-name chip so they read left-to-right as
+    // "Runeforged" + "<base>" (the composed type the search sends).
+    ...runeBaseFilters,
     ...baseTypeFilters,
     ...gemFilters,
     ...heistFilters,

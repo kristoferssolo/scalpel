@@ -2,7 +2,7 @@ import { app, net } from 'electron'
 import tabletModMap from '../../shared/data/trade/tablet-mods.json'
 import { TRANSFIGURED_GEM_DISC } from '../../shared/data/trade/transfigured-gems'
 import { getTradeUrls } from '../../shared/endpoints'
-import { isClusterJewel, isSkillGem } from '../../shared/poe-item'
+import { isClusterJewel, isSkillGem, splitRuneTier } from '../../shared/poe-item'
 import { getPoeVersion } from '../game-state'
 import { getOverlayWindow } from '../overlay'
 import { harvestIcons } from './icon-cache'
@@ -573,7 +573,13 @@ export async function searchTrade(
     }
   } else if (item.rarity === 'Unique') {
     query.name = item.name.replace(/^Foulborn\s+/i, '')
-    query.type = item.baseType
+    const runeChip = statFilters.find((f) => f.id === 'misc.rune_base')
+    const { tier: runeTier, bare: runeBare } = splitRuneTier(item.baseType)
+    if (runeTier && runeChip) {
+      query.type = runeChip.enabled ? { option: item.baseType, discriminator: 'legacy' } : runeBare
+    } else {
+      query.type = item.baseType
+    }
   } else if (item.itemClass === 'Maps') {
     // Maps: use "Map" type with discriminator, add tier + blight filters
     const isValdoMap = item.baseType === 'Valdo Map'
@@ -726,7 +732,12 @@ export async function searchTrade(
     if (item.itemClass === 'Maps' && baseTypeFilter.text === 'Map') {
       query.type = { option: 'Map', discriminator: 'map' }
     } else {
-      query.type = baseTypeFilter.text
+      // The basetype chip carries the bare base; the rune chip composes the
+      // "Runeforged"/"Runemastered" prefix back on. Rune is a refinement of the
+      // pinned base -- it only takes effect while the basetype chip is on (the
+      // trade API has no generic "all runeforged" filter to fall back to).
+      const runeChip = statFilters.find((f) => f.id === 'misc.rune_base' && f.enabled)
+      query.type = runeChip ? `${runeChip.text} ${baseTypeFilter.text}` : baseTypeFilter.text
     }
   }
 
