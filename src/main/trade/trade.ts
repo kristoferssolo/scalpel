@@ -1107,9 +1107,13 @@ export async function searchTrade(
             gemLevel: r.item.properties?.find((p) => p.name === 'Level')?.values?.[0]?.[0]
               ? parseInt(r.item.properties.find((p) => p.name === 'Level')!.values[0][0], 10)
               : undefined,
-            quality: r.item.properties?.find((p) => p.name === 'Quality')?.values?.[0]?.[0]
-              ? parseInt(r.item.properties.find((p) => p.name === 'Quality')!.values[0][0].replace(/[+%]/g, ''), 10)
-              : undefined,
+            quality: (() => {
+              // PoE1 names the property "Quality"; PoE2 wraps it in a localization
+              // tag ("[Quality]"). Both carry GGG's quality property type code 6,
+              // so match on that (with a name fallback) instead of the literal name.
+              const v = r.item.properties?.find((p) => p.type === 6 || p.name === 'Quality')?.values?.[0]?.[0]
+              return v ? parseInt(v.replace(/[+%]/g, ''), 10) : undefined
+            })(),
             storedExperience: r.item.properties?.find((p) => p.name.startsWith('Stored Experience'))?.values?.[0]?.[0]
               ? parseInt(r.item.properties.find((p) => p.name.startsWith('Stored Experience'))!.values[0][0], 10)
               : undefined,
