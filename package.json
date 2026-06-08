@@ -115,7 +115,7 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,
-      "allowElevation": true,
+      "allowElevation": false,
       "createDesktopShortcut": false,
       "artifactName": "Scalpel-Setup.${ext}"
     },

@@ -12,6 +12,7 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
       'Added a PoE2 Relic regex tab for Trial of the Sekhemas relic prefixes and suffixes.',
       'Added condition groups to the PoE2 Vendor regex tab: conditions in a group match with OR, separate groups all match (AND).',
       'Added an experimental update channel you can opt into for early builds.',
+      'The installer no longer needs admin rights and updates now apply automatically; if you previously installed Scalpel for all users, run the installer once more to switch over.',
       'Plugin developers can now read poe.ninja prices read-only via the new ctx.prices capability.',
       'Perfect or overrolled unique affixes are now checked by default in the price checker.',
       'Price-check defaults are now tier-aware: top-tier rolls turn on and search the low end of their bracket, while sub-par rolls on high item-level gear stay off.',
