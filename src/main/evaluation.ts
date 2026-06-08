@@ -30,7 +30,7 @@ import { focusGameWindow, getOverlayAttachedVersion, getOverlayWindow, isTypingI
 import { readItemFromClipboard } from './trade/clipboard'
 import {
   getUniquesByBase,
-  lookupBestUniquePrice,
+  lookupItemPrice,
   lookupPrice,
   lookupPriceForItem,
   lookupUniquePriceForBase,
@@ -211,10 +211,7 @@ export function evaluateAndSend(item: PoeItem): void {
 export async function preloadPriceCheck(item: PoeItem, store: Store<AppSettings>): Promise<void> {
   const league = getProfileBackedSetting(store, 'league')
   await refreshPrices(league)
-  const priceInfo =
-    item.rarity === 'Unique'
-      ? (lookupBestUniquePrice(item.baseType) ?? lookupPriceForItem(item))
-      : lookupPriceForItem(item)
+  const priceInfo = lookupItemPrice(item)
 
   // For unidentified uniques, find all possible uniques for this base type
   const unidCandidates: Array<{ name: string; chaosValue: number }> = []
