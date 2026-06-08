@@ -742,28 +742,74 @@ describe('matchItemMods', () => {
       expect(qualityChip?.enabled).toBe(true) // quality >= 20
     })
 
-    it('generates transfigured chip enabled when transfigured', () => {
+    it('shows a gem quality chip off with no value when the gem has 0 quality', () => {
       const filters = matchItemMods(
         [],
         [],
         undefined,
-        makeItemInfo({ itemClass: 'Skill Gems', gemLevel: 1, transfigured: true, sockets: '' }),
+        makeItemInfo({ itemClass: 'Skill Gems', gemLevel: 20, quality: 0, sockets: '' }),
       )
-      const transfigured = filters.find((f) => f.id === 'misc.gem_transfigured')
-      expect(transfigured).toBeDefined()
-      expect(transfigured?.enabled).toBe(true)
+      const qualityChip = filters.find((f) => f.id === 'misc.quality')
+      expect(qualityChip).toBeDefined()
+      expect(qualityChip?.type).toBe('gem')
+      expect(qualityChip?.text).toBe('Quality')
+      expect(qualityChip?.value).toBeNull()
+      expect(qualityChip?.min).toBeNull()
+      expect(qualityChip?.enabled).toBe(false)
+    })
+
+    it('generates transfigured chip enabled when transfigured', () => {
+      const prev = getPoeVersion()
+      setPoeVersion(1)
+      try {
+        const filters = matchItemMods(
+          [],
+          [],
+          undefined,
+          makeItemInfo({ itemClass: 'Skill Gems', gemLevel: 1, transfigured: true, sockets: '' }),
+        )
+        const transfigured = filters.find((f) => f.id === 'misc.gem_transfigured')
+        expect(transfigured).toBeDefined()
+        expect(transfigured?.enabled).toBe(true)
+      } finally {
+        setPoeVersion(prev)
+      }
     })
 
     it('generates transfigured chip disabled when not transfigured', () => {
-      const filters = matchItemMods(
-        [],
-        [],
-        undefined,
-        makeItemInfo({ itemClass: 'Skill Gems', gemLevel: 1, transfigured: false, sockets: '' }),
-      )
-      const transfigured = filters.find((f) => f.id === 'misc.gem_transfigured')
-      expect(transfigured).toBeDefined()
-      expect(transfigured?.enabled).toBe(false)
+      const prev = getPoeVersion()
+      setPoeVersion(1)
+      try {
+        const filters = matchItemMods(
+          [],
+          [],
+          undefined,
+          makeItemInfo({ itemClass: 'Skill Gems', gemLevel: 1, transfigured: false, sockets: '' }),
+        )
+        const transfigured = filters.find((f) => f.id === 'misc.gem_transfigured')
+        expect(transfigured).toBeDefined()
+        expect(transfigured?.enabled).toBe(false)
+      } finally {
+        setPoeVersion(prev)
+      }
+    })
+
+    it('omits the transfigured chip in PoE2 (no transfigured gems there)', () => {
+      const prev = getPoeVersion()
+      setPoeVersion(2)
+      try {
+        const filters = matchItemMods(
+          [],
+          [],
+          undefined,
+          makeItemInfo({ itemClass: 'Skill Gems', gemLevel: 16, quality: 20, sockets: '' }),
+        )
+        expect(filters.find((f) => f.id === 'misc.gem_transfigured')).toBeUndefined()
+        // The gem quality chip still appears in PoE2.
+        expect(filters.find((f) => f.id === 'misc.quality')?.type).toBe('gem')
+      } finally {
+        setPoeVersion(prev)
+      }
     })
 
     it('skips explicits for gem items', () => {
