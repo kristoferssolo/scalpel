@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { buildVendorRegex, type VendorSettings } from './vendor-engine'
+import { buildVendorRegex, buildVendorGroupsRegex, type VendorSettings } from './vendor-engine'
+import { DEFAULT_VENDOR_SETTINGS } from '../../../../shared/data/regex/vendor-toggles'
 import { generateVendorRegex } from './__fixtures__/poe2re/VendorResult'
 import type { Settings } from './__fixtures__/poe2re/Settings'
 
@@ -396,4 +397,40 @@ describe('buildVendorRegex golden (live poe2.re/vendor captures)', () => {
       expect(buildVendorRegex(v)).toBe(c.expected)
     })
   }
+})
+
+function withFields(...fields: Array<[keyof VendorSettings, string]>): VendorSettings {
+  const g = structuredClone(DEFAULT_VENDOR_SETTINGS)
+  for (const [grp, f] of fields) (g[grp] as Record<string, boolean>)[f] = true
+  return g
+}
+
+describe('buildVendorGroupsRegex', () => {
+  it('returns empty string for no groups', () => {
+    expect(buildVendorGroupsRegex([])).toBe('')
+  })
+
+  it('returns empty string when every group is empty', () => {
+    expect(
+      buildVendorGroupsRegex([structuredClone(DEFAULT_VENDOR_SETTINGS), structuredClone(DEFAULT_VENDOR_SETTINGS)]),
+    ).toBe('')
+  })
+
+  it('a single group equals the per-group regex', () => {
+    const g = withFields(['itemMods', 'maxLife'])
+    expect(buildVendorGroupsRegex([g])).toBe(buildVendorRegex(g))
+  })
+
+  it('joins multiple non-empty groups with a single space (AND)', () => {
+    const g1 = withFields(['itemMods', 'maxLife'])
+    const g2 = withFields(['itemClass', 'bows'])
+    expect(buildVendorGroupsRegex([g1, g2])).toBe(`${buildVendorRegex(g1)} ${buildVendorRegex(g2)}`)
+  })
+
+  it('skips empty groups between non-empty ones', () => {
+    const g1 = withFields(['itemMods', 'maxLife'])
+    const g2 = withFields(['itemClass', 'bows'])
+    const empty = structuredClone(DEFAULT_VENDOR_SETTINGS)
+    expect(buildVendorGroupsRegex([g1, empty, g2])).toBe(`${buildVendorRegex(g1)} ${buildVendorRegex(g2)}`)
+  })
 })

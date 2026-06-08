@@ -22,6 +22,16 @@ export function buildVendorRegex(s: VendorSettings, customText = ''): string {
   return terms.length > 0 ? `"${terms.join('|')}"` : ''
 }
 
+/** poe2.re generateVendorGroupRegex: one quoted OR-term per non-empty group, AND'd
+ *  with a single space. Empty groups contribute nothing; all-empty -> "". customText
+ *  is intentionally omitted (Scalpel surfaces custom text only via the Custom tab). */
+export function buildVendorGroupsRegex(groups: VendorSettings[]): string {
+  return groups
+    .map((g) => buildVendorRegex(g))
+    .filter((e) => e !== '')
+    .join(' ')
+}
+
 function itemProperty(s: VendorSettings['itemProperty']): (string | null)[] {
   return [s.quality ? 'y: \\+' : null, s.sockets ? 'ts: S' : null].filter((e) => e !== null)
 }
