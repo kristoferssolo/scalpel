@@ -26,7 +26,7 @@ import { detectFocusedPoeVersion, detectOpenPoeVersions } from './game-detector'
 import { getPoeVersion } from './game-state'
 import { requestGameSwitch } from './game-switch'
 import { sendCtrlCToPoE } from './hotkeys'
-import { focusGameWindow, getOverlayWindow, isTypingInOverlay, showOverlay } from './overlay'
+import { focusGameWindow, getOverlayAttachedVersion, getOverlayWindow, isTypingInOverlay, showOverlay } from './overlay'
 import { readItemFromClipboard } from './trade/clipboard'
 import {
   getUniquesByBase,
@@ -403,7 +403,13 @@ async function ensureCorrectGameForHotkey(store: Store<AppSettings>): Promise<bo
 
   const v = await detectFocusedPoeVersion()
   if (v) {
-    if (v === getPoeVersion()) return true
+    // Relaunch when the focused game differs from the in-memory version OR from
+    // the version the overlay actually attached to at startup. The attach check
+    // is a backstop for onboarding exits that bypass finish-onboarding (e.g. the
+    // titlebar X): in-memory may already be PoE2 (so the version check passes)
+    // while the overlay is still bound to PoE1, so results never surface until a
+    // relaunch rebinds the native tracker.
+    if (v === getPoeVersion() && v === getOverlayAttachedVersion()) return true
     requestGameSwitch(store, v).catch((err) => console.error('[game-switch]', err))
     return false
   }

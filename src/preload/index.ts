@@ -28,6 +28,8 @@ export const api = {
   getSettings: (): Promise<RuntimeSettings> => ipcRenderer.invoke('get-settings'),
   setSetting: <K extends keyof AppSettings>(key: K, value: AppSettings[K]): Promise<void> =>
     ipcRenderer.invoke('set-setting', key, value),
+  finishOnboarding: (): Promise<{ ok: true; restarting?: true; devRestartRequired?: true }> =>
+    ipcRenderer.invoke('finish-onboarding'),
   setProfileSettingForGame: (
     variant: GameVariant,
     key: ProfileSettingKey,

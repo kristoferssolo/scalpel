@@ -32,6 +32,13 @@ if (IS_E2E && process.env.SCALPEL_E2E_USER_DATA) {
   app.setPath('userData', process.env.SCALPEL_E2E_USER_DATA)
 }
 
+// Dev/QA: run against a throwaway userData dir so first-run onboarding can be
+// exercised without touching the real install. Honored only in unpacked builds,
+// and never when the E2E harness already redirected userData above.
+if (!IS_E2E && !app.isPackaged && process.env.SCALPEL_USER_DATA_DIR) {
+  app.setPath('userData', process.env.SCALPEL_USER_DATA_DIR)
+}
+
 installEarlyDiagnostics()
 
 // Capture native aborts (the tsfn proxy calling napi_fatal_error, etc.) as local

@@ -22,6 +22,7 @@ let lastMoveResizeAt = 0
 let lastOverlayError: string | null = null
 let onGameFocus: (() => void) | null = null
 let onGameBlur: (() => void) | null = null
+let overlayAttachedVersion: 1 | 2 = 1
 
 export function setCloseOnClickOutside(enabled: boolean): void {
   closeOnClickOutside = enabled
@@ -260,8 +261,17 @@ const POE_WINDOW_TITLES: Record<1 | 2, string> = {
   2: 'Path of Exile 2',
 }
 
+/** The PoE version the overlay's native tracker bound to at createOverlayWindow
+ *  time. electron-overlay-window attaches once per process, so this is fixed for
+ *  the process lifetime; switching games must relaunch to rebind. Onboarding
+ *  reads this to decide whether finishing on the other game needs a relaunch. */
+export function getOverlayAttachedVersion(): 1 | 2 {
+  return overlayAttachedVersion
+}
+
 export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
   setPoeVersion(version)
+  overlayAttachedVersion = version
   loadTierData(version)
     .then(() => refreshTierData(version))
     .catch(() => {})
