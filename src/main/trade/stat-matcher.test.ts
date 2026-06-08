@@ -14,6 +14,7 @@ import type { ModTier, TierDataset } from '../../shared/data/tiers/types'
 import { _setTierDataForTests } from '../tier-data'
 import { _setStatEntriesForTests, ITEM_CLASS_TO_CATEGORY, matchItemMods, matchModToStat } from './stat-matcher'
 import { resolveTierDefault } from './stat-matcher/producers/explicits'
+import { isPremiumMod, _resetPremiumMatchCacheForTests } from './stat-matcher/producers/premium'
 
 // Helper to build a minimal itemInfo object
 function makeItemInfo(overrides: Record<string, unknown> = {}) {
@@ -3161,6 +3162,59 @@ describe('premium-mod override', () => {
     } finally {
       setPoeVersion(prev)
       _setPremiumModsForTests(null)
+    }
+  })
+
+  it('base-id entry matches any option variant sharing that base (From Nothing pattern)', () => {
+    const prev = getPoeVersion()
+    _resetPremiumMatchCacheForTests()
+    _setPremiumModsForTests({
+      schemaVersion: 1,
+      poe1: {},
+      poe2: { 'From Nothing': ['explicit.stat_2422708892'] },
+    })
+    // No stat-entry seeding needed - the id path is pure string parsing.
+    try {
+      setPoeVersion(2)
+      const item = makeItemInfo({ rarity: 'Unique', name: 'From Nothing' })
+      // Both option variants resolve to the same base id and should match.
+      expect(isPremiumMod(item, 'explicit.stat_2422708892|34497')).toBe(true)
+      expect(isPremiumMod(item, 'explicit.stat_2422708892|32349')).toBe(true)
+      // An unrelated base id must not match.
+      expect(isPremiumMod(item, 'explicit.stat_9999999999|1')).toBe(false)
+    } finally {
+      setPoeVersion(prev)
+      _setPremiumModsForTests(null)
+      _resetPremiumMatchCacheForTests()
+    }
+  })
+
+  it('text entry still matches via canonical-text path (Loreweave regression)', () => {
+    const prev = getPoeVersion()
+    _resetPremiumMatchCacheForTests()
+    _setStatEntriesForTests([
+      { id: 'explicit.stat_loreweave', text: 'Your Maximum Resistances are #%', type: 'explicit' },
+    ])
+    _setPremiumModsForTests({
+      schemaVersion: 1,
+      poe1: {},
+      poe2: { Loreweave: ['Your Maximum Resistances are #%'] },
+    })
+    try {
+      setPoeVersion(2)
+      const item = makeItemInfo({ rarity: 'Unique', name: 'Loreweave' })
+      expect(isPremiumMod(item, 'explicit.stat_loreweave')).toBe(true)
+      // A stat that maps to a different text must not match.
+      _setStatEntriesForTests([
+        { id: 'explicit.stat_loreweave', text: 'Your Maximum Resistances are #%', type: 'explicit' },
+        { id: 'explicit.stat_other', text: 'Some Other Text', type: 'explicit' },
+      ])
+      _resetPremiumMatchCacheForTests()
+      expect(isPremiumMod(item, 'explicit.stat_other')).toBe(false)
+    } finally {
+      setPoeVersion(prev)
+      _setPremiumModsForTests(null)
+      _resetPremiumMatchCacheForTests()
     }
   })
 })
