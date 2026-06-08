@@ -395,6 +395,29 @@ describe('searchTrade filter-group dispatch', () => {
     expect(body.query.filters.type_filters.filters.rarity).toEqual({ option: 'unique' })
   })
 
+  it('unidentified unique with a known name (clicked from the uniques list) searches by name', async () => {
+    setPoeVersion(2)
+    // Clicking a specific unique in the UniquesForBase list builds an unidentified
+    // synthetic whose name is the real unique name (name != baseType). The unid chip
+    // is on, but we DO know which unique it is, so the search must filter by name --
+    // not fall back to the base + rarity:unique catch-all.
+    const clickedUnique = {
+      name: 'Gifts from Above',
+      baseType: 'Prismatic Ring',
+      itemClass: 'Rings',
+      rarity: 'Unique',
+    }
+    const filters: StatFilter[] = [
+      { id: 'misc.identified', text: 'Unidentified', type: 'misc', enabled: true, value: null, min: null, max: null },
+    ]
+    await searchTrade('Runes of Aldur', clickedUnique, filters, { tradeStatus: 'any' })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    const body = parseCapturedBody(req)
+    expect(body.query.name).toBe('Gifts from Above')
+    expect(body.query.type).toBe('Prismatic Ring')
+    expect(body.query.filters?.type_filters?.filters?.rarity).toBeUndefined()
+  })
+
   it('unidentified item still sends enchant filters (cluster jewel passive count survives id)', async () => {
     setPoeVersion(1)
     const unidCluster = {

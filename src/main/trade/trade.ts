@@ -558,11 +558,14 @@ export async function searchTrade(
     // the beast name and the name field is empty. Setting query.name would AND-filter
     // every listing out. Match APT's behavior and search by type only.
     query.type = item.baseType
-  } else if (item.rarity === 'Unique' && unidEnabled) {
-    // An unidentified unique has no name line in the clipboard, so the parser sets
-    // name == baseType. Sending that as query.name searches for a unique literally
+  } else if (item.rarity === 'Unique' && unidEnabled && item.name === item.baseType) {
+    // A genuinely-unknown unid unique has no name line in the clipboard, so the parser
+    // sets name == baseType. Sending that as query.name searches for a unique literally
     // named e.g. "Heavy Belt" (no such unique) and returns 0 results. Search by base
     // type + rarity:unique instead, matching the trade site's own unid-unique search.
+    // The name == baseType guard is load-bearing: when a user clicks a specific unique
+    // in the UniquesForBase list, the synthetic is unidentified but its name IS the real
+    // unique name (name != baseType), so it falls through to the by-name Unique branch.
     query.type = item.baseType
     query.filters = {
       ...((query.filters as Record<string, unknown>) ?? {}),
