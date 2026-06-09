@@ -135,6 +135,7 @@ export const MOD_COLORS: Record<string, string> = {
   implicit: '#af8aff',
   crafted: '#B8DAF1',
   fractured: 'var(--accent)',
+  desecrated: '#9ccc65',
   imbued: '#a8e6cf',
   enchant: '#a8e6cf',
   map: '#80cbc4',

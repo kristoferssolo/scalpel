@@ -255,6 +255,7 @@ export function ExpandedListing({ listing: l, itemClass, itemName, itemRarity }:
               const fracturedSet = new Set(d.fracturedMods ?? [])
               const foulbornSet = new Set(d.foulbornMods ?? [])
               const craftedSet = new Set(d.craftedMods ?? [])
+              const desecratedSet = new Set(d.desecratedMods ?? [])
               const tiers = d.modTiers
               const mods = d.explicitMods!
               const fractured = mods.filter((m) => fracturedSet.has(m))
@@ -275,7 +276,9 @@ export function ExpandedListing({ listing: l, itemClass, itemName, itemRarity }:
                         ? MOD_COLORS.fractured
                         : craftedSet.has(mod)
                           ? MOD_COLORS.crafted
-                          : MOD_COLORS.explicit
+                          : desecratedSet.has(mod)
+                            ? MOD_COLORS.desecrated
+                            : MOD_COLORS.explicit
                   }
                   tierInfo={tiers?.[mod]}
                 />

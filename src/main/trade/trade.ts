@@ -1022,6 +1022,7 @@ export async function searchTrade(
         mutatedMods?: string[]
         fracturedMods?: string[]
         craftedMods?: string[]
+        desecratedMods?: string[]
         enchantMods?: string[]
         ilvl?: number
         sockets?: Array<{ group: number; sColour: string }>
@@ -1092,16 +1093,24 @@ export async function searchTrade(
           const fractured = clean(r.item.fracturedMods)
           const crafted = clean(r.item.craftedMods)
           const foulborn = clean(r.item.mutatedMods)
+          const desecrated = clean(r.item.desecratedMods)
           return {
             name: r.item.name,
             baseType: r.item.baseType,
             rarity: ['Normal', 'Magic', 'Rare', 'Unique'][r.item.frameType ?? 0] ?? 'Normal',
-            explicitMods: [...(fractured ?? []), ...(explicit ?? []), ...(crafted ?? []), ...(foulborn ?? [])],
+            explicitMods: [
+              ...(fractured ?? []),
+              ...(explicit ?? []),
+              ...(crafted ?? []),
+              ...(foulborn ?? []),
+              ...(desecrated ?? []),
+            ],
             implicitMods: implicit,
             enchantMods: enchant,
             fracturedMods: fractured,
             craftedMods: crafted,
             foulbornMods: foulborn,
+            desecratedMods: desecrated,
             ilvl: r.item.ilvl,
             sockets: r.item.sockets,
             gemLevel: r.item.properties?.find((p) => p.name === 'Level')?.values?.[0]?.[0]
@@ -1173,6 +1182,7 @@ export async function searchTrade(
                 { key: 'fractured', texts: r.item?.fracturedMods },
                 { key: 'crafted', texts: r.item?.craftedMods },
                 { key: 'enchant', texts: r.item?.enchantMods },
+                { key: 'desecrated', texts: r.item?.desecratedMods },
               ]
               for (const { key, texts } of categories) {
                 const modEntries = mods[key]
@@ -1184,7 +1194,8 @@ export async function searchTrade(
                   const m = modEntries[modIdx]
                   if (!m) continue
                   // Apply implicit multiplier to prefix/suffix ranges
-                  const isAffixCategory = key === 'explicit' || key === 'fractured' || key === 'crafted'
+                  const isAffixCategory =
+                    key === 'explicit' || key === 'fractured' || key === 'crafted' || key === 'desecrated'
                   const mult = isAffixCategory
                     ? m.tier.startsWith('P')
                       ? prefixMult

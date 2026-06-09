@@ -62,6 +62,7 @@ export interface Listing {
     fracturedMods?: string[]
     foulbornMods?: string[]
     craftedMods?: string[]
+    desecratedMods?: string[]
     ilvl?: number
     sockets?: Array<{ group: number; sColour: string }>
     gemLevel?: number
