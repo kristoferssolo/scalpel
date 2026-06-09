@@ -68,6 +68,11 @@ describe('SettingsPanel tab routing', () => {
     ;(window as unknown as { api: Partial<typeof window.api> }).api = {
       setSetting: vi.fn(),
       setProfileSettingForGame: vi.fn(),
+      listInstalledPlugins: vi.fn(async () => []),
+      pluginFetchRegistry: vi.fn(async () => ({ ok: false as const, error: 'x' })),
+      onPluginInstalled: vi.fn(() => () => {}),
+      onPluginUpdated: vi.fn(() => () => {}),
+      onPluginUninstalled: vi.fn(() => () => {}),
     }
   })
 
