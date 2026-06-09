@@ -1,5 +1,16 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.14',
+    notes: [
+      'Added a "Grants Skill" filter and item level to the trade results, and fixed magic item names there.',
+      'Added price-check support for "uses remaining" (charges), on by default.',
+      'Plugins now update in place with a live hot-swap, no relaunch needed.',
+      'Consolidated all hotkeys and macros into the Macros tab in settings, synced to their origin location.',
+      'Desecrated mods now show in trade results (in green!).',
+      "Fixed removing a hotkey from a plugin's hotkey component.",
+    ],
+  },
+  {
     version: '0.9.13',
     notes: [
       'Massive changes to make filter editing cleaner and less error prone.',
