@@ -65,6 +65,7 @@ function PluginHotkeyBindRow({
         onChange={setHotkey}
         className="w-[200px] shrink-0"
         placeholder={m.settings_plg_set_hotkey()}
+        clearable
       />
       {/* Read-only on purpose: the plugin + action are fixed by context, so unlike
           the Macros-tab row there is no editable select or remove control here. */}
