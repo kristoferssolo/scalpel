@@ -1500,6 +1500,53 @@ describe('matchItemMods', () => {
       )
       expect(filters.find((f) => f.id === 'explicit.stat_2777224821')).toBeUndefined()
     })
+
+    // The tablet's defining implicit is a two-line combined stat the trade API
+    // stores singular ("Adds Abysses to a Map \n# use remaining"); the advanced
+    // clipboard rebuild feeds the matcher the per-line fragments plus the joined
+    // form. Real ids/text from the live PoE2 stats catalog.
+    const TABLET_IMPLICIT_STATS = [
+      { id: 'implicit.stat_2369421690', text: 'Adds Abysses to a Map \n# use remaining', type: 'implicit' },
+      {
+        id: 'implicit.stat_2219129443',
+        text: 'Adds an Otherworldy Breach to a Map \n# use remaining',
+        type: 'implicit',
+      },
+    ]
+
+    it('matches a multi-use tablet implicit (plural "uses") and defaults it on with the uses count', () => {
+      _setStatEntriesForTests(TABLET_IMPLICIT_STATS)
+      const filters = matchItemMods(
+        [],
+        ['Adds Abysses to a Map', '10 uses remaining', 'Adds Abysses to a Map\n10 uses remaining'],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Abyss Tablet' }),
+      )
+      const chips = filters.filter((f) => f.id === 'implicit.stat_2369421690')
+      expect(chips).toHaveLength(1)
+      expect(chips[0].value).toBe(10)
+      expect(chips[0].min).toBe(10)
+      expect(chips[0].enabled).toBe(true)
+    })
+
+    it('matches a single-use tablet implicit (singular "use") and defaults it on', () => {
+      _setStatEntriesForTests(TABLET_IMPLICIT_STATS)
+      const filters = matchItemMods(
+        [],
+        [
+          'Adds an Otherworldy Breach to a Map',
+          '1 use remaining',
+          'Adds an Otherworldy Breach to a Map\n1 use remaining',
+        ],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Tablet', baseType: 'Breach Tablet' }),
+      )
+      const chip = filters.find((f) => f.id === 'implicit.stat_2219129443')
+      expect(chip).toBeDefined()
+      expect(chip?.value).toBe(1)
+      expect(chip?.min).toBe(1)
+      expect(chip?.enabled).toBe(true)
+    })
   })
 
   describe('waystone property chips', () => {
