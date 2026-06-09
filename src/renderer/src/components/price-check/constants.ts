@@ -138,6 +138,7 @@ export const MOD_COLORS: Record<string, string> = {
   desecrated: '#9ccc65',
   imbued: '#a8e6cf',
   enchant: '#a8e6cf',
+  skill: '#a8e6cf',
   map: '#80cbc4',
   explicit: '#8787FE',
   tierPrefix: '#ec7676',

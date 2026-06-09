@@ -178,6 +178,7 @@ export interface PoeItem {
   implicits: string[]
   enchants: string[]
   imbues: string[]
+  grantedSkills?: string[]
   memoryStrands?: number
   /** PoE2: unidentified item implicit tier (rough rarity signal on unid drops).
    *  Not currently populated by the clipboard parser -- consumers should treat

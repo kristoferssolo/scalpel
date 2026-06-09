@@ -28,6 +28,10 @@ function copyItemToClipboard(d: Listing['itemData'] & {}, rarity: string, btn: H
   if (d.baseType) lines.push(d.baseType)
   lines.push('--------')
   if (d.ilvl) lines.push(`Item Level: ${d.ilvl}`)
+  if (d.grantedSkills?.length) {
+    lines.push('--------')
+    for (const gs of d.grantedSkills) lines.push(`Grants Skill: ${gs.text}`)
+  }
   if (d.implicitMods?.length) {
     lines.push('--------')
     for (const mod of d.implicitMods) lines.push(`${mod} (implicit)`)
@@ -235,6 +239,22 @@ export function ExpandedListing({ listing: l, itemClass, itemName, itemRarity }:
           <div className="mt-1 pt-1 w-full" style={MOD_SEPARATOR}>
             {d.enchantMods.map((mod, mi) => (
               <ModLine key={mi} text={mod} color={MOD_COLORS.enchant} />
+            ))}
+          </div>
+        )}
+
+        {/* Granted skills */}
+        {d.grantedSkills && d.grantedSkills.length > 0 && (
+          <div className="mt-1 pt-1 w-full flex flex-col gap-[2px]" style={MOD_SEPARATOR}>
+            {d.grantedSkills.map((gs, gi) => (
+              <div
+                key={gi}
+                className="text-[10px] flex items-center justify-center gap-1"
+                style={{ color: MOD_COLORS.skill }}
+              >
+                {gs.icon && <img src={gs.icon} alt="" className="w-4 h-4 object-contain" />}
+                <span>Grants Skill: {gs.text}</span>
+              </div>
             ))}
           </div>
         )}

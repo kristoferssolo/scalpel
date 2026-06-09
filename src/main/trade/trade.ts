@@ -1016,6 +1016,7 @@ export async function searchTrade(
       item?: {
         icon?: string
         name?: string
+        typeLine?: string
         baseType?: string
         explicitMods?: string[]
         implicitMods?: string[]
@@ -1050,6 +1051,7 @@ export async function searchTrade(
           >
           hashes?: Record<string, Array<[string, number[]]>>
         }
+        grantedSkills?: Array<{ name: string; values: Array<[string, number]>; icon?: string }>
       }
     }>
   }
@@ -1095,7 +1097,12 @@ export async function searchTrade(
           const foulborn = clean(r.item.mutatedMods)
           const desecrated = clean(r.item.desecratedMods)
           return {
-            name: r.item.name,
+            // Magic items (frameType 1) carry an empty `name`; their affixed
+            // display name lives in `typeLine` (e.g. "Glaciated Prismatic Ring"),
+            // with `baseType` holding the clean base. Fall back to typeLine so the
+            // magic name renders instead of nothing. Rare/Unique already set `name`;
+            // Normal stays nameless (typeLine == baseType, shown dim below).
+            name: r.item.name || (r.item.frameType === 1 ? r.item.typeLine : undefined),
             baseType: r.item.baseType,
             rarity: ['Normal', 'Magic', 'Rare', 'Unique'][r.item.frameType ?? 0] ?? 'Normal',
             explicitMods: [
@@ -1227,6 +1234,9 @@ export async function searchTrade(
             pdps: r.item.extended?.pdps,
             edps: r.item.extended?.edps,
             dps: r.item.extended?.dps,
+            grantedSkills: r.item.grantedSkills
+              ?.map((g) => ({ text: stripTradeTokens(g.values?.[0]?.[0] ?? ''), icon: g.icon }))
+              .filter((g) => g.text),
           }
         })()
       : undefined,
