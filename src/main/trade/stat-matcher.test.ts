@@ -12,6 +12,7 @@ import { getPoeVersion, setPoeVersion } from '../game-state'
 import type { AdvancedMod } from '../../shared/types'
 import type { ModTier, TierDataset } from '../../shared/data/tiers/types'
 import { _setTierDataForTests } from '../tier-data'
+import { _setIndexedEndgameKeysForTests } from './endgame-filter-support'
 import { _setStatEntriesForTests, ITEM_CLASS_TO_CATEGORY, matchItemMods, matchModToStat } from './stat-matcher'
 import { resolveTierDefault } from './stat-matcher/producers/explicits'
 import { isPremiumMod, _resetPremiumMatchCacheForTests } from './stat-matcher/producers/premium'
@@ -1723,9 +1724,13 @@ describe('matchItemMods', () => {
           rarity: 'Rare',
           mapTier: 15,
           mapRarity: 60,
+          mapQuantity: 40,
           mapPackSize: 16,
           mapRevives: 1,
           mapDropChance: 80,
+          mapGold: 5000,
+          mapMagicMonsters: 30,
+          mapRareMonsters: 20,
         }),
       )
       const tier = filters.find((f) => f.id === 'map.map_tier')
@@ -1734,13 +1739,25 @@ describe('matchItemMods', () => {
       expect(tier?.enabled).toBe(true)
       expect(tier?.min).toBe(15)
       expect(tier?.max).toBe(15) // exact tier
-      // Other props surface but are opt-in (disabled by default).
-      const rarity = filters.find((f) => f.id === 'map.map_iir')
-      expect(rarity?.value).toBe(60)
-      expect(rarity?.enabled).toBe(false)
-      expect(filters.find((f) => f.id === 'map.map_packsize')).toBeDefined()
+      // Revives is the only opt-in chip we surface (disabled by default).
       expect(filters.find((f) => f.id === 'map.map_revives')?.value).toBe(1)
-      expect(filters.find((f) => f.id === 'map.map_bonus')?.value).toBe(80)
+      // Every other Endgame Filter is unindexed on the PoE2 trade site (live-probed:
+      // map_filter searches return zero), so enabling its chip would break the search.
+      // None of them must surface even when the item carries the property.
+      for (const id of [
+        'map.map_iir',
+        'map.map_iiq',
+        'map.map_packsize',
+        'map.map_bonus',
+        'map.map_gold',
+        'map.map_magic_monsters',
+        'map.map_rare_monsters',
+      ]) {
+        expect(
+          filters.find((f) => f.id === id),
+          `${id} should be hidden`,
+        ).toBeUndefined()
+      }
     })
 
     it('shows the tier chip on a white (Normal) waystone with no affix properties', () => {
@@ -1759,6 +1776,27 @@ describe('matchItemMods', () => {
       // No affix-derived chips on a white waystone.
       expect(filters.find((f) => f.id === 'map.map_iir')).toBeUndefined()
       expect(filters.find((f) => f.id === 'map.map_packsize')).toBeUndefined()
+    })
+
+    it('surfaces a chip once the remote allowlist marks its key indexed', () => {
+      // Simulate GGG indexing Pack Size: the remote-overridable allowlist gains
+      // map.map_packsize, and the chip starts emitting -- no code change needed.
+      _setStatEntriesForTests([])
+      _setIndexedEndgameKeysForTests(['map.map_tier', 'map.map_revives', 'map.map_packsize'])
+      try {
+        const filters = matchItemMods(
+          [],
+          [],
+          undefined,
+          makeItemInfo({ itemClass: 'Waystones', rarity: 'Rare', mapTier: 15, mapPackSize: 16 }),
+        )
+        const packSize = filters.find((f) => f.id === 'map.map_packsize')
+        expect(packSize?.value).toBe(16)
+        expect(packSize?.enabled).toBe(false) // opt-in
+        expect(packSize?.min).toBe(14) // floor(16 * 0.9)
+      } finally {
+        _setIndexedEndgameKeysForTests(null) // restore bundled default
+      }
     })
   })
 

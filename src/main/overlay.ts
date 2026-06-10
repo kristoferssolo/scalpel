@@ -7,6 +7,7 @@ import { guardNativeListener, registerDiagnosticProvider } from './diagnostics'
 import { getPoeVersion, setPoeVersion } from './game-state'
 import { loadTierData, refreshTierData } from './tier-data'
 import { loadPremiumMods, refreshPremiumMods } from './premium-mods'
+import { loadEndgameFilterSupport, refreshEndgameFilterSupport } from './trade/endgame-filter-support'
 import { closeAllOverlaysOnPoeExit, isAnyScalpelWindowFocused, isInsideAnySecondaryOverlay } from './windowing'
 import { POE_SIDEBAR_RATIO } from '../shared/poe-geometry'
 
@@ -281,6 +282,10 @@ export function createOverlayWindow(version: 1 | 2 = 1): BrowserWindow {
     .then(() => refreshPremiumMods())
     .catch(() => {})
   setInterval(() => refreshPremiumMods().catch(() => {}), 24 * 60 * 60 * 1000)
+  loadEndgameFilterSupport()
+    .then(() => refreshEndgameFilterSupport())
+    .catch(() => {})
+  setInterval(() => refreshEndgameFilterSupport().catch(() => {}), 24 * 60 * 60 * 1000)
   overlayWindow = new BrowserWindow({
     ...OVERLAY_WINDOW_OPTS,
     show: false,

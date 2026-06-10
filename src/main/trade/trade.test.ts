@@ -805,6 +805,37 @@ describe('isBulkExchangeItem (PoE2 slug-gated routing)', () => {
     // slug -- it should fall through to regular search (AngeBanner still shows).
     expect(isBulkExchangeItem('Idols', 'Panther Idol', 'Panther Idol')).toBe(false)
   })
+
+  it('routes a Normal waystone to bulk (plain tier stacks are exchangeable)', () => {
+    setPoeVersion(2)
+    expect(isBulkExchangeItem('Waystones', 'Waystone (Tier 13)', 'Waystone (Tier 13)', 'Normal')).toBe(true)
+  })
+
+  it('does NOT route a modified waystone to bulk -- its mods carry the value', () => {
+    setPoeVersion(2)
+    // Rare/Magic waystones aren't stackable, so they can't be on the exchange even
+    // though the plain tier slug exists in the bulk map. Regular search instead.
+    expect(isBulkExchangeItem('Waystones', 'Cursed Resolve', 'Waystone (Tier 13)', 'Rare')).toBe(false)
+    expect(isBulkExchangeItem('Waystones', 'Cursed Resolve', 'Waystone (Tier 13)', 'Magic')).toBe(false)
+  })
+
+  it('routes a Normal PoE1 map with a slug to bulk (symmetric with waystones)', () => {
+    setPoeVersion(1)
+    expect(isBulkExchangeItem('Maps', 'Vaal Temple Map', 'Vaal Temple Map', 'Normal')).toBe(true)
+  })
+
+  it('does NOT route a modified PoE1 map to bulk -- mods/name carry the value', () => {
+    setPoeVersion(1)
+    expect(isBulkExchangeItem('Maps', 'Vaal Temple Map', 'Vaal Temple Map', 'Rare')).toBe(false)
+    expect(isBulkExchangeItem('Maps', 'Vaal Temple Map', 'Vaal Temple Map', 'Magic')).toBe(false)
+    expect(isBulkExchangeItem('Maps', 'Maze of the Minotaur', 'Vaal Temple Map', 'Unique')).toBe(false)
+  })
+
+  it('leaves a plain slugless PoE1 map on regular search (no exchange listing)', () => {
+    setPoeVersion(1)
+    // Farmable white maps have no slug, so the fallback returns null -> regular.
+    expect(isBulkExchangeItem('Maps', 'Cemetery Map', 'Cemetery Map', 'Normal')).toBe(false)
+  })
 })
 
 describe('buildRegexStatGroups', () => {

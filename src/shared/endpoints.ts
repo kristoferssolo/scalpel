@@ -105,6 +105,13 @@ export const PREMIUM_MODS_MANIFEST_URL =
 export const PREMIUM_MODS_URL =
   'https://raw.githubusercontent.com/scalpelpoe/scalpel/main/src/shared/data/items/premium-mods.json'
 
+/** Allowlist of PoE2 trade2 "Endgame Filters" GGG currently indexes for search.
+ *  Tiny file, fetched directly on launch (no manifest) so a chip can be re-enabled
+ *  without an app release when GGG starts indexing its key. Bundled copy is the
+ *  offline fallback. */
+export const ENDGAME_FILTER_SUPPORT_URL =
+  'https://raw.githubusercontent.com/scalpelpoe/scalpel/main/src/shared/data/trade/endgame-filter-support.json'
+
 /** "Powered by..." attribution links shown under the regex output bar. The
  *  underlying mod / regex data ships from these projects; we point users at the
  *  source so they can compare against the upstream tools and contribute upstream. */

@@ -1295,7 +1295,6 @@ export function isBulkExchangeItem(itemClass: string, name: string, baseType: st
   // Items where individual attributes matter - always regular trade
   const regularTradeClasses = new Set([
     'Divination Cards',
-    'Maps',
     'Misc Map Items', // Boss invitations (ilvl, enchants)
     'Expedition Logbook', // Area level, faction, mods
     'Incubators', // ilvl requirements
@@ -1306,6 +1305,14 @@ export function isBulkExchangeItem(itemClass: string, name: string, baseType: st
   if (baseType === "Facetor's Lens") return false
   // Beasts are "Stackable Currency" but have rarity Rare/Unique and need regular trade
   if (itemClass === 'Stackable Currency' && (_rarity === 'Rare' || _rarity === 'Unique')) return false
+  // Modified map-class items (Magic/Rare/Unique) aren't stackable, so they can't be on
+  // the bulk exchange even when the plain base carries an exchange slug -- their mods
+  // (and, for uniques, name) hold the value. Route them to a regular search. Normal
+  // bases still bulk if they have a slug: PoE2 tier waystones, PoE1 named maps like
+  // Vaal Temple Map. Plain farmable PoE1 maps have no slug so they fall through to
+  // regular search regardless.
+  const isMapClass = itemClass === 'Maps' || itemClass === 'Waystones'
+  if (isMapClass && (_rarity === 'Magic' || _rarity === 'Rare' || _rarity === 'Unique')) return false
 
   // PoE2 routing: an Ange-exchange item only goes through bulk if we actually
   // have its exchange ID. Eligible-but-no-ID items (e.g. new bases not yet on
