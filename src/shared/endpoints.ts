@@ -124,7 +124,10 @@ export const PLUGIN_REGISTRY_URL =
  *  bytes come back, so this loosens only the host, not the trust check. Never
  *  set in production. */
 export function pluginReleaseAssetUrl(repo: string, version: string, file: string): string {
-  const base = typeof process !== 'undefined' ? process.env?.SCALPEL_PLUGIN_ASSET_BASE : undefined
+  // Read via globalThis so this stays valid in the types-only SDK dts build
+  // (its tsconfig has no Node ambient types); undefined in browser contexts.
+  const base = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
+    ?.SCALPEL_PLUGIN_ASSET_BASE
   if (base) return `${base}/${file}`
   return `https://github.com/${repo}/releases/download/v${version}/${file}`
 }
