@@ -86,6 +86,7 @@ export default function App(): JSX.Element {
   const [gameBounds, setGameBounds] = useState<{ gameWidth: number; gameHeight: number; sidebarWidth: number } | null>(
     null,
   )
+  const [windowOffset, setWindowOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const [cursorSide, setCursorSide] = useState<'left' | 'right'>('right')
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
@@ -409,6 +410,7 @@ export default function App(): JSX.Element {
         }
       }),
       window.api.onGameBounds((bounds) => setGameBounds(bounds)),
+      window.api.onOverlayWindowOffset((offset) => setWindowOffset(offset)),
       window.api.onSkipAnimation(() => {
         if (animRef.current) animRef.current.style.animation = 'none'
       }),
@@ -508,18 +510,28 @@ export default function App(): JSX.Element {
       if (!wrapperRef.current) return
       const rects: Array<{ left: number; top: number; width: number; height: number }> = []
       const main = wrapperRef.current.getBoundingClientRect()
-      rects.push({ left: main.left, top: main.top, width: main.width, height: main.height })
+      rects.push({
+        left: main.left + windowOffset.x,
+        top: main.top + windowOffset.y,
+        width: main.width,
+        height: main.height,
+      })
       // Report the sister rect separately (not as a union) so the empty space under a
       // shorter sister stays click-through to PoE.
       const sister = sisterRef.current?.getBoundingClientRect()
       if (sister && sister.width > 0 && sister.height > 0) {
-        rects.push({ left: sister.left, top: sister.top, width: sister.width, height: sister.height })
+        rects.push({
+          left: sister.left + windowOffset.x,
+          top: sister.top + windowOffset.y,
+          width: sister.width,
+          height: sister.height,
+        })
       }
       const tierSister = tierSisterRef.current?.getBoundingClientRect()
       if (tierSister && tierSister.width > 0 && tierSister.height > 0) {
         rects.push({
-          left: tierSister.left,
-          top: tierSister.top,
+          left: tierSister.left + windowOffset.x,
+          top: tierSister.top + windowOffset.y,
           width: tierSister.width,
           height: tierSister.height,
         })
@@ -529,7 +541,7 @@ export default function App(): JSX.Element {
     tick()
     const interval = setInterval(tick, 100)
     return () => clearInterval(interval)
-  }, [isHidden])
+  }, [isHidden, windowOffset.x, windowOffset.y])
 
   // Suppress slide-in animation when cursorSide changes due to a snap
   useLayoutEffect(() => {
@@ -672,6 +684,9 @@ export default function App(): JSX.Element {
     cursorSide === 'left'
       ? (basePanelLeft ?? 0) + PANEL_WIDTH + SISTER_GAP + sisterScaleOffset
       : (basePanelLeft ?? 0) - SISTER_WIDTH - SISTER_GAP - sisterScaleOffset
+  const localPanelTop = PANEL_TOP - windowOffset.y
+  const localBasePanelLeft = basePanelLeft === undefined ? undefined : basePanelLeft - windowOffset.x
+  const localSisterLeft = sisterLeft - windowOffset.x
   // Bound the sister to the game window the same way the main panel is, minus the
   // SISTER_NAV_OFFSET it already sits below. Scale divides out so the post-scale
   // visual height fits within the game bounds.
@@ -750,8 +765,8 @@ export default function App(): JSX.Element {
             currentRarity={overlayData.item.rarity}
             league={settings?.activeProfile?.league ?? ''}
             uniqueTier={tierSisterData?.uniqueTier}
-            left={sisterLeft}
-            top={PANEL_TOP + SISTER_NAV_OFFSET}
+            left={localSisterLeft}
+            top={localPanelTop + SISTER_NAV_OFFSET}
             width={SISTER_WIDTH}
             dragOffset={dragOffset}
             scale={settings?.overlayScale}
@@ -768,8 +783,8 @@ export default function App(): JSX.Element {
             itemName={priceCheckData.item.name}
             league={priceCheckData.league}
             chaosPerDivine={priceCheckData.chaosPerDivine}
-            left={sisterLeft}
-            top={PANEL_TOP + SISTER_NAV_OFFSET}
+            left={localSisterLeft}
+            top={localPanelTop + SISTER_NAV_OFFSET}
             width={SISTER_WIDTH}
             dragOffset={dragOffset}
             scale={settings?.overlayScale}
@@ -778,9 +793,9 @@ export default function App(): JSX.Element {
           />
         )}
         <SnapGhosts
-          leftMountX={leftMountX}
-          rightMountX={rightMountX}
-          panelTop={PANEL_TOP}
+          leftMountX={leftMountX - windowOffset.x}
+          rightMountX={rightMountX - windowOffset.x}
+          panelTop={localPanelTop}
           panelWidth={PANEL_WIDTH}
           panelHeight={panelRef.current?.offsetHeight ?? 0}
           snapTarget={snapTarget}
@@ -790,8 +805,8 @@ export default function App(): JSX.Element {
           ref={wrapperRef}
           className="absolute"
           style={{
-            top: PANEL_TOP,
-            left: basePanelLeft ?? 0,
+            top: localPanelTop,
+            left: localBasePanelLeft ?? 0,
             width: PANEL_WIDTH,
             display: isHidden ? 'none' : 'block',
             transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)${settings?.overlayScale && settings.overlayScale !== 1 ? ` scale(${settings.overlayScale})` : ''}`,

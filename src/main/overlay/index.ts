@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { BrowserWindow, ipcMain, screen, webContents } from 'electron'
+import { BrowserWindow, ipcMain, screen, webContents, type Rectangle } from 'electron'
 import { OVERLAY_WINDOW_OPTS, OverlayController } from 'electron-overlay-window'
 import { uIOhook } from 'uiohook-napi'
 import { startClientLogWatcher } from '../client-log'
@@ -43,8 +43,13 @@ interface PhysRect {
 interface PanelEntry {
   win: BrowserWindow
   rects: PhysRect[]
+  renderRects: Rectangle[]
 }
 const panelRectsBySender = new Map<number, PanelEntry>()
+const SHAPE_PADDING = 2
+const HIDDEN_SHAPE: Rectangle[] = [{ x: 0, y: 0, width: 1, height: 1 }]
+const ZERO_OFFSET = { x: 0, y: 0 }
+let overlayWindowOffset = ZERO_OFFSET
 
 function flatPanelRects(): PhysRect[] {
   const out: PhysRect[] = []
@@ -62,6 +67,104 @@ function windowAtPoint(x: number, y: number): BrowserWindow | null {
     }
   }
   return null
+}
+
+function expandRect(r: Rectangle): Rectangle {
+  const x = Math.max(0, Math.floor(r.x - SHAPE_PADDING))
+  const y = Math.max(0, Math.floor(r.y - SHAPE_PADDING))
+  const right = Math.ceil(r.x + r.width + SHAPE_PADDING)
+  const bottom = Math.ceil(r.y + r.height + SHAPE_PADDING)
+  return {
+    x,
+    y,
+    width: Math.max(1, right - x),
+    height: Math.max(1, bottom - y),
+  }
+}
+
+function unionRects(rects: Rectangle[]): Rectangle {
+  let left = Number.POSITIVE_INFINITY
+  let top = Number.POSITIVE_INFINITY
+  let right = 0
+  let bottom = 0
+  for (const rect of rects) {
+    left = Math.min(left, rect.x)
+    top = Math.min(top, rect.y)
+    right = Math.max(right, rect.x + rect.width)
+    bottom = Math.max(bottom, rect.y + rect.height)
+  }
+  return {
+    x: Math.max(0, Math.floor(left)),
+    y: Math.max(0, Math.floor(top)),
+    width: Math.max(1, Math.ceil(right - left)),
+    height: Math.max(1, Math.ceil(bottom - top)),
+  }
+}
+
+function targetDipOrigin(): { x: number; y: number } | null {
+  const tb = OverlayController.targetBounds
+  if (!tb?.width) return null
+  const sf = getScaleFactor()
+  return {
+    x: Math.round(tb.x / sf),
+    y: Math.round(tb.y / sf),
+  }
+}
+
+function setOverlayWindowOffset(win: BrowserWindow, offset: { x: number; y: number }): void {
+  if (overlayWindowOffset.x === offset.x && overlayWindowOffset.y === offset.y) return
+  overlayWindowOffset = offset
+  win.webContents.send('overlay-window-offset', offset)
+}
+
+function syncMainOverlayWindow(win: BrowserWindow, rects: Rectangle[]): void {
+  if (process.platform !== 'linux' || win !== overlayWindow || win.isDestroyed()) return
+  const origin = targetDipOrigin()
+  if (!origin) return
+  try {
+    if (rects.length === 0) {
+      win.setBounds({ ...origin, width: 1, height: 1 })
+      win.setShape(HIDDEN_SHAPE)
+      setOverlayWindowOffset(win, ZERO_OFFSET)
+      return
+    }
+
+    const expanded = rects.map(expandRect)
+    const bounds = unionRects(expanded)
+    win.setBounds({
+      x: origin.x + bounds.x,
+      y: origin.y + bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+    })
+    win.setShape(
+      expanded.map((rect) => ({
+        x: rect.x - bounds.x,
+        y: rect.y - bounds.y,
+        width: rect.width,
+        height: rect.height,
+      })),
+    )
+    setOverlayWindowOffset(win, { x: bounds.x, y: bounds.y })
+  } catch {
+    // Bounds/shape are a Linux visual workaround; hit testing still works without it.
+  }
+}
+
+function renderRectsForWindow(win: BrowserWindow): Rectangle[] {
+  const out: Rectangle[] = []
+  for (const entry of panelRectsBySender.values()) {
+    if (entry.win === win) out.push(...entry.renderRects)
+  }
+  return out
+}
+
+function resyncMainOverlayWindowSoon(win: BrowserWindow): void {
+  if (process.platform !== 'linux') return
+  setImmediate(() => {
+    if (win.isDestroyed()) return
+    syncMainOverlayWindow(win, renderRectsForWindow(win))
+  })
 }
 
 function getScaleFactor(): number {
@@ -82,17 +185,23 @@ ipcMain.on('report-panel-rect', (event, payload: unknown) => {
   const tb = OverlayController.targetBounds
   if (!tb?.width) return
   const sf = getScaleFactor()
-  const phys = rects
-    .filter((r) => r.width > 0 && r.height > 0)
-    .map((r) => ({
-      left: tb.x + r.left * sf,
-      top: tb.y + r.top * sf,
-      right: tb.x + (r.left + r.width) * sf,
-      bottom: tb.y + (r.top + r.height) * sf,
-    }))
+  const visibleRects = rects.filter((r) => r.width > 0 && r.height > 0)
+  const phys = visibleRects.map((r) => ({
+    left: tb.x + r.left * sf,
+    top: tb.y + r.top * sf,
+    right: tb.x + (r.left + r.width) * sf,
+    bottom: tb.y + (r.top + r.height) * sf,
+  }))
   const win = BrowserWindow.fromWebContents(event.sender)
   if (!win) return
-  panelRectsBySender.set(event.sender.id, { win, rects: phys })
+  const renderRects = visibleRects.map((r) => ({
+    x: Math.max(0, Math.floor(r.left)),
+    y: Math.max(0, Math.floor(r.top)),
+    width: Math.max(1, Math.ceil(r.width)),
+    height: Math.max(1, Math.ceil(r.height)),
+  }))
+  panelRectsBySender.set(event.sender.id, { win, rects: phys, renderRects })
+  syncMainOverlayWindow(win, renderRectsForWindow(win))
 })
 
 ipcMain.on('clear-panel-rect', (event) => {
@@ -105,6 +214,7 @@ ipcMain.on('clear-panel-rect', (event) => {
     try {
       entry.win.setIgnoreMouseEvents(true)
     } catch {}
+    syncMainOverlayWindow(entry.win, renderRectsForWindow(entry.win))
   }
   if (currentInteractiveWindow === entry?.win) currentInteractiveWindow = null
 })
@@ -274,6 +384,7 @@ export function createOverlayWindow(
   setInterval(() => refreshPremiumMods().catch(() => {}), 24 * 60 * 60 * 1000)
   overlayWindow = new BrowserWindow({
     ...OVERLAY_WINDOW_OPTS,
+    backgroundColor: '#00000000',
     show: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -310,6 +421,7 @@ export function createOverlayWindow(
     if (isAnyScalpelWindowFocused()) return
 
     // Make it invisible and click-through - don't actually hide from OS to avoid animation
+    if (overlayWindow) syncMainOverlayWindow(overlayWindow, [])
     overlayWindow?.setOpacity(0)
     overlayWindow?.setIgnoreMouseEvents(true)
 
@@ -321,12 +433,15 @@ export function createOverlayWindow(
     // Only show the overlay if POE actually has focus (alt-tab fix)
     if (!OverlayController.targetHasFocus) return
 
+    syncMainOverlayWindow(overlayWindow!, renderRectsForWindow(overlayWindow!))
+
     // Restore opacity before showing so it's visible immediately
     overlayWindow?.setOpacity(1)
     opacityHidden = false
 
     overlayWindow?.setSkipTaskbar(true)
     origShowInactive()
+    resyncMainOverlayWindowSoon(overlayWindow!)
 
     if (onGameFocus) setImmediate(onGameFocus)
   }
@@ -366,6 +481,9 @@ export function createOverlayWindow(
           startClientLogWatcher(overlayWindow)
         }
         sendGameBounds(ev.width, ev.height)
+        if (overlayWindow && !overlayWindow.isDestroyed()) {
+          syncMainOverlayWindow(overlayWindow, renderRectsForWindow(overlayWindow))
+        }
         mouseOverPanel = false
         if (overlayVisible && overlayWindow && !overlayWindow.isDestroyed()) {
           overlayWindow.setIgnoreMouseEvents(true)
@@ -407,6 +525,7 @@ export function createOverlayWindow(
 
       const tb = OverlayController.targetBounds
       if (tb?.width) sendGameBounds(tb.width, tb.height)
+      syncMainOverlayWindow(overlayWindow, renderRectsForWindow(overlayWindow))
       if (overlayVisible) {
         // Patched showInactive() fires onGameFocus internally, which resumes
         // hotkeys and restores any hidden secondary overlays.
@@ -431,6 +550,9 @@ export function createOverlayWindow(
       lastMoveResizeAt = Date.now()
       try {
         sendGameBounds(ev.width, ev.height)
+        if (overlayWindow && !overlayWindow.isDestroyed()) {
+          syncMainOverlayWindow(overlayWindow, renderRectsForWindow(overlayWindow))
+        }
       } catch (err) {
         lastOverlayError = String(err)
         console.error('[overlay] Error in moveresize handler:', err)

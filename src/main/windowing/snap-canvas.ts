@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { BrowserWindow, screen } from 'electron'
+import { BrowserWindow, screen, type Rectangle } from 'electron'
 import { OVERLAY_WINDOW_OPTS, OverlayController } from 'electron-overlay-window'
 
 /** Shared transparent click-through window used by the secondary-overlay system
@@ -33,6 +33,27 @@ export interface Rect {
 // guard each transition would emit two setBounds + the OS move/resize events
 // they synthesize, even when the target rect is identical to the current.
 let lastCanvasDisplayId: number | null = null
+const HIDDEN_SHAPE: Rectangle[] = [{ x: 0, y: 0, width: 1, height: 1 }]
+
+function setCanvasShape(win: BrowserWindow, rect: Rect | null): void {
+  if (process.platform !== 'linux') return
+  try {
+    if (!rect) {
+      win.setShape(HIDDEN_SHAPE)
+      return
+    }
+    const bounds = win.getBounds()
+    const shape: Rectangle = {
+      x: Math.max(0, Math.floor(rect.x - bounds.x)),
+      y: Math.max(0, Math.floor(rect.y - bounds.y)),
+      width: Math.max(1, Math.ceil(rect.width)),
+      height: Math.max(1, Math.ceil(rect.height)),
+    }
+    win.setShape([shape])
+  } catch {
+    // setShape is a visual workaround only; the renderer can still clear itself.
+  }
+}
 
 function applyCanvasBounds(win: BrowserWindow): void {
   // Prefer the display PoE sits on so the canvas's CSS coordinate space ==
@@ -59,6 +80,7 @@ function ensureCanvasWindow(): BrowserWindow {
   if (canvasWin && !canvasWin.isDestroyed()) return canvasWin
   canvasWin = new BrowserWindow({
     ...OVERLAY_WINDOW_OPTS,
+    backgroundColor: '#00000000',
     focusable: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -102,10 +124,13 @@ export function setSnapGhost(rect: Rect | null): void {
     // Windows quirk where the first show after creation re-clamps the window
     // into the work area, chopping the bottom off.
     applyCanvasBounds(win)
+    setCanvasShape(win, rect)
     if (!canvasShown) {
       win.show()
       canvasShown = true
     }
+  } else {
+    setCanvasShape(win, null)
   }
   win.webContents.send('secondary-overlay-canvas:snap-ghost', rect)
 }

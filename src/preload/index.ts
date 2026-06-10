@@ -650,6 +650,11 @@ export const api = {
     ipcRenderer.on('game-bounds', handler)
     return () => ipcRenderer.removeListener('game-bounds', handler)
   },
+  onOverlayWindowOffset: (cb: (offset: { x: number; y: number }) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, offset: { x: number; y: number }): void => cb(offset)
+    ipcRenderer.on('overlay-window-offset', handler)
+    return () => ipcRenderer.removeListener('overlay-window-offset', handler)
+  },
 
   onElevationHint: (cb: () => void): (() => void) => {
     const handler = (): void => cb()

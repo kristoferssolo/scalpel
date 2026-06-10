@@ -190,6 +190,8 @@ if (
 // Linux (renders black instead of transparent). Disable it there only --
 // Windows keeps hardware acceleration untouched.
 if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('enable-transparent-visuals')
+  app.commandLine.appendSwitch('disable-gpu-compositing')
   app.disableHardwareAcceleration()
 }
 
