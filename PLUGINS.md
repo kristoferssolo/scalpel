@@ -427,6 +427,25 @@ Key differences from `mode: 'window'` (the default):
 
 **Positioning with screen-capture coordinates.** The annotation surface spans exactly `gameSize`, so CSS-px coordinates from a `captureGameWindow` call map directly to positions inside the container. See the [Screen capture](#screen-capture) section - the formula `cssX = origin.x + box.x / scale` gives you the coordinate to pass to `left` on an absolutely-positioned child.
 
+**Where your code runs (important).** Your `activate(ctx)` runs in two separate processes: Scalpel's main overlay process, where `registerTab` and `registerHotkey` handlers execute, and each overlay window's own process, where that overlay's `render` runs. The two do not share DOM or JavaScript state. So the capture-then-draw loop for an annotation overlay belongs **inside `render`** - it can call `captureGameWindow`, OCR the frame, and update its own elements directly. Driving it from a `registerHotkey` handler instead runs the capture in the main overlay process, which has no way to reach the annotation window's DOM. To refresh while the overlay is open, create a timer (or a `pointer-events:auto` control) inside `render`:
+
+```tsx
+ctx.registerOverlay({ title: 'Value labels', mode: 'annotation' }, (container) => {
+  let alive = true
+  const refresh = async () => {
+    if (!alive) return
+    const cap = await ctx.captureGameWindow()
+    if (cap) {
+      // OCR cap.pixels, then position labels in container using
+      // cssX = cap.origin.x + box.x / cap.scale (see Screen capture).
+    }
+  }
+  const timer = setInterval(refresh, 1000)
+  void refresh()
+  return () => { alive = false; clearInterval(timer) } // cleanup on teardown
+})
+```
+
 ## Forwarded helpers, hooks, and components
 
 The SDK re-exports utilities Scalpel uses internally so you don't have to reimplement them. Import any of these from `@scalpelpoe/plugin-sdk`:
