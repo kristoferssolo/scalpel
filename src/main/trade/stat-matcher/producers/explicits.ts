@@ -392,6 +392,7 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
         modRange: matchedRange,
         tierLadder,
         tierQualityMult: advModMult,
+        fixedRoll: isFixedValue || undefined,
       })
       // Defer attribute contributions (Str -> Life, Int -> Mana) until post-loop so we
       // can check whether their target pseudo has a real contributor on this item.

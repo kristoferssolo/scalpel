@@ -225,6 +225,42 @@ describe('applyBaseModeToFilters', () => {
     expect(result[0].enabled).toBe(false)
     expect(result[0].learned).toBe(true)
   })
+
+  it('premium explicit row stays enabled and bounds are not modified by the transform', () => {
+    // Curated stat_list primary rows arrive premium: true, enabled: true; direction-lower rows
+    // carry min: null, max: <bound>. Base mode must preserve all three fields untouched.
+    const input = [
+      f({ id: 'explicit.stat_premium_upper', type: 'explicit', premium: true, enabled: true, min: null, max: 42 }),
+    ]
+    const result = applyBaseModeToFilters(input, 'Unique', false)
+    expect(result[0].enabled).toBe(true)
+    expect(result[0].min).toBeNull()
+    expect(result[0].max).toBe(42)
+  })
+
+  it('mode-none row (enabled false, no premium) stays disabled through Base mode', () => {
+    // Base mode force-disables non-structural rows; a row already disabled without premium
+    // must remain disabled - Base mode must not inadvertently re-enable it.
+    const input = [f({ id: 'explicit.stat_mode_none', type: 'explicit', enabled: false })]
+    const result = applyBaseModeToFilters(input, 'Unique', false)
+    expect(result[0].enabled).toBe(false)
+  })
+
+  it('learned true wins over premium: disabled learned+premium row stays disabled', () => {
+    // The adaptive engine's decision outranks the override layer. A row with learned: true
+    // and enabled: false must stay disabled even when premium: true is set.
+    const input = [f({ id: 'explicit.stat_x', type: 'explicit', premium: true, enabled: false, learned: true })]
+    const result = applyBaseModeToFilters(input, 'Unique', false)
+    expect(result[0].enabled).toBe(false)
+  })
+
+  it('fixedRoll explicit without premium stays disabled through Base mode', () => {
+    // Fixed-roll mods are excluded from direction/bound math but get no special enable path;
+    // they fall into the "everything else disabled" branch like any plain explicit.
+    const input = [f({ id: 'explicit.stat_fixed', type: 'explicit', fixedRoll: true, enabled: true })]
+    const result = applyBaseModeToFilters(input, 'Unique', false)
+    expect(result[0].enabled).toBe(false)
+  })
 })
 
 describe('isPerfectUniqueRoll', () => {

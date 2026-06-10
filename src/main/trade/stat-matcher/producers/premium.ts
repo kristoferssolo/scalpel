@@ -3,15 +3,10 @@ import { getStatEntries } from '../stats-cache'
 import type { StatEntry } from '../stats-cache'
 import { getPoeVersion } from '../../../game-state'
 import type { ItemInfo } from '../context'
+import { baseId } from '../stat-id'
 
 // Matches a bare stat id like "explicit.stat_2422708892" (no option suffix).
 const STAT_ID_RE = /^[a-z]+\.[a-z0-9_]+$/
-
-// Strip the |option suffix from a flattened stat id.
-function baseId(id: string): string {
-  const i = id.indexOf('|')
-  return i === -1 ? id : id.slice(0, i)
-}
 
 // Lazy statId -> canonical text map; rebuilt when getStatEntries() returns a different reference.
 let textById: Map<string, string> | null = null
@@ -37,16 +32,27 @@ export function isPremiumMod(itemInfo: ItemInfo | undefined, statId: string): bo
   if (!data) return false
   if (itemInfo?.rarity !== 'Unique' || !itemInfo.name) return false
   const game = getPoeVersion() === 2 ? 'poe2' : 'poe1'
-  const texts = data[game]?.[itemInfo.name]
-  if (!Array.isArray(texts) || texts.length === 0) return false
-  for (const entry of texts) {
-    if (STAT_ID_RE.test(entry)) {
+  const entry = data[game]?.[itemInfo.name]
+  if (!entry) return false
+
+  // v2 UniqueOverride object - stat_list primary mods are the premium set;
+  // secondary mods are shown-but-off (not premium by default).
+  if (!Array.isArray(entry)) {
+    if (entry.mode !== 'stat_list') return false
+    const base = baseId(statId)
+    return (entry.mods ?? []).some((spec) => spec.id === base && (spec.tier ?? 'primary') === 'primary')
+  }
+
+  // v1 legacy string[] - text or bare stat id entries that are default-ON premium mods.
+  if (entry.length === 0) return false
+  for (const text of entry) {
+    if (STAT_ID_RE.test(text)) {
       // Base-id entry: matches any flattened option variant sharing the same base.
-      if (entry === baseId(statId)) return true
+      if (text === baseId(statId)) return true
     } else {
       // Text entry: compare against the resolved canonical text.
-      const text = ensureTextMap().get(statId)
-      if (text && text === entry) return true
+      const resolved = ensureTextMap().get(statId)
+      if (resolved && resolved === text) return true
     }
   }
   return false

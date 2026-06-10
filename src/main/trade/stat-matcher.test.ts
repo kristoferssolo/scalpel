@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { _setPremiumModsForTests } from '../premium-mods'
 
 // Mock electron before importing stat-matcher
@@ -3309,5 +3309,277 @@ describe('premium-mod override', () => {
       _setPremiumModsForTests(null)
       _resetPremiumMatchCacheForTests()
     }
+  })
+
+  it('v2 stat_list entry: primary mod matches by base id and by option-suffixed variant', () => {
+    const prev = getPoeVersion()
+    _resetPremiumMatchCacheForTests()
+    _setPremiumModsForTests({
+      schemaVersion: 2,
+      poe1: {},
+      poe2: {
+        SomeV2Unique: {
+          mode: 'stat_list',
+          mods: [
+            { id: 'explicit.stat_v2primary', tier: 'primary' },
+            { id: 'explicit.stat_v2secondary', tier: 'secondary' },
+            { id: 'explicit.stat_v2implicit_tier', tier: 'primary' },
+          ],
+          confidence: 'verified',
+        },
+      },
+    })
+    try {
+      setPoeVersion(2)
+      const item = makeItemInfo({ rarity: 'Unique', name: 'SomeV2Unique' })
+      // Primary mod matches on its base id.
+      expect(isPremiumMod(item, 'explicit.stat_v2primary')).toBe(true)
+      // Primary mod also matches a variant with an |option suffix.
+      expect(isPremiumMod(item, 'explicit.stat_v2primary|12345')).toBe(true)
+    } finally {
+      setPoeVersion(prev)
+      _setPremiumModsForTests(null)
+      _resetPremiumMatchCacheForTests()
+    }
+  })
+
+  it('v2 stat_list entry: secondary mod returns false', () => {
+    const prev = getPoeVersion()
+    _resetPremiumMatchCacheForTests()
+    _setPremiumModsForTests({
+      schemaVersion: 2,
+      poe1: {},
+      poe2: {
+        SomeV2Unique: {
+          mode: 'stat_list',
+          mods: [{ id: 'explicit.stat_v2secondary', tier: 'secondary' }],
+          confidence: 'verified',
+        },
+      },
+    })
+    try {
+      setPoeVersion(2)
+      const item = makeItemInfo({ rarity: 'Unique', name: 'SomeV2Unique' })
+      // Secondary mods are shown-but-off; isPremiumMod must return false.
+      expect(isPremiumMod(item, 'explicit.stat_v2secondary')).toBe(false)
+    } finally {
+      setPoeVersion(prev)
+      _setPremiumModsForTests(null)
+      _resetPremiumMatchCacheForTests()
+    }
+  })
+
+  it('v2 stat_list entry: id not in mods list returns false', () => {
+    const prev = getPoeVersion()
+    _resetPremiumMatchCacheForTests()
+    _setPremiumModsForTests({
+      schemaVersion: 2,
+      poe1: {},
+      poe2: {
+        SomeV2Unique: {
+          mode: 'stat_list',
+          mods: [{ id: 'explicit.stat_v2primary', tier: 'primary' }],
+          confidence: 'verified',
+        },
+      },
+    })
+    try {
+      setPoeVersion(2)
+      const item = makeItemInfo({ rarity: 'Unique', name: 'SomeV2Unique' })
+      expect(isPremiumMod(item, 'explicit.stat_unlisted')).toBe(false)
+    } finally {
+      setPoeVersion(prev)
+      _setPremiumModsForTests(null)
+      _resetPremiumMatchCacheForTests()
+    }
+  })
+
+  it('v2 mode none and mode all_explicits both return false even when mods list contains the id', () => {
+    const prev = getPoeVersion()
+    _resetPremiumMatchCacheForTests()
+    const modSpec = { id: 'explicit.stat_v2primary', tier: 'primary' as const }
+    _setPremiumModsForTests({
+      schemaVersion: 2,
+      poe1: {},
+      poe2: {
+        NoneUnique: { mode: 'none', mods: [modSpec], confidence: 'verified' },
+        AllExplicitsUnique: { mode: 'all_explicits', mods: [modSpec], confidence: 'verified' },
+      },
+    })
+    try {
+      setPoeVersion(2)
+      expect(isPremiumMod(makeItemInfo({ rarity: 'Unique', name: 'NoneUnique' }), 'explicit.stat_v2primary')).toBe(
+        false,
+      )
+      expect(
+        isPremiumMod(makeItemInfo({ rarity: 'Unique', name: 'AllExplicitsUnique' }), 'explicit.stat_v2primary'),
+      ).toBe(false)
+    } finally {
+      setPoeVersion(prev)
+      _setPremiumModsForTests(null)
+      _resetPremiumMatchCacheForTests()
+    }
+  })
+
+  it('v2 stat_list lower override wired through matchItemMods: row enabled with max bound', () => {
+    const prev = getPoeVersion()
+    _resetPremiumMatchCacheForTests()
+    _setStatEntriesForTests([{ id: 'explicit.stat_lowermod', text: '# Voices', type: 'explicit' }])
+    _setPremiumModsForTests({
+      schemaVersion: 2,
+      poe1: {},
+      poe2: {
+        LowerTestUnique: {
+          mode: 'stat_list',
+          mods: [{ id: 'explicit.stat_lowermod', direction: 'lower' }],
+          confidence: 'verified',
+        },
+      },
+    })
+    try {
+      setPoeVersion(2)
+      const item = makeItemInfo({ rarity: 'Unique', name: 'LowerTestUnique', itemClass: 'Jewels' })
+      const filters = matchItemMods(['5 Voices'], [], undefined, item)
+      const row = filters.find((f) => f.id === 'explicit.stat_lowermod')!
+      expect(row).toBeDefined()
+      expect(row.enabled).toBe(true)
+      // value=5, p=0.9, lower -> max = ceil(5/0.9) = 6
+      expect(row.max).toBe(6)
+      expect(row.min).toBeNull()
+    } finally {
+      setPoeVersion(prev)
+      _setPremiumModsForTests(null)
+      _resetPremiumMatchCacheForTests()
+    }
+  })
+})
+
+// ─── Faction rule: extraction-eligible (Aldur's Legacy) ──────────────────────
+
+describe("faction rule: extraction-eligible (Aldur's Legacy)", () => {
+  afterEach(() => {
+    _setPremiumModsForTests(null)
+    _resetPremiumMatchCacheForTests()
+    setPoeVersion(1)
+  })
+
+  it('non-corrupted Quill Rain: misc.corrupted enabled with chipState "no"', () => {
+    _setPremiumModsForTests({
+      schemaVersion: 2,
+      poe1: {},
+      poe2: {},
+      factionRules: [
+        {
+          game: 'poe2',
+          tag: 'extraction_eligible',
+          uniques: ['Quill Rain'],
+          defaultFilters: { corrupted: false },
+        },
+      ],
+    })
+    setPoeVersion(2)
+    const filters = matchItemMods(
+      ['40% increased Attack Speed'],
+      [],
+      undefined,
+      makeItemInfo({ rarity: 'Unique', name: 'Quill Rain', itemClass: 'Bows', corrupted: false }),
+    )
+    const corruptedChip = filters.find((f) => f.id === 'misc.corrupted')
+    expect(corruptedChip).toBeDefined()
+    expect(corruptedChip!.enabled).toBe(true)
+    expect(corruptedChip!.chipState).toBe('no')
+  })
+
+  it('corrupted Quill Rain: misc.corrupted enabled with chipState "yes" (different market)', () => {
+    _setPremiumModsForTests({
+      schemaVersion: 2,
+      poe1: {},
+      poe2: {},
+      factionRules: [
+        {
+          game: 'poe2',
+          tag: 'extraction_eligible',
+          uniques: ['Quill Rain'],
+          defaultFilters: { corrupted: false },
+        },
+      ],
+    })
+    setPoeVersion(2)
+    const filters = matchItemMods(
+      ['40% increased Attack Speed'],
+      [],
+      undefined,
+      makeItemInfo({ rarity: 'Unique', name: 'Quill Rain', itemClass: 'Bows', corrupted: true }),
+    )
+    const corruptedChip = filters.find((f) => f.id === 'misc.corrupted')
+    expect(corruptedChip).toBeDefined()
+    expect(corruptedChip!.enabled).toBe(true)
+    expect(corruptedChip!.chipState).toBe('yes')
+  })
+})
+
+// ─── Tablet class rule: drawback mods prefill max via lowerIsBetter ───────────
+
+describe('unique tablet class rule: drawback (reduced pack size) prefills max bound', () => {
+  // Stat ids used in the tablet-mods lookup table
+  // "#% reduced pack size in map": "explicit.stat_2017682521"
+  // "#% increased quantity of waystones found in map": "explicit.stat_2777224821"
+  const PACK_SIZE_STAT_ID = 'explicit.stat_2017682521'
+  const WAYSTONES_STAT_ID = 'explicit.stat_2777224821'
+
+  afterEach(() => {
+    _setPremiumModsForTests(null)
+    _resetPremiumMatchCacheForTests()
+    _setStatEntriesForTests([])
+    setPoeVersion(1)
+  })
+
+  it('drawback row gets max=ceil(value/p) and beneficial row keeps min=floor(value*p)', () => {
+    _setPremiumModsForTests({
+      schemaVersion: 2,
+      poe1: {},
+      poe2: {},
+      itemClassRules: [
+        {
+          game: 'poe2',
+          itemClass: 'Tablet',
+          rarity: 'Unique',
+          mode: 'all_explicits',
+          lowerIsBetter: [PACK_SIZE_STAT_ID],
+          nonStatFilters: ['uses_remaining'],
+          note: 'unique tablets are farming-EV items: every rolled explicit moves price; drawback rolls prefill a max bound',
+        },
+      ],
+    })
+    setPoeVersion(2)
+
+    // buildTabletFilters resolves these via the tablet-mods lookup, not via stat entries,
+    // so no stat-entry seeding is needed here.
+    const item = makeItemInfo({
+      rarity: 'Unique',
+      itemClass: 'Tablet',
+      baseType: 'Breach Tablet',
+      name: 'Wraeclast Besieged',
+    })
+    const filters = matchItemMods(
+      ['36% increased Quantity of Waystones found in Map', '12% reduced Pack Size in Map'],
+      [],
+      undefined,
+      item,
+    )
+
+    // Drawback: "12% reduced Pack Size" -> value=12, lowerIsBetter -> max=ceil(12/0.9)=14, min=null
+    const packSizeRow = filters.find((f) => f.id === PACK_SIZE_STAT_ID)
+    expect(packSizeRow).toBeDefined()
+    expect(packSizeRow!.enabled).toBe(true)
+    expect(packSizeRow!.min).toBeNull()
+    expect(packSizeRow!.max).toBe(14) // ceil(12 / 0.9) = ceil(13.33) = 14
+
+    // Beneficial: "36% increased Quantity of Waystones" -> value=36, higher -> min=floor(36*0.9)=32
+    const waystoneRow = filters.find((f) => f.id === WAYSTONES_STAT_ID)
+    expect(waystoneRow).toBeDefined()
+    expect(waystoneRow!.enabled).toBe(true)
+    expect(waystoneRow!.min).toBe(32) // floor(36 * 0.9) = 32
+    expect(waystoneRow!.max).toBeNull()
   })
 })

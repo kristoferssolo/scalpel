@@ -44,6 +44,9 @@ export interface StatFilter {
   chipState?: 'yes' | 'no' | 'min' | 'max'
   /** Set true when the adaptive-defaults engine overrode this chip's enabled state. */
   learned?: boolean
+  /** True when this mod has a fixed (non-rolled) value: advanced-mod range has min === max,
+   *  or no ranges at all. Fixed mods are excluded from direction/bound math in overrides. */
+  fixedRoll?: boolean
 }
 
 export interface PriceCheckProps {

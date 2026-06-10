@@ -26,6 +26,8 @@ import { buildTabletFilters } from './producers/tablets'
 import { buildTimelessFilters } from './producers/timeless'
 import { buildUltimatumFilters } from './producers/ultimatum'
 import { buildWeaponDpsFilters } from './producers/weapon-dps'
+import { applyUniqueOverrides } from './producers/apply-overrides'
+import { resolveUniqueOverride } from './producers/overrides'
 import { _resetPremiumMatchCacheForTests } from './producers/premium'
 import { _resetPseudoMap, ensurePseudoMapBuilt } from './pseudo'
 import type { StatEntry } from './stats-cache'
@@ -148,5 +150,12 @@ export function matchItemMods(
     ...tabletFilters,
   ]
 
-  return postProcessInscribedUltimatum(combined, itemInfo)
+  let assembled = postProcessInscribedUltimatum(combined, itemInfo)
+
+  const resolved = resolveUniqueOverride(itemInfo)
+  if (resolved) {
+    assembled = applyUniqueOverrides(assembled, resolved, { pct: ctx.pct, corrupted: itemInfo?.corrupted ?? false })
+  }
+
+  return assembled
 }
