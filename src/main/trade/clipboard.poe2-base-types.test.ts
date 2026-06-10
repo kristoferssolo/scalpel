@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { setPoeVersion } from '../game-state'
+import { setPoeVersion } from '../game-switch/state'
 import { clearFilterBaseTypes, parseItemText, registerFilterBaseTypes } from './clipboard'
 
 // PoE2 flask ("Life Flasks"/"Mana Flasks"), charm, jewel, and several weapon

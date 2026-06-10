@@ -1,7 +1,7 @@
 import { getPremiumMods } from '../../../premium-mods'
 import { getStatEntries } from '../stats-cache'
 import type { StatEntry } from '../stats-cache'
-import { getPoeVersion } from '../../../game-state'
+import { getPoeVersion } from '../../../game-switch/state'
 import type { ItemInfo } from '../context'
 
 // Lazy statId -> canonical text map; rebuilt when getStatEntries() returns a different reference.

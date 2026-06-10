@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 const MOCK_USER_DATA = vi.hoisted(() => `${process.env.TEMP ?? process.cwd()}/scalpel-baselines-${Date.now()}`)
 vi.mock('electron', () => ({ app: { getPath: vi.fn(() => MOCK_USER_DATA) } }))
 
-import { getBaselineByLocalPath, saveBaseline } from './baselines'
+import { getBaselineByLocalPath, saveBaseline } from './online-sync/baselines'
 
 describe('getBaselineByLocalPath', () => {
   it('returns the content + meta for a matching local path', () => {
@@ -28,7 +28,7 @@ describe('getBaselineByLocalPath', () => {
     saveBaseline('Orphan', 'content', '/online/orphan', localPath)
     // Delete the .baseline file, leaving the orphaned .meta.json behind.
     const hash = createHash('md5').update('Orphan').digest('hex')
-    unlinkSync(join(MOCK_USER_DATA, 'baselines', `${hash}.baseline`))
+    unlinkSync(join(MOCK_USER_DATA, 'online-sync/baselines', `${hash}.baseline`))
     expect(getBaselineByLocalPath(localPath)).toBeNull()
   })
 })

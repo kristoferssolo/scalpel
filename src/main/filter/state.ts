@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import type { FilterFile } from '../../shared/types'
 import { loadIntents, resetIntents } from './intent-recorder'
 import { parseFilterFile } from './parser'
-import { repairFilterOnLoad } from './filter/sanitize'
+import { repairFilterOnLoad } from './sanitize'
 import { clearFilterBaseTypes, registerFilterBaseTypes } from '../trade/clipboard'
 import { saveVersion } from '../update/versions'
 

@@ -6,7 +6,7 @@ import { startClientLogWatcher } from '../client-log'
 import { guardNativeListener, registerDiagnosticProvider } from '../diagnostics'
 import { getPoeVersion, setPoeVersion } from '../game-switch/state'
 import { loadTierData, refreshTierData } from '../tier-data'
-import { loadPremiumMods, refreshPremiumMods } from './premium-mods'
+import { loadPremiumMods, refreshPremiumMods } from '../premium-mods'
 import { closeAllOverlaysOnPoeExit, isAnyScalpelWindowFocused, isInsideAnySecondaryOverlay } from '../windowing'
 import { POE_SIDEBAR_RATIO } from '../../shared/poe-geometry'
 import { GAME_TITLES } from '../../shared/game-variant'
@@ -257,7 +257,6 @@ uIOhook.on(
   }),
 )
 
-
 export function createOverlayWindow(
   version: 1 | 2 = 1,
   onGameVersionChange?: (detected: 1 | 2) => void,
@@ -354,9 +353,11 @@ export function createOverlayWindow(
           if (ev.titleIndex === 0) {
             if (getPoeVersion() !== 1) setImmediate(() => onGameVersionChange?.(1))
             setPoeVersion(1)
+            overlayAttachedVersion = 1
           } else if (ev.titleIndex === 1) {
             if (getPoeVersion() !== 2) setImmediate(() => onGameVersionChange?.(2))
             setPoeVersion(2)
+            overlayAttachedVersion = 2
           }
         }
         retargeting = false
@@ -497,6 +498,7 @@ export function retargetForGame(target: 1 | 2): void {
   retargeting = true
   hideOverlay()
   setPoeVersion(target)
+  overlayAttachedVersion = target
   OverlayController.setTargetTitles([GAME_TITLES[target]])
 }
 
@@ -534,6 +536,10 @@ export function toggleOverlay(): void {
 
 export function getOverlayWindow(): BrowserWindow | null {
   return overlayWindow
+}
+
+export function getOverlayAttachedVersion(): 1 | 2 {
+  return overlayAttachedVersion
 }
 
 /** Make PoE the OS foreground window so SendInput reaches it, not the overlay. */

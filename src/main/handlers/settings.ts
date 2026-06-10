@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { app, ipcMain } from 'electron'
 import type Store from 'electron-store'
 import type { AppSettings, RegexPreset } from '../../shared/types'
 import type { GameVariant } from '../../shared/game-variant'
