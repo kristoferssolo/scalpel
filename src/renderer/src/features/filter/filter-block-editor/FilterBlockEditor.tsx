@@ -161,7 +161,7 @@ export function FilterBlockEditor({
        *  "settings for THIS tier", separate from the item-scoped Switch Tier control above. */}
       <div className="px-3 pt-3 pb-2 flex items-center gap-2 flex-wrap">
         <SettingConfig size={14} {...IP} className="text-accent" />
-        <span className="section-title">Tier: {tierHeading}</span>
+        <span className="section-title">Edit Tier: {tierHeading}</span>
         {itemClass && (
           <InfoChip size="sm" className="ml-auto">
             <span className="text-text-dim">{itemClass}</span>
@@ -174,34 +174,7 @@ export function FilterBlockEditor({
         )}
       </div>
 
-      {/* Show / Hide toggle */}
-      <div className="flex gap-1 px-3 py-2 border-b border-border">
-        {(['Show', 'Hide'] as const).map((v) => {
-          const active = editing.visibility === v
-          return (
-            <div
-              key={v}
-              onClick={() => updateVisibility(v)}
-              onMouseEnter={(e) => {
-                if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
-              }}
-              onMouseLeave={(e) => {
-                if (!active) e.currentTarget.style.background = 'rgba(0,0,0,0.25)'
-              }}
-              className="flex-1 py-[6px] rounded cursor-pointer text-[11px] font-bold tracking-[0.5px] uppercase text-center select-none transition-all duration-[120ms]"
-              style={{
-                color: active ? '#fff' : 'var(--text-dim)',
-                background: active ? (v === 'Show' ? '#4caf50' : '#ef5350') : 'rgba(0,0,0,0.25)',
-                boxShadow: active ? '0 1px 4px rgba(0,0,0,0.4)' : '0 1px 3px rgba(0,0,0,0.2)',
-              }}
-            >
-              {v}
-            </div>
-          )
-        })}
-      </div>
-
-      <div className="p-3">
+      <div className="px-3 pb-3 pt-1">
         {/* Conditions are split into two panels so the reader can see at a glance which
          *  items are caught by the tier ("Items in this Tier") vs the other constraints
          *  the tier imposes ("Additional Tier Details"). Class is always omitted -- the
@@ -213,18 +186,19 @@ export function FilterBlockEditor({
             block.tierTag &&
             (/^(ex\d*|exhide|exshow|2x\d*)$/.test(block.tierTag.tier) || block.tierTag.tier.startsWith('exotic'))
           const showAuditButton = !!onOpenAudit && baseTypeConds.some((c) => c.values.length > 0) && !isExTier
-          const hasItemsPanel = baseTypeConds.length > 0 || showAuditButton
           const baseTypeCount = baseTypeConds.reduce((sum, c) => sum + c.values.length, 0)
+          const showExpandCard = baseTypeCount > 0 && !!onToggleTierSister
+          const hasItemsCards = showExpandCard || showAuditButton
 
           return (
             <>
-              {hasItemsPanel && (
+              {hasItemsCards && (
                 <div className="bg-black/20 rounded p-[6px_8px] mb-3 flex flex-col gap-[8px]">
                   <div className="text-[10px] font-bold text-text-dim uppercase tracking-[0.5px]">
                     Items in this Tier
                   </div>
                   <div className="flex gap-2 items-stretch">
-                    {baseTypeCount > 0 && onToggleTierSister && (
+                    {showExpandCard && (
                       <TierActionCard
                         buttonLabel={tierSisterOpen ? 'Collapse' : 'Expand'}
                         leadingIcon={
@@ -262,6 +236,39 @@ export function FilterBlockEditor({
                   </div>
                 </div>
               )}
+
+              {/* Tier Visibility -- governs the whole tier, distinct from the
+               *  item-scoped Switch Tier control above. The inactive side appends
+               *  "Tier" so it reads as "Hide Tier"/"Show Tier", making the
+               *  tier-wide scope unmistakable. */}
+              <div className="bg-black/20 rounded p-[6px_8px] mb-3 flex flex-col gap-[8px]">
+                <div className="text-[10px] font-bold text-text-dim uppercase tracking-[0.5px]">Tier Visibility</div>
+                <div className="flex gap-1">
+                  {(['Show', 'Hide'] as const).map((v) => {
+                    const active = editing.visibility === v
+                    return (
+                      <div
+                        key={v}
+                        onClick={() => updateVisibility(v)}
+                        onMouseEnter={(e) => {
+                          if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!active) e.currentTarget.style.background = 'rgba(0,0,0,0.25)'
+                        }}
+                        className="flex-1 py-[6px] rounded cursor-pointer text-[11px] font-bold tracking-[0.5px] uppercase text-center select-none transition-all duration-[120ms]"
+                        style={{
+                          color: active ? '#fff' : 'var(--text-dim)',
+                          background: active ? (v === 'Show' ? '#4caf50' : '#ef5350') : 'rgba(0,0,0,0.25)',
+                          boxShadow: active ? '0 1px 4px rgba(0,0,0,0.4)' : '0 1px 3px rgba(0,0,0,0.2)',
+                        }}
+                      >
+                        {active ? v : `${v} Tier`}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
 
               {otherConds.length > 0 && (
                 <div className="bg-black/20 rounded p-[6px_8px] mb-3 flex flex-col gap-[6px]">

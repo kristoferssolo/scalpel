@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import type { FilterBlock, PoeItem, TierGroup, TierSibling } from '../../../../shared/types'
-import { Down, Up } from '@icon-park/react'
+import { Down, Up, SortThree } from '@icon-park/react'
 import { IP } from '../../shared/constants'
 import { LootLabel, HiddenLootLabel, extractLabelStyle } from '../../shared/LootLabel'
 
@@ -86,119 +86,129 @@ export function TierNavigator({ group, baseType, item, onMoved, continuePreamble
   }
 
   return (
-    <div ref={ref} className="relative">
-      {/* Toggle button */}
-      <div
-        ref={toggleRef}
-        onClick={() => {
-          if (moving) return
-          if (!open && toggleRef.current) {
-            const rect = toggleRef.current.getBoundingClientRect()
-            setDropdownPos({ top: rect.bottom + 2, left: rect.left, width: rect.width })
-          }
-          setOpen((o) => !o)
-        }}
-        className="flex items-center gap-2 bg-bg-card border border-border rounded select-none px-[10px] py-1.5"
-        style={{
-          cursor: moving ? 'wait' : 'pointer',
-        }}
-      >
-        <span className="text-[11px] text-text-dim shrink-0 self-stretch flex items-center border-r border-border bg-black/25 px-2 -my-1.5 -ml-[10px] mr-1 rounded-l">
-          Switch Tier
-        </span>
-        <div className="flex items-center" style={{ minHeight: minLabelHeight }}>
-          {currentSib &&
-            (currentSib.visibility === 'Hide' ? (
-              <HiddenLootLabel label={item.baseType} />
-            ) : (
-              <LootLabel
-                blocks={[...continuePreamble, currentSib.block]}
-                label={item.baseType}
-                showStack={hasStackSize ? { min: getStackMin(currentSib.block) ?? 1 } : undefined}
-              />
-            ))}
-        </div>
-        {currentSib?.visibility === 'Hide' && <span className="text-[9px] font-bold text-hide shrink-0">[HIDDEN]</span>}
-        <span className="text-[10px] text-text-dim ml-auto shrink-0">{formatTierLabel(group.currentTier)}</span>
-        {moving ? (
-          <span className="text-[10px] text-accent">saving...</span>
-        ) : open ? (
-          <Up size={12} {...IP} />
-        ) : (
-          <Down size={12} {...IP} />
-        )}
+    <div className="bg-bg-card rounded">
+      {/* Header -- mirrors the Edit Tier card so the two tier controls read as a pair.
+       *  This one is item-scoped: it retiers THIS item, not the tier's settings. */}
+      <div className="px-3 pt-3 pb-2 flex items-center gap-2 flex-wrap">
+        <SortThree size={14} {...IP} className="text-accent" />
+        <span className="section-title">Retier {item.baseType}</span>
       </div>
+      <div ref={ref} className="relative px-3 pb-3 pt-1">
+        {/* Toggle button */}
+        <div
+          ref={toggleRef}
+          onClick={() => {
+            if (moving) return
+            if (!open && toggleRef.current) {
+              const rect = toggleRef.current.getBoundingClientRect()
+              setDropdownPos({ top: rect.bottom + 2, left: rect.left, width: rect.width })
+            }
+            setOpen((o) => !o)
+          }}
+          className="flex items-center gap-2 bg-black/25 border border-border rounded select-none px-[10px] py-1.5"
+          style={{
+            cursor: moving ? 'wait' : 'pointer',
+          }}
+        >
+          <span className="text-[11px] text-text-dim shrink-0 self-stretch flex items-center border-r border-border bg-black/25 px-2 -my-1.5 -ml-[10px] mr-1 rounded-l">
+            Switch Tier
+          </span>
+          <div className="flex items-center" style={{ minHeight: minLabelHeight }}>
+            {currentSib &&
+              (currentSib.visibility === 'Hide' ? (
+                <HiddenLootLabel label={item.baseType} />
+              ) : (
+                <LootLabel
+                  blocks={[...continuePreamble, currentSib.block]}
+                  label={item.baseType}
+                  showStack={hasStackSize ? { min: getStackMin(currentSib.block) ?? 1 } : undefined}
+                />
+              ))}
+          </div>
+          {currentSib?.visibility === 'Hide' && (
+            <span className="text-[9px] font-bold text-hide shrink-0">[HIDDEN]</span>
+          )}
+          <span className="text-[10px] text-text-dim ml-auto shrink-0">{formatTierLabel(group.currentTier)}</span>
+          {moving ? (
+            <span className="text-[10px] text-accent">saving...</span>
+          ) : open ? (
+            <Up size={12} {...IP} />
+          ) : (
+            <Down size={12} {...IP} />
+          )}
+        </div>
 
-      {error && <div className="text-[10px] text-danger px-[10px] py-1">{error}</div>}
+        {error && <div className="text-[10px] text-danger px-[10px] py-1">{error}</div>}
 
-      {/* Dropdown list - rendered as portal to avoid transform containment */}
-      {open &&
-        dropdownPos &&
-        createPortal(
-          <div
-            ref={dropdownRef}
-            className="fixed bg-bg border border-border rounded overflow-hidden overflow-y-auto z-[9999]"
-            style={{
-              top: dropdownPos.top,
-              left: dropdownPos.left,
-              width: dropdownPos.width,
-              maxHeight: 400,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
-            }}
-          >
-            {filteredSiblings.map((sib) => {
-              const isCurrent = sib.tier === group.currentTier
-              const isHidden = sib.visibility === 'Hide'
+        {/* Dropdown list - rendered as portal to avoid transform containment */}
+        {open &&
+          dropdownPos &&
+          createPortal(
+            <div
+              ref={dropdownRef}
+              className="fixed bg-bg border border-border rounded overflow-hidden overflow-y-auto z-[9999]"
+              style={{
+                top: dropdownPos.top,
+                left: dropdownPos.left,
+                width: dropdownPos.width,
+                maxHeight: 400,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+              }}
+            >
+              {filteredSiblings.map((sib) => {
+                const isCurrent = sib.tier === group.currentTier
+                const isHidden = sib.visibility === 'Hide'
 
-              return (
-                <div
-                  key={sib.tier}
-                  onClick={() => handleSelect(sib)}
-                  className="flex items-center gap-2 cursor-pointer"
-                  style={{
-                    padding: '8px 10px',
-                    background: isCurrent ? 'rgba(200,169,110,0.1)' : 'transparent',
-                    borderLeft: isCurrent ? '3px solid var(--accent)' : '3px solid transparent',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isCurrent) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = isCurrent ? 'rgba(200,169,110,0.1)' : 'transparent'
-                  }}
-                >
-                  {/* Tier label */}
-                  <span
-                    className="text-[11px] font-bold w-[60px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap"
+                return (
+                  <div
+                    key={sib.tier}
+                    onClick={() => handleSelect(sib)}
+                    className="flex items-center gap-2 cursor-pointer"
                     style={{
-                      color: isCurrent ? 'var(--accent)' : 'var(--text-dim)',
+                      padding: '8px 10px',
+                      background: isCurrent ? 'rgba(200,169,110,0.1)' : 'transparent',
+                      borderLeft: isCurrent ? '3px solid var(--accent)' : '3px solid transparent',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isCurrent) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = isCurrent ? 'rgba(200,169,110,0.1)' : 'transparent'
                     }}
                   >
-                    {formatTierLabel(sib.tier)}
-                  </span>
+                    {/* Tier label */}
+                    <span
+                      className="text-[11px] font-bold w-[60px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap"
+                      style={{
+                        color: isCurrent ? 'var(--accent)' : 'var(--text-dim)',
+                      }}
+                    >
+                      {formatTierLabel(sib.tier)}
+                    </span>
 
-                  {/* Loot label preview */}
-                  <div className="flex-1 min-w-0 flex items-center gap-[6px]">
-                    {isHidden ? (
-                      <HiddenLootLabel label={item.baseType} />
-                    ) : (
-                      <LootLabel
-                        blocks={[...continuePreamble, sib.block]}
-                        label={item.baseType}
-                        showStack={hasStackSize ? { min: getStackMin(sib.block) ?? 1 } : undefined}
-                      />
-                    )}
-                    {isHidden && <span className="text-[9px] font-bold text-hide shrink-0">[HIDDEN]</span>}
+                    {/* Loot label preview */}
+                    <div className="flex-1 min-w-0 flex items-center gap-[6px]">
+                      {isHidden ? (
+                        <HiddenLootLabel label={item.baseType} />
+                      ) : (
+                        <LootLabel
+                          blocks={[...continuePreamble, sib.block]}
+                          label={item.baseType}
+                          showStack={hasStackSize ? { min: getStackMin(sib.block) ?? 1 } : undefined}
+                        />
+                      )}
+                      {isHidden && <span className="text-[9px] font-bold text-hide shrink-0">[HIDDEN]</span>}
+                    </div>
+
+                    {/* Current indicator */}
+                    {isCurrent && <span className="text-[9px] text-accent italic shrink-0">current</span>}
                   </div>
-
-                  {/* Current indicator */}
-                  {isCurrent && <span className="text-[9px] text-accent italic shrink-0">current</span>}
-                </div>
-              )
-            })}
-          </div>,
-          document.body,
-        )}
+                )
+              })}
+            </div>,
+            document.body,
+          )}
+      </div>
     </div>
   )
 }
