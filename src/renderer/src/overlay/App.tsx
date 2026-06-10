@@ -39,6 +39,7 @@ import {
   divCardArtMap,
   initIconMap,
   initItemClassMaps,
+  initPoeVersion,
   initUniquesByBase,
   mergeIconCache,
 } from '../shared/constants'
@@ -132,6 +133,7 @@ export default function App(): JSX.Element {
   // of waiting for the next trade fetch to re-populate them.
   useEffect(() => {
     if (!poeVersion) return
+    initPoeVersion(poeVersion)
     initIconMap(poeVersion)
     initUniquesByBase(poeVersion)
     initItemClassMaps(poeVersion)
@@ -766,6 +768,7 @@ export default function App(): JSX.Element {
           <SisterOverlay
             ref={sisterRef}
             itemName={priceCheckData.item.name}
+            poeVersion={poeVersion ?? 1}
             league={priceCheckData.league}
             chaosPerDivine={priceCheckData.chaosPerDivine}
             left={sisterLeft}
