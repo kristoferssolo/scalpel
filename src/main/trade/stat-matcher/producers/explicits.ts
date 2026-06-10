@@ -6,6 +6,7 @@ import { isClusterJewel } from '../../../../shared/poe-item'
 import type { ModTier } from '../../../../shared/data/tiers/types'
 import type { StatFilter } from '../../trade'
 import { findAdvMod } from '../adv-mods'
+import { computeValueBounds } from '../bounds'
 import { isDefenseMod, isLocalMod, isLowPriority } from '../classification'
 import type { MatchContext } from '../context'
 import { matchModToStat } from '../mod-matcher'
@@ -272,19 +273,12 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
         }
       }
       // For negative values: "reduced" mods use min (trade API expects min for beneficial reduction),
-      // while truly negative mods (e.g. "-50% to Lightning Resistance") use max.
+      // while truly negative mods (e.g. "-50% to Lightning Resistance") use max. Some keywords mark
+      // the negative as beneficial (more negative = better, use max). Shared with buildTabletFilters.
       const isNegative = matched.value != null && matched.value < 0
-      // Negative mods: default to "bad" (less negative = better, use min).
-      // Some keywords indicate the negative is beneficial (more negative = better, use max).
       const isBeneficialNegative = isNegative && BENEFICIAL_NEGATIVE_KEYWORDS.some((p) => p.test(mod))
-      let minValue =
-        matched.value != null && (!isNegative || !isBeneficialNegative)
-          ? isFixedValue
-            ? matched.value
-            : isNegative
-              ? Math.ceil(matched.value * (2 - pct)) // -30 at 90% -> -33 (more negative = wider search)
-              : Math.floor(matched.value * pct)
-          : null
+      const bounds = computeValueBounds({ value: matched.value, pct, isBeneficialNegative, isFixedValue })
+      let minValue = bounds.min
       // For uniques, don't default below the mod's minimum possible roll unless the item's actual
       // value is already below it (e.g. from Volatile Vaal Orb)
       if (
@@ -297,7 +291,7 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
       ) {
         minValue = matchedRange.min
       }
-      const maxValue = isBeneficialNegative && matched.value != null ? matched.value : null
+      const maxValue = bounds.max
 
       // Skip for cluster jewels -- their mods grant passives, not item stats
       // Skip "X per Y" mods -- they're conditional and shouldn't inflate pseudo totals

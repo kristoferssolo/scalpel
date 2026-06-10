@@ -822,6 +822,27 @@ describe('parseItemText', () => {
       expect(item.eleDamageAvg).toBe(67.5)
     })
 
+    it('parses the PoE2 "Critical Hit Chance" label into critChance', () => {
+      const text = [
+        'Item Class: Spears',
+        'Rarity: Rare',
+        'Sol Edge',
+        'Branched Spear',
+        '--------',
+        'Quality: +20% (augmented)',
+        'Physical Damage: 65-188 (augmented)',
+        'Critical Hit Chance: 6.30%',
+        'Attacks per Second: 1.72 (augmented)',
+        '--------',
+        'Item Level: 55',
+        '--------',
+        '47% increased Physical Damage',
+      ].join('\n')
+
+      const item = parseItemText(text)!
+      expect(item.critChance).toBe(6.3)
+    })
+
     it('parses the combined PoE1 Elemental Damage line with multiple colors', () => {
       const text = [
         'Item Class: Bows',

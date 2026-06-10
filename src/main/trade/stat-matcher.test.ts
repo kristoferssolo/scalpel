@@ -15,6 +15,8 @@ import { _setTierDataForTests } from '../tier-data'
 import { _setStatEntriesForTests, ITEM_CLASS_TO_CATEGORY, matchItemMods, matchModToStat } from './stat-matcher'
 import { resolveTierDefault } from './stat-matcher/producers/explicits'
 import { isPremiumMod, _resetPremiumMatchCacheForTests } from './stat-matcher/producers/premium'
+import bundledPremiumMods from '../../shared/data/items/premium-mods.json'
+import type { PremiumModsData } from '../../shared/data/items/premium-mods-types'
 
 // Helper to build a minimal itemInfo object
 function makeItemInfo(overrides: Record<string, unknown> = {}) {
@@ -1490,6 +1492,76 @@ describe('matchItemMods', () => {
       expect(exiles?.value).toBe(1)
     })
 
+    it('defaults the base-type chip on for a non-unique tablet (scopes the mod search to the tablet type)', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['36% increased Quantity of Waystones found in Map'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Magic', itemClass: 'Tablet', baseType: 'Overseer Tablet' }),
+      )
+      const baseChip = filters.find((f) => f.id === 'misc.basetype')
+      expect(baseChip).toBeDefined()
+      expect(baseChip?.text).toBe('Overseer Tablet')
+      expect(baseChip?.enabled).toBe(true)
+    })
+
+    it('emits no base-type chip for a unique tablet (searched by name, not base)', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Tablet', baseType: 'Breach Tablet', name: 'Wraeclast Besieged' }),
+      )
+      expect(filters.find((f) => f.id === 'misc.basetype')).toBeUndefined()
+    })
+
+    // The tablet-mods table collapses "reduced"/"increased" phrasings onto one positive
+    // ("increased") stat id; the table lookup must re-apply the reduced->increased sign that
+    // matchModToStat handles for the non-table path, else the value stays positive and the
+    // search points the wrong way (issue: "costs reduced Tribute" searched as +increased).
+    const TRIBUTE_STATS = [
+      {
+        id: 'explicit.stat_2282052746',
+        text: 'Rerolling Favours at Ritual Altars in Map costs #% increased Tribute',
+        type: 'explicit',
+      },
+      {
+        id: 'explicit.stat_159726667',
+        text: 'Monsters Sacrificed at Ritual Altars in Map grant #% increased Tribute',
+        type: 'explicit',
+      },
+    ]
+
+    it('negates a "reduced Tribute" cost roll (beneficial negative: MAX bound at the exact roll)', () => {
+      _setStatEntriesForTests(TRIBUTE_STATS)
+      const filters = matchItemMods(
+        ['Rerolling Favours at Ritual Altars in Map costs 30% reduced Tribute'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Ritual Tablet' }),
+      )
+      const chip = filters.find((f) => f.id === 'explicit.stat_2282052746')
+      expect(chip?.value).toBe(-30)
+      expect(chip?.min).toBeNull() // beneficial negative -> no min
+      expect(chip?.max).toBe(-30) // more-reduced (more negative) is better
+    })
+
+    it('treats a "grant reduced Tribute" roll as a detrimental negative (MIN bound, not beneficial)', () => {
+      _setStatEntriesForTests(TRIBUTE_STATS)
+      const filters = matchItemMods(
+        ['Monsters Sacrificed at Ritual Altars in Map grant 20% reduced Tribute'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Ritual Tablet' }),
+      )
+      const chip = filters.find((f) => f.id === 'explicit.stat_159726667')
+      expect(chip?.value).toBe(-20)
+      expect(chip?.max).toBeNull()
+      expect(chip?.min).toBe(-22) // ceil(-20 * 1.1): widened toward more-negative
+    })
+
     it('does not run the tablet map for non-tablet items', () => {
       _setStatEntriesForTests([])
       const filters = matchItemMods(
@@ -1546,6 +1618,96 @@ describe('matchItemMods', () => {
       expect(chip?.value).toBe(1)
       expect(chip?.min).toBe(1)
       expect(chip?.enabled).toBe(true)
+    })
+
+    // Unique tablet count-mods (Wraeclast Besieged, issue #417): the clipboard
+    // pluralizes the noun and carries the rolled number ("2 additional waves of
+    // Hiveborn Monsters"), while the trade stat keeps "an additional <singular>"
+    // ("an additional wave of Hiveborn Monsters"). Without the noun-head
+    // singularization in generateTextVariants the matcher dropped all three and
+    // they went missing from the price check. Real ids/text from live PoE2 stats.
+    const UNIQUE_BREACH_TABLET_STATS = [
+      {
+        id: 'explicit.stat_4104094246',
+        text: 'Unstable Breaches in Map take an additional second to collapse after timer is filled',
+        type: 'explicit',
+      },
+      {
+        id: 'explicit.stat_2734787892',
+        text: 'Breach Hives in Map have an additional wave of Hiveborn Monsters',
+        type: 'explicit',
+      },
+      {
+        id: 'explicit.stat_3762913035',
+        text: 'Unstable Breaches in Map spawn an additional Rare Monster when Stabilised',
+        type: 'explicit',
+      },
+      { id: 'explicit.stat_1210760818', text: 'Breaches in Map have #% increased Pack Size', type: 'explicit' },
+    ]
+
+    it('matches unique Breach tablet count-mods that pluralize the noun ("an additional <plural>")', () => {
+      _setStatEntriesForTests(UNIQUE_BREACH_TABLET_STATS)
+      const filters = matchItemMods(
+        [
+          'Unstable Breaches in Map take 120 additional seconds to collapse after timer is filled',
+          'Breach Hives in Map have 2 additional waves of Hiveborn Monsters',
+          'Unstable Breaches in Map spawn 3 additional Rare Monsters when Stabilised',
+          'Breaches in Map have 2% reduced Pack Size',
+        ],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Tablet', baseType: 'Breach Tablet', name: 'Wraeclast Besieged' }),
+      )
+      for (const id of ['explicit.stat_4104094246', 'explicit.stat_2734787892', 'explicit.stat_3762913035']) {
+        const chip = filters.find((f) => f.id === id)
+        expect(chip, `expected filter for ${id}`).toBeDefined()
+        expect(chip?.enabled).toBe(true)
+      }
+      // reduced -> increased polarity flips the value negative on the Pack Size stat.
+      const packSize = filters.find((f) => f.id === 'explicit.stat_1210760818')
+      expect(packSize?.value).toBe(-2)
+    })
+
+    it('applies the bundled Wraeclast Besieged premium override (2 chase mods on, others off)', () => {
+      const prev = getPoeVersion()
+      _resetPremiumMatchCacheForTests()
+      _setPremiumModsForTests(bundledPremiumMods as unknown as PremiumModsData)
+      _setStatEntriesForTests(UNIQUE_BREACH_TABLET_STATS)
+      try {
+        setPoeVersion(2)
+        const filters = matchItemMods(
+          [
+            'Unstable Breaches in Map take 120 additional seconds to collapse after timer is filled',
+            'Breach Hives in Map have 2 additional waves of Hiveborn Monsters',
+            'Unstable Breaches in Map spawn 3 additional Rare Monsters when Stabilised',
+            'Breaches in Map have 2% reduced Pack Size',
+          ],
+          [],
+          undefined,
+          makeItemInfo({
+            rarity: 'Unique',
+            itemClass: 'Tablet',
+            baseType: 'Breach Tablet',
+            name: 'Wraeclast Besieged',
+          }),
+        )
+        // The two 2-5-range chase mods are primary: enabled + premium (survive unique Base mode).
+        for (const id of ['explicit.stat_2734787892', 'explicit.stat_3762913035']) {
+          const chip = filters.find((f) => f.id === id)
+          expect(chip?.enabled, `${id} should be on`).toBe(true)
+          expect(chip?.premium, `${id} should be premium`).toBe(true)
+        }
+        // The collapse-time and pack-size rows are secondary: shown but off.
+        for (const id of ['explicit.stat_4104094246', 'explicit.stat_1210760818']) {
+          const chip = filters.find((f) => f.id === id)
+          expect(chip, `${id} should be present`).toBeDefined()
+          expect(chip?.enabled, `${id} should be off`).toBe(false)
+        }
+      } finally {
+        setPoeVersion(prev)
+        _setPremiumModsForTests(null)
+        _resetPremiumMatchCacheForTests()
+      }
     })
   })
 

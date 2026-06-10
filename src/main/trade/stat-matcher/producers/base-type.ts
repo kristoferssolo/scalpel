@@ -29,12 +29,17 @@ export function buildBaseTypeFilter(itemInfo: BaseTypeItemInfo | undefined): Sta
   const isCluster = isClusterJewel({ itemClass: itemInfo.itemClass, baseType: baseTypeCleaned })
   const isBaseItem = itemInfo.rarity === 'Normal' || itemInfo.rarity === 'Magic'
   const isOverqualitied = itemInfo.quality > 20
+  // Non-unique precursor tablets price by their map mods, but the base type
+  // (Breach / Delirium / Ritual / ... Tablet) is the primary market segment, so
+  // default the chip on -- a mod search that isn't scoped to the tablet type
+  // returns cross-type noise. Uniques already returned above (searched by name).
+  const isTablet = itemInfo.itemClass === 'Tablet'
   // The basetype chip always shows the BARE base ("Faithful Leggings"); the
   // separate misc.rune_base chip composes the "Runeforged"/"Runemastered" prefix
   // back on at query time. Rune bases default off like any other rare (category
   // search) -- the user pins the base + rune chips explicitly when narrowing.
   const baseTypeText = splitRuneTier(baseTypeCleaned).bare
-  const baseTypeEnabled = isSpecialMap || isCluster || (isBaseItem && isOverqualitied)
+  const baseTypeEnabled = isSpecialMap || isCluster || isTablet || (isBaseItem && isOverqualitied)
 
   return [
     {

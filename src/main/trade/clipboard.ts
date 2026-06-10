@@ -375,7 +375,9 @@ export function parseItemText(text: string): PoeItem | null {
   }
 
   const attacksPerSecond = extractFloat(allLines, 'Attacks per Second:')
-  const critChance = extractFloat(allLines, 'Critical Strike Chance:')
+  // PoE1 labels this "Critical Strike Chance:"; PoE2 renamed it "Critical Hit
+  // Chance:". The two never collide, so try both rather than gating on version.
+  const critChance = extractFloat(allLines, 'Critical Strike Chance:') ?? extractFloat(allLines, 'Critical Hit Chance:')
 
   const reqStr = extractNum(allLines, 'Str:') ?? 0
   const reqDex = extractNum(allLines, 'Dex:') ?? 0
@@ -733,6 +735,7 @@ function parseModSections(sections: string[], explicits: string[], implicits: st
     'Physical Damage:',
     'Elemental Damage:',
     'Critical Strike Chance:',
+    'Critical Hit Chance:',
     'Attacks per Second:',
     'Weapon Range:',
     'Map Area:',

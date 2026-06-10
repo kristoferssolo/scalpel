@@ -37,9 +37,20 @@ function generateTextVariants(text: string): string[] {
     variants.push(`${perOvercapMatch[1]} 0% of Overcapped ${perOvercapMatch[2]}`)
   }
 
-  // "N additional" -> "an additional" (trade API uses "an" where clipboard has the number)
+  // "N additional" -> "an additional" (trade API uses "an" where clipboard has the number).
+  // The clipboard also pluralizes the noun head ("2 additional waves of Hiveborn Monsters",
+  // "3 additional Rare Monsters when Stabilised", "120 additional seconds to collapse") while
+  // the trade stat keeps it singular ("an additional wave of Hiveborn Monsters", "an additional
+  // Rare Monster when Stabilised", "an additional second to collapse"). So also emit a variant
+  // that singularizes the noun head: the run of words after "an additional" up to the next
+  // word, dropping the trailing 's' from the first plural word in that run (the noun, e.g.
+  // "Rare Monsters" -> "Rare Monster"). Naive -s is sufficient for the regular plurals these
+  // tablet count-mods use; an irregular plural (-es) would need a special case below.
   if (/\b\d+ additional\b/i.test(text)) {
-    variants.push(text.replace(/\b\d+ additional\b/i, 'an additional'))
+    const an = text.replace(/\b\d+ additional\b/i, 'an additional')
+    variants.push(an)
+    const singular = an.replace(/\b(an additional (?:\w+ )*?\w+?)s\b/i, '$1')
+    if (singular !== an) variants.push(singular)
   }
 
   // "an additional <Noun>" -> "1 additional <Noun>s" (clipboard says "an additional Arrow"
