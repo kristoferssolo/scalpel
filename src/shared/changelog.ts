@@ -5,6 +5,7 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
       'Added a "Grants Skill" filter and item level to the trade results, and fixed magic item names there.',
       'Added price-check support for "uses remaining" (charges), on by default.',
       'Plugins now update in place with a live hot-swap, no relaunch needed.',
+      "Plugin developers can now capture the game window via ctx.captureGameWindow to run their own OCR, and register chrome-less click-through annotation overlays (mode: 'annotation').",
       'Consolidated all hotkeys and macros into the Macros tab in settings, synced to their origin location.',
       'Desecrated mods now show in trade results (in green!).',
       "Fixed removing a hotkey from a plugin's hotkey component.",
