@@ -61,9 +61,15 @@ function decimalPlaces(n: number | null | undefined): number {
  * Determine the text tint when the search criteria (min/max scrubber values)
  * exceed what a unique mod can legitimately roll.
  *   - Outside roll range → orange (possibly findable via Volatile Vaal Orb)
- *   - Outside [round(0.78*min), round(1.22*max)] → red (impossible even with vaal)
+ *   - More than ~22% beyond either end of the range → red (impossible even with vaal)
+ *
+ * Both PoE1 and PoE2 let Vaal/corruption over-roll a unique affix ~22% past its
+ * base range, so each bound is extended OUTWARD by 22% of its own magnitude. This
+ * is sign-aware: a negative range like a "fewer enemies Surrounded" roll of -4
+ * over-rolls to -5, so -5 stays orange (vaal-reachable), not red. A sign-naive
+ * min*0.78 / max*1.22 would shrink a negative range and flag legitimate over-rolls.
  */
-function getSearchTint(
+export function getSearchTint(
   searchMin: number | null,
   searchMax: number | null,
   range: { min: number; max: number } | undefined,
@@ -76,8 +82,8 @@ function getSearchTint(
   const exceeds = (v: number | null): boolean => v != null && (v > range.max || v < range.min)
   const exceedsVaal = (v: number | null): boolean => {
     if (v == null) return false
-    const vaalMin = Math.round(range.min * 0.78)
-    const vaalMax = Math.round(range.max * 1.22)
+    const vaalMin = Math.round(range.min - 0.22 * Math.abs(range.min))
+    const vaalMax = Math.round(range.max + 0.22 * Math.abs(range.max))
     return v > vaalMax || v < vaalMin
   }
   if (!exceeds(searchMin) && !exceeds(searchMax)) return null

@@ -22,6 +22,14 @@ function generateTextVariants(text: string): string[] {
   if (/\bmore\b/i.test(text)) {
     variants.push(text.replace(/\bmore\b/i, 'less'))
   }
+  // "fewer" <-> "additional": the trade API stores "Require # fewer enemies to be
+  // Surrounded" as its positive inverse "Require # additional enemies to be
+  // Surrounded" with a negative value. Only fewer->additional is generated (not the
+  // reverse) so the many ordinary "additional <noun>" mods aren't given nonsense
+  // "fewer" variants. The matcher negates the value when matching this way.
+  if (/\bfewer\b/i.test(text)) {
+    variants.push(text.replace(/\bfewer\b/gi, 'additional'))
+  }
   // Common PoE plural -> singular transformations
   // "X% per Y% Overcapped Z" -> "N% of Overcapped Z" (trade API uses a different wording)
   const perOvercapMatch = text.match(/^(.+?) \d+% per \d+% Overcapped (.+)$/)

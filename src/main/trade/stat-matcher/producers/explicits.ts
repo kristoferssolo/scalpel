@@ -239,11 +239,24 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
         const advMod = findAdvMod(advancedMods, cleaned, 'explicit', rawCleaned)
         if (advMod) {
           const range = advMod.ranges.find((r) => r.value === matched.value || r.value === -(matched.value ?? 0))
+          // When the mod matched only via sign inversion (clipboard "fewer N" / "reduced N"
+          // against the trade API's positive "additional" / "increased" stat, value negated
+          // to -N), the advanced-mod range is still in clipboard space (positive) while
+          // matched.value is negative. Flip the range into the matched value's sign space so
+          // every downstream consumer (modRange display + tint, unique min-floor) agrees on
+          // sign -- otherwise the negative roll reads as outside its own range and tints red
+          // (Constricting Command "fewer enemies Surrounded"). A symmetric bracket that
+          // already straddles zero is unaffected (the flip is a normalization no-op).
+          const inverted =
+            range != null && matched.value != null && range.value === -matched.value && range.value !== matched.value
+          const signedRange = inverted ? { min: -range!.min, max: -range!.max } : range
           // "reduced" mods report a sign-flipped bracket ({min:20, max:-20}); normalize so
           // min<=max before any consumer reads it (matchedRange -> modRange display+tint, the
           // unique min-floor below, perfectRoll). advModRanges keeps the raw orientation for
           // tier-ladder matching against RePoE's stored ranges.
-          const normRange = range ? { min: Math.min(range.min, range.max), max: Math.max(range.min, range.max) } : null
+          const normRange = signedRange
+            ? { min: Math.min(signedRange.min, signedRange.max), max: Math.max(signedRange.min, signedRange.max) }
+            : null
           if (normRange && normRange.min === normRange.max) isFixedValue = true
           if (!range && advMod.ranges.length === 0) isFixedValue = true
           if (advMod.tier > 0) matchedTier = advMod.tier

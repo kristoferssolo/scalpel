@@ -391,6 +391,19 @@
     "Original Sin": {
       "mode": "none",
       "confidence": "verified"
+    },
+    "Constricting Command": {
+      "mode": "stat_list",
+      "confidence": "verified",
+      "mods": [
+        {
+          "id": "explicit.stat_2267564181",
+          "text": "Require # additional enemies to be Surrounded",
+          "direction": "lower",
+          "prefill": 1,
+          "note": "clipboard prints \"Require N fewer enemies to be Surrounded\" but trade stores the inverted \"additional\" stat with a negative value, so more negative is better. prefill 1 measures the exact roll as a MAX bound."
+        }
+      ]
     }
   },
   "itemClassRules": [

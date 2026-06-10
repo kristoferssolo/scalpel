@@ -2213,6 +2213,71 @@ describe('matchItemMods', () => {
   })
 })
 
+// ─── Constricting Command "fewer enemies Surrounded" premium override ────────
+
+describe('Constricting Command (PoE2 inverted Surrounded mod)', () => {
+  const PREMIUM_DATA = {
+    schemaVersion: 2,
+    poe1: {},
+    poe2: {
+      'Constricting Command': {
+        mode: 'stat_list' as const,
+        confidence: 'verified' as const,
+        mods: [
+          {
+            id: 'explicit.stat_2267564181',
+            text: 'Require # additional enemies to be Surrounded',
+            direction: 'lower' as const,
+            prefill: 1,
+          },
+        ],
+      },
+    },
+  }
+
+  afterEach(() => {
+    _setPremiumModsForTests(null)
+    setPoeVersion(1)
+  })
+
+  it('surfaces the "fewer enemies Surrounded" line as a premium, default-on row with an exact MAX bound', () => {
+    setPoeVersion(2)
+    _setStatEntriesForTests([
+      { id: 'explicit.stat_2267564181', text: 'Require # additional enemies to be Surrounded', type: 'explicit' },
+    ])
+    _setPremiumModsForTests(PREMIUM_DATA)
+
+    const filters = matchItemMods(
+      ['Require 4 fewer enemies to be Surrounded'],
+      [],
+      undefined,
+      makeItemInfo({ rarity: 'Unique', itemClass: 'Helmets', name: 'Constricting Command' }),
+      [
+        {
+          type: 'prefix',
+          name: 'Unique',
+          tier: 0,
+          tags: [],
+          lines: ['Require 4(4-2) fewer enemies to be Surrounded'],
+          ranges: [{ value: 4, min: 4, max: 2 }],
+        },
+      ],
+    )
+
+    const row = filters.find((f) => f.id === 'explicit.stat_2267564181')
+    expect(row).toBeDefined()
+    expect(row?.value).toBe(-4)
+    expect(row?.enabled).toBe(true)
+    expect(row?.premium).toBe(true)
+    // direction lower + prefill 1: exact MAX bound (more negative is better), no MIN.
+    expect(row?.max).toBe(-4)
+    expect(row?.min).toBeNull()
+    // modRange is flipped into the matched value's (negative) sign space so the search
+    // value -4 sits inside its own range -- otherwise the renderer tints the box red.
+    expect(row?.modRange).toEqual({ min: -4, max: -2 })
+  })
+})
+
 // ─── 100%-chance binary stat folding (PoE2) ──────────────────────────────────
 
 describe('chance-to binary stat folding', () => {
@@ -2318,6 +2383,28 @@ describe('matchModToStat (PoE2 stat text without leading sign)', () => {
     const result = matchModToStat('Adds +5 to +15 Cold Damage')
     expect(result).not.toBeNull()
     expect(result?.value).toBe(10)
+  })
+
+  // The trade API stores "fewer enemies to be Surrounded" as the inverse of its
+  // positive "additional" stat: clipboard "Require 4 fewer" -> trade value -4.
+  // Without the fewer->additional variant the row never matches and the line is
+  // dropped from the price check entirely (Constricting Command).
+  it('matches "Require N fewer enemies to be Surrounded" against the "additional" stat and negates the value', () => {
+    _setStatEntriesForTests([
+      { id: 'explicit.stat_2267564181', text: 'Require # additional enemies to be Surrounded', type: 'explicit' },
+    ])
+    const result = matchModToStat('Require 4 fewer enemies to be Surrounded')
+    expect(result?.statId).toBe('explicit.stat_2267564181')
+    expect(result?.value).toBe(-4)
+  })
+
+  it('still matches the positive "additional enemies to be Surrounded" form with a positive value', () => {
+    _setStatEntriesForTests([
+      { id: 'explicit.stat_2267564181', text: 'Require # additional enemies to be Surrounded', type: 'explicit' },
+    ])
+    const result = matchModToStat('Require 2 additional enemies to be Surrounded')
+    expect(result?.statId).toBe('explicit.stat_2267564181')
+    expect(result?.value).toBe(2)
   })
 
   it('rejects non-numeric captures', () => {
