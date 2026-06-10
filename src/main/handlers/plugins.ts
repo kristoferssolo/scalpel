@@ -5,7 +5,13 @@ import type { AppSettings } from '../../shared/types'
 import { refreshAppMacros } from '../app-macros'
 import { runMainHotkeyFlow } from '../evaluation'
 import { getOverlayWindow, showOverlay } from '../overlay'
-import { disposePluginOverlay, hidePluginOverlay, registerPluginOverlay, showPluginOverlay } from '../plugin-overlay'
+import {
+  disposePluginOverlay,
+  hidePluginOverlay,
+  registerPluginAnnotationOverlay,
+  registerPluginOverlay,
+  showPluginOverlay,
+} from '../plugin-overlay'
 import {
   getRegisteredOverlayHotkeys,
   getRegisteredPluginHotkeys,
@@ -199,10 +205,19 @@ export function register(store: Store<AppSettings>, isElevated: () => boolean = 
     (
       _evt,
       pluginId: string,
-      opts: { title: string; hotkeyLabel?: string; defaultSize?: { width: number; height: number } },
+      opts: {
+        title: string
+        hotkeyLabel?: string
+        defaultSize?: { width: number; height: number }
+        mode?: 'window' | 'annotation'
+      },
     ) => {
       if (!PLUGIN_ID_PATTERN.test(pluginId)) throw new Error('invalid plugin id')
-      registerPluginOverlay(pluginId, { title: opts.title, defaultSize: opts.defaultSize })
+      if (opts.mode === 'annotation') {
+        registerPluginAnnotationOverlay(pluginId)
+      } else {
+        registerPluginOverlay(pluginId, { title: opts.title, defaultSize: opts.defaultSize })
+      }
       if (opts.hotkeyLabel) {
         setPluginOverlayHotkey(pluginId, opts.hotkeyLabel)
         refreshAppMacros()

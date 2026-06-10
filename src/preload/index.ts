@@ -918,10 +918,19 @@ export const api = {
   pluginShowOverlay: (): Promise<void> => ipcRenderer.invoke('plugins:show-overlay'),
   pluginRegisterOverlay: (
     pluginId: string,
-    opts: { title: string; hotkeyLabel?: string; defaultSize?: { width: number; height: number } },
+    opts: {
+      title: string
+      hotkeyLabel?: string
+      defaultSize?: { width: number; height: number }
+      mode?: 'window' | 'annotation'
+    },
   ): Promise<void> => ipcRenderer.invoke('plugins:register-overlay', pluginId, opts),
   pluginOpenOverlay: (pluginId: string): Promise<void> => ipcRenderer.invoke('plugins:open-overlay', pluginId),
   pluginCloseOverlay: (pluginId: string): Promise<void> => ipcRenderer.invoke('plugins:close-overlay', pluginId),
+  pluginCaptureGameWindow: (
+    region?: import('../plugin-sdk/src/types').GameRect,
+  ): Promise<import('../plugin-sdk/src/types').GameCapture | null> =>
+    ipcRenderer.invoke('plugins:capture-game-window', region),
 }
 
 contextBridge.exposeInMainWorld('api', api)

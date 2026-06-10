@@ -164,10 +164,12 @@ export function PluginHost(props: PluginHostProps): JSX.Element | null {
             title: opts.title,
             hotkeyLabel: opts.hotkeyLabel,
             defaultSize: opts.defaultSize,
+            mode: opts.mode,
           })
         },
         openOverlay: (pluginId) => void window.api.pluginOpenOverlay(pluginId),
         closeOverlay: (pluginId) => void window.api.pluginCloseOverlay(pluginId),
+        captureGameWindow: (region) => window.api.pluginCaptureGameWindow(region),
       })
       pluginDisposersRef.current.set(m.id, disposers)
       // PluginActivate may be async and may return a teardown fn (host runtime

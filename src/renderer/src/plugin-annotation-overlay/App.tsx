@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { Chrome } from '../secondary-overlay/Chrome'
 import { useActivatePlugin } from '../plugins/use-activate-plugin'
 
 export function App({ pluginId }: { pluginId: string }): JSX.Element {
@@ -17,18 +16,15 @@ export function App({ pluginId }: { pluginId: string }): JSX.Element {
     }
   }, [captured])
 
-  return (
-    <Chrome
-      headerContent={<span className="text-text text-sm font-medium">{captured?.opts.title ?? ''}</span>}
-      onClose={() => {
-        void window.api.pluginCloseOverlay(pluginId)
-      }}
-    >
-      {error ? (
-        <div className="p-3 text-[12px] text-text-dim">Plugin error: {error}</div>
-      ) : (
-        <div ref={bodyRef} className="flex-1 overflow-auto" />
-      )}
-    </Chrome>
+  return error ? (
+    <div className="p-3 text-[12px] text-text-dim" style={{ pointerEvents: 'none' }}>
+      Plugin error: {error}
+    </div>
+  ) : (
+    // Full game-window-sized, transparent. The plugin owns absolute positioning
+    // inside. pointer-events:none keeps the surface click-through at the DOM
+    // level (the window is also OS-level click-through); a plugin that wants an
+    // interactive element re-enables pointer-events on that element.
+    <div ref={bodyRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
   )
 }
