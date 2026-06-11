@@ -55,7 +55,7 @@ packages=(
 )
 
 is_prerelease_version() {
-    [[ "$1" =~ -(alpha|beta|rc)([.-]?[0-9]*)?$ ]]
+    [[ "$1" =~ -(alpha|beta|rc|exp)([.-]?[0-9]*)?$ ]]
 }
 
 assert_stable_version() {
