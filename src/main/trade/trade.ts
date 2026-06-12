@@ -860,6 +860,7 @@ export async function searchTrade(
       f.enabled &&
       f.type !== 'timeless' &&
       f.id !== 'misc.memory_level' &&
+      f.id !== 'misc.area_level' &&
       f.id !== 'socket.white_sockets' &&
       (!['defence', 'weapon', 'socket', 'misc', 'gem', 'map', 'heist', 'currency', 'ultimatum'].includes(f.type) ||
         miscPseudoIds.has(f.id) ||

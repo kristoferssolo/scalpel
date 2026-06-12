@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { _setPremiumModsForTests } from '../premium-mods'
 
 // Mock electron before importing stat-matcher
@@ -1191,6 +1191,89 @@ describe('matchItemMods', () => {
           f.id !== 'heist.heist_max_wings',
       )
       expect(jobFilter).toBeUndefined()
+    })
+  })
+
+  describe('trial key area level pinning', () => {
+    let prevVersion: ReturnType<typeof getPoeVersion>
+
+    beforeEach(() => {
+      prevVersion = getPoeVersion()
+    })
+
+    afterEach(() => {
+      setPoeVersion(prevVersion)
+    })
+
+    it('pins area_level min AND max for PoE2 Djinn Barya, type pseudo (renders as row)', () => {
+      setPoeVersion(2)
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({ itemClass: 'Trial Coins', baseType: 'Djinn Barya', sockets: '', monsterLevel: 75 }),
+      )
+      const areaLevel = filters.find((f) => f.id === 'misc.area_level')
+      expect(areaLevel).toBeDefined()
+      expect(areaLevel?.min).toBe(75)
+      expect(areaLevel?.max).toBe(75)
+      expect(areaLevel?.enabled).toBe(true)
+      expect(areaLevel?.type).toBe('pseudo')
+    })
+
+    it('pins area_level min AND max for PoE2 Inscribed Ultimatum, type pseudo (renders as editable row), enabled true', () => {
+      setPoeVersion(2)
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({
+          itemClass: 'Inscribed Ultimatum',
+          baseType: 'Inscribed Ultimatum',
+          sockets: '',
+          monsterLevel: 79,
+        }),
+      )
+      const areaLevel = filters.find((f) => f.id === 'misc.area_level')
+      expect(areaLevel).toBeDefined()
+      expect(areaLevel?.min).toBe(79)
+      expect(areaLevel?.max).toBe(79)
+      expect(areaLevel?.enabled).toBe(true)
+      expect(areaLevel?.type).toBe('pseudo')
+    })
+
+    it('keeps area_level max null for PoE1 Inscribed Ultimatum (higher level is better), type misc', () => {
+      setPoeVersion(1)
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({
+          itemClass: 'Inscribed Ultimatum',
+          baseType: 'Inscribed Ultimatum',
+          sockets: '',
+          monsterLevel: 79,
+        }),
+      )
+      const areaLevel = filters.find((f) => f.id === 'misc.area_level')
+      expect(areaLevel).toBeDefined()
+      expect(areaLevel?.min).toBe(79)
+      expect(areaLevel?.max).toBeNull()
+      expect(areaLevel?.type).toBe('misc')
+    })
+
+    it('keeps area_level max null for non-trial items in PoE2', () => {
+      setPoeVersion(2)
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({ itemClass: 'Heist Contracts', sockets: '', monsterLevel: 83 }),
+      )
+      const areaLevel = filters.find((f) => f.id === 'misc.area_level')
+      expect(areaLevel).toBeDefined()
+      expect(areaLevel?.min).toBe(83)
+      expect(areaLevel?.max).toBeNull()
     })
   })
 

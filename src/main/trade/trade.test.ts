@@ -517,6 +517,45 @@ describe('searchTrade filter-group dispatch', () => {
     expect(miscFilters.filters.unidentified_tier).toEqual({ min: 2, max: 4 })
   })
 
+  it('pseudo-typed misc.area_level (Djinn Barya row) lands in misc_filters and NOT in stats and-group', async () => {
+    // Djinn Barya emits area_level with type: 'pseudo' so the renderer shows it
+    // as an editable row rather than a chip. The query builder must still route it
+    // to misc_filters (by id, not by type) and must NOT let it flow into the stats
+    // and-group where 'misc.area_level' is an invalid stat id.
+    setPoeVersion(2)
+    const barya = {
+      name: '',
+      baseType: 'Djinn Barya',
+      itemClass: 'Trial Coins',
+      rarity: 'Normal',
+    }
+    const areaLevelRow: StatFilter[] = [
+      {
+        id: 'misc.area_level',
+        text: 'Area Level: 75',
+        type: 'pseudo',
+        enabled: true,
+        value: 75,
+        min: 75,
+        max: 75,
+      },
+    ]
+    await searchTrade('Fate of the Vaal', barya, areaLevelRow, {
+      tradeStatus: 'any',
+      tradePriceOption: 'exalted_divine',
+    })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    const body = parseCapturedBody(req)
+    // (1) area_level lands in misc_filters with both min and max
+    const miscFilters = (body.query.filters as Record<string, { filters: Record<string, unknown> }>).misc_filters
+    expect(miscFilters).toBeDefined()
+    expect(miscFilters.filters.area_level).toEqual({ min: 75, max: 75 })
+    // (2) misc.area_level must NOT appear in the stats and-group
+    const andGroup = body.query.stats.find((g: { type: string }) => g.type === 'and')
+    const andIds = ((andGroup as { filters: Array<{ id: string }> } | undefined)?.filters ?? []).map((f) => f.id)
+    expect(andIds).not.toContain('misc.area_level')
+  })
+
   it('PoE1 enabled weapon.damage filter lands under weapon_filters.damage', async () => {
     setPoeVersion(1)
     const sword = {
