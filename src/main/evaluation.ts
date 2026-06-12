@@ -183,6 +183,7 @@ export function evaluateAndSend(item: PoeItem): void {
   const activeMatch = matches.find((m) => m.isFirstMatch)
   const tierGroup = activeMatch ? buildTierGroup(currentFilter, activeMatch, effective) : undefined
   const priceInfo = lookupPriceForItem(effective)
+  const divinePrice = lookupPrice('Divine Orb', 'Divine Orb')
   const payload: OverlayData = {
     item,
     matches,
@@ -191,6 +192,8 @@ export function evaluateAndSend(item: PoeItem): void {
     strandBreakpoints: effectiveStrandBps,
     tierGroup,
     priceInfo,
+    chaosPerDivine: divinePrice?.chaosValue,
+    divineGraph: divinePrice?.graph,
   }
   const win = getOverlayWindow()
   if (win) {
@@ -316,6 +319,7 @@ export async function preloadPriceCheck(item: PoeItem, store: Store<AppSettings>
     statFilters,
     league,
     chaosPerDivine,
+    divineGraph: divinePrice?.graph,
     sessionId,
     learnedDecisions,
     unidCandidates: unidCandidates.length > 0 ? unidCandidates : undefined,

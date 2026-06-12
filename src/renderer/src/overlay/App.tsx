@@ -181,6 +181,7 @@ export default function App(): JSX.Element {
     }>
     league: string
     chaosPerDivine?: number
+    divineGraph?: (number | null)[]
     unidCandidates?: Array<{ name: string; chaosValue: number }>
     sessionId: number
     learnedDecisions: Record<string, boolean>
@@ -985,7 +986,12 @@ export default function App(): JSX.Element {
                   />
                 )}
                 {view === 'tools' && overlayData && features.socketRecolor && (
-                  <SocketRecolor item={overlayData.item} priceInfo={overlayData.priceInfo} />
+                  <SocketRecolor
+                    item={overlayData.item}
+                    priceInfo={overlayData.priceInfo}
+                    chaosPerDivine={overlayData.chaosPerDivine}
+                    divineGraph={overlayData.divineGraph}
+                  />
                 )}
                 {view === 'pricecheck' &&
                   (priceCheckData ? (
@@ -997,6 +1003,7 @@ export default function App(): JSX.Element {
                       league={priceCheckData.league}
                       poeVersion={poeVersion ?? 1}
                       chaosPerDivine={priceCheckData.chaosPerDivine}
+                      divineGraph={priceCheckData.divineGraph}
                       unidCandidates={priceCheckData.unidCandidates}
                       sessionId={priceCheckData.sessionId}
                       learnedDecisions={priceCheckData.learnedDecisions}

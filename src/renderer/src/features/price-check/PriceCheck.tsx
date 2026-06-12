@@ -50,6 +50,7 @@ export function PriceCheck({
   league,
   poeVersion,
   chaosPerDivine,
+  divineGraph,
   unidCandidates,
   sessionId,
   learnedDecisions,
@@ -423,6 +424,7 @@ export function PriceCheck({
         isDivCard={isDivCard}
         priceInfo={priceInfo}
         chaosPerDivine={chaosPerDivine}
+        divineGraph={divineGraph}
         stackSize={item.stackSize > 1 ? item.stackSize : undefined}
         maxStackSize={item.maxStackSize}
         dustInfo={getDustInfo(item)}
@@ -835,9 +837,9 @@ export function PriceCheck({
         </div>
 
         {features.bulkExchangeBanner === 'ange' ? (
-          <AngeBanner item={item} priceInfo={priceInfo} chaosPerDivine={chaosPerDivine} />
+          <AngeBanner item={item} priceInfo={priceInfo} chaosPerDivine={chaosPerDivine} divineGraph={divineGraph} />
         ) : (
-          <FaustusBanner item={item} priceInfo={priceInfo} chaosPerDivine={chaosPerDivine} />
+          <FaustusBanner item={item} priceInfo={priceInfo} chaosPerDivine={chaosPerDivine} divineGraph={divineGraph} />
         )}
 
         {/* Trade-API penalty wins over the raw error text: same information,

@@ -231,6 +231,8 @@ function calculateMethods(
 interface Props {
   item: PoeItem
   priceInfo?: import('../../../shared/types').PriceInfo
+  chaosPerDivine?: number
+  divineGraph?: (number | null)[]
 }
 
 function getMaxSockets(item: PoeItem): number {
@@ -242,7 +244,7 @@ function getMaxSockets(item: PoeItem): number {
   return current || 6
 }
 
-export function SocketRecolor({ item, priceInfo }: Props): JSX.Element {
+export function SocketRecolor({ item, priceInfo, chaosPerDivine, divineGraph }: Props): JSX.Element {
   const maxSockets = getMaxSockets(item)
   const [rates, setRates] = useState<CurrencyRates>({ chrom: 1 / 8, jeweller: 1 / 6, fusing: 1 / 2 })
 
@@ -320,7 +322,13 @@ export function SocketRecolor({ item, priceInfo }: Props): JSX.Element {
 
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-3">
-      <ItemSummary item={{ ...item, reqStr, reqDex, reqInt }} priceInfo={priceInfo} hideSockets />
+      <ItemSummary
+        item={{ ...item, reqStr, reqDex, reqInt }}
+        priceInfo={priceInfo}
+        chaosPerDivine={chaosPerDivine}
+        divineGraph={divineGraph}
+        hideSockets
+      />
 
       {/* Socket picker + results */}
       <div className="flex flex-col flex-1 min-h-0 rounded-t-lg overflow-hidden">

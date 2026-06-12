@@ -298,6 +298,20 @@ export function processDenseResponse(resp: DenseResponse, entriesOut: PriceEntry
     for (const entry of entriesOut) {
       if (entry.divineValue == null) entry.divineValue = entry.chaosValue / divineRate
     }
+    // Ninja's dense payload normally includes a Chaos Orb line, but the
+    // baseline currency is the one entry the feed can omit (it IS the unit).
+    // The pair-currency display needs a lookup hit for it, so synthesize one.
+    if (!priceMap.has('chaos orb')) {
+      const info: PriceInfo = { chaosValue: 1, divineValue: 1 / divineRate, ninjaCategory: 'currency' }
+      priceMap.set('chaos orb', info)
+      pricesByVariant.set('chaos orb|', info)
+      entriesOut.push({
+        name: 'Chaos Orb',
+        category: 'currency',
+        chaosValue: info.chaosValue,
+        divineValue: info.divineValue,
+      })
+    }
   }
 }
 

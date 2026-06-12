@@ -428,6 +428,7 @@ export const api = {
       }>
       league: string
       chaosPerDivine?: number
+      divineGraph?: (number | null)[]
       unidCandidates?: Array<{ name: string; chaosValue: number }>
       sessionId: number
       learnedDecisions: Record<string, boolean>
