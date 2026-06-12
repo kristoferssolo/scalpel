@@ -2202,6 +2202,23 @@ describe('matchItemMods', () => {
       expect(filters.find((f) => f.id === 'explicit.stat_681332047')).toBeUndefined()
     })
 
+    it('spear "reduced Attack Speed" picks the local variant with a negated value', () => {
+      _setStatEntriesForTests([
+        { id: 'explicit.stat_210067635', text: '#% increased Attack Speed (Local)', type: 'explicit' },
+        { id: 'explicit.stat_681332047', text: '#% increased Attack Speed', type: 'explicit' },
+      ])
+      const filters = matchItemMods(
+        ['10% reduced Attack Speed'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Spears' }),
+      )
+      const local = filters.find((f) => f.id === 'explicit.stat_210067635')
+      expect(local).toBeDefined()
+      expect(local?.value).toBe(-10)
+      expect(filters.find((f) => f.id === 'explicit.stat_681332047')).toBeUndefined()
+    })
+
     it('shield "increased Block chance" picks the local variant', () => {
       _setStatEntriesForTests([
         { id: 'explicit.stat_2481353198', text: '#% increased Block chance (Local)', type: 'explicit' },
