@@ -9,6 +9,7 @@ import type { HotkeySlot } from '../../../../components/primitives/hotkey-collis
 import { PlaceholderTile } from './PlaceholderTile'
 import { ThumbnailTile } from './ThumbnailTile'
 import { UrlPasteRow } from './UrlPasteRow'
+import { stripIpcErrorWrapper } from '../../../../shared/utils'
 
 interface CategoryCardProps {
   category: CheatSheetCategory
@@ -66,11 +67,9 @@ export function CategoryCard({
       onUpdate({ ...category, sheets: [{ id: added.id, ext: added.ext }, ...category.sheets] })
       setUrlInput(null)
     } catch (e) {
-      // Strip Electron's IPC rejection wrapper ("Error invoking remote
-      // method 'foo': Error: <our message>") so the user sees just our
-      // friendly copy in the banner.
+      // stripIpcErrorWrapper removes the Electron IPC plumbing prefix.
       const raw = e instanceof Error ? e.message : String(e)
-      onError(raw.replace(/^Error invoking remote method '[^']+': Error: /, ''))
+      onError(stripIpcErrorWrapper(raw))
     }
   }
 

@@ -47,3 +47,10 @@ export function formatDust(value: number): string {
 export function zebraRowBg(index: number, evenBg = 'rgba(255,255,255,0.02)'): string {
   return index % 2 === 0 ? evenBg : 'transparent'
 }
+
+/** Strip Electron's IPC rejection wrapper ("Error invoking remote method
+ *  'foo': Error: <our message>") so users see just the message we threw in
+ *  the main process, not the plumbing. */
+export function stripIpcErrorWrapper(message: string): string {
+  return message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '')
+}

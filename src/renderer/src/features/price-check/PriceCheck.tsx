@@ -40,7 +40,7 @@ import { applyLearnedDecisions } from './learned-decisions'
 import type { ListedTime, PriceOption, ResultsView, StatusOption } from './search-settings'
 import { LISTED_TIME_OPTIONS, getPriceOptions, primaryCurrencySwap, STATUS_OPTIONS } from './search-settings'
 import { SearchSettingDropdown } from './SearchSettingDropdown'
-import { zebraRowBg } from '../../shared/utils'
+import { zebraRowBg, stripIpcErrorWrapper } from '../../shared/utils'
 import { useAuth } from '../../shared/use-auth'
 
 export function PriceCheck({
@@ -91,19 +91,6 @@ export function PriceCheck({
       unsubPenalty()
     }
   }, [])
-
-  // Auto-clear the penalty once the countdown actually elapses so the search
-  // UI re-enables without the user having to dismiss anything manually.
-  useEffect(() => {
-    if (penaltyUntil == null) return
-    const remaining = penaltyUntil - Date.now()
-    if (remaining <= 0) {
-      setPenaltyUntil(null)
-      return
-    }
-    const id = setTimeout(() => setPenaltyUntil(null), remaining)
-    return () => clearTimeout(id)
-  }, [penaltyUntil])
 
   const [filters, setFilters] = useState<StatFilter[]>(initialFilters)
   const filtersRef = useRef(filters)
@@ -270,6 +257,7 @@ export function PriceCheck({
   const doBulkSearch = async (): Promise<void> => {
     setSearching(true)
     setError(null)
+    setPenaltyUntil(null)
     setSearched(true)
     try {
       // PriceInfo.chaosValue keeps its PoE1 name but semantically means
@@ -287,7 +275,7 @@ export function PriceCheck({
       setQueryId(result.queryId)
       queryIdRef.current = result.queryId
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Search failed')
+      setError(stripIpcErrorWrapper(e instanceof Error ? e.message : 'Search failed'))
     }
     setSearching(false)
   }
@@ -295,6 +283,7 @@ export function PriceCheck({
   const doSearch = async (): Promise<void> => {
     setSearching(true)
     setError(null)
+    setPenaltyUntil(null)
     setLoginRequiredPseudoIds([])
     // With "don't hide unchecked" on, still collapse on the first auto-search, then skip
     // re-collapse on subsequent manual searches. If "never auto-search" is also on, there
@@ -338,7 +327,7 @@ export function PriceCheck({
       setRemainingIds(result.remainingIds ?? [])
       setLoginRequiredPseudoIds(result.loginRequiredPseudoIds ?? [])
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Search failed')
+      setError(stripIpcErrorWrapper(e instanceof Error ? e.message : 'Search failed'))
     }
     setSearching(false)
   }
@@ -846,7 +835,7 @@ export function PriceCheck({
          *  but with Greg's face on it and a real countdown the user can plan
          *  around. The raw error still shows for non-rate-limit failures. */}
         {penaltyUntil != null ? (
-          <TradeTimeoutBanner until={penaltyUntil} />
+          <TradeTimeoutBanner key={penaltyUntil} until={penaltyUntil} />
         ) : (
           error && <div className="text-[10px] text-[#ef5350] px-1">{error}</div>
         )}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { promoteChaos } from './utils'
+import { promoteChaos, stripIpcErrorWrapper } from './utils'
 
 describe('promoteChaos', () => {
   it('promotes to divine when divineValue >= 1', () => {
@@ -20,5 +20,21 @@ describe('promoteChaos', () => {
 
   it('noPromote keeps the price in the baseline currency even past one divine (PoE2)', () => {
     expect(promoteChaos(141, 141, 2, 1, true)).toEqual({ text: '141', currencyKey: 'exalted' })
+  })
+})
+
+describe('stripIpcErrorWrapper', () => {
+  it('strips the full wrapper with inner Error: prefix', () => {
+    expect(stripIpcErrorWrapper("Error invoking remote method 'bulk-exchange': Error: Rate limited")).toBe(
+      'Rate limited',
+    )
+  })
+
+  it('strips a wrapper without the inner Error: prefix (non-Error rejection)', () => {
+    expect(stripIpcErrorWrapper("Error invoking remote method 'trade-search': boom")).toBe('boom')
+  })
+
+  it('passes through a message with no wrapper unchanged', () => {
+    expect(stripIpcErrorWrapper("GGG's trade API timed out")).toBe("GGG's trade API timed out")
   })
 })

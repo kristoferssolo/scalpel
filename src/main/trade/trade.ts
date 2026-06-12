@@ -3,6 +3,7 @@ import tabletModMap from '../../shared/data/trade/tablet-mods.json'
 import { TRANSFIGURED_GEM_DISC } from '../../shared/data/trade/transfigured-gems'
 import { getTradeUrls } from '../../shared/endpoints'
 import { isClusterJewel, isSkillGem, splitRuneTier } from '../../shared/poe-item'
+import { recordMainBreadcrumb } from '../diagnostics'
 import { getPoeVersion } from '../game-state'
 import { getOverlayWindow } from '../overlay'
 import { harvestIcons } from './icon-cache'
@@ -334,17 +335,43 @@ export function _resetRateLimitsForTests(): void {
   }
 }
 
+/** "45s" under two minutes, "8m" above -- the 10-minute Cloudflare blocks
+ *  read better in minutes. */
+function formatWaitSec(waitMs: number): string {
+  const sec = Math.round(waitMs / 1000)
+  return sec >= 120 ? `${Math.ceil(sec / 60)}m` : `${sec}s`
+}
+
 function categoryFor(url: string): RateLimitCategory {
   if (url.includes('/fetch/')) return 'fetch'
   if (url.includes('/exchange/')) return 'exchange'
   return 'search'
 }
 
+// ─── Trade auth cookie ────────────────────────────────────────────────────────
+//
+// Trade requests deliberately send NO session cookies: GGG's API mints an
+// anonymous POESESSID on its own responses, and Cloudflare bot-challenges any
+// /api/trade2 request that echoes it back (verified A/B: cookie-less requests
+// pass, cookie-carrying ones are challenged from the second request on, #429).
+// A genuinely logged-in POESESSID still has to reach the API for weighted-sum
+// searches, so the auth flow pushes it here and we attach it by hand.
+let tradeAuthCookie: string | null = null
+
+/** Set (on confirmed login) or clear (logout / failed auth check) the
+ *  POESESSID attached to trade API requests. */
+export function setTradeAuthCookie(value: string | null): void {
+  tradeAuthCookie = value
+}
+
 // ─── HTTP helpers ─────────────────────────────────────────────────────────────
 //
 // Match the approach APT + EE2 use (verified in their main/src/proxy.ts):
-//   - `net.request` with `useSessionCookies: true` so any POESESSID / cf-
-//     clearance picked up by the app's login window is included.
+//   - `net.request` with `useSessionCookies: false`: GGG's API mints an
+//     anonymous POESESSID on its own responses, and Cloudflare bot-challenges
+//     any request that echoes it back (#429). Never let Electron attach the
+//     session cookie jar; a logged-in POESESSID is injected by hand in
+//     setTradeHeaders when the auth flow provides one.
 //   - No `Origin`, no `Referer`, no `Sec-Fetch-*`, no `Accept-Language`. APT
 //     actively strips these from their proxy -- sending them puts us in a
 //     stricter bucket than the trade website.
@@ -356,7 +383,7 @@ function commonRequestOpts(url: string, method: string): Electron.ClientRequestC
   return {
     url,
     method,
-    useSessionCookies: true,
+    useSessionCookies: false,
     referrerPolicy: 'no-referrer-when-downgrade',
   }
 }
@@ -365,6 +392,7 @@ function setTradeHeaders(request: Electron.ClientRequest): void {
   request.setHeader('Content-Type', 'application/json')
   request.setHeader('Accept', 'application/json')
   request.setHeader('User-Agent', app.userAgentFallback)
+  if (tradeAuthCookie) request.setHeader('Cookie', `POESESSID=${tradeAuthCookie}`)
 }
 
 // Hard ceiling on a single HTTP attempt. electron's `net.request` has no
@@ -382,6 +410,10 @@ async function fetchJson(url: string, options?: { method?: string; body?: string
   // firing under normal use. Seed limiters handle the first request before
   // we've seen a response's headers.
   await RateLimiter.waitMulti(RATE_LIMIT_RULES[category])
+  // One-shot auth-cookie drop for Cloudflare challenges (see the challenged
+  // branch below): attempted once per call when a logged-in POESESSID is
+  // active, then we surface the error.
+  let challengeResetDone = false
   for (let attempt = 0; attempt <= retries; attempt++) {
     const started = Date.now()
     try {
@@ -427,13 +459,49 @@ async function fetchJson(url: string, options?: { method?: string; body?: string
             clearTimeout(timer)
             const retryAfter = response.headers['retry-after']
             const wait = retryAfter ? parseInt(String(retryAfter), 10) * 1000 : 5000
+            // Three 429 flavors (#429): GGG's own rate limiter always sends
+            // x-rate-limit-* headers; a Cloudflare bot challenge marks itself
+            // with cf-mitigated: challenge (no GGG headers, no retry-after);
+            // and a Cloudflare timed BLOCK has no GGG headers and no
+            // cf-mitigated but a concrete Retry-After countdown. Blocks behave
+            // like rate limits (wait it out); challenges do not (waiting never
+            // helps an API client).
+            const cfMitigated = flatHeaders['cf-mitigated']
+            const hasGggHeaders = !!flatHeaders['x-rate-limit-rules']
+            const challenged = cfMitigated === 'challenge' || (!hasGggHeaders && !retryAfter)
+            const edgeBlocked = !challenged && !hasGggHeaders
             console.error(`[trade] 429 rate limited: retry-after=${Math.round(wait / 1000)}s for ${url}`)
             // Broadcast only when the penalty is long enough to surface to the
             // user. Short waits are absorbed by the retry loop and never reach
             // the UI, so lighting up the Greg banner for a 1-second blip would
-            // just flicker.
-            if (wait >= 10000) broadcastTradePenalty(Date.now() + wait)
-            reject({ rateLimited: true, wait })
+            // just flicker. Challenges never broadcast: a countdown would hide
+            // the challenge error and promise a recovery that won't come.
+            if (!challenged && wait >= 10000) broadcastTradePenalty(Date.now() + wait)
+            // One line per 429 into scalpel.log: issue #429 reports first-request 429s
+            // we can't reproduce, and the rule/state headers are the only evidence that
+            // can tell a hot per-IP bucket apart from an edge-level 429 with no GGG
+            // headers at all.
+            const ruleNames = (flatHeaders['x-rate-limit-rules'] ?? '')
+              .split(',')
+              .map((r) => r.trim().toLowerCase())
+              .filter(Boolean)
+            const ruleDetail = ruleNames
+              .map(
+                (r) =>
+                  `${r}=${flatHeaders[`x-rate-limit-${r}`] ?? '?'} ${r}-state=${flatHeaders[`x-rate-limit-${r}-state`] ?? '?'}`,
+              )
+              .join(' ')
+            // Cookie names (not values) the edge plants on the 429 itself --
+            // challenge-state cookies here are what keep a flagged session
+            // flagged across connection resets.
+            const setCookieNames = ([] as string[])
+              .concat((response.headers['set-cookie'] as unknown as string | string[]) ?? [])
+              .map((s) => s.split('=')[0])
+              .join(',')
+            recordMainBreadcrumb(
+              `trade 429 (${category}) retry-after=${flatHeaders['retry-after'] ?? 'none'} ${ruleDetail || 'no rate-limit headers'}${cfMitigated ? ` cf-mitigated=${cfMitigated}` : ''} cf-ray=${flatHeaders['cf-ray'] ?? 'none'} set-cookie=${setCookieNames || 'none'}`,
+            )
+            reject({ rateLimited: true, wait, challenged, edgeBlocked })
             return
           }
           response.on('data', (chunk) => {
@@ -477,14 +545,44 @@ async function fetchJson(url: string, options?: { method?: string; body?: string
         // things like UA fingerprint on top of the advertised policies). No
         // point sleeping the retry out silently -- surface the wait to the
         // user and let the Greg banner count it down.
-        const wait = (e as unknown as { wait: number }).wait
+        const { wait, challenged, edgeBlocked } = e as unknown as {
+          wait: number
+          challenged?: boolean
+          edgeBlocked?: boolean
+        }
+        if (challenged) {
+          if (!challengeResetDone && attempt < retries && tradeAuthCookie) {
+            challengeResetDone = true
+            // The only cookie we ever send is the logged-in POESESSID; if the
+            // edge has started challenging that too, degrade to anonymous (the
+            // auth cache re-validates within minutes) rather than hard-fail.
+            recordMainBreadcrumb('trade 429 challenge: dropping auth cookie, retrying anonymously')
+            setTradeAuthCookie(null)
+            continue
+          }
+          // Anonymous cookie-less requests that still get challenged mean the
+          // edge is in an elevated mode nothing client-side can clear.
+          throw new Error(
+            "Cloudflare challenged Scalpel's connection to the trade site -- this is a bot check, not a rate limit. It usually clears on its own within a few minutes",
+          )
+        }
         const MAX_SILENT_WAIT_MS = 30000
         if (wait <= MAX_SILENT_WAIT_MS && attempt < retries) {
           await new Promise((r) => setTimeout(r, wait))
           continue
         }
-        const waitSec = Math.round(wait / 1000)
-        throw new Error(`Rate limited by the trade API -- wait ${waitSec}s and try again`)
+        // Surface the countdown even for short waits: on this path the search
+        // has failed for good, so the banner is the result, not a flicker.
+        // Waits of 10s+ already broadcast in the response handler.
+        if (wait < 10000) broadcastTradePenalty(Date.now() + wait)
+        if (edgeBlocked) {
+          throw new Error(
+            `Cloudflare (the trade site's CDN) temporarily blocked this connection -- it lifts in ${formatWaitSec(wait)}`,
+          )
+        }
+        throw new Error(
+          `GGG's trade API rate limited this search (limits are per IP, shared with the trade website) -- wait ${formatWaitSec(wait)} and try again`,
+        )
       }
       if (e && typeof e === 'object' && 'timedOut' in e && attempt < retries) {
         // Re-loop without sleeping: the remote just ate our connection, try
@@ -493,7 +591,7 @@ async function fetchJson(url: string, options?: { method?: string; body?: string
         continue
       }
       if (e && typeof e === 'object' && 'timedOut' in e) {
-        throw new Error(`Trade API timed out after ${REQUEST_TIMEOUT_MS / 1000}s -- retry when you're ready`)
+        throw new Error(`GGG's trade API timed out after ${REQUEST_TIMEOUT_MS / 1000}s -- retry when you're ready`)
       }
       throw e
     }

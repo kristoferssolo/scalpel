@@ -15,6 +15,7 @@ import {
   searchTabletsByRegex,
   searchTrade,
   searchWaystonesByRegex,
+  setTradeAuthCookie,
 } from '../trade/trade'
 
 async function clickTradeButton(
@@ -202,9 +203,17 @@ function setAuthCache(loggedIn: boolean): void {
 async function checkAuthFresh(): Promise<AuthResult> {
   try {
     const cookies = await session.defaultSession.cookies.get({ domain: 'pathofexile.com', name: 'POESESSID' })
-    if (cookies.length === 0) return { loggedIn: false }
-    return await fetchPoeProfile()
+    if (cookies.length === 0) {
+      setTradeAuthCookie(null)
+      return { loggedIn: false }
+    }
+    const result = await fetchPoeProfile()
+    // Only a confirmed login may attach POESESSID to trade requests -- an
+    // anonymous POESESSID is exactly what Cloudflare challenges (#429).
+    setTradeAuthCookie(result.loggedIn ? cookies[0].value : null)
+    return result
   } catch {
+    setTradeAuthCookie(null)
     return { loggedIn: false }
   }
 }
@@ -328,6 +337,7 @@ export function register(store: Store<AppSettings>): void {
 
   ipcMain.handle('poe-logout', async () => {
     await session.defaultSession.cookies.remove(POE_WEBSITE, 'POESESSID')
+    setTradeAuthCookie(null)
     setAuthCache(false)
   })
 
