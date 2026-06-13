@@ -1822,20 +1822,26 @@ describe('matchItemMods', () => {
       expect(tier?.enabled).toBe(true)
       expect(tier?.min).toBe(15)
       expect(tier?.max).toBe(15) // exact tier
-      // Revives is the only opt-in chip we surface (disabled by default).
-      expect(filters.find((f) => f.id === 'map.map_revives')?.value).toBe(1)
-      // Every other Endgame Filter is unindexed on the PoE2 trade site (live-probed:
-      // map_filter searches return zero), so enabling its chip would break the search.
-      // None of them must surface even when the item carries the property.
-      for (const id of [
-        'map.map_iir',
-        'map.map_iiq',
-        'map.map_packsize',
-        'map.map_bonus',
-        'map.map_gold',
-        'map.map_magic_monsters',
-        'map.map_rare_monsters',
-      ]) {
+      // The 6 opt-in keys GGG indexes (live-probed) surface as disabled chips with a
+      // fuzzed min (floor(value * 0.9)); the user toggles them on as needed.
+      for (const [id, value, min] of [
+        ['map.map_iir', 60, 54],
+        ['map.map_packsize', 16, 14],
+        ['map.map_revives', 1, 0],
+        ['map.map_bonus', 80, 72],
+        ['map.map_magic_monsters', 30, 27],
+        ['map.map_rare_monsters', 20, 18],
+      ] as const) {
+        const chip = filters.find((f) => f.id === id)
+        expect(chip, `${id} should surface`).toBeDefined()
+        expect(chip?.value).toBe(value)
+        expect(chip?.enabled).toBe(false)
+        expect(chip?.min).toBe(min)
+      }
+      // map_iiq and map_gold are still unindexed on the PoE2 trade site (live-probed:
+      // map_filter searches return zero), so enabling their chip would break the
+      // search. Neither must surface even when the item carries the property.
+      for (const id of ['map.map_iiq', 'map.map_gold']) {
         expect(
           filters.find((f) => f.id === id),
           `${id} should be hidden`,

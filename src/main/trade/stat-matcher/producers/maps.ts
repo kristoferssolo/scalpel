@@ -29,7 +29,8 @@ type MapItemInfo = {
  *  indexes each key for search is NOT encoded here -- it changes league to league and
  *  is sourced from the remote-overridable allowlist (isEndgameFilterIndexed), so a
  *  chip can be re-enabled without an app release. As of 2026-06 (live-probed on Runes
- *  of Aldur) only map_tier and map_revives return results; the rest come back empty.
+ *  of Aldur) map_tier, map_packsize, map_iir, map_revives, map_bonus, map_magic_monsters
+ *  and map_rare_monsters return results; map_iiq and map_gold still come back empty.
  *  `map_experience` has no clipboard field yet, so it is omitted rather than listed
  *  with a dangling `field`. */
 interface WaystoneEndgameFilter {
