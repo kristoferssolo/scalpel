@@ -3911,6 +3911,152 @@ describe("faction rule: extraction-eligible (Aldur's Legacy)", () => {
   })
 })
 
+// ─── Gem-level mod pinning ────────────────────────────────────────────────────
+
+describe('gem-level mod pinning (min=max=value)', () => {
+  // Stat entries for gem-level mods used across cases.
+  const FIRE_SPELL_GEMS = {
+    id: 'explicit.stat_2452998583',
+    text: '+# to Level of all Fire Spell Skill Gems',
+    type: 'explicit',
+  }
+  const ALL_SPELL_SKILLS = {
+    id: 'explicit.stat_1234567891',
+    text: '+# to Level of all Spell Skills',
+    type: 'explicit',
+  }
+  const SKILL_GEMS_IMPLICIT = {
+    id: 'implicit.stat_2843100721',
+    text: '+# to Level of all Skill Gems',
+    type: 'implicit',
+  }
+  const SPELL_DAMAGE = {
+    id: 'explicit.stat_7777777777',
+    text: '+#% to Spell Damage',
+    type: 'explicit',
+  }
+
+  afterEach(() => {
+    _setStatEntriesForTests([])
+  })
+
+  it('explicit "+1 to Level of all Fire Spell Skill Gems" (no advanced mods) pins min=1 and max=1', () => {
+    _setStatEntriesForTests([FIRE_SPELL_GEMS])
+    const filters = matchItemMods(
+      ['+1 to Level of all Fire Spell Skill Gems'],
+      [],
+      undefined,
+      makeItemInfo({ rarity: 'Rare', itemClass: 'Wands' }),
+    )
+    const row = filters.find((f) => f.id === FIRE_SPELL_GEMS.id)
+    expect(row).toBeDefined()
+    expect(row?.value).toBe(1)
+    // Without pinning, floor(1 * 0.9) = 0 -- this is the regression the fix prevents.
+    expect(row?.min).toBe(1)
+    expect(row?.max).toBe(1)
+  })
+
+  it('explicit "+2 to Level of all Spell Skills" pins min=2 and max=2', () => {
+    _setStatEntriesForTests([ALL_SPELL_SKILLS])
+    const filters = matchItemMods(
+      ['+2 to Level of all Spell Skills'],
+      [],
+      undefined,
+      makeItemInfo({ rarity: 'Rare', itemClass: 'Amulets' }),
+    )
+    const row = filters.find((f) => f.id === ALL_SPELL_SKILLS.id)
+    expect(row).toBeDefined()
+    expect(row?.value).toBe(2)
+    expect(row?.min).toBe(2)
+    expect(row?.max).toBe(2)
+  })
+
+  it('implicit "+1 to Level of all Skill Gems" (corrupted amulet) pins min=1 and max=1', () => {
+    _setStatEntriesForTests([SKILL_GEMS_IMPLICIT])
+    const filters = matchItemMods(
+      [],
+      ['+1 to Level of all Skill Gems (implicit)'],
+      undefined,
+      makeItemInfo({ rarity: 'Rare', itemClass: 'Amulets', corrupted: true }),
+    )
+    const row = filters.find((f) => f.id === SKILL_GEMS_IMPLICIT.id)
+    expect(row).toBeDefined()
+    expect(row?.value).toBe(1)
+    expect(row?.min).toBe(1)
+    expect(row?.max).toBe(1)
+  })
+
+  it('ordinary numeric mod keeps fuzzed min and max=null (pin does not affect non-gem-level mods)', () => {
+    _setStatEntriesForTests([SPELL_DAMAGE])
+    const filters = matchItemMods(
+      ['+40% to Spell Damage'],
+      [],
+      undefined,
+      makeItemInfo({ rarity: 'Rare', itemClass: 'Wands' }),
+    )
+    const row = filters.find((f) => f.id === SPELL_DAMAGE.id)
+    expect(row).toBeDefined()
+    expect(row?.value).toBe(40)
+    // Ordinary fuzz: floor(40 * 0.9) = 36
+    expect(row?.min).toBe(36)
+    expect(row?.max).toBeNull()
+  })
+
+  it('fractured "+1 to Level of all Fire Spell Skill Gems" yields fractured row and companion explicit row both with min=1 and max=1', () => {
+    _setStatEntriesForTests([FIRE_SPELL_GEMS])
+    const advancedMods: AdvancedMod[] = [
+      {
+        type: 'prefix',
+        name: 'of the Inferno',
+        tier: 1,
+        tags: ['Gem'],
+        lines: ['+1 to Level of all Fire Spell Skill Gems'],
+        ranges: [{ value: 1, min: 1, max: 1 }],
+        fractured: true,
+        crafted: false,
+        eldritch: false,
+        foulborn: false,
+      },
+    ]
+    const filters = matchItemMods(
+      ['+1 to Level of all Fire Spell Skill Gems'],
+      [],
+      undefined,
+      makeItemInfo({ rarity: 'Rare', itemClass: 'Wands' }),
+      advancedMods,
+    )
+    // Primary row: fractured.stat_2452998583
+    const fracturedRow = filters.find((f) => f.id === 'fractured.stat_2452998583')
+    expect(fracturedRow).toBeDefined()
+    expect(fracturedRow?.value).toBe(1)
+    expect(fracturedRow?.min).toBe(1)
+    expect(fracturedRow?.max).toBe(1)
+    // Companion row: explicit.stat_2452998583, disabled by default
+    const companionRow = filters.find((f) => f.id === FIRE_SPELL_GEMS.id)
+    expect(companionRow).toBeDefined()
+    expect(companionRow?.enabled).toBe(false)
+    expect(companionRow?.value).toBe(1)
+    expect(companionRow?.min).toBe(1)
+    expect(companionRow?.max).toBe(1)
+  })
+
+  it('two identical gem-level mods merge to value=2 min=2 max=2 (pinned exact rows survive mergeDuplicateStats)', () => {
+    _setStatEntriesForTests([FIRE_SPELL_GEMS])
+    const filters = matchItemMods(
+      ['+1 to Level of all Fire Spell Skill Gems', '+1 to Level of all Fire Spell Skill Gems'],
+      [],
+      undefined,
+      makeItemInfo({ rarity: 'Rare', itemClass: 'Wands' }),
+    )
+    const row = filters.find((f) => f.id === FIRE_SPELL_GEMS.id)
+    expect(row).toBeDefined()
+    expect(row?.value).toBe(2)
+    // Without the exact-pin merge fix: floor(2 * 0.9) = 1, not 2.
+    expect(row?.min).toBe(2)
+    expect(row?.max).toBe(2)
+  })
+})
+
 // ─── Tablet class rule: drawback mods prefill max via lowerIsBetter ───────────
 
 describe('unique tablet class rule: drawback (reduced pack size) prefills max bound', () => {

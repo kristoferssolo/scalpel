@@ -12,6 +12,12 @@ import type { MatchContext } from '../context'
 import { matchModToStat } from '../mod-matcher'
 import { accumulatePseudo, PSEUDO_CONTRIBUTIONS, type PseudoContribution } from '../pseudo'
 
+// Gem-level gear mods are discrete brackets where +2 listings are far pricier
+// than +1. An open-ended min would lump the item with more expensive listings;
+// without advanced-mod data a +1 roll also floors to 0 (floor(1*0.9)).
+// Pin min=max=value for any mod whose cleaned text starts with "+N to Level of".
+export const GEM_LEVEL_MOD = /^\+\d+ to Level of /i
+
 // Tinctures: disambiguate duplicate stat texts (e.g. "#% increased effect" has two stat IDs)
 const TINCTURE_STAT_REMAP: Record<string, string> = {
   'explicit.stat_2448920197': 'explicit.stat_3529940209', // "#% increased effect" -> tincture-specific variant
@@ -89,6 +95,10 @@ function mergeDuplicateStats(rows: StatFilter[], pct: number): StatFilter[] {
     if (sum == null) mergedMin = null
     else if (sum >= 0) mergedMin = Math.floor(sum * pct)
     else mergedMin = Math.ceil(sum * (2 - pct))
+    // Pinned exact rows (min=max=value per-row) must stay exact through the merge.
+    if (sum != null && group.every((r) => r.value != null && r.min === r.value && r.max === r.value)) {
+      mergedMin = sum
+    }
     const nonNullMaxes = group.map((r) => r.max).filter((m): m is number => m != null)
     const mergedMax = nonNullMaxes.length > 0 ? nonNullMaxes.reduce((a, b) => a + b, 0) : null
     // text is display-only (the query uses value/min/max). The matcher parses the
@@ -291,7 +301,7 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
       ) {
         minValue = matchedRange.min
       }
-      const maxValue = bounds.max
+      let maxValue = bounds.max
 
       // Skip for cluster jewels -- their mods grant passives, not item stats
       // Skip "X per Y" mods -- they're conditional and shouldn't inflate pseudo totals
@@ -357,6 +367,14 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
         const t1 = tierLadder.find((t) => t.tier === 1)
         if (t1) minValue = Math.floor(t1.range.min)
       }
+      // Gem-level mods: pin min=max=rolled value. The +level brackets are discrete
+      // (a +2 item costs far more than a +1), so an open-ended min merges the item
+      // with strictly-better pricier listings. Placed after T1 widening so T1 logic
+      // cannot undo the exact pin.
+      if (GEM_LEVEL_MOD.test(cleaned) && matched.value != null) {
+        minValue = matched.value
+        maxValue = matched.value
+      }
       const structurallyOff =
         craftedForTrade ||
         suppressesSourceRow ||
@@ -419,7 +437,7 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
           text: cleaned,
           value: matched.value,
           min: minValue,
-          max: null,
+          max: maxValue,
           enabled: false,
           type: 'explicit',
           aggregated: matched.aggregated,
