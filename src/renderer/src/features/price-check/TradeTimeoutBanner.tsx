@@ -45,7 +45,15 @@ function formatMMSS(ms: number): string {
  *  staring at a stuck shimmer. When the countdown reaches zero, the banner
  *  flips to an expired "try again" state rather than disappearing -- the
  *  parent clears it (by setting penaltyUntil to null) when a new search starts. */
-export function TradeTimeoutBanner({ until }: { until: number }): JSX.Element {
+export function TradeTimeoutBanner({
+  until,
+  showLogin,
+  onLogin,
+}: {
+  until: number
+  showLogin?: boolean
+  onLogin?: () => void
+}): JSX.Element {
   const [now, setNow] = useState(Date.now())
   // Remember the starting gap so the ring fraction stays anchored to the
   // original penalty length (not whatever's currently remaining as the user
@@ -98,8 +106,21 @@ export function TradeTimeoutBanner({ until }: { until: number }): JSX.Element {
             <div className="text-[11px] text-[#ef5350] font-semibold">
               Looks like the trade API has given you a {formatMMSS(remainingMs)} timeout.
             </div>
-            <div className="text-[10px] text-text-dim">Blame Greg.</div>
+            <div className="text-[10px] text-text-dim">
+              {showLogin
+                ? 'Blame Greg. Probably a Cloudflare issue. Logging in to the Trade Site might fix it.'
+                : 'Blame Greg.'}
+            </div>
           </>
+        )}
+        {showLogin && (
+          <button
+            type="button"
+            onClick={onLogin}
+            className="mt-1 self-start px-2 py-[3px] text-[10px] font-semibold bg-white/[0.08] text-text border-none rounded cursor-pointer whitespace-nowrap hover:bg-white/[0.14]"
+          >
+            Log in to the trade site
+          </button>
         )}
       </div>
       <div className="flex items-center justify-center pr-4 shrink-0">

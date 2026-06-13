@@ -67,7 +67,7 @@ export function PriceCheck({
   const color = selectedUnique ? RARITY_COLORS['Unique'] : (RARITY_COLORS[item.rarity] ?? '#c8c8c8')
   const heroIcon = selectedUnique ? (iconMap[selectedUnique] ?? getItemIcon(item)) : getItemIcon(item)
   const heroName = selectedUnique ?? item.name
-  const { loggedIn, login } = useAuth()
+  const { auth, loggedIn, login } = useAuth()
   // Ids of pseudos the last search dropped because the user is not logged in
   // (Weighted Sum, e.g. added elemental damage on PoE2). Each drives an in-row
   // login tip under the matching filter.
@@ -835,7 +835,12 @@ export function PriceCheck({
          *  but with Greg's face on it and a real countdown the user can plan
          *  around. The raw error still shows for non-rate-limit failures. */}
         {penaltyUntil != null ? (
-          <TradeTimeoutBanner key={penaltyUntil} until={penaltyUntil} />
+          <TradeTimeoutBanner
+            key={penaltyUntil}
+            until={penaltyUntil}
+            showLogin={auth?.loggedIn === false}
+            onLogin={login}
+          />
         ) : (
           error && <div className="text-[10px] text-[#ef5350] px-1">{error}</div>
         )}
