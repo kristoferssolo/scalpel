@@ -317,10 +317,33 @@ export function parseItemText(text: string): PoeItem | null {
     ? parseInt(storedExpLine.split(':')[1].trim().replace(/,/g, ''), 10)
     : undefined
 
-  // `Level:` body line is how PoE1 gems report their level. PoE2 uncut gems
-  // don't have it -- their level lives in the name (see nameGemLevel above) --
-  // so fall back to that when the body didn't surface one.
-  const gemLevel = extractNum(allLines, 'Level:') ?? nameGemLevel
+  // Equipped PoE2 gems inflate the `Level:` display line with transient bonuses
+  // (Global Modifiers, Support links) that vanish when the gem is unsocketed and
+  // sold. When breakdown lines are present, reconstruct the persistent level from
+  // base gem level + corruption only; fall back to the display `Level:` line
+  // (PoE1 gems, PoE2 uncut gems) or the name-embedded level otherwise.
+  const gemBreakdownBase = isGemClass
+    ? (() => {
+        // Matches "20 Levels from Gem (Max)" or "1 Level from Gem"
+        const line = allLines.find((l) => /^\d+ Levels? from Gem\b/.test(l))
+        if (!line) return null
+        const m = line.match(/^(\d+)/)
+        return m ? parseInt(m[1], 10) : null
+      })()
+    : null
+  const gemBreakdownCorruption = isGemClass
+    ? (() => {
+        // Matches "+1 Level from Corruption (augmented)" or "+2 Levels from Corruption"
+        const line = allLines.find((l) => /^\+\d+ Levels? from Corruption(?:\s|$)/.test(l))
+        if (!line) return 0
+        const m = line.match(/^\+(\d+)/)
+        return m ? parseInt(m[1], 10) : 0
+      })()
+    : 0
+  const gemLevel =
+    gemBreakdownBase !== null
+      ? gemBreakdownBase + gemBreakdownCorruption
+      : (extractNum(allLines, 'Level:') ?? nameGemLevel)
   const stackSizeLine = allLines.find((l) => l.startsWith('Stack Size:'))
   const stackParts = stackSizeLine?.split(':')[1]?.trim().split('/') ?? []
   const stackSize = stackParts[0] ? parseInt(stackParts[0].replace(/,/g, ''), 10) : 1
