@@ -1870,6 +1870,136 @@ describe('matchItemMods', () => {
         _resetPremiumMatchCacheForTests()
       }
     })
+
+    it('adopts rolled count from advanced-mod range for value-bearing valueless stats (stat_2734787892)', () => {
+      // stat_2734787892 has no # in its trade text so matchModToStat yields value=null.
+      // The clipboard carries the roll in advanced-mod form ("5(2-5)"); tablets.ts must
+      // adopt that value so bounds + prefill:1 can pin the exact roll.
+      _setStatEntriesForTests([
+        {
+          id: 'explicit.stat_2734787892',
+          text: 'Breach Hives in Map have an additional wave of Hiveborn Monsters',
+          type: 'explicit',
+        },
+      ])
+      const advancedMods: AdvancedMod[] = [
+        {
+          type: 'prefix',
+          name: 'Breach Hives',
+          tier: 0,
+          tags: [],
+          lines: ['Breach Hives in Map have 5(2-5) additional waves of Hiveborn Monsters'],
+          ranges: [{ value: 5, min: 2, max: 5 }],
+        },
+      ]
+      const filters = matchItemMods(
+        ['Breach Hives in Map have 5 additional waves of Hiveborn Monsters'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Tablet', baseType: 'Breach Tablet', name: 'Wraeclast Besieged' }),
+        advancedMods,
+      )
+      const chip = filters.find((f) => f.id === 'explicit.stat_2734787892')
+      expect(chip, 'chip must be present').toBeDefined()
+      // Adoption: value must be 5 (from the advanced-mod range)
+      expect(chip?.value).toBe(5)
+      // Range captured for display: {min:2, max:5} from the adv-mod ranges block
+      expect(chip?.modRange).toEqual({ min: 2, max: 5 })
+    })
+
+    it('does NOT adopt a rolled count for a stat not in VALUE_BEARING_VALUELESS_STATS (negative control)', () => {
+      // stat_4104094246 ("an additional second") is also valueless but NOT in the curated set;
+      // it must stay value=null (presence-only search) so the gate is verified.
+      _setStatEntriesForTests([
+        {
+          id: 'explicit.stat_4104094246',
+          text: 'Unstable Breaches in Map take an additional second to collapse after timer is filled',
+          type: 'explicit',
+        },
+      ])
+      const advancedMods: AdvancedMod[] = [
+        {
+          type: 'prefix',
+          name: 'Collapse Time',
+          tier: 0,
+          tags: [],
+          lines: ['Unstable Breaches in Map take 120(1-120) additional seconds to collapse after timer is filled'],
+          ranges: [{ value: 120, min: 1, max: 120 }],
+        },
+      ]
+      const filters = matchItemMods(
+        ['Unstable Breaches in Map take 120 additional seconds to collapse after timer is filled'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Tablet', baseType: 'Breach Tablet', name: 'Wraeclast Besieged' }),
+        advancedMods,
+      )
+      const chip = filters.find((f) => f.id === 'explicit.stat_4104094246')
+      expect(chip, 'chip must be present').toBeDefined()
+      // Must NOT adopt: stays null (presence-only)
+      expect(chip?.value).toBeNull()
+    })
+
+    it('adopts value from advanced-mod and prefill:1 pins min to exact roll (bundled premium, stat_2734787892)', () => {
+      // Full integration: value adoption + prefill:1 -> min=value=5, max stays null
+      // (unique branch sets max=null; prefill:1 only sets min to the exact roll).
+      const prev = getPoeVersion()
+      _resetPremiumMatchCacheForTests()
+      _setPremiumModsForTests(bundledPremiumMods as unknown as PremiumModsData)
+      _setStatEntriesForTests(UNIQUE_BREACH_TABLET_STATS)
+      try {
+        setPoeVersion(2)
+        const advancedMods: AdvancedMod[] = [
+          {
+            type: 'prefix',
+            name: 'Breach Hives',
+            tier: 0,
+            tags: [],
+            lines: ['Breach Hives in Map have 5(2-5) additional waves of Hiveborn Monsters'],
+            ranges: [{ value: 5, min: 2, max: 5 }],
+          },
+          {
+            type: 'prefix',
+            name: 'Unstable Breaches',
+            tier: 0,
+            tags: [],
+            lines: ['Unstable Breaches in Map spawn 5(2-5) additional Rare Monsters when Stabilised'],
+            ranges: [{ value: 5, min: 2, max: 5 }],
+          },
+        ]
+        const filters = matchItemMods(
+          [
+            'Breach Hives in Map have 5 additional waves of Hiveborn Monsters',
+            'Unstable Breaches in Map spawn 5 additional Rare Monsters when Stabilised',
+          ],
+          [],
+          undefined,
+          makeItemInfo({
+            rarity: 'Unique',
+            itemClass: 'Tablet',
+            baseType: 'Breach Tablet',
+            name: 'Wraeclast Besieged',
+          }),
+          advancedMods,
+        )
+        // stat_2734787892: prefill:1 -> min=floor(5*1)=5, max=null (unique branch)
+        const chip1 = filters.find((f) => f.id === 'explicit.stat_2734787892')
+        expect(chip1?.enabled, 'stat_2734787892 chase mod must be on').toBe(true)
+        expect(chip1?.premium, 'stat_2734787892 chase mod must be premium').toBe(true)
+        expect(chip1?.value).toBe(5)
+        expect(chip1?.min).toBe(5)
+        // stat_3762913035: same adoption path, min pinned to exact roll, max=null
+        const chip2 = filters.find((f) => f.id === 'explicit.stat_3762913035')
+        expect(chip2?.enabled, 'stat_3762913035 chase mod must be on').toBe(true)
+        expect(chip2?.premium, 'stat_3762913035 chase mod must be premium').toBe(true)
+        expect(chip2?.value).toBe(5)
+        expect(chip2?.min).toBe(5)
+      } finally {
+        setPoeVersion(prev)
+        _setPremiumModsForTests(null)
+        _resetPremiumMatchCacheForTests()
+      }
+    })
   })
 
   describe('waystone property chips', () => {
