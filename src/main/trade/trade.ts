@@ -851,8 +851,8 @@ export async function searchTrade(
   )
   const miscQuery: Record<string, unknown> = {}
   for (const f of miscFiltersAll) {
-    if (f.id === 'misc.quality' && f.enabled) miscQuery.quality = minMaxValue(f)
-    if (f.id === 'misc.ilvl' && f.enabled) miscQuery.ilvl = minMaxValue(f)
+    if (f.id === 'misc.quality' && f.enabled && getPoeVersion() === 1) miscQuery.quality = minMaxValue(f)
+    if (f.id === 'misc.ilvl' && f.enabled && getPoeVersion() === 1) miscQuery.ilvl = minMaxValue(f)
     if (f.id === 'misc.unidentified_tier' && f.enabled) miscQuery.unidentified_tier = minMaxValue(f)
     if (f.id === 'misc.gem_level' && f.enabled) miscQuery.gem_level = minMaxValue(f)
     if (f.id === 'misc.gem_sockets' && f.enabled) miscQuery.gem_sockets = minMaxValue(f)
@@ -933,6 +933,26 @@ export async function searchTrade(
     query.filters = {
       ...existing,
       type_filters: { filters: { ...existingTypeFilters, rarity: { option: rarityFilter.text.toLowerCase() } } },
+    }
+  }
+
+  // PoE2 indexes item level AND quality under type_filters, not misc_filters (which it
+  // silently ignores), so those chips must be routed there for PoE2 (#436). PoE1 keeps
+  // them in misc_filters above.
+  if (getPoeVersion() === 2) {
+    const typeFilterExtras: Record<string, unknown> = {}
+    const ilvlFilter = statFilters.find((f) => f.id === 'misc.ilvl' && f.enabled)
+    if (ilvlFilter) typeFilterExtras.ilvl = minMaxValue(ilvlFilter)
+    const qualityFilter = statFilters.find((f) => f.id === 'misc.quality' && f.enabled)
+    if (qualityFilter) typeFilterExtras.quality = minMaxValue(qualityFilter)
+    if (Object.keys(typeFilterExtras).length > 0) {
+      const existing = (query.filters as Record<string, unknown>) ?? {}
+      const existingTypeFilters =
+        ((existing.type_filters as Record<string, unknown>)?.filters as Record<string, unknown>) ?? {}
+      query.filters = {
+        ...existing,
+        type_filters: { filters: { ...existingTypeFilters, ...typeFilterExtras } },
+      }
     }
   }
 

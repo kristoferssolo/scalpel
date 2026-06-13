@@ -647,6 +647,200 @@ describe('searchTrade filter-group dispatch', () => {
     expect(body.query.filters.equipment_filters.filters.damage).toEqual({ min: 180 })
     expect(body.query.filters.weapon_filters).toBeUndefined()
   })
+
+  it('PoE2 enabled misc.ilvl row lands in type_filters.filters.ilvl and NOT in misc_filters.filters.ilvl', async () => {
+    setPoeVersion(2)
+    const bow = {
+      name: '',
+      baseType: 'Advanced Dualstring Bow',
+      itemClass: 'Bows',
+      rarity: 'Rare',
+    }
+    const ilvlRow: StatFilter[] = [
+      {
+        id: 'misc.ilvl',
+        text: 'Item Level: 80',
+        type: 'misc',
+        enabled: true,
+        value: 80,
+        min: 80,
+        max: null,
+      },
+    ]
+    await searchTrade('Fate of the Vaal', bow, ilvlRow, {
+      tradeStatus: 'any',
+      tradePriceOption: 'exalted_divine',
+    })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    const body = parseCapturedBody(req)
+    const allFilters = body.query.filters as Record<string, { filters: Record<string, unknown> }>
+    // ilvl must be under type_filters on PoE2
+    expect(allFilters.type_filters).toBeDefined()
+    expect(allFilters.type_filters.filters.ilvl).toEqual({ min: 80 })
+    // must NOT appear under misc_filters
+    expect(allFilters.misc_filters?.filters?.ilvl).toBeUndefined()
+  })
+
+  it('PoE1 enabled misc.ilvl row lands in misc_filters.filters.ilvl and NOT in type_filters.filters.ilvl', async () => {
+    setPoeVersion(1)
+    const ring = {
+      name: '',
+      baseType: 'Diamond Ring',
+      itemClass: 'Rings',
+      rarity: 'Rare',
+    }
+    const ilvlRow: StatFilter[] = [
+      {
+        id: 'misc.ilvl',
+        text: 'Item Level: 80',
+        type: 'misc',
+        enabled: true,
+        value: 80,
+        min: 80,
+        max: null,
+      },
+    ]
+    await searchTrade('Mirage', ring, ilvlRow, {
+      tradeStatus: 'any',
+      tradePriceOption: 'chaos_divine',
+    })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    const body = parseCapturedBody(req)
+    const allFilters = body.query.filters as Record<string, { filters: Record<string, unknown> }>
+    // ilvl must be under misc_filters on PoE1
+    expect(allFilters.misc_filters).toBeDefined()
+    expect(allFilters.misc_filters.filters.ilvl).toEqual({ min: 80 })
+    // must NOT appear under type_filters
+    expect(allFilters.type_filters?.filters?.ilvl).toBeUndefined()
+  })
+
+  it('PoE2 enabled misc.ilvl row with max-only semantics lands as type_filters.filters.ilvl = {max: 80}', async () => {
+    setPoeVersion(2)
+    const bow = {
+      name: '',
+      baseType: 'Advanced Dualstring Bow',
+      itemClass: 'Bows',
+      rarity: 'Rare',
+    }
+    const ilvlRow: StatFilter[] = [
+      {
+        id: 'misc.ilvl',
+        text: 'Item Level: 80',
+        type: 'misc',
+        enabled: true,
+        value: 80,
+        min: null,
+        max: 80,
+      },
+    ]
+    await searchTrade('Fate of the Vaal', bow, ilvlRow, {
+      tradeStatus: 'any',
+      tradePriceOption: 'exalted_divine',
+    })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    const body = parseCapturedBody(req)
+    const allFilters = body.query.filters as Record<string, { filters: Record<string, unknown> }>
+    expect(allFilters.type_filters).toBeDefined()
+    expect(allFilters.type_filters.filters.ilvl).toEqual({ max: 80 })
+  })
+
+  it('PoE2 enabled misc.quality (equipment) row lands in type_filters.filters.quality and NOT in misc_filters.filters.quality', async () => {
+    setPoeVersion(2)
+    const armour = {
+      name: '',
+      baseType: 'Advanced Plate Armour',
+      itemClass: 'Body Armours',
+      rarity: 'Rare',
+    }
+    const qualityRow: StatFilter[] = [
+      {
+        id: 'misc.quality',
+        text: 'Quality: 20',
+        type: 'misc',
+        enabled: true,
+        value: 20,
+        min: 20,
+        max: null,
+      },
+    ]
+    await searchTrade('Fate of the Vaal', armour, qualityRow, {
+      tradeStatus: 'any',
+      tradePriceOption: 'exalted_divine',
+    })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    const body = parseCapturedBody(req)
+    const allFilters = body.query.filters as Record<string, { filters: Record<string, unknown> }>
+    // quality must be under type_filters on PoE2
+    expect(allFilters.type_filters).toBeDefined()
+    expect(allFilters.type_filters.filters.quality).toEqual({ min: 20 })
+    // must NOT appear under misc_filters
+    expect(allFilters.misc_filters?.filters?.quality).toBeUndefined()
+  })
+
+  it('PoE1 enabled misc.quality row lands in misc_filters.filters.quality and NOT in type_filters.filters.quality', async () => {
+    setPoeVersion(1)
+    const ring = {
+      name: '',
+      baseType: 'Diamond Ring',
+      itemClass: 'Rings',
+      rarity: 'Rare',
+    }
+    const qualityRow: StatFilter[] = [
+      {
+        id: 'misc.quality',
+        text: 'Quality: 20',
+        type: 'misc',
+        enabled: true,
+        value: 20,
+        min: 20,
+        max: null,
+      },
+    ]
+    await searchTrade('Mirage', ring, qualityRow, {
+      tradeStatus: 'any',
+      tradePriceOption: 'chaos_divine',
+    })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    const body = parseCapturedBody(req)
+    const allFilters = body.query.filters as Record<string, { filters: Record<string, unknown> }>
+    // quality must be under misc_filters on PoE1
+    expect(allFilters.misc_filters).toBeDefined()
+    expect(allFilters.misc_filters.filters.quality).toEqual({ min: 20 })
+    // must NOT appear under type_filters
+    expect(allFilters.type_filters?.filters?.quality).toBeUndefined()
+  })
+
+  it('PoE2 enabled misc.quality (gem quality) row lands in type_filters.filters.quality', async () => {
+    setPoeVersion(2)
+    const gem = {
+      name: '',
+      baseType: 'Fireball',
+      itemClass: 'Active Skill Gems',
+      rarity: 'Normal',
+    }
+    const qualityRow: StatFilter[] = [
+      {
+        id: 'misc.quality',
+        text: 'Quality: 20',
+        type: 'gem',
+        enabled: true,
+        value: 20,
+        min: 20,
+        max: null,
+      },
+    ]
+    await searchTrade('', gem, qualityRow, {
+      tradeStatus: 'any',
+      tradePriceOption: 'exalted_divine',
+    })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    const body = parseCapturedBody(req)
+    const allFilters = body.query.filters as Record<string, { filters: Record<string, unknown> }>
+    // gem quality must also be routed to type_filters on PoE2
+    expect(allFilters.type_filters).toBeDefined()
+    expect(allFilters.type_filters.filters.quality).toEqual({ min: 20 })
+    expect(allFilters.misc_filters?.filters?.quality).toBeUndefined()
+  })
 })
 
 describe('searchTrade pseudo emission', () => {
