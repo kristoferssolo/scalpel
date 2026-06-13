@@ -556,6 +556,40 @@ describe('searchTrade filter-group dispatch', () => {
     expect(andIds).not.toContain('misc.area_level')
   })
 
+  it('enabled misc.gem_sockets row lands in misc_filters.filters.gem_sockets and NOT in stats and-group', async () => {
+    // PoE2 support-socket count segments gem prices (5-socket premium). The
+    // query builder must route misc.gem_sockets to misc_filters by id and must
+    // not let it leak into the stats and-group where it is not a valid stat id.
+    setPoeVersion(2)
+    const gem = {
+      name: '',
+      baseType: 'Fireball',
+      itemClass: 'Active Skill Gems',
+      rarity: 'Normal',
+    }
+    const socketRow: StatFilter[] = [
+      {
+        id: 'misc.gem_sockets',
+        text: 'Sockets: 3',
+        type: 'gem',
+        enabled: true,
+        value: 3,
+        min: 3,
+        max: null,
+      },
+    ]
+    await searchTrade('', gem, socketRow, { tradeStatus: 'any', tradePriceOption: 'exalted_divine' })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    const body = parseCapturedBody(req)
+    const miscFilters = (body.query.filters as Record<string, { filters: Record<string, unknown> }>).misc_filters
+    expect(miscFilters).toBeDefined()
+    expect(miscFilters.filters.gem_sockets).toEqual({ min: 3 })
+    // Must not appear in the stats and-group
+    const andGroup = body.query.stats.find((g: { type: string }) => g.type === 'and')
+    const andIds = ((andGroup as { filters: Array<{ id: string }> } | undefined)?.filters ?? []).map((f) => f.id)
+    expect(andIds).not.toContain('misc.gem_sockets')
+  })
+
   it('PoE1 enabled weapon.damage filter lands under weapon_filters.damage', async () => {
     setPoeVersion(1)
     const sword = {

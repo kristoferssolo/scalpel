@@ -855,6 +855,7 @@ export async function searchTrade(
     if (f.id === 'misc.ilvl' && f.enabled) miscQuery.ilvl = minMaxValue(f)
     if (f.id === 'misc.unidentified_tier' && f.enabled) miscQuery.unidentified_tier = minMaxValue(f)
     if (f.id === 'misc.gem_level' && f.enabled) miscQuery.gem_level = minMaxValue(f)
+    if (f.id === 'misc.gem_sockets' && f.enabled) miscQuery.gem_sockets = minMaxValue(f)
     if (f.id === 'misc.gem_transfigured') miscQuery.gem_transfigured = { option: f.enabled ? 'true' : 'false' }
     if (f.id === 'misc.corrupted' && (f.chipState === 'yes' || f.chipState === 'no'))
       miscQuery.corrupted = { option: ynToOption(f.chipState) }

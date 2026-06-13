@@ -828,6 +828,83 @@ describe('matchItemMods', () => {
       // Only non-mod explicit chips (like abyssal socket) could appear
       expect(explicitChips.every((f) => f.id.startsWith('explicit.stat_'))).toBe(true)
     })
+
+    describe('PoE2 gem socket count row', () => {
+      let prevVersion: ReturnType<typeof getPoeVersion>
+
+      beforeEach(() => {
+        prevVersion = getPoeVersion()
+      })
+
+      afterEach(() => {
+        setPoeVersion(prevVersion)
+      })
+
+      it('produces misc.gem_sockets row with value/min=3 and max=null for 3-socket gem (B B B)', () => {
+        setPoeVersion(2)
+        const filters = matchItemMods(
+          [],
+          [],
+          undefined,
+          makeItemInfo({ itemClass: 'Active Skill Gems', gemLevel: 20, sockets: 'B B B' }),
+        )
+        const socketRow = filters.find((f) => f.id === 'misc.gem_sockets')
+        expect(socketRow).toBeDefined()
+        expect(socketRow?.value).toBe(3)
+        expect(socketRow?.min).toBe(3)
+        expect(socketRow?.max).toBeNull()
+        expect(socketRow?.enabled).toBe(true)
+        expect(socketRow?.type).toBe('gem')
+      })
+
+      it('counts letter-agnostically -- S S S S S yields socket count 5', () => {
+        setPoeVersion(2)
+        const filters = matchItemMods(
+          [],
+          [],
+          undefined,
+          makeItemInfo({ itemClass: 'Active Skill Gems', gemLevel: 20, sockets: 'S S S S S' }),
+        )
+        const socketRow = filters.find((f) => f.id === 'misc.gem_sockets')
+        expect(socketRow?.value).toBe(5)
+        expect(socketRow?.min).toBe(5)
+      })
+
+      it('produces no misc.gem_sockets row in PoE1 (socket count is not a trade filter there)', () => {
+        setPoeVersion(1)
+        const filters = matchItemMods(
+          [],
+          [],
+          undefined,
+          makeItemInfo({ itemClass: 'Skill Gems', gemLevel: 20, sockets: 'B B B' }),
+        )
+        expect(filters.find((f) => f.id === 'misc.gem_sockets')).toBeUndefined()
+      })
+
+      it('produces no misc.gem_sockets row when sockets string is empty', () => {
+        setPoeVersion(2)
+        const filters = matchItemMods(
+          [],
+          [],
+          undefined,
+          makeItemInfo({ itemClass: 'Active Skill Gems', gemLevel: 20, sockets: '' }),
+        )
+        expect(filters.find((f) => f.id === 'misc.gem_sockets')).toBeUndefined()
+      })
+
+      it('produces no socket.rune_sockets chip for a PoE2 gem with S-letter sockets', () => {
+        // Gem support slots should never emit a rune-socket chip -- the gems
+        // producer handles socket count, sockets.ts must skip gem classes.
+        setPoeVersion(2)
+        const filters = matchItemMods(
+          [],
+          [],
+          undefined,
+          makeItemInfo({ itemClass: 'Active Skill Gems', gemLevel: 20, sockets: 'S S' }),
+        )
+        expect(filters.find((f) => f.id === 'socket.rune_sockets')).toBeUndefined()
+      })
+    })
   })
 
   describe('logbook faction and boss chips', () => {
