@@ -25,6 +25,9 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
       'Fixed "+# to Level of ..." gem mods so they price-check at the exact roll.',
       'Fixed weapon "reduced Attack Speed" not matching its trade stat.',
       'Fixed Wraeclast Besieged chase mods to price-check by their exact rolled value.',
+      'Fixed hotkeys bound to international and OEM keys (æ, ;, and the like) not firing.',
+      'Fixed the "Grants Skill" filter matching the wrong trade stat for Blink, Lightning Bolt, and Decompose.',
+      'Logged-out users now get nudged to log in on the Greg timeout banner.',
     ],
   },
   {
