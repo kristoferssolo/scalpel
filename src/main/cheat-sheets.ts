@@ -5,6 +5,7 @@ import {
   CHEAT_SHEET_MINIMIZED_HEIGHT,
   CHEAT_SHEET_MINIMIZED_SLACK,
   CHEAT_SHEET_MINIMIZED_WIDTH,
+  clampRectToScreen,
 } from '../shared/cheat-sheet-window'
 import type { CheatSheetsSettings, OverlayAnchor } from '../shared/types'
 import { forwardZoneChangesTo, sendCurrentZoneTo } from './client-log'
@@ -211,7 +212,7 @@ function animateBoundsTo(target: Rect): void {
     }
     const t = Math.min(1, (Date.now() - startTime) / ANIMATION_DURATION_MS)
     const k = easeOutCubic(t)
-    overlay?.setBoundsProgrammatic({
+    overlay?.setBoundsProgrammaticOnce({
       x: Math.round(start.x + (target.x - start.x) * k),
       y: Math.round(start.y + (target.y - start.y) * k),
       width: Math.round(start.width + (target.width - start.width) * k),
@@ -248,9 +249,9 @@ export function minimizeCheatSheets(): void {
 export function restoreCheatSheets(): void {
   const win = overlay?.getWindow()
   if (!win || win.isDestroyed()) return
+  const cur = win.getBounds()
   let target = preMinimizeBounds
   if (!target) {
-    const cur = win.getBounds()
     target = {
       x: cur.x + cur.width - DEFAULT_EXPANDED_WIDTH,
       y: cur.y + cur.height - DEFAULT_EXPANDED_HEIGHT,
@@ -258,6 +259,15 @@ export function restoreCheatSheets(): void {
       height: DEFAULT_EXPANDED_HEIGHT,
     }
   }
+  // Clamp the restore target to the display the window currently sits on so a
+  // stale pre-minimize rect (saved before a monitor layout or resolution
+  // change) can't animate the panel off-screen, where it's unreachable without
+  // an app restart.
+  const display = screen.getDisplayNearestPoint({
+    x: cur.x + Math.round(cur.width / 2),
+    y: cur.y + Math.round(cur.height / 2),
+  })
+  target = clampRectToScreen(target, display.bounds)
   preMinimizeBounds = null
   animateBoundsTo(target)
 }
