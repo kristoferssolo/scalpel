@@ -1,5 +1,15 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.15',
+    notes: [
+      'PoE2 waystone price-check now defaults to yield chips on and difficulty affixes off.',
+      'Tidied the collapsed cheat-sheet bar: hid the tabs and thumbnail-size control, locked edge-resizing, and muted the hover-preview flash.',
+      'Fixed cheat-sheets drifting off-screen when minimized and restored at fractional display scaling.',
+      'Fixed the league list occasionally failing to load on a Cloudflare challenge.',
+      'Fixed tablets with an "additional Abyss" mod price-checking against the wrong trade stat.',
+    ],
+  },
+  {
     version: '0.9.14',
     notes: [
       'Added a "Grants Skill" filter and item level to the trade results, and fixed magic item names there.',
