@@ -171,6 +171,12 @@ export function applyCheatSheetHotkeys(cs: CheatSheetsSettings): void {
 
 const ANIMATION_DURATION_MS = 200
 const ANIMATION_FRAME_MS = 16
+/** Hover previews stay suppressed for the length of a minimize/restore tween
+ *  plus this tail. As the grid grows back, thumbnails reflow under a stationary
+ *  cursor and fire mouseEnter; without the guard each one flashes the fullscreen
+ *  preview. The tail covers the final reflow's mouseEnter, which can land a frame
+ *  or two after the last tween step. */
+const PREVIEW_SUPPRESS_TAIL_MS = 120
 /** Default size used when expand is requested but we don't have saved
  *  pre-minimize bounds (e.g. the user shrank the window manually, or the app
  *  was restarted while the window was at its minimized footprint). The user
@@ -183,6 +189,10 @@ const DEFAULT_EXPANDED_HEIGHT = 270
  *  so a stale entry doesn't outlive its usefulness. */
 let preMinimizeBounds: Rect | null = null
 let animationTimer: NodeJS.Timeout | null = null
+/** Epoch ms before which showPreview is a no-op. Bumped whenever a size tween
+ *  starts (animateBoundsTo) so reflow-driven mouseEnter events during the
+ *  un-minimize animation don't flash the hover preview. */
+let suppressPreviewUntil = 0
 
 function clearAnimationTimer(): void {
   if (animationTimer) {
@@ -195,10 +205,14 @@ function easeOutCubic(t: number): number {
   return 1 - (1 - t) ** 3
 }
 
-function animateBoundsTo(target: Rect): void {
+function animateBoundsTo(target: Rect, onComplete?: () => void): void {
   const win = overlay?.getWindow()
   if (!win || win.isDestroyed()) return
   clearAnimationTimer()
+  // Mute hover previews for the tween (+ tail): as the grid resizes, thumbnails
+  // slide under a stationary cursor and fire mouseEnter, which would otherwise
+  // flash the fullscreen preview. See showPreview.
+  suppressPreviewUntil = Date.now() + ANIMATION_DURATION_MS + PREVIEW_SUPPRESS_TAIL_MS
   const start = win.getBounds()
   const startTime = Date.now()
   animationTimer = setInterval(() => {
@@ -218,7 +232,10 @@ function animateBoundsTo(target: Rect): void {
       width: Math.round(start.width + (target.width - start.width) * k),
       height: Math.round(start.height + (target.height - start.height) * k),
     })
-    if (t >= 1) clearAnimationTimer()
+    if (t >= 1) {
+      clearAnimationTimer()
+      onComplete?.()
+    }
   }, ANIMATION_FRAME_MS)
 }
 
@@ -234,12 +251,22 @@ export function minimizeCheatSheets(): void {
   const cur = win.getBounds()
   if (cur.height <= CHEAT_SHEET_MINIMIZED_HEIGHT + CHEAT_SHEET_MINIMIZED_SLACK) return
   preMinimizeBounds = cur
-  animateBoundsTo({
-    x: cur.x + cur.width - CHEAT_SHEET_MINIMIZED_WIDTH,
-    y: cur.y + cur.height - CHEAT_SHEET_MINIMIZED_HEIGHT,
-    width: CHEAT_SHEET_MINIMIZED_WIDTH,
-    height: CHEAT_SHEET_MINIMIZED_HEIGHT,
-  })
+  animateBoundsTo(
+    {
+      x: cur.x + cur.width - CHEAT_SHEET_MINIMIZED_WIDTH,
+      y: cur.y + cur.height - CHEAT_SHEET_MINIMIZED_HEIGHT,
+      width: CHEAT_SHEET_MINIMIZED_WIDTH,
+      height: CHEAT_SHEET_MINIMIZED_HEIGHT,
+    },
+    // Lock the collapsed strip non-resizable so an edge-drag can't pull it back
+    // open into a half-minimized state (which desyncs preMinimizeBounds from the
+    // renderer's height-derived minimized flag). The restore button is the only
+    // intended way back; restoreCheatSheets re-enables resizing.
+    () => {
+      const w = overlay?.getWindow()
+      if (w && !w.isDestroyed()) w.setResizable(false)
+    },
+  )
 }
 
 /** Restore the cheat-sheets window. If we recorded a pre-minimize size (this
@@ -249,6 +276,9 @@ export function minimizeCheatSheets(): void {
 export function restoreCheatSheets(): void {
   const win = overlay?.getWindow()
   if (!win || win.isDestroyed()) return
+  // Minimize locked the window non-resizable; re-enable it before the grow tween
+  // so the restored grid can be edge-resized again.
+  win.setResizable(true)
   const cur = win.getBounds()
   let target = preMinimizeBounds
   if (!target) {
@@ -383,6 +413,9 @@ function setBoundsToGame(win: BrowserWindow): boolean {
 }
 
 export function showPreview(src: string): void {
+  // Drop preview requests fired while a minimize/restore tween is settling - the
+  // mouseEnter came from the grid reflowing under the cursor, not a real hover.
+  if (Date.now() < suppressPreviewUntil) return
   const win = ensurePreviewWindow()
   if (!setBoundsToGame(win)) {
     // No game attached (dev runs without PoE). Fall back to the primary work
