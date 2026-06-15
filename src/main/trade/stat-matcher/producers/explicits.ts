@@ -381,7 +381,12 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
         isHybridCompanion ||
         (hasDefenses && isDefenseMod(cleaned)) ||
         useLocal ||
-        itemInfo?.itemClass === 'Maps'
+        itemInfo?.itemClass === 'Maps' ||
+        // PoE2 waystone prefix/suffix affixes are monster-difficulty mods, not price
+        // drivers -- default them off like PoE1 maps. The yield chips (tier, pack size,
+        // rarity, magic/rare monsters) come from buildMapFilters (type 'map'), so they
+        // are unaffected and keep their own enabled-by-default state.
+        itemInfo?.itemClass === 'Waystones'
       const forcedOn = isFractured || isFoulborn
       // A detrimental negative roll (value < 0 and not a beneficial negative like
       // "reduced mana cost") is a downside, not a reason to buy. Default it off,

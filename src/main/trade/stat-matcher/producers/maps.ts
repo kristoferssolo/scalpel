@@ -43,14 +43,14 @@ interface WaystoneEndgameFilter {
 
 const WAYSTONE_ENDGAME_FILTERS: readonly WaystoneEndgameFilter[] = [
   { field: 'mapTier', id: 'map.map_tier', label: 'Tier', enabledByDefault: true, exact: true },
-  { field: 'mapPackSize', id: 'map.map_packsize', label: 'Pack Size' },
+  { field: 'mapPackSize', id: 'map.map_packsize', label: 'Pack Size', enabledByDefault: true },
   { field: 'mapQuantity', id: 'map.map_iiq', label: 'Quantity' },
-  { field: 'mapRarity', id: 'map.map_iir', label: 'Rarity' },
+  { field: 'mapRarity', id: 'map.map_iir', label: 'Rarity', enabledByDefault: true },
   { field: 'mapRevives', id: 'map.map_revives', label: 'Revives' },
   { field: 'mapDropChance', id: 'map.map_bonus', label: 'Drop Chance' },
   { field: 'mapGold', id: 'map.map_gold', label: 'Gold' },
-  { field: 'mapMagicMonsters', id: 'map.map_magic_monsters', label: 'Magic Monsters' },
-  { field: 'mapRareMonsters', id: 'map.map_rare_monsters', label: 'Rare Monsters' },
+  { field: 'mapMagicMonsters', id: 'map.map_magic_monsters', label: 'Magic Monsters', enabledByDefault: true },
+  { field: 'mapRareMonsters', id: 'map.map_rare_monsters', label: 'Rare Monsters', enabledByDefault: true },
 ]
 
 // Map property chips (Item Quantity, Rarity, Pack Size, More X) and 8-mod corrupted maps

@@ -2029,20 +2029,22 @@ describe('matchItemMods', () => {
       expect(tier?.enabled).toBe(true)
       expect(tier?.min).toBe(15)
       expect(tier?.max).toBe(15) // exact tier
-      // The 6 opt-in keys GGG indexes (live-probed) surface as disabled chips with a
-      // fuzzed min (floor(value * 0.9)); the user toggles them on as needed.
-      for (const [id, value, min] of [
-        ['map.map_iir', 60, 54],
-        ['map.map_packsize', 16, 14],
-        ['map.map_revives', 1, 0],
-        ['map.map_bonus', 80, 72],
-        ['map.map_magic_monsters', 30, 27],
-        ['map.map_rare_monsters', 20, 18],
+      // The 6 opt-in keys GGG indexes (live-probed) surface with a fuzzed min
+      // (floor(value * 0.9)). Tier plus the high-signal yields (Item Rarity, Pack
+      // Size, Magic/Rare Monsters) default ON for waystone price-checks; Revives and
+      // Drop Chance stay opt-in.
+      for (const [id, value, min, enabled] of [
+        ['map.map_iir', 60, 54, true],
+        ['map.map_packsize', 16, 14, true],
+        ['map.map_revives', 1, 0, false],
+        ['map.map_bonus', 80, 72, false],
+        ['map.map_magic_monsters', 30, 27, true],
+        ['map.map_rare_monsters', 20, 18, true],
       ] as const) {
         const chip = filters.find((f) => f.id === id)
         expect(chip, `${id} should surface`).toBeDefined()
         expect(chip?.value).toBe(value)
-        expect(chip?.enabled).toBe(false)
+        expect(chip?.enabled).toBe(enabled)
         expect(chip?.min).toBe(min)
       }
       // map_iiq and map_gold are still unindexed on the PoE2 trade site (live-probed:
@@ -2074,6 +2076,39 @@ describe('matchItemMods', () => {
       expect(filters.find((f) => f.id === 'map.map_packsize')).toBeUndefined()
     })
 
+    it('defaults waystone prefix/suffix affixes off, keeping yield chips on', () => {
+      _setStatEntriesForTests([
+        { id: 'explicit.stat_extra_cold', text: 'Monsters deal #% of Damage as Extra Cold', type: 'explicit' },
+      ])
+      const filters = matchItemMods(
+        ['Monsters deal 29% of Damage as Extra Cold'],
+        [],
+        undefined,
+        makeItemInfo({ itemClass: 'Waystones', rarity: 'Rare', mapTier: 15, mapPackSize: 16 }),
+      )
+      // The prefix/suffix affix defaults OFF (monster-difficulty mods aren't price drivers).
+      const affix = filters.find((f) => f.id === 'explicit.stat_extra_cold')
+      expect(affix, 'affix chip should surface').toBeDefined()
+      expect(affix?.enabled).toBe(false)
+      // The yield chip stays ON.
+      const packSize = filters.find((f) => f.id === 'map.map_packsize')
+      expect(packSize?.enabled).toBe(true)
+    })
+
+    it('keeps the same monster affix enabled on non-map gear (proves the Waystones rule flips it)', () => {
+      _setStatEntriesForTests([
+        { id: 'explicit.stat_extra_cold', text: 'Monsters deal #% of Damage as Extra Cold', type: 'explicit' },
+      ])
+      const filters = matchItemMods(
+        ['Monsters deal 29% of Damage as Extra Cold'],
+        [],
+        undefined,
+        makeItemInfo({ itemClass: 'Rings', rarity: 'Rare' }),
+      )
+      const affix = filters.find((f) => f.id === 'explicit.stat_extra_cold')
+      expect(affix?.enabled).toBe(true)
+    })
+
     it('surfaces a chip once the remote allowlist marks its key indexed', () => {
       // Simulate GGG indexing Pack Size: the remote-overridable allowlist gains
       // map.map_packsize, and the chip starts emitting -- no code change needed.
@@ -2088,7 +2123,7 @@ describe('matchItemMods', () => {
         )
         const packSize = filters.find((f) => f.id === 'map.map_packsize')
         expect(packSize?.value).toBe(16)
-        expect(packSize?.enabled).toBe(false) // opt-in
+        expect(packSize?.enabled).toBe(true) // defaults on for waystone price-checks
         expect(packSize?.min).toBe(14) // floor(16 * 0.9)
       } finally {
         _setIndexedEndgameKeysForTests(null) // restore bundled default
