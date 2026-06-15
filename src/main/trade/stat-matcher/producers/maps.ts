@@ -49,8 +49,8 @@ const WAYSTONE_ENDGAME_FILTERS: readonly WaystoneEndgameFilter[] = [
   { field: 'mapRevives', id: 'map.map_revives', label: 'Revives' },
   { field: 'mapDropChance', id: 'map.map_bonus', label: 'Drop Chance' },
   { field: 'mapGold', id: 'map.map_gold', label: 'Gold' },
-  { field: 'mapMagicMonsters', id: 'map.map_magic_monsters', label: 'Magic Monsters', enabledByDefault: true },
-  { field: 'mapRareMonsters', id: 'map.map_rare_monsters', label: 'Rare Monsters', enabledByDefault: true },
+  { field: 'mapMagicMonsters', id: 'map.map_magic_monsters', label: 'Monster Effectiveness', enabledByDefault: true },
+  { field: 'mapRareMonsters', id: 'map.map_rare_monsters', label: 'Monster Rarity', enabledByDefault: true },
 ]
 
 // Map property chips (Item Quantity, Rarity, Pack Size, More X) and 8-mod corrupted maps

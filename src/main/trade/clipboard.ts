@@ -290,8 +290,11 @@ export function parseItemText(text: string): PoeItem | null {
   const mapRevives = extractNum(allLines, 'Revives Available:')
   const mapDropChance = extractNum(allLines, 'Waystone Drop Chance:')
   const mapGold = extractNum(allLines, 'Gold Found:')
-  const mapMagicMonsters = extractNum(allLines, 'Magic Monsters:')
-  const mapRareMonsters = extractNum(allLines, 'Rare Monsters:')
+  // GGG relabeled these waystone properties: "Magic Monsters" -> "Monster Effectiveness",
+  // "Rare Monsters" -> "Monster Rarity" (trade keys map_magic_monsters / map_rare_monsters
+  // are unchanged). Keep the old labels as a fallback for legacy clipboard text.
+  const mapMagicMonsters = extractNum(allLines, 'Monster Effectiveness:') ?? extractNum(allLines, 'Magic Monsters:')
+  const mapRareMonsters = extractNum(allLines, 'Monster Rarity:') ?? extractNum(allLines, 'Rare Monsters:')
   const rewardLine = allLines.find((l) => l.startsWith('Reward:'))
   const mapReward = rewardLine
     ? rewardLine

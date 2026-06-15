@@ -800,6 +800,29 @@ describe('parseItemText', () => {
       expect(item.explicits).toContain('Monsters deal 29% of Damage as Extra Cold')
     })
 
+    it('parses a PoE2 Waystone with new Monster Effectiveness / Monster Rarity labels', () => {
+      const text = [
+        'Item Class: Waystones',
+        'Rarity: Rare',
+        'Blighted Passage',
+        'Waystone (Tier 12)',
+        '--------',
+        'Revives Available: 2',
+        'Item Rarity: +45% (augmented)',
+        'Pack Size: +14% (augmented)',
+        'Monster Effectiveness: +28% (augmented)',
+        'Monster Rarity: +15% (augmented)',
+        '--------',
+        'Item Level: 79',
+        '--------',
+        'Can be used in a Map Device, allowing you to enter a Map. Waystones can only be used once.',
+      ].join('\n')
+
+      const item = parseItemText(text)!
+      expect(item.mapMagicMonsters).toBe(28)
+      expect(item.mapRareMonsters).toBe(15)
+    })
+
     it('parses a Flask', () => {
       const text = [
         'Item Class: Flasks',
