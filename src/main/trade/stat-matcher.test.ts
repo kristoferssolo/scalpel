@@ -1781,6 +1781,37 @@ describe('matchItemMods', () => {
       expect(chip?.enabled).toBe(true)
     })
 
+    // GGG splits Abyss into a dedicated singular stat ("Map contains an additional
+    // Abyss" = explicit.stat_1070816711) separate from the numeric "# additional
+    // Abysses" (explicit.stat_3490187949) -- unlike Strongbox/Essence/Shrine, which
+    // alias both phrasings under a single id. The tablet table must route the valueless
+    // singular phrasing to the singular id, or the price check searches the wrong
+    // (numeric) stat and misses every singular-Abyss tablet.
+    it('routes the singular "an additional Abyss" tablet mod to its dedicated stat id', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['Map contains an additional Abyss'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Abyss Tablet' }),
+      )
+      const abyss = filters.find((f) => f.text === 'Map contains an additional Abyss')
+      expect(abyss?.id).toBe('explicit.stat_1070816711')
+    })
+
+    it('keeps the numeric "# additional Abysses" tablet mod on the numeric stat id', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['Map contains 2 additional Abysses'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Abyss Tablet' }),
+      )
+      const abyss = filters.find((f) => f.id === 'explicit.stat_3490187949')
+      expect(abyss).toBeDefined()
+      expect(abyss?.value).toBe(2)
+    })
+
     // Unique tablet count-mods (Wraeclast Besieged, issue #417): the clipboard
     // pluralizes the noun and carries the rolled number ("2 additional waves of
     // Hiveborn Monsters"), while the trade stat keeps "an additional <singular>"
