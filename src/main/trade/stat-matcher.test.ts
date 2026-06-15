@@ -2140,6 +2140,21 @@ describe('matchItemMods', () => {
       expect(affix?.enabled).toBe(true)
     })
 
+    it('emits no base-type chip for a waystone (searched by category, not the generic "Waystone" base)', () => {
+      // All waystones share the bare base "Waystone" (only the tier differs), so the
+      // base-type chip would strip to "Waystone" and trade.ts would send that as
+      // query.type -- not a valid trade2 waystone type, which breaks the category
+      // search. Tier is already pinned via the map_tier filter.
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({ itemClass: 'Waystones', rarity: 'Rare', baseType: 'Waystone (Tier 15)', mapTier: 15 }),
+      )
+      expect(filters.find((f) => f.id === 'misc.basetype')).toBeUndefined()
+    })
+
     it('surfaces a chip once the remote allowlist marks its key indexed', () => {
       // Simulate GGG indexing Pack Size: the remote-overridable allowlist gains
       // map.map_packsize, and the chip starts emitting -- no code change needed.
