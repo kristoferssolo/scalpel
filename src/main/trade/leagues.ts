@@ -12,7 +12,12 @@ interface LeaguesResponse {
 
 function fetchJson(url: string, timeoutMs = 10000): Promise<unknown> {
   return new Promise((resolve, reject) => {
-    const request = net.request(url)
+    // Match trade.ts's request shape: never attach Electron's session cookie
+    // jar. GGG's API mints an anonymous POESESSID and Cloudflare bot-challenges
+    // any request that echoes it back (#429); with the default jar a challenged
+    // league fetch fails silently and strands users on the stale bundled list,
+    // worst of all on league-launch day. See commonRequestOpts in trade.ts.
+    const request = net.request({ url, useSessionCookies: false, referrerPolicy: 'no-referrer-when-downgrade' })
     let data = ''
     const timer = setTimeout(() => {
       try {
