@@ -74,6 +74,14 @@ interface ScalpelPluginContext {
   // Game state
   getPoeVersion(): 1 | 2
   getLeague(): string
+  // Returns the live league list for the given game (defaults to the detected
+  // game). Reads host settings fresh each call, so it is correct on
+  // league-launch day. Both games' lists are always available regardless of
+  // which game is running. Returns the same list as Scalpel's own League
+  // setting: the host-fetched trade-API list, or the bundled fallback before
+  // the host has fetched. Pair with the exported LeagueDropdown component for
+  // a Scalpel-matched picker.
+  getLeagues(version?: 1 | 2): Promise<readonly string[]>
   getCurrentItem(): PoeItem | null   // the most recent hotkey'd item
   getCurrentZone(): Zone | null      // raw current zone
 

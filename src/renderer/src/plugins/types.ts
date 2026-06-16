@@ -5,6 +5,7 @@ export type PluginContextFactoryDeps = {
   pluginVersion: string
   getPoeVersion: () => 1 | 2
   getLeague: () => string
+  getLeagues: (version: 1 | 2) => Promise<readonly string[]>
   getCurrentItem: () => PoeItem | null
   getCurrentZone: () => Zone | null
   subscribeCurrentItem: (h: (i: PoeItem) => void) => () => void

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Github } from '@icon-park/react'
 import type { AppSettings, ProfileSettingValue, RuntimeSettings } from '@shared/types'
-import { getGameFeatures } from '@shared/game-features'
 import { GITHUB_REPO_URL, KOFI_URL } from '@shared/endpoints'
 import { reportDiagnosticError } from '@renderer/shared/diagnostics'
+import { resolveLeagueOptions } from '@renderer/shared/league-options'
 import { CollapsibleSection } from '@renderer/shared/CollapsibleSection'
 import kofiIcon from '@renderer/assets/other/kofi-logo.svg'
 import { SettingToggleBox } from '@renderer/components/primitives/SettingToggleBox'
@@ -30,9 +30,7 @@ export function GeneralTab({ settings, update, updateProfile, onShowOnboarding }
   useEffect(() => {
     loadDebugLog()
   }, [])
-  const features = getGameFeatures(settings.poeVersion)
-  const cachedLeagues = settings.poeVersion === 2 ? settings.leaguesPoe2 : settings.leaguesPoe1
-  const leagueOptions: readonly string[] = cachedLeagues && cachedLeagues.length > 0 ? cachedLeagues : features.leagues
+  const leagueOptions = resolveLeagueOptions(settings, settings.poeVersion)
   const activeLeague = settings.activeProfile?.league ?? ''
 
   const reportBug = async (): Promise<void> => {

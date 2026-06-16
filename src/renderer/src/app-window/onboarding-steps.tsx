@@ -12,6 +12,7 @@ import { LeagueDropdown } from '../components/LeagueDropdown'
 import { HotkeyField } from '../components/primitives/HotkeyField'
 import { Toggle } from '../components/Toggle'
 import { IconGlow } from '../shared/IconGlow'
+import { resolveLeagueOptions } from '@renderer/shared/league-options'
 import type { SelectedGames } from './constants'
 import { NavButtons } from './NavButtons'
 import { StepHeader } from './StepHeader'
@@ -440,10 +441,8 @@ export function PreferencesStep({
 
   // Prefer the live-fetched league lists from the trade APIs; fall back to the
   // hardcoded list in shared/game-features.ts if the launch-time fetch failed.
-  const poe1Leagues: readonly string[] =
-    settings.leaguesPoe1 && settings.leaguesPoe1.length > 0 ? settings.leaguesPoe1 : getGameFeatures(1).leagues
-  const poe2Leagues: readonly string[] =
-    settings.leaguesPoe2 && settings.leaguesPoe2.length > 0 ? settings.leaguesPoe2 : getGameFeatures(2).leagues
+  const poe1Leagues = resolveLeagueOptions(settings, 1)
+  const poe2Leagues = resolveLeagueOptions(settings, 2)
   return (
     <div>
       <StepHeader
