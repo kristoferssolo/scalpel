@@ -4,6 +4,7 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
     notes: [
       'PoE2 waystone price-check now defaults to yield chips on and difficulty affixes off.',
       'Tidied the collapsed cheat-sheet bar: hid the tabs and thumbnail-size control, locked edge-resizing, and muted the hover-preview flash.',
+      'Plugin developers can now read the live per-game league list via the new ctx.getLeagues capability.',
       'Fixed cheat-sheets drifting off-screen when minimized and restored at fractional display scaling.',
       'Fixed the league list occasionally failing to load on a Cloudflare challenge.',
       'Fixed tablets with an "additional Abyss" mod price-checking against the wrong trade stat.',
