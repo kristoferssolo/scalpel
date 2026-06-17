@@ -8,6 +8,10 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
       'Fixed cheat-sheets drifting off-screen when minimized and restored at fractional display scaling.',
       'Fixed the league list occasionally failing to load on a Cloudflare challenge.',
       'Fixed tablets with an "additional Abyss" mod price-checking against the wrong trade stat.',
+      'Fixed waystone price-check searches breaking from a stray base-type chip.',
+      'Renamed the "Magic Monsters" and "Rare Monsters" waystone price-check rows to "Monster Effectiveness" and "Monster Rarity" to match the in-game relabel.',
+      'Fixed fractured mods not registering in the price checker on chat-linked or basic-copy items.',
+      "Fixed global charm-slot grants (like the Elevore helmet) price-checking against the belt's charm-slot stat.",
     ],
   },
   {
