@@ -233,6 +233,16 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
         matched.statId = TINCTURE_STAT_REMAP[matched.statId]
       }
 
+      // "# Charm Slot" disambiguation. trade2 indexes the belt explicit charm-slot
+      // affix under explicit.stat_2582079000, but a global grant of charm slots (e.g.
+      // the Elevore helmet) under explicit.stat_554899692 ("# Charm Slot (Global)").
+      // The clipboard text is identical, so the matcher always lands on the belt id --
+      // redirect non-belts to the Global id. Verified on trade2: stat_2582079000 returns
+      // only belts, stat_554899692 only Elevore.
+      if (matched.statId === 'explicit.stat_2582079000' && itemInfo?.itemClass !== 'Belts') {
+        matched.statId = 'explicit.stat_554899692'
+      }
+
       // Determine if this value is fixed or rolled, and capture tier/range for display
       // Fixed values (min === max in tier range, or no range) use exact match
       // Rolled values use percentage-based min

@@ -1629,6 +1629,42 @@ describe('matchItemMods', () => {
       expect(slot).toBeDefined()
       expect(slot?.value).toBe(1)
     })
+
+    it('routes a non-belt "# Charm Slot" (Elevore helmet) to the Global trade id', () => {
+      // trade2 indexes the belt explicit charm-slot affix under explicit.stat_2582079000
+      // but a GLOBAL charm-slot grant (Elevore Hunter Hood) under explicit.stat_554899692
+      // ("# Charm Slot (Global)"). Identical clipboard text, so the text matcher always
+      // lands on the belt id -- non-belts must be redirected to the Global id.
+      _setStatEntriesForTests([
+        { id: 'explicit.stat_2582079000', text: '# Charm Slot', type: 'explicit' },
+        { id: 'explicit.stat_554899692', text: '# Charm Slot (Global)', type: 'explicit' },
+      ])
+      const filters = matchItemMods(
+        ['1 Charm Slot'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Helmets', baseType: 'Hunter Hood' }),
+      )
+      const slot = filters.find((f) => f.id === 'explicit.stat_554899692')
+      expect(slot).toBeDefined()
+      expect(slot?.value).toBe(1)
+      expect(filters.find((f) => f.id === 'explicit.stat_2582079000')).toBeUndefined()
+    })
+
+    it('keeps a belt "+2 Charm Slots" on the plain (non-Global) trade id even when the Global stat exists', () => {
+      _setStatEntriesForTests([
+        { id: 'explicit.stat_2582079000', text: '# Charm Slot', type: 'explicit' },
+        { id: 'explicit.stat_554899692', text: '# Charm Slot (Global)', type: 'explicit' },
+      ])
+      const filters = matchItemMods(
+        ['+2 Charm Slots'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Belts' }),
+      )
+      expect(filters.find((f) => f.id === 'explicit.stat_2582079000')).toBeDefined()
+      expect(filters.find((f) => f.id === 'explicit.stat_554899692')).toBeUndefined()
+    })
   })
 
   describe('tablet (precursor tablet) mods', () => {
