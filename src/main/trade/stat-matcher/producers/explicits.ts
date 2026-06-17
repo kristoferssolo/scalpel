@@ -174,7 +174,7 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
   // Running either through the explicit matcher risks false or missing matches.
   for (const mod of isGemItem || isRelic || isTablet ? [] : explicits) {
     let isCrafted = /\s*\(crafted\)\s*$/i.test(mod)
-    let cleaned = mod.replace(/\s*\(crafted\)\s*$/i, '').trim()
+    let cleaned = mod.replace(/\s*\((?:crafted|fractured)\)\s*$/i, '').trim()
     // Skip timeless jewel mods handled by the timeless chip system
     if (
       isTimelessJewel &&
@@ -187,7 +187,11 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
     // crafted mods (like "Trigger a Socketed Spell when you Use a Skill") are queried
     // against the crafted.* stat list instead of explicit.* -- matching the wrong list
     // fails silently and the mod disappears from the price checker.
-    let isFractured = false
+    // Basic-copy / chat-linked items have no advanced mod block, so fractured mods
+    // arrive as a plain line with a "(fractured)" suffix instead of a "{ Fractured
+    // Prefix Modifier }" header. Seed isFractured from that suffix (advanced copies
+    // strip it upstream in cleanAdvancedModLine, so this only fires on basic copies). (#444)
+    let isFractured = /\s*\(fractured\)\s*$/i.test(mod)
     let isFoulborn = false
     let isRandomSupport = false
     let advMod: ReturnType<typeof findAdvMod>
@@ -246,7 +250,7 @@ export function processExplicits(ctx: MatchContext): StatFilter[] {
       // NOT mistaken for perfect.
       let perfectRoll = false
       if (advancedMods && matched.value != null) {
-        const rawCleaned = mod.replace(/\s*\(crafted\)\s*$/i, '').trim()
+        const rawCleaned = mod.replace(/\s*\((?:crafted|fractured)\)\s*$/i, '').trim()
         const advMod = findAdvMod(advancedMods, cleaned, 'explicit', rawCleaned)
         if (advMod) {
           const range = advMod.ranges.find((r) => r.value === matched.value || r.value === -(matched.value ?? 0))

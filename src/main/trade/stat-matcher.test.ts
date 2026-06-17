@@ -4328,6 +4328,30 @@ describe('gem-level mod pinning (min=max=value)', () => {
     expect(companionRow?.max).toBe(1)
   })
 
+  it('fractured "+4 to Level of all Spell Skills (fractured)" from a chat-linked item (no advanced mods) still registers (#444)', () => {
+    // Chat-linked / basic-copy items carry no advanced mod blocks, so a fractured
+    // mod arrives as a plain line with a "(fractured)" suffix rather than a
+    // "{ Fractured Prefix Modifier }" header. The suffix must be stripped before
+    // matching, or the anchored stat pattern never matches and the mod vanishes.
+    _setStatEntriesForTests([
+      { id: 'explicit.stat_124131830', text: '# to Level of all Spell Skills', type: 'explicit' },
+      { id: 'fractured.stat_124131830', text: '# to Level of all Spell Skills', type: 'fractured' },
+    ])
+    const filters = matchItemMods(
+      ['+4 to Level of all Spell Skills (fractured)'],
+      [],
+      undefined,
+      makeItemInfo({ rarity: 'Rare', itemClass: 'Wands', fractured: true }),
+    )
+    const fracturedRow = filters.find((f) => f.id === 'fractured.stat_124131830')
+    expect(fracturedRow).toBeDefined()
+    expect(fracturedRow?.value).toBe(4)
+    expect(fracturedRow?.type).toBe('fractured')
+    // The unfractured companion row is also added (disabled by default).
+    const companionRow = filters.find((f) => f.id === 'explicit.stat_124131830')
+    expect(companionRow).toBeDefined()
+  })
+
   it('two identical gem-level mods merge to value=2 min=2 max=2 (pinned exact rows survive mergeDuplicateStats)', () => {
     _setStatEntriesForTests([FIRE_SPELL_GEMS])
     const filters = matchItemMods(
