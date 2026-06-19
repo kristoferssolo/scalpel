@@ -12,6 +12,7 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
       'Renamed the "Magic Monsters" and "Rare Monsters" waystone price-check rows to "Monster Effectiveness" and "Monster Rarity" to match the in-game relabel.',
       'Fixed fractured mods not registering in the price checker on chat-linked or basic-copy items.',
       "Fixed global charm-slot grants (like the Elevore helmet) price-checking against the belt's charm-slot stat.",
+      'Fixed PoE2 price-check breaking after a Path of Exile trade-site data change.',
     ],
   },
   {
