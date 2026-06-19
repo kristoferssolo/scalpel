@@ -6,6 +6,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // still work -- they just never call into a path that invokes net.request.
 const capturedRequests: Array<{ url: string; method: string; body?: string }> = []
 
+// Per-test override for the body the mocked net returns on a `/fetch/` request.
+// Default (null) keeps the empty-result body so request-asserting tests are
+// unaffected; response-parsing tests set this to feed a real fetch payload.
+let mockFetchBody: string | null = null
+
 interface CapturedTradeFilterGroup {
   filters: Record<string, { min?: number; option?: string }>
 }
@@ -78,7 +83,11 @@ vi.mock('electron', () => ({
                 if (event === 'end') endCb = cb as typeof endCb
               },
             })
-            ;(dataCb as ((chunk: unknown) => void) | null)?.('{"result":[],"total":0,"id":"q"}')
+            const body =
+              mockFetchBody != null && entry.url.includes('/fetch/')
+                ? mockFetchBody
+                : '{"result":[],"total":0,"id":"q"}'
+            ;(dataCb as ((chunk: unknown) => void) | null)?.(body)
             ;(endCb as (() => void) | null)?.()
           })
         }),
@@ -97,13 +106,17 @@ vi.mock('./stat-matcher', async (orig) => {
 import {
   buildGemTypeField,
   buildRegexStatGroups,
+  fetchMoreListings,
   isBulkExchangeItem,
+  modEntryText,
+  parseFetchedListings,
   searchTrade,
   searchTabletsByRegex,
   searchWaystonesByRegex,
   searchNeedsLogin,
   stripTradeTokens,
   _resetRateLimitsForTests,
+  type FetchEntry,
   type StatFilter,
 } from './trade'
 import { setPoeVersion } from '../game-state'
@@ -172,6 +185,178 @@ describe('stripTradeTokens', () => {
 
   it('leaves PoE1 strings unchanged (no brackets to match)', () => {
     expect(stripTradeTokens('+186 to maximum Life')).toBe('+186 to maximum Life')
+  })
+})
+
+describe('modEntryText', () => {
+  it('returns a plain string entry as-is (PoE1 / PoE2 implicit shape)', () => {
+    expect(modEntryText('+34 to maximum Life')).toBe('+34 to maximum Life')
+  })
+
+  it('extracts description from the PoE2 object-shaped mod entry', () => {
+    expect(modEntryText({ description: '10% increased [Armour|Armour]', hash: 'x', mods: [] })).toBe(
+      '10% increased [Armour|Armour]',
+    )
+  })
+
+  it('is null-safe', () => {
+    expect(modEntryText(undefined)).toBe('')
+  })
+})
+
+// Regression for the GGG trade2 change (2026-06) that broke every PoE2 price
+// check with `t.replace is not a function`: explicit-family mods switched from
+// string[] to objects carrying text in `description` plus inline tier/magnitude
+// data (extended.mods.explicit no longer exists). The fixtures below are real
+// shapes captured from /api/trade2/fetch.
+describe('parseFetchedListings', () => {
+  const baseListing: FetchEntry['listing'] = {
+    price: { amount: 5, currency: 'exalted' },
+    account: { name: 'Tester', lastCharacterName: 'Hero', online: { status: 'online' } },
+    indexed: '2026-06-18T00:00:00Z',
+    whisper: '@Hero hi',
+  }
+
+  it('parses PoE2 object-shaped explicit mods without throwing, extracting text + inline tiers', () => {
+    const entry: FetchEntry = {
+      id: 'a1',
+      listing: baseListing,
+      item: {
+        name: 'Sanguine Wide Belt of the Seal',
+        baseType: 'Wide Belt',
+        typeLine: 'Wide Belt',
+        frameType: 1,
+        explicitMods: [
+          {
+            description: '+34 to maximum Life',
+            hash: 'stat.explicit.stat_3299347043',
+            mods: [{ name: 'Sanguine', tier: 'P8', level: 16, magnitudes: [{ min: '30', max: '39' }] }],
+          },
+          {
+            description: '10% increased [Armour|Armour]',
+            hash: 'stat.explicit.stat_1062208444',
+            mods: [{ name: "Oyster's", tier: 'P6', level: 8, magnitudes: [{ min: '8', max: '12' }] }],
+          },
+        ],
+        implicitMods: ['Has 1 [Charm] Slot'],
+        // extended.mods.explicit is absent in the new shape; only implicit remains.
+        extended: {
+          mods: { implicit: [] },
+          hashes: { explicit: [], implicit: [] },
+        },
+      },
+    }
+
+    const [listing] = parseFetchedListings([entry])
+    const data = listing.itemData!
+    // Text is extracted from `description` and tokens stripped.
+    expect(data.explicitMods).toContain('+34 to maximum Life')
+    expect(data.explicitMods).toContain('10% increased Armour')
+    expect(data.implicitMods).toEqual(['Has 1 Charm Slot'])
+    // Tier/range data is read from the inline `mods` array, keyed by stripped text.
+    expect(data.modTiers?.['+34 to maximum Life']).toEqual({ tier: 'P8', name: 'Sanguine', ranges: '30-39' })
+    expect(data.modTiers?.['10% increased Armour']).toEqual({ tier: 'P6', name: "Oyster's", ranges: '8-12' })
+  })
+
+  it('still parses the legacy PoE1 string shape via extended.mods/hashes', () => {
+    const entry: FetchEntry = {
+      id: 'b2',
+      listing: baseListing,
+      item: {
+        name: 'Crest of Perandus',
+        baseType: 'Pine Buckler',
+        typeLine: 'Pine Buckler',
+        frameType: 3,
+        explicitMods: ['+76 to maximum Life'],
+        extended: {
+          mods: {
+            explicit: [{ name: 'Hale', tier: 'P2', level: 50, magnitudes: [{ hash: 's', min: '70', max: '79' }] }],
+          },
+          hashes: { explicit: [['explicit.stat_3299347043', [0]]] },
+        },
+      },
+    }
+
+    const [listing] = parseFetchedListings([entry])
+    const data = listing.itemData!
+    expect(data.explicitMods).toEqual(['+76 to maximum Life'])
+    expect(data.modTiers?.['+76 to maximum Life']).toEqual({ tier: 'P2', name: 'Hale', ranges: '70-79' })
+  })
+
+  it('handles PoE2 unique mods whose inline objects carry no tier/name (only magnitudes)', () => {
+    // Real shape from /api/trade2/fetch for a unique (Atziri's Disdain): the
+    // inline mod object has just `magnitudes` -- no `tier`, no `name`. Reading
+    // `.startsWith` on the missing tier was the `Cannot read properties of
+    // undefined (reading 'startsWith')` crash.
+    const entry: FetchEntry = {
+      id: 'u4',
+      listing: baseListing,
+      item: {
+        name: "Atziri's Disdain",
+        baseType: 'Gold Circlet',
+        typeLine: 'Gold Circlet',
+        frameType: 3,
+        explicitMods: [
+          { description: '+86 to maximum Mana', mods: [{ magnitudes: [{ min: '60', max: '100' }] }] },
+          {
+            description: '15% increased [ItemRarity|Rarity of Items] found',
+            mods: [{ magnitudes: [{ min: '10', max: '20' }] }],
+          },
+        ],
+        extended: { mods: {}, hashes: { explicit: [] } },
+      },
+    }
+
+    const [listing] = parseFetchedListings([entry])
+    const data = listing.itemData!
+    expect(data.explicitMods).toContain('+86 to maximum Mana')
+    // tier/name normalized to '' (never undefined) so the renderer's `.startsWith` is safe.
+    expect(data.modTiers?.['+86 to maximum Mana']).toEqual({ tier: '', name: '', ranges: '60-100' })
+    expect(data.modTiers?.['15% increased Rarity of Items found']).toEqual({ tier: '', name: '', ranges: '10-20' })
+  })
+
+  it('drops null fetch entries without NPE', () => {
+    const entry: FetchEntry = { id: 'c3', listing: baseListing, item: { name: 'X', frameType: 0 } }
+    const out = parseFetchedListings([null as unknown as FetchEntry, entry].filter(Boolean) as FetchEntry[])
+    expect(out).toHaveLength(1)
+  })
+})
+
+// The "load more" pagination path (fetchMoreListings -> fetchAndMapListings) is a
+// SEPARATE, leaner mapper from searchTrade's parseFetchedListings. It also called
+// stripTradeTokens directly on raw mod entries, so PoE2's object-shaped mods threw
+// `s.replace is not a function` on every page-2 fetch (logs filled with it even
+// though the first page rendered). Guards that mapper too.
+describe('fetchMoreListings (pagination mapper)', () => {
+  beforeEach(() => {
+    capturedRequests.length = 0
+    mockFetchBody = null
+  })
+
+  it('maps PoE2 object-shaped mods without throwing', async () => {
+    mockFetchBody = JSON.stringify({
+      result: [
+        {
+          id: 'p1',
+          listing: { account: { name: 'A' }, price: { amount: 1, currency: 'exalted' } },
+          item: {
+            name: '',
+            typeLine: 'Glaciated Wide Belt',
+            baseType: 'Wide Belt',
+            frameType: 1,
+            implicitMods: ['Has 1 [Charm] Slot'],
+            explicitMods: [
+              { description: '+34 to maximum [Life|Life]', hash: 'h', mods: [{ name: 'Sanguine', tier: 'P8' }] },
+            ],
+          },
+        },
+      ],
+    })
+
+    const { listings } = await fetchMoreListings('query-id', ['p1'])
+    expect(listings).toHaveLength(1)
+    expect(listings[0].itemData?.explicitMods).toEqual(['+34 to maximum Life'])
+    expect(listings[0].itemData?.implicitMods).toEqual(['Has 1 Charm Slot'])
   })
 })
 

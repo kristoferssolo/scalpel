@@ -279,10 +279,10 @@ export function ExpandedListing({ listing: l, itemClass, itemName, itemRarity }:
               const tiers = d.modTiers
               const mods = d.explicitMods!
               const fractured = mods.filter((m) => fracturedSet.has(m))
-              const prefixes = mods.filter((m) => !fracturedSet.has(m) && tiers?.[m]?.tier.startsWith('P'))
-              const suffixes = mods.filter((m) => !fracturedSet.has(m) && tiers?.[m]?.tier.startsWith('S'))
+              const prefixes = mods.filter((m) => !fracturedSet.has(m) && tiers?.[m]?.tier?.startsWith('P'))
+              const suffixes = mods.filter((m) => !fracturedSet.has(m) && tiers?.[m]?.tier?.startsWith('S'))
               const other = mods.filter(
-                (m) => !fracturedSet.has(m) && !tiers?.[m]?.tier.startsWith('P') && !tiers?.[m]?.tier.startsWith('S'),
+                (m) => !fracturedSet.has(m) && !tiers?.[m]?.tier?.startsWith('P') && !tiers?.[m]?.tier?.startsWith('S'),
               )
               const sorted = [...fractured, ...prefixes, ...suffixes, ...other]
               return sorted.map((mod, mi) => (
