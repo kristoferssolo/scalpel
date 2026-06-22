@@ -1,5 +1,12 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.16',
+    notes: [
+      'Plugin developers can now make parts of a click-through annotation overlay clickable via the new ctx.setInteractiveRegion capability.',
+      'PoE2 socketed runes now apply in price-check, including pseudo totals like "Total Elemental Resistance".',
+    ],
+  },
+  {
     version: '0.9.15',
     notes: [
       'PoE2 waystone price-check now defaults to yield chips on and difficulty affixes off.',
