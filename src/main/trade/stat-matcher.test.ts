@@ -2661,6 +2661,29 @@ describe('matchItemMods', () => {
       expect(filters.find((f) => f.id === 'explicit.stat_681332047')).toBeDefined()
       expect(filters.find((f) => f.id === 'explicit.stat_210067635')).toBeUndefined()
     })
+
+    // #449: a glove corruption enchant "Break #% increased Armour" must not be
+    // hijacked by the local "#% increased Armour (Local)" enchant. preferLocal
+    // (set for armour/weapon items) used to override to the local match even
+    // though the non-local "Break ..." stat is a strictly more-specific match --
+    // the local pattern only matched by letting its "#" swallow the word "Break".
+    it('glove enchant "Break increased Armour" keeps the specific Break stat over the local lookalike', () => {
+      _setStatEntriesForTests([
+        { id: 'enchant.stat_1776411443', text: 'Break #% increased Armour', type: 'enchant' },
+        { id: 'enchant.stat_1062208444', text: '#% increased Armour', type: 'enchant' },
+        { id: 'enchant.stat_2866361420', text: '#% increased Armour (Local)', type: 'enchant' },
+      ])
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Gloves', enchants: ['Break 50% increased Armour'] }),
+      )
+      const breakFilter = filters.find((f) => f.id === 'enchant.stat_1776411443')
+      expect(breakFilter).toBeDefined()
+      expect(breakFilter?.value).toBe(50)
+      expect(filters.find((f) => f.id === 'enchant.stat_2866361420')).toBeUndefined()
+    })
   })
 
   describe('jewel vs global variant selection', () => {
