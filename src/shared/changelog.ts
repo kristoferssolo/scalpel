@@ -4,6 +4,7 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
     notes: [
       'Plugin developers can now make parts of a click-through annotation overlay clickable via the new ctx.setInteractiveRegion capability.',
       'PoE2 socketed runes now apply in price-check, including pseudo totals like "Total Elemental Resistance".',
+      'Fixed the "Break increased Armour" glove enchant matching the wrong "increased Armour" stat in price-check.',
     ],
   },
   {
