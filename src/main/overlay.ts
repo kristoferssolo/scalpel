@@ -541,6 +541,7 @@ export function showOverlay(): void {
     const tb = OverlayController.targetBounds
     if (tb?.width) sendGameBounds(tb.width, tb.height)
     overlayWindow.webContents.send('poe-version', getPoeVersion())
+    overlayWindow.webContents.send('overlay-show')
   } catch (err) {
     lastOverlayError = String(err)
     console.error('[overlay] Error in showOverlay:', err)

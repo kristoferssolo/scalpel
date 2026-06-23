@@ -166,6 +166,7 @@ const store = new Store<AppSettings>({
     locale: 'en',
     pluginRegistryUrl: undefined,
     startInTray: true,
+    pluginAutoUpdate: false,
     appWindowPosition: undefined,
     [ACTIVE_PROFILE_ID_KEY]: '',
     [LAST_PROFILE_ID_POE1_KEY]: '',
@@ -185,6 +186,7 @@ if (store.get('themeId') === undefined) store.set('themeId', 'default')
 if (store.get('customThemePalette') === undefined) store.set('customThemePalette', null)
 if (store.get('adaptiveDefaultsMode') === undefined) store.set('adaptiveDefaultsMode', 'eager')
 if (store.get('startInTray') === undefined) store.set('startInTray', true)
+if (store.get('pluginAutoUpdate') === undefined) store.set('pluginAutoUpdate', false)
 if (store.get('locale') === undefined) store.set('locale', 'en')
 
 initMainLocale(store, () => refreshTrayMenu())

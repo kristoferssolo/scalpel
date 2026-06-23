@@ -127,6 +127,7 @@ export const IPC_CHANNELS = {
     OPEN_VIEW_EVENT: 'open-view',
     OPEN_LINK_PENDING_EVENT: 'open-link-pending',
     OVERLAY_HIDE_EVENT: 'overlay-hide',
+    OVERLAY_SHOW_EVENT: 'overlay-show',
     GAME_BOUNDS_EVENT: 'game-bounds',
     OVERLAY_DETACH_EVENT: 'overlay-detach',
     OVERLAY_REATTACH_EVENT: 'overlay-reattach',

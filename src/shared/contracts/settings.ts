@@ -68,6 +68,9 @@ export interface AppSettings {
   hiddenPluginTabIds?: string[]
   developerMode?: boolean
   pluginRegistryUrl?: string
+  /** When true, opted-in: outdated registry plugins update silently in the
+   *  background (curated registry only). Default false. */
+  pluginAutoUpdate: boolean
   themeId: string
   customThemePalette: ThemePalette | null
   locale: AppLocale

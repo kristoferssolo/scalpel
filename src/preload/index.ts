@@ -323,6 +323,11 @@ export const api = {
     ipcRenderer.on('overlay-hide', handler)
     return () => ipcRenderer.removeListener('overlay-hide', handler)
   },
+  onOverlayShow: (cb: () => void): (() => void) => {
+    const handler = (): void => cb()
+    ipcRenderer.on('overlay-show', handler)
+    return () => ipcRenderer.removeListener('overlay-show', handler)
+  },
   onSettingUpdated: (cb: (key: string, value: unknown) => void): (() => void) => {
     const handler = (_: Electron.IpcRendererEvent, key: string, value: unknown): void => cb(key, value)
     ipcRenderer.on('setting-updated', handler)
@@ -928,6 +933,7 @@ export const api = {
   ): Promise<void> => ipcRenderer.invoke('plugins:register-overlay', pluginId, opts),
   pluginOpenOverlay: (pluginId: string): Promise<void> => ipcRenderer.invoke('plugins:open-overlay', pluginId),
   pluginCloseOverlay: (pluginId: string): Promise<void> => ipcRenderer.invoke('plugins:close-overlay', pluginId),
+  pluginOverlayVisible: (pluginId: string): Promise<boolean> => ipcRenderer.invoke('plugins:overlay-visible', pluginId),
   pluginCaptureGameWindow: (
     region?: import('../plugin-sdk/src/types').GameRect,
   ): Promise<import('../plugin-sdk/src/types').GameCapture | null> =>
