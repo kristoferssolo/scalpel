@@ -1,5 +1,9 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '0.9.17',
+    notes: ['EXPERIMENTAL: Auto game switching (s/o Dan!)'],
+  },
+  {
     version: '0.9.16',
     notes: [
       'Plugin developers can now make parts of a click-through annotation overlay clickable via the new ctx.setInteractiveRegion capability.',
