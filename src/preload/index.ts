@@ -819,6 +819,16 @@ export const api = {
      *  missed the original push. */
     requestShownState: (): void => ipcRenderer.send('whiteboard:request-shown-state'),
   },
+  // Screen capture source resolution for the whiteboard live-mirror feature
+  screen: {
+    getGameWindowSource: (): Promise<{ sourceId: string; gameSize: { w: number; h: number } } | null> =>
+      ipcRenderer.invoke('screen:get-game-window-source'),
+    onSourceInvalidated: (cb: () => void): (() => void) => {
+      const handler = (): void => cb()
+      ipcRenderer.on('screen:source-invalidated', handler)
+      return () => ipcRenderer.removeListener('screen:source-invalidated', handler)
+    },
+  },
   // Plugins
   listInstalledPlugins: (): Promise<
     Array<{

@@ -276,6 +276,11 @@ export const IPC_CHANNELS = {
     OPEN_EXTERNAL: 'open-external',
     ELEVATION_HINT_EVENT: 'elevation-hint',
   },
+
+  SCREEN: {
+    GET_GAME_WINDOW_SOURCE: 'screen:get-game-window-source',
+    SOURCE_INVALIDATED_EVENT: 'screen:source-invalidated',
+  },
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS] extends infer Group

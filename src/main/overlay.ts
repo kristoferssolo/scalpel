@@ -9,6 +9,7 @@ import { loadTierData, refreshTierData } from './tier-data'
 import { loadPremiumMods, refreshPremiumMods } from './premium-mods'
 import { loadEndgameFilterSupport, refreshEndgameFilterSupport } from './trade/endgame-filter-support'
 import { closeAllOverlaysOnPoeExit, isAnyScalpelWindowFocused, isInsideAnySecondaryOverlay } from './windowing'
+import { getWhiteboardOverlay } from './whiteboard'
 import { POE_SIDEBAR_RATIO } from '@shared/poe-geometry'
 import { GAME_TITLES } from '@shared/contracts/game-variant'
 
@@ -411,6 +412,9 @@ export function createOverlayWindow(version: 1 | 2 = 1, options?: CreateOverlayO
         startClientLogWatcher(overlayWindow)
       }
       sendGameBounds(ev.width, ev.height)
+      // A fresh game window means a new desktopCapturer source id; tell the
+      // whiteboard to re-resolve and re-open its live-mirror stream.
+      getWhiteboardOverlay()?.send('screen:source-invalidated')
       mouseOverPanel = false
       if (overlayVisible && overlayWindow && !overlayWindow.isDestroyed()) {
         overlayWindow.setIgnoreMouseEvents(true)
@@ -435,6 +439,7 @@ export function createOverlayWindow(version: 1 | 2 = 1, options?: CreateOverlayO
       // clear our renderer-side overlay state and hide every secondary
       // overlay using the same paths the Esc handler uses.
       hideOverlay()
+      getWhiteboardOverlay()?.send('screen:source-invalidated')
       closeAllOverlaysOnPoeExit()
     } catch (err) {
       lastOverlayError = String(err)
@@ -525,10 +530,11 @@ export function retargetForGame(target: 1 | 2): void {
 
 export function showOverlay(): void {
   if (!overlayWindow || overlayWindow.isDestroyed()) return
-  // Mutual exclusion: hide the whiteboard before showing the main overlay.
-  import('./whiteboard').then(({ getWhiteboardOverlay }) => {
-    getWhiteboardOverlay()?.hide()
-  })
+  // Mutual exclusion: hide the whiteboard before showing the main overlay -
+  // UNLESS it's persisting (passthrough mode), where it stays as a click-
+  // through annotation layer behind the eval.
+  const wb = getWhiteboardOverlay()
+  if (wb && !wb.getPersistOverOthers()) wb.hide()
   overlayVisible = true
   lastShowTime = Date.now()
   // Call the overridden showInactive() to properly reset opacityHidden and restore visibility.
@@ -537,6 +543,13 @@ export function showOverlay(): void {
   try {
     overlayWindow.showInactive()
   } catch {}
+  // If a persisting whiteboard is visible, raise the eval above it so the
+  // popup is never buried under the annotations.
+  if (wb && wb.getPersistOverOthers() && wb.isVisible()) {
+    try {
+      overlayWindow.moveTop()
+    } catch {}
+  }
   try {
     const tb = OverlayController.targetBounds
     if (tb?.width) sendGameBounds(tb.width, tb.height)
