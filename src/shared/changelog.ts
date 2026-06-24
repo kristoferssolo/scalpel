@@ -1,7 +1,11 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
     version: '0.9.17',
-    notes: ['EXPERIMENTAL: Auto game switching (s/o Dan!)'],
+    notes: [
+      'Added a live mirror whiteboard element that pins a region of the game window and shows it in real time, with your placement persisted between sessions.',
+      "Plugins you've opted into now update themselves silently in the background, no manual reinstall.",
+      'EXPERIMENTAL: Auto game switching (s/o Dan!)',
+    ],
   },
   {
     version: '0.9.16',
