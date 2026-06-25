@@ -1848,6 +1848,101 @@ describe('matchItemMods', () => {
       expect(abyss?.value).toBe(2)
     })
 
+    // GGG splits "increased Experience gain" into TWO trade stats: the generic
+    // explicit.stat_3666934677 (also the rune stat) and the map-scoped
+    // explicit.stat_57434274 -- the id that carries the "...in Map" text variant and
+    // the one tablets/maps are actually indexed under for search. EE2 folds both into
+    // one ref and lists the generic id first, so the [0]-pick build must override the
+    // tablet experience phrasings onto the map-scoped id, or the price check searches
+    // the wrong (generic) stat and misses every experience tablet.
+    it('routes the tablet "increased Experience gain in Map" mod to the map-scoped stat id', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['15% increased Experience gain in Map'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Irradiated Tablet' }),
+      )
+      const exp = filters.find((f) => f.text === '15% increased Experience gain in Map')
+      expect(exp?.id).toBe('explicit.stat_57434274')
+    })
+
+    // Same [0]-pick split as Experience: GGG indexes a tablet's "Gold found in Map"
+    // mod under the "(Gold Piles)" stat explicit.stat_1276056105 (which carries the
+    // "...in Map (Gold Piles)" text), NOT the generic explicit.stat_1133965702 ("Gold
+    // found in this Area"). EE2 folds both into map_gold_+% and lists the generic id
+    // first, so the table build must override the tablet gold phrasings onto the
+    // map-scoped id.
+    it('routes the tablet "increased Gold found in Map" mod to the (Gold Piles) map-scoped stat id', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['35% increased Gold found in Map'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Irradiated Tablet' }),
+      )
+      const gold = filters.find((f) => f.text === '35% increased Gold found in Map')
+      expect(gold?.id).toBe('explicit.stat_1276056105')
+    })
+
+    // Same singular/numeric split as Abyss: GGG indexes the valueless singular "Map
+    // contains an additional Azmeri Spirit" under its own stat_775597083 (live-probed:
+    // 210 tablet listings), separate from the numeric "# additional Azmeri Spirit"
+    // (stat_358129101). The [0]-pick build sent the singular to the numeric id; the
+    // override routes it to the dedicated singular id, while the numeric roll stays put.
+    it('routes the singular "an additional Azmeri Spirit" tablet mod to its dedicated stat id', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['Map contains an additional Azmeri Spirit'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Overseer Tablet' }),
+      )
+      const azmeri = filters.find((f) => f.text === 'Map contains an additional Azmeri Spirit')
+      expect(azmeri?.id).toBe('explicit.stat_775597083')
+    })
+
+    it('keeps the numeric "# additional Azmeri Spirit" tablet mod on the numeric stat id', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['Map contains 2 additional Azmeri Spirit'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Overseer Tablet' }),
+      )
+      const azmeri = filters.find((f) => f.text === 'Map contains 2 additional Azmeri Spirit')
+      expect(azmeri?.id).toBe('explicit.stat_358129101')
+    })
+
+    // Strongbox singular/numeric split: the Map/Your-Maps singular "an additional
+    // Strongbox" is stat_3040603554 (live-probed: 234 tablet listings). NOTE the trap:
+    // unlike Abyss, the [0] id (stat_3240183538) genuinely carries the "Area contains an
+    // additional Strongbox" text, so that one phrasing must NOT be re-routed -- only the
+    // Map/Your-Maps singular moves.
+    it('routes the singular "Map contains an additional Strongbox" tablet mod to its dedicated stat id', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['Map contains an additional Strongbox'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Overseer Tablet' }),
+      )
+      const strongbox = filters.find((f) => f.text === 'Map contains an additional Strongbox')
+      expect(strongbox?.id).toBe('explicit.stat_3040603554')
+    })
+
+    it('keeps the "Area contains an additional Strongbox" tablet phrasing on its own ([0]) stat id', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['Area contains an additional Strongbox'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Overseer Tablet' }),
+      )
+      const strongbox = filters.find((f) => f.text === 'Area contains an additional Strongbox')
+      expect(strongbox?.id).toBe('explicit.stat_3240183538')
+    })
+
     // Unique tablet count-mods (Wraeclast Besieged, issue #417): the clipboard
     // pluralizes the noun and carries the rolled number ("2 additional waves of
     // Hiveborn Monsters"), while the trade stat keeps "an additional <singular>"
