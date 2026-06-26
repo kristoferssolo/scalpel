@@ -1050,7 +1050,7 @@ describe('matchItemMods', () => {
       expect(baseChip?.enabled).toBe(true)
     })
 
-    it('generates 8-mod chip for 4+4 affix maps', () => {
+    it('generates modifier-count chip for rare map with 4+4 affixes (chip enabled, min=8)', () => {
       const advancedMods: AdvancedMod[] = [
         ...Array.from({ length: 4 }, (_, i) => ({
           type: 'prefix' as const,
@@ -1076,10 +1076,131 @@ describe('matchItemMods', () => {
         makeItemInfo({ itemClass: 'Maps', rarity: 'Rare', sockets: '' }),
         advancedMods,
       )
-      const eightMod = filters.find((f) => f.id === 'pseudo.pseudo_number_of_affix_mods')
-      expect(eightMod).toBeDefined()
-      expect(eightMod?.value).toBe(8)
-      expect(eightMod?.enabled).toBe(true)
+      const chip = filters.find((f) => f.id === 'pseudo.pseudo_number_of_affix_mods')
+      expect(chip).toBeDefined()
+      expect(chip?.text).toBe('Modifiers: 8')
+      expect(chip?.value).toBe(8)
+      expect(chip?.min).toBe(8)
+      expect(chip?.enabled).toBe(true)
+      // type 'map' so the panel renders it as a scrubbable row, not a toggle chip
+      expect(chip?.type).toBe('map')
+    })
+
+    it('generates modifier-count chip for rare map with 3+2 affixes (chip disabled, min=5)', () => {
+      const advancedMods: AdvancedMod[] = [
+        ...Array.from({ length: 3 }, (_, i) => ({
+          type: 'prefix' as const,
+          name: `P${i}`,
+          tier: 1,
+          tags: [],
+          lines: [`prefix ${i}`],
+          ranges: [],
+        })),
+        ...Array.from({ length: 2 }, (_, i) => ({
+          type: 'suffix' as const,
+          name: `S${i}`,
+          tier: 1,
+          tags: [],
+          lines: [`suffix ${i}`],
+          ranges: [],
+        })),
+      ]
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({ itemClass: 'Maps', rarity: 'Rare', sockets: '' }),
+        advancedMods,
+      )
+      const chip = filters.find((f) => f.id === 'pseudo.pseudo_number_of_affix_mods')
+      expect(chip).toBeDefined()
+      expect(chip?.text).toBe('Modifiers: 5')
+      expect(chip?.value).toBe(5)
+      expect(chip?.min).toBe(5)
+      expect(chip?.enabled).toBe(false)
+    })
+
+    it('generates modifier-count chip for rare waystone with prefix/suffix advancedMods', () => {
+      const advancedMods: AdvancedMod[] = [
+        {
+          type: 'prefix',
+          name: 'P0',
+          tier: 1,
+          tags: [],
+          lines: ['prefix 0'],
+          ranges: [],
+        },
+        {
+          type: 'suffix',
+          name: 'S0',
+          tier: 1,
+          tags: [],
+          lines: ['suffix 0'],
+          ranges: [],
+        },
+      ]
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({ itemClass: 'Waystones', rarity: 'Rare', sockets: '' }),
+        advancedMods,
+      )
+      const chip = filters.find((f) => f.id === 'pseudo.pseudo_number_of_affix_mods')
+      expect(chip).toBeDefined()
+      expect(chip?.text).toBe('Modifiers: 2')
+      expect(chip?.min).toBe(2)
+      expect(chip?.enabled).toBe(false)
+    })
+
+    it('does not generate modifier-count chip for non-rare map', () => {
+      const advancedMods: AdvancedMod[] = [
+        {
+          type: 'prefix',
+          name: 'P0',
+          tier: 1,
+          tags: [],
+          lines: ['prefix 0'],
+          ranges: [],
+        },
+      ]
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({ itemClass: 'Maps', rarity: 'Magic', sockets: '' }),
+        advancedMods,
+      )
+      const chip = filters.find((f) => f.id === 'pseudo.pseudo_number_of_affix_mods')
+      expect(chip).toBeUndefined()
+    })
+
+    it('does not generate modifier-count chip for rare map with no advancedMods', () => {
+      const filters = matchItemMods([], [], undefined, makeItemInfo({ itemClass: 'Maps', rarity: 'Rare', sockets: '' }))
+      const chip = filters.find((f) => f.id === 'pseudo.pseudo_number_of_affix_mods')
+      expect(chip).toBeUndefined()
+    })
+
+    it('does not generate modifier-count chip when advancedMods are implicit-only', () => {
+      const advancedMods: AdvancedMod[] = [
+        {
+          type: 'implicit',
+          name: 'Implicit',
+          tier: 0,
+          tags: [],
+          lines: ['Area is inhabited by Demons'],
+          ranges: [],
+        },
+      ]
+      const filters = matchItemMods(
+        [],
+        [],
+        undefined,
+        makeItemInfo({ itemClass: 'Maps', rarity: 'Rare', sockets: '' }),
+        advancedMods,
+      )
+      const chip = filters.find((f) => f.id === 'pseudo.pseudo_number_of_affix_mods')
+      expect(chip).toBeUndefined()
     })
   })
 
