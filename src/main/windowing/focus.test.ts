@@ -4,16 +4,23 @@ vi.mock('electron', () => ({
   BrowserWindow: { getFocusedWindow: () => focusHolder.current },
   screen: { getDisplayNearestPoint: () => ({ scaleFactor: 1 }) },
 }))
-import { closeAllOverlaysOnPoeExit, hideFocusedOrAnyVisibleSecondaryOverlay } from './focus'
+import { closeAllOverlaysOnPoeExit, hideFocusedOrAnyVisibleSecondaryOverlay, restoreAllOnPoeFocus } from './focus'
 import { type OverlayState, overlays } from './state'
 
-function fakeState(opts: { visible: boolean; wasVisible?: boolean; persist?: boolean }): OverlayState {
+function fakeState(opts: {
+  visible: boolean
+  wasVisible?: boolean
+  persist?: boolean
+  gateShow?: () => boolean
+}): OverlayState {
   return {
-    spec: {} as unknown as OverlayState['spec'],
+    spec: { gateShow: opts.gateShow } as unknown as OverlayState['spec'],
     win: {
       isDestroyed: () => false,
       isVisible: () => opts.visible,
       hide: vi.fn(),
+      show: vi.fn(),
+      moveTop: vi.fn(),
     } as unknown as OverlayState['win'],
     snapGhostActive: false,
     inProgrammaticMove: false,
@@ -115,5 +122,42 @@ describe('hideFocusedOrAnyVisibleSecondaryOverlay - persistOverOthers', () => {
     expect(hid).toBe(true)
     expect(cs.win?.hide).toHaveBeenCalled()
     expect(wb.win?.hide).not.toHaveBeenCalled()
+  })
+})
+
+describe('restoreAllOnPoeFocus', () => {
+  beforeEach(() => {
+    overlays.clear()
+    focusHolder.current = null
+  })
+
+  it('restores a state with wasVisible=true and no gateShow', () => {
+    const cs = fakeState({ visible: false, wasVisible: true })
+    overlays.set('cheatsheet', cs)
+
+    restoreAllOnPoeFocus()
+
+    expect(cs.win?.show).toHaveBeenCalled()
+    expect(cs.win?.moveTop).toHaveBeenCalled()
+  })
+
+  it('skips a state with wasVisible=true and gateShow returning false', () => {
+    const pinned = fakeState({ visible: false, wasVisible: true, gateShow: () => false })
+    overlays.set('pinned-zone', pinned)
+
+    restoreAllOnPoeFocus()
+
+    expect(pinned.win?.show).not.toHaveBeenCalled()
+    expect(pinned.win?.moveTop).not.toHaveBeenCalled()
+  })
+
+  it('restores a state with wasVisible=true and gateShow returning true', () => {
+    const pinned = fakeState({ visible: false, wasVisible: true, gateShow: () => true })
+    overlays.set('pinned-zone', pinned)
+
+    restoreAllOnPoeFocus()
+
+    expect(pinned.win?.show).toHaveBeenCalled()
+    expect(pinned.win?.moveTop).toHaveBeenCalled()
   })
 })

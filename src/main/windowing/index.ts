@@ -44,16 +44,25 @@ export interface OverlaySpec {
    *  mount point is conceptually elsewhere (center+bottom, etc.) supply this
    *  so the ghost (and snap commit) tracks the user's resize. */
   snapTarget?: (defaultRect: Rect, cur: Rect) => Rect
-  /** Fired once after did-finish-load + the very first show. The earliest
-   *  safe point to deliver IPCs whose payload was known at registration time
-   *  but couldn't be sent during window creation (renderer wasn't mounted
-   *  yet, so webContents.send would silently drop them). */
+  /** Fired once after did-finish-load + the very first show (or, when
+   *  `gateShow` suppresses the show, once after did-finish-load with no
+   *  actual show). The earliest safe point to deliver IPCs whose payload
+   *  was known at registration time but couldn't be sent during window
+   *  creation (renderer wasn't mounted yet, so webContents.send would
+   *  silently drop them). */
   onFirstShow?: (win: BrowserWindow) => void
   /** When true, re-apply the (resolved) anchor bounds on every show, not just at
    *  window creation. For specs whose `defaultAnchor` is context-dependent and
    *  must re-evaluate each time the window is shown. Default (false) keeps the
    *  position the window last had. */
   repositionOnShow?: boolean
+  /** Optional predicate consulted before showing an already-created window
+   *  (regular show, the first show after did-finish-load, and the PoE-refocus
+   *  restore). Return false to suppress the show. Window creation itself is
+   *  never gated - the renderer must boot so it can report its content state.
+   *  For overlays whose content is state-dependent (pinned-zone) so a blind
+   *  show can't surface an empty-but-mouse-interactive transparent window. */
+  gateShow?: () => boolean
 }
 
 /** Multiply an anchor against a rect, returning a rect in the same coordinate
@@ -345,7 +354,11 @@ function ensureWin(state: OverlayState): BrowserWindow {
     applyAnchorBounds(state)
     // First show registers the window with the OS (one-time animation).
     // Doesn't steal focus from PoE - see installOpacityHideShow comment.
-    state.win.show()
+    // This gate check doubles as the recovery point for a show request that
+    // raced past showState's isLoading() guard: the caller set its gate state
+    // synchronously before calling show, so re-reading it here performs the
+    // show that showState skipped.
+    if (!state.spec.gateShow || state.spec.gateShow()) state.win.show()
     state.spec.onFirstShow?.(state.win)
   })
   return win
@@ -374,6 +387,7 @@ function showState(state: OverlayState): void {
   // hold-to-move and re-triggers PoE-blur which causes overlay flicker).
   if (win.webContents.isLoading()) return
   if (win.isVisible()) return
+  if (state.spec.gateShow && !state.spec.gateShow()) return
   if (state.spec.repositionOnShow) applyAnchorBounds(state)
   win.show()
 }

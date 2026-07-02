@@ -130,6 +130,7 @@ export function restoreAllOnPoeFocus(): void {
   for (const state of overlays.values()) {
     if (!state.wasVisibleBeforeFocusLoss) continue
     if (!state.win || state.win.isDestroyed()) continue
+    if (state.spec.gateShow && !state.spec.gateShow()) continue
     state.win.show()
     state.win.moveTop()
   }
