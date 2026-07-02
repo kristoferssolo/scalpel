@@ -822,11 +822,15 @@ export const api = {
   // Screen capture source resolution for the whiteboard live-mirror feature
   screen: {
     getGameWindowSource: (): Promise<{ sourceId: string; gameSize: { w: number; h: number } } | null> =>
-      ipcRenderer.invoke('screen:get-game-window-source'),
+      ipcRenderer.invoke(IPC_CHANNELS.SCREEN.GET_GAME_WINDOW_SOURCE),
     onSourceInvalidated: (cb: () => void): (() => void) => {
       const handler = (): void => cb()
-      ipcRenderer.on('screen:source-invalidated', handler)
-      return () => ipcRenderer.removeListener('screen:source-invalidated', handler)
+      ipcRenderer.on(IPC_CHANNELS.SCREEN.SOURCE_INVALIDATED_EVENT, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.SCREEN.SOURCE_INVALIDATED_EVENT, handler)
+    },
+    onSourceMaybeStale: (handler: () => void): (() => void) => {
+      ipcRenderer.on(IPC_CHANNELS.SCREEN.SOURCE_MAYBE_STALE_EVENT, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.SCREEN.SOURCE_MAYBE_STALE_EVENT, handler)
     },
   },
   // Plugins

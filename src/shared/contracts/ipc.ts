@@ -280,6 +280,7 @@ export const IPC_CHANNELS = {
   SCREEN: {
     GET_GAME_WINDOW_SOURCE: 'screen:get-game-window-source',
     SOURCE_INVALIDATED_EVENT: 'screen:source-invalidated',
+    SOURCE_MAYBE_STALE_EVENT: 'screen:source-maybe-stale',
   },
 } as const
 

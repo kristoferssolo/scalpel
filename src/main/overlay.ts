@@ -12,6 +12,7 @@ import { closeAllOverlaysOnPoeExit, isAnyScalpelWindowFocused, isInsideAnySecond
 import { getWhiteboardOverlay } from './whiteboard'
 import { POE_SIDEBAR_RATIO } from '@shared/poe-geometry'
 import { GAME_TITLES } from '@shared/contracts/game-variant'
+import { IPC_CHANNELS } from '@shared/contracts/ipc'
 
 let overlayWindow: BrowserWindow | null = null
 let overlayVisible = false
@@ -414,7 +415,7 @@ export function createOverlayWindow(version: 1 | 2 = 1, options?: CreateOverlayO
       sendGameBounds(ev.width, ev.height)
       // A fresh game window means a new desktopCapturer source id; tell the
       // whiteboard to re-resolve and re-open its live-mirror stream.
-      getWhiteboardOverlay()?.send('screen:source-invalidated')
+      getWhiteboardOverlay()?.send(IPC_CHANNELS.SCREEN.SOURCE_INVALIDATED_EVENT)
       mouseOverPanel = false
       if (overlayVisible && overlayWindow && !overlayWindow.isDestroyed()) {
         overlayWindow.setIgnoreMouseEvents(true)
@@ -439,7 +440,7 @@ export function createOverlayWindow(version: 1 | 2 = 1, options?: CreateOverlayO
       // clear our renderer-side overlay state and hide every secondary
       // overlay using the same paths the Esc handler uses.
       hideOverlay()
-      getWhiteboardOverlay()?.send('screen:source-invalidated')
+      getWhiteboardOverlay()?.send(IPC_CHANNELS.SCREEN.SOURCE_INVALIDATED_EVENT)
       closeAllOverlaysOnPoeExit()
     } catch (err) {
       lastOverlayError = String(err)
@@ -454,6 +455,12 @@ export function createOverlayWindow(version: 1 | 2 = 1, options?: CreateOverlayO
       // Only show the overlay if POE actually has focus (not another window)
       // This prevents the overlay from appearing on top of other windows during rapid alt-tab
       if (!OverlayController.targetHasFocus) return
+
+      // A refocused game may be a NEW window since the whiteboard's live-mirror
+      // stream last opened (game restarted while the board sat hidden, so the
+      // one-shot 'detach' invalidation never fired against it). Renderer-side
+      // no-op when the stream is already healthy, so per-alt-tab cost is one IPC.
+      getWhiteboardOverlay()?.send(IPC_CHANNELS.SCREEN.SOURCE_MAYBE_STALE_EVENT)
 
       const tb = OverlayController.targetBounds
       if (tb?.width) sendGameBounds(tb.width, tb.height)
