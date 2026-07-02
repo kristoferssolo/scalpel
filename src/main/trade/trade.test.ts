@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Capture per-request state for the searchTrade assertions below. trade.ts imports
 // electron's `net` at module scope, so the mock has to be installed before `./trade`
@@ -120,6 +120,7 @@ import {
   type StatFilter,
 } from './trade'
 import { setPoeVersion } from '../game-state'
+import { getUniquesByBase, _setUniquesByBaseForTests } from './prices'
 import { matchItemMods, _setStatEntriesForTests } from './stat-matcher'
 
 // Shared rare-body-armour fixture for the searchTrade describes below. The
@@ -625,6 +626,119 @@ describe('searchTrade filter-group dispatch', () => {
     expect(body.query.name).toBe('Gifts from Above')
     expect(body.query.type).toBe('Prismatic Ring')
     expect(body.query.filters?.type_filters?.filters?.rarity).toBeUndefined()
+  })
+
+  describe('unidentified unique map name resolution (#470)', () => {
+    // trade.ts didn't import prices.ts before #470, so no other test in this file
+    // depends on uniques-by-base content -- safe to seed per-test and restore after.
+    // Caveat: the restore writes the PoE1 snapshot into BOTH versions' slots
+    // (_setUniquesByBaseForTests seeds both), so it round-trips content, not
+    // per-version state. Fine while no other test here reads uniques-by-base.
+    let realUniquesByBase: Record<string, string[]>
+
+    beforeEach(() => {
+      realUniquesByBase = getUniquesByBase()
+    })
+
+    afterEach(() => {
+      _setUniquesByBaseForTests(realUniquesByBase)
+    })
+
+    it('unidentified unique map resolves the unique name from uniques-by-base', async () => {
+      setPoeVersion(1)
+      _setUniquesByBaseForTests({ 'Machinarium Map': ["Doryani's Machinarium"] })
+      const unidUniqueMap = {
+        name: 'Machinarium Map',
+        baseType: 'Machinarium Map',
+        itemClass: 'Maps',
+        rarity: 'Unique',
+      }
+      const filters: StatFilter[] = [
+        { id: 'misc.identified', text: 'Unidentified', type: 'misc', enabled: true, value: null, min: null, max: null },
+      ]
+      await searchTrade('Mirage', unidUniqueMap, filters, { tradeStatus: 'any' })
+      const req = capturedRequests.find((r) => r.url.includes('/search/'))
+      const body = parseCapturedBody(req)
+      expect(body.query.name).toBe("Doryani's Machinarium")
+      expect(body.query.type).toBeUndefined()
+    })
+
+    it('unid unique map on a shared base prefers the droppable (non-Replica/Infused) candidate: Relic Chambers', async () => {
+      setPoeVersion(1)
+      _setUniquesByBaseForTests({
+        'Relic Chambers Map': ['Cortex', 'Replica Cortex'],
+        'Harbinger Map': ['Infused Beachhead', 'The Beachhead'],
+      })
+      const filters: StatFilter[] = [
+        { id: 'misc.identified', text: 'Unidentified', type: 'misc', enabled: true, value: null, min: null, max: null },
+      ]
+
+      const relicChambers = {
+        name: 'Relic Chambers Map',
+        baseType: 'Relic Chambers Map',
+        itemClass: 'Maps',
+        rarity: 'Unique',
+      }
+      await searchTrade('Mirage', relicChambers, filters, { tradeStatus: 'any' })
+      const relicReq = capturedRequests.find((r) => r.url.includes('/search/'))
+      const relicBody = parseCapturedBody(relicReq)
+      expect(relicBody.query.name).toBe('Cortex')
+    })
+
+    it('unid unique map on a shared base prefers the droppable (non-Replica/Infused) candidate: Harbinger', async () => {
+      setPoeVersion(1)
+      _setUniquesByBaseForTests({
+        'Relic Chambers Map': ['Cortex', 'Replica Cortex'],
+        'Harbinger Map': ['Infused Beachhead', 'The Beachhead'],
+      })
+      const filters: StatFilter[] = [
+        { id: 'misc.identified', text: 'Unidentified', type: 'misc', enabled: true, value: null, min: null, max: null },
+      ]
+
+      const harbinger = {
+        name: 'Harbinger Map',
+        baseType: 'Harbinger Map',
+        itemClass: 'Maps',
+        rarity: 'Unique',
+      }
+      await searchTrade('Mirage', harbinger, filters, { tradeStatus: 'any' })
+      const harbingerReq = capturedRequests.find((r) => r.url.includes('/search/'))
+      const harbingerBody = parseCapturedBody(harbingerReq)
+      expect(harbingerBody.query.name).toBe('The Beachhead')
+    })
+
+    it('unid unique map with unknown base falls back to sending the base as name', async () => {
+      setPoeVersion(1)
+      _setUniquesByBaseForTests({})
+      const unidUniqueMap = {
+        name: 'Some Future Map',
+        baseType: 'Some Future Map',
+        itemClass: 'Maps',
+        rarity: 'Unique',
+      }
+      const filters: StatFilter[] = [
+        { id: 'misc.identified', text: 'Unidentified', type: 'misc', enabled: true, value: null, min: null, max: null },
+      ]
+      await searchTrade('Mirage', unidUniqueMap, filters, { tradeStatus: 'any' })
+      const req = capturedRequests.find((r) => r.url.includes('/search/'))
+      const body = parseCapturedBody(req)
+      expect(body.query.name).toBe('Some Future Map')
+    })
+
+    it('identified unique map still searches by its real name', async () => {
+      setPoeVersion(1)
+      _setUniquesByBaseForTests({ 'Machinarium Map': ["Doryani's Machinarium"] })
+      const identifiedUniqueMap = {
+        name: "Doryani's Machinarium",
+        baseType: 'Machinarium Map',
+        itemClass: 'Maps',
+        rarity: 'Unique',
+      }
+      await searchTrade('Mirage', identifiedUniqueMap, [], { tradeStatus: 'any' })
+      const req = capturedRequests.find((r) => r.url.includes('/search/'))
+      const body = parseCapturedBody(req)
+      expect(body.query.name).toBe("Doryani's Machinarium")
+    })
   })
 
   it('unidentified item still sends enchant filters (cluster jewel passive count survives id)', async () => {

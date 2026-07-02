@@ -7,6 +7,7 @@ import { recordMainBreadcrumb } from '../diagnostics'
 import { getPoeVersion } from '../game-state'
 import { getOverlayWindow } from '../overlay'
 import { harvestIcons } from './icon-cache'
+import { getUniquesByBase } from './prices'
 import { adjustRateLimits, RateLimiter } from './rate-limiter'
 import { normalizeTabletModKey, stripTabletMapScoping } from './stat-matcher/producers/tablets'
 
@@ -681,8 +682,22 @@ export async function searchTrade(
   // For uniques, search by name + base type
   // Strip "Foulborn " prefix from the trade search name
   if (item.rarity === 'Unique' && item.itemClass === 'Maps') {
-    // Unique maps: search by name only (type "Map" doesn't work with name)
-    query.name = item.name
+    // Unique maps: search by name only (type "Map" doesn't work with name).
+    // An unid unique map has name == baseType (e.g. "Machinarium Map"), which
+    // the trade API rejects as an unknown name, and map bases are not valid
+    // query.type values either (#470). Resolve the real unique name from the
+    // uniques-by-base data. Replica/Infused variants never drop unidentified
+    // (Heist curios and vendor recipes produce identified items), so prefer
+    // the droppable candidate on shared bases. (lookupBestUniquePrice in
+    // prices.ts picks by highest chaos value instead - different goal: price
+    // estimate there, a name the trade API accepts here.)
+    if (unidEnabled && item.name === item.baseType) {
+      const candidates = getUniquesByBase()[item.baseType] ?? []
+      const droppable = candidates.filter((n) => !/^(?:Replica|Infused)\s/.test(n))
+      query.name = droppable[0] ?? candidates[0] ?? item.name
+    } else {
+      query.name = item.name
+    }
   } else if (item.rarity === 'Unique' && item.itemClass === 'Stackable Currency') {
     // Captured beasts: a beast IS its own base, so the trade listing's typeLine is
     // the beast name and the name field is empty. Setting query.name would AND-filter

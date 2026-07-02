@@ -105,6 +105,9 @@
   "Astrolabe Amulet": [
     "Venarius' Astrolabe"
   ],
+  "Atoll Map": [
+    "Maelström of Chaos"
+  ],
   "Auric Mace": [
     "Callinellus Malleus"
   ],
@@ -160,6 +163,9 @@
   "Bone Circlet": [
     "Plume of Pursuit",
     "Wraithlord"
+  ],
+  "Bone Crypt Map": [
+    "Olmec's Sanctum"
   ],
   "Bone Helmet": [
     "Ancient Skull",
@@ -256,6 +262,9 @@
   "Cedar Tower Shield": [
     "Trolltimber Spire"
   ],
+  "Cemetery Map": [
+    "Hallowed Ground"
+  ],
   "Chain Belt": [
     "Ascent From Flesh",
     "Bated Breath",
@@ -276,6 +285,9 @@
   ],
   "Charan's Sword": [
     "Oni-Goroshi"
+  ],
+  "Chateau Map": [
+    "The Perandus Manor"
   ],
   "Chiming Spirit Shield": [
     "The Eternal Apple",
@@ -383,6 +395,9 @@
   "Corsair Sword": [
     "Ichimonji"
   ],
+  "Courtyard Map": [
+    "The Vinktar Square"
+  ],
   "Crimson Round Shield": [
     "Shattershard"
   ],
@@ -421,6 +436,9 @@
   ],
   "Crystal Wand": [
     "Corona Solaris"
+  ],
+  "Cursed Crypt Map": [
+    "The Coward's Trial"
   ],
   "Cutlass": [
     "Severed in Sleep",
@@ -494,6 +512,10 @@
   ],
   "Driftwood Wand": [
     "Lifesprig"
+  ],
+  "Dunes Map": [
+    "Pillars of Arun",
+    "Replica Pillars of Arun"
   ],
   "Dusk Blade": [
     "Ephemeral Edge"
@@ -812,6 +834,10 @@
     "Nuro's Harp",
     "Slivertongue"
   ],
+  "Harbinger Map": [
+    "Infused Beachhead",
+    "The Beachhead"
+  ],
   "Harlequin Mask": [
     "Farrul's Bite",
     "Mind of the Council"
@@ -1113,6 +1139,9 @@
   "Lunaris Circlet": [
     "Doedre's Scorn"
   ],
+  "Machinarium Map": [
+    "Doryani's Machinarium"
+  ],
   "Maelström Staff": [
     "Disintegrator",
     "Duskdawn",
@@ -1170,6 +1199,9 @@
     "Font of Thunder",
     "Leper's Alms"
   ],
+  "Moon Temple Map": [
+    "The Twilight Temple"
+  ],
   "Moonstone Ring": [
     "Anathema",
     "Heartbound Loop",
@@ -1192,6 +1224,9 @@
     "Malachai's Mark",
     "Thunderfist"
   ],
+  "Museum Map": [
+    "The Putrid Cloister"
+  ],
   "Nailed Fist": [
     "Last Resort",
     "Replica Last Resort"
@@ -1213,6 +1248,9 @@
   "Necromancer Silks": [
     "Fleshcrafter",
     "Vis Mortis"
+  ],
+  "Necropolis Map": [
+    "Death and Taxes"
   ],
   "Nightmare Bascinet": [
     "Devoto's Devotion",
@@ -1282,6 +1320,9 @@
   "Ornate Sword": [
     "Queen's Decree",
     "Queen's Escape"
+  ],
+  "Overgrown Shrine Map": [
+    "Acton's Nightmare"
   ],
   "Pagan Wand": [
     "Mystic Refractor"
@@ -1382,6 +1423,9 @@
     "The Taming",
     "Thief's Torment"
   ],
+  "Promenade Map": [
+    "Hall of Grandmasters"
+  ],
   "Prophecy Wand": [
     "Grace of the Goddess",
     "Void Battery"
@@ -1430,6 +1474,10 @@
   ],
   "Reinforced Tower Shield": [
     "Titucius' Span"
+  ],
+  "Relic Chambers Map": [
+    "Cortex",
+    "Replica Cortex"
   ],
   "Ring": [
     "Kalandra's Touch"
@@ -1647,6 +1695,9 @@
     "Hyrri's Bite",
     "Hyrri's Demise"
   ],
+  "Shipyard Map": [
+    "Mao Kun"
+  ],
   "Short Bow": [
     "Quill Rain",
     "Replica Quill Rain"
@@ -1792,6 +1843,9 @@
     "Bloodplay",
     "Replica Bloodplay"
   ],
+  "Strand Map": [
+    "Whakawairua Tuahu"
+  ],
   "Strapped Boots": [
     "Nomic's Storm"
   ],
@@ -1830,6 +1884,10 @@
   ],
   "Teak Round Shield": [
     "The Ghastly Theatre"
+  ],
+  "Temple Map": [
+    "Poorjoy's Asylum",
+    "Replica Poorjoy's Asylum"
   ],
   "Terror Claw": [
     "Rive",
@@ -1907,6 +1965,9 @@
     "Farrul's Fur",
     "Replica Farrul's Fur"
   ],
+  "Tropical Island Map": [
+    "Untainted Paradise"
+  ],
   "Turquoise Amulet": [
     "Badge of the Brotherhood",
     "Fury Valve",
@@ -1937,6 +1998,12 @@
   "Tyrant's Sekhem": [
     "Sign of the Sin Eater",
     "The Sands of Time"
+  ],
+  "Underground River Map": [
+    "Caer Blaidd, Wolfpack's Den"
+  ],
+  "Underground Sea Map": [
+    "Oba's Cursed Trove"
   ],
   "Unset Amulet": [
     "Uul-Netol's Vow"
@@ -1996,6 +2063,9 @@
     "Fractal Thoughts",
     "Glimpse of Chaos",
     "The Vertex"
+  ],
+  "Vaal Pyramid Map": [
+    "Vaults of Atziri"
   ],
   "Vaal Rapier": [
     "Paradoxica",
