@@ -587,7 +587,7 @@ export const api = {
     wantTexts: string[]
     wantMode: 'any' | 'all'
     wantValues: Record<number, number>
-    rarity: { normal: boolean; magic: boolean }
+    rarity: { normal: boolean; magic: boolean; rare: boolean }
     typeFlags: Record<string, boolean>
     uses: { enabled: boolean; value: number }
   }): Promise<{

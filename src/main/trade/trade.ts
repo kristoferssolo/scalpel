@@ -1997,7 +1997,8 @@ const TABLET_MOD_LOOKUP = tabletModMap as Record<string, string>
 const TABLET_TYPE_BASE_NAMES: Record<string, string> = {
   breach: 'Breach Tablet',
   delirium: 'Delirium Tablet',
-  expedition: 'Expedition Tablet',
+  abyss: 'Abyss Tablet',
+  temple: 'Temple Tablet',
   ritual: 'Ritual Tablet',
   overseer: 'Overseer Tablet',
   irradiated: 'Irradiated Tablet',
@@ -2030,7 +2031,7 @@ export async function searchTabletsByRegex(
   wantTexts: string[],
   wantMode: 'any' | 'all',
   wantValues: Record<number, number>,
-  rarity: { normal: boolean; magic: boolean },
+  rarity: { normal: boolean; magic: boolean; rare: boolean },
   typeFlags: Record<string, boolean>,
   uses: { enabled: boolean; value: number },
   tradeStatus: string,
@@ -2044,8 +2045,8 @@ export async function searchTabletsByRegex(
   const statGroups = buildRegexStatGroups([], wantTexts, wantMode, {}, resolveTabletText)
 
   const typeFilterFilters: Record<string, unknown> = { category: { option: 'map.tablet' } }
-  if (rarity.magic && !rarity.normal) typeFilterFilters.rarity = { option: 'magic' }
-  if (rarity.normal && !rarity.magic) typeFilterFilters.rarity = { option: 'normal' }
+  const selectedRarities = (['normal', 'magic', 'rare'] as const).filter((k) => rarity[k])
+  if (selectedRarities.length === 1) typeFilterFilters.rarity = { option: selectedRarities[0] }
 
   // Single selected type flag narrows base type; multiple/none stays category-wide.
   const selectedTypes = Object.entries(typeFlags)

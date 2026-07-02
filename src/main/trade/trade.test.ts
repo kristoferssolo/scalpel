@@ -1651,7 +1651,7 @@ describe('searchTabletsByRegex', () => {
       ['20% increased Pack Size in Map'],
       'any',
       {},
-      { normal: false, magic: true },
+      { normal: false, magic: true, rare: false },
       {},
       { enabled: false, value: 1 },
       'any',
@@ -1681,7 +1681,7 @@ describe('searchTabletsByRegex', () => {
       ['#% increased Quantity of Wombgifts found in Map'],
       'any',
       {},
-      { normal: false, magic: false },
+      { normal: false, magic: false, rare: false },
       {},
       { enabled: false, value: 1 },
       'any',
@@ -1702,7 +1702,7 @@ describe('searchTabletsByRegex', () => {
       [],
       'any',
       {},
-      { normal: false, magic: true },
+      { normal: false, magic: true, rare: false },
       { breach: true },
       { enabled: false, value: 1 },
       'any',
@@ -1720,7 +1720,7 @@ describe('searchTabletsByRegex', () => {
       [],
       'any',
       {},
-      { normal: false, magic: true },
+      { normal: false, magic: true, rare: false },
       { breach: true, delirium: true },
       { enabled: false, value: 1 },
       'any',
@@ -1738,7 +1738,7 @@ describe('searchTabletsByRegex', () => {
       [],
       'any',
       {},
-      { normal: false, magic: false },
+      { normal: false, magic: false, rare: false },
       {},
       { enabled: false, value: 1 },
       'any',
@@ -1748,6 +1748,58 @@ describe('searchTabletsByRegex', () => {
     const req = capturedRequests.find((r) => r.url.includes('/search/'))
     const body = parseCapturedBody(req)
     expect(body.query.filters.type_filters.filters.rarity).toBeUndefined()
+  })
+
+  it('rare rarity narrows type_filters to rare', async () => {
+    await searchTabletsByRegex(
+      'Standard',
+      [],
+      'any',
+      {},
+      { normal: false, magic: false, rare: true },
+      {},
+      { enabled: false, value: 1 },
+      'any',
+      'exalted_divine',
+      true,
+    )
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    const body = parseCapturedBody(req)
+    expect(body.query.filters.type_filters.filters.rarity).toEqual({ option: 'rare' })
+  })
+
+  it('abyss type flag maps to the Abyss Tablet base name', async () => {
+    await searchTabletsByRegex(
+      'Standard',
+      [],
+      'any',
+      {},
+      { normal: false, magic: false, rare: false },
+      { abyss: true },
+      { enabled: false, value: 1 },
+      'any',
+      'exalted_divine',
+      true,
+    )
+    const body = parseCapturedBody(capturedRequests.find((r) => r.url.includes('/search/')))
+    expect(body.query.type).toBe('Abyss Tablet')
+  })
+
+  it('temple type flag maps to the Temple Tablet base name', async () => {
+    await searchTabletsByRegex(
+      'Standard',
+      [],
+      'any',
+      {},
+      { normal: false, magic: false, rare: false },
+      { temple: true },
+      { enabled: false, value: 1 },
+      'any',
+      'exalted_divine',
+      true,
+    )
+    const body = parseCapturedBody(capturedRequests.find((r) => r.url.includes('/search/')))
+    expect(body.query.type).toBe('Temple Tablet')
   })
 })
 

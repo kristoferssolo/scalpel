@@ -1,11 +1,21 @@
 /* Reference implementation from poe2.re/src/pages/waystone/WaystoneResult.ts.
- * Imports rewritten to use the local fixture files. Body unchanged. */
+ * Imports rewritten to use the local fixture files. Body unchanged, except that the
+ * over100 arg to selectedOptionRegex was dropped to match current upstream, which
+ * no longer threads it through (see SelectedOptionRegex.ts).
+ *
+ * Hybrid vintage: the modifier/state (corruption) paths below track the May 2026
+ * upstream vintage our engine forked from; the rarity/revives parts and the result
+ * array's ordering track July 2026 upstream (`generateRarityRegex` + `generateReviveRegex`,
+ * inserted ahead of tier/modifiers per current upstream order). */
 import type { Settings } from './Settings'
 import { selectedOptionRegex } from './SelectedOptionRegex'
+import { generateRarityRegex } from './GenerateRarityRegex'
 
 export function generateWaystoneRegex(settings: Settings): string {
   const result = [
+    generateRarityRegex(settings.waystone.rarityFilter),
     generateTierRegex(settings.waystone.tier),
+    generateReviveRegex(settings.waystone.revives),
     generateModifiers(settings.waystone.modifier),
     generateRarity(settings.waystone.rarity),
     settings.waystone.resultSettings.customText || null,
@@ -13,6 +23,26 @@ export function generateWaystoneRegex(settings: Settings): string {
 
   if (result.length === 0) return ''
   return result.join(' ').trim()
+}
+
+function generateReviveRegex(settings: Settings['waystone']['revives']): string | null {
+  if (settings.min > settings.max) return null
+  if (settings.min < 0 || settings.max < 0) return null
+  if (settings.min <= 0 && settings.max === 6) return null
+
+  const max = settings.max
+  const min = settings.min
+
+  const numbers = range(min, max + 1)
+
+  const regex =
+    numbers.length <= 1
+      ? `${numbers.join('')}`
+      : numbers.length > 2
+        ? `[${numbers[0]}-${numbers[numbers.length - 1]}]`
+        : `[${numbers.join('')}]`
+
+  return regex === '' ? '' : `"le: ${regex}"`
 }
 
 function generateTierRegex(settings: Settings['waystone']['tier']): string | null {
@@ -44,9 +74,7 @@ function generateTierRegex(settings: Settings['waystone']['tier']): string | nul
 }
 
 function generateModifiers(settings: Settings['waystone']['modifier']): string | null {
-  const prefixes = settings.prefixes
-    .filter((e) => e.isSelected)
-    .map((e) => selectedOptionRegex(e, settings.round10, settings.over100))
+  const prefixes = settings.prefixes.filter((e) => e.isSelected).map((e) => selectedOptionRegex(e, settings.round10))
 
   const prefixesWithType =
     settings.prefixSelectType === 'any' ? prefixes.join('|') : prefixes.map((e) => `"${e}"`).join(' ')
@@ -70,7 +98,7 @@ function generateModifiers(settings: Settings['waystone']['modifier']): string |
 
   const badMods = settings.suffixes
     .filter((e) => e.isSelected)
-    .map((e) => selectedOptionRegex(e, settings.round10, settings.over100))
+    .map((e) => selectedOptionRegex(e, settings.round10))
     .join('|')
 
   return [
