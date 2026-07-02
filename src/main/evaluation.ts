@@ -232,11 +232,7 @@ export async function preloadPriceCheck(item: PoeItem, store: Store<AppSettings>
   const unidCandidates: Array<{ name: string; chaosValue: number }> = []
   if (item.rarity === 'Unique' && !item.identified) {
     const uniquesByBase = getUniquesByBase()
-    let names = uniquesByBase[item.baseType] ?? []
-    // Unique maps all share "Map" base type
-    if (item.itemClass === 'Maps' && names.length === 0) {
-      names = uniquesByBase.Map ?? []
-    }
+    const names = uniquesByBase[item.baseType] ?? []
     const isStandard = league.toLowerCase() === 'standard'
     for (const name of names) {
       // Disambiguate same-name uniques by the item's base type; falls back
