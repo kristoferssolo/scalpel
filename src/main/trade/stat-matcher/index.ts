@@ -4,6 +4,7 @@ import type { DefenseValues, ItemInfo } from './context'
 import { deriveContext } from './context'
 import { ITEM_CLASS_TO_CATEGORY } from './item-classes'
 import { buildAtzoatlFilters } from './producers/atzoatl'
+import { buildBasePercentileFilter } from './producers/base-percentile'
 import { buildBaseTypeFilter } from './producers/base-type'
 import { buildRuneBaseFilter } from './producers/rune-base'
 import { buildDefenseFilters } from './producers/defenses'
@@ -77,6 +78,9 @@ export function matchItemMods(
   // Add defense filters as special "defence" type
   const defenseFilters = buildDefenseFilters(defenses, qualityNorm, ctx.pct)
 
+  // PoE1 base defence percentile chip (issue #467)
+  const basePercentileFilters = buildBasePercentileFilter(ctx)
+
   // Add weapon DPS filters
   const weaponFilters = buildWeaponDpsFilters(itemInfo, qualityNorm, ctx.pct)
 
@@ -130,6 +134,7 @@ export function matchItemMods(
   const combined: StatFilter[] = [
     ...weaponFilters,
     ...defenseFilters,
+    ...basePercentileFilters,
     ...pseudoFilters,
     ...timelessFilters,
     ...imbueFilters,

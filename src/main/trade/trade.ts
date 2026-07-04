@@ -775,6 +775,7 @@ export async function searchTrade(
       'defence.energy_shield': 'es',
       'defence.ward': 'ward',
       'defence.block': 'block',
+      'defence.base_percentile': 'base_defence_percentile',
     }
     for (const f of defenceFilters) {
       const key = idMap[f.id]

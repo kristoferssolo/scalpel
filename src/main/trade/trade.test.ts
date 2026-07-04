@@ -427,6 +427,30 @@ describe('searchTrade filter-group dispatch', () => {
     expect(body.query.filters.equipment_filters).toBeUndefined()
   })
 
+  it('PoE1 maps the base percentile chip into armour_filters', async () => {
+    setPoeVersion(1)
+    const percentileFilter: StatFilter[] = [
+      {
+        id: 'defence.base_percentile',
+        text: '',
+        type: 'defence',
+        enabled: true,
+        value: 100,
+        min: 100,
+        max: null,
+      },
+    ]
+    await searchTrade('Mirage', bodyArmourItem, percentileFilter, {
+      tradeStatus: 'any',
+      tradePriceOption: 'chaos_divine',
+    })
+    const req = capturedRequests.find((r) => r.url.includes('/search/'))
+    expect(req).toBeDefined()
+    const body = parseCapturedBody(req)
+    expect(body.query.filters.armour_filters.filters.base_defence_percentile).toEqual({ min: 100 })
+    expect(body.query.filters.equipment_filters).toBeUndefined()
+  })
+
   it('PoE2 rare body armour uses equipment_filters, never armour_filters or weapon_filters', async () => {
     setPoeVersion(2)
     await searchTrade('Fate of the Vaal', bodyArmourItem, defenceFilters, {
