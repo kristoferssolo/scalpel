@@ -4626,6 +4626,52 @@ describe('premium-mod override', () => {
       _resetPremiumMatchCacheForTests()
     }
   })
+
+  it('applies the bundled Rite of Passage premium override (rolled spirit line on + premium)', () => {
+    const prev = getPoeVersion()
+    _resetPremiumMatchCacheForTests()
+    _setPremiumModsForTests(bundledPremiumMods as unknown as PremiumModsData)
+    _setStatEntriesForTests([
+      {
+        id: 'explicit.stat_3403424702',
+        text: 'Possessed by Spirit Of The Bear for # seconds on use',
+        type: 'explicit',
+      },
+      {
+        id: 'explicit.stat_2839557359',
+        text: 'Possessed by Spirit Of The Cat for # seconds on use',
+        type: 'explicit',
+      },
+      {
+        id: 'explicit.stat_3504441212',
+        text: 'Possessed by Spirit Of The Wolf for # seconds on use',
+        type: 'explicit',
+      },
+    ])
+    try {
+      setPoeVersion(2)
+      const filters = matchItemMods(
+        ['Possessed by Spirit Of The Cat for 17 seconds on use'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Charms', baseType: 'Golden Charm', name: 'Rite of Passage' }),
+      )
+      // The rolled spirit line resolves to its per-spirit trade stat and is the premium signature:
+      // enabled + premium so it survives the renderer's forced Base mode on uniques.
+      const cat = filters.find((f) => f.id === 'explicit.stat_2839557359')
+      expect(cat, 'rolled spirit line must resolve to its per-spirit stat').toBeDefined()
+      expect(cat?.enabled, 'rolled spirit row should be on').toBe(true)
+      expect(cat?.premium, 'rolled spirit row should be premium').toBe(true)
+      expect(cat?.value).toBe(17)
+      // The other eight spirits are not on the item, so no rows exist for them.
+      expect(filters.find((f) => f.id === 'explicit.stat_3403424702')).toBeUndefined()
+      expect(filters.find((f) => f.id === 'explicit.stat_3504441212')).toBeUndefined()
+    } finally {
+      setPoeVersion(prev)
+      _setPremiumModsForTests(null)
+      _resetPremiumMatchCacheForTests()
+    }
+  })
 })
 
 // ─── Faction rule: extraction-eligible (Aldur's Legacy) ──────────────────────
