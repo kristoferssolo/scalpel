@@ -18,6 +18,7 @@ import { resolveTierDefault } from './stat-matcher/producers/explicits'
 import { isPremiumMod, _resetPremiumMatchCacheForTests } from './stat-matcher/producers/premium'
 import bundledPremiumMods from '@shared/data/items/premium-mods.json'
 import type { PremiumModsData } from '@shared/data/items/premium-mods-types'
+import tabletMods from '@shared/data/trade/tablet-mods.json'
 
 // Helper to build a minimal itemInfo object
 function makeItemInfo(overrides: Record<string, unknown> = {}) {
@@ -2035,21 +2036,23 @@ describe('matchItemMods', () => {
       expect(azmeri?.id).toBe('explicit.stat_358129101')
     })
 
-    // Strongbox singular/numeric split: the Map/Your-Maps singular "an additional
-    // Strongbox" is stat_3040603554 (live-probed: 234 tablet listings). NOTE the trap:
-    // unlike Abyss, the [0] id (stat_3240183538) genuinely carries the "Area contains an
-    // additional Strongbox" text, so that one phrasing must NOT be re-routed -- only the
-    // Map/Your-Maps singular moves.
-    it('routes the singular "Map contains an additional Strongbox" tablet mod to its dedicated stat id', () => {
+    // Strongbox singular/numeric split (issue #471): the singular "Map contains an
+    // additional Strongbox" text is the regular numeric stat's value-1 display on ALL
+    // tablet bases (live-probed: 218 Breach + 168 Overseer listings under
+    // stat_3240183538). A June fix had re-routed this text to stat_3040603554, which
+    // has 0 listings on non-Overseer bases like Breach -- that override is reverted.
+    // stat_3040603554 is the SEPARATE Overseer boss-pool mod, resolved at runtime via
+    // the advanced-mod suffix name (see the boss-pool tests below).
+    it('keeps the singular "Map contains an additional Strongbox" on the regular numeric stat id', () => {
       _setStatEntriesForTests([])
       const filters = matchItemMods(
         ['Map contains an additional Strongbox'],
         [],
         undefined,
-        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Overseer Tablet' }),
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Breach Tablet' }),
       )
       const strongbox = filters.find((f) => f.text === 'Map contains an additional Strongbox')
-      expect(strongbox?.id).toBe('explicit.stat_3040603554')
+      expect(strongbox?.id).toBe('explicit.stat_3240183538')
     })
 
     it('keeps the "Area contains an additional Strongbox" tablet phrasing on its own ([0]) stat id', () => {
@@ -2062,6 +2065,174 @@ describe('matchItemMods', () => {
       )
       const strongbox = filters.find((f) => f.text === 'Area contains an additional Strongbox')
       expect(strongbox?.id).toBe('explicit.stat_3240183538')
+    })
+
+    // Delirium Fog duration (issue #471): GGG has two identical-text stats for this mod;
+    // the identical-text twin stat_1174954559 is a dead index (live-probed 0 listings vs
+    // 1692 on the indexed twin stat_3226351972).
+    it('routes the "Delirium Fog in Map lasts additional seconds" tablet mod to the indexed stat id', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['Delirium Fog in Map lasts 10 additional seconds before dissipating'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Delirium Tablet' }),
+      )
+      const chip = filters.find((f) => f.id === 'explicit.stat_3226351972')
+      expect(chip).toBeDefined()
+    })
+
+    // Summoning Circle chance (issue #471): EE2's stat_866117935 was delisted from the
+    // live catalog; an unresolvable id blanks the whole trade query.
+    it('routes the "Summoning Circle" chance tablet mod to the live (non-delisted) stat id', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['Map has 72% increased chance to contain a Summoning Circle'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Ritual Tablet' }),
+      )
+      const chip = filters.find((f) => f.id === 'explicit.stat_267210597')
+      expect(chip).toBeDefined()
+    })
+
+    // Delisted mods (issue #471): these ids were removed from the live trade2 /data/stats
+    // catalog with no retext successor. The key is dropped from tablet-mods.json, so the
+    // fallback matchModToStat misses and buildTabletFilters `continue`s past the mod --
+    // it must not be emitted with a dead id that would blank the whole query.
+    it('skips a delisted tablet mod instead of emitting a dead stat id', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['Natural Monster Packs in Area are in a Union of Souls'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Ritual Tablet' }),
+      )
+      expect(filters.find((f) => f.text === 'Natural Monster Packs in Area are in a Union of Souls')).toBeUndefined()
+    })
+
+    // Boss-pool discrimination (issue #471): Overseer Tablets can carry a boss-pool
+    // encounter mod that shares clipboard text with the regular-pool mod but is indexed
+    // under a separate trade stat. The advanced-mod suffix name ("of Worship") is what
+    // discriminates it; with no advanced mods the regular id stays the default.
+    it('routes a shrine mod to the boss-pool stat id when the advanced-mod suffix is "of Worship"', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['Map contains an additional Shrine'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Overseer Tablet' }),
+        [
+          {
+            type: 'suffix',
+            name: 'of Worship',
+            tier: 1,
+            tags: [],
+            lines: ['Map contains an additional Shrine'],
+            ranges: [],
+          },
+        ],
+      )
+      const chip = filters.find((f) => f.text === 'Map contains an additional Shrine')
+      expect(chip?.id).toBe('explicit.stat_3042527515')
+    })
+
+    it('keeps the shrine mod on the regular stat id with no advanced mods', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['Map contains an additional Shrine'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Overseer Tablet' }),
+      )
+      const chip = filters.find((f) => f.text === 'Map contains an additional Shrine')
+      expect(chip?.id).toBe('explicit.stat_1468737867')
+    })
+
+    it('routes a strongbox mod to the boss-pool stat id when the advanced-mod suffix is "of Compartments"', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['Map contains an additional Strongbox'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Overseer Tablet' }),
+        [
+          {
+            type: 'suffix',
+            name: 'of Compartments',
+            tier: 1,
+            tags: [],
+            lines: ['Map contains an additional Strongbox'],
+            ranges: [],
+          },
+        ],
+      )
+      const chip = filters.find((f) => f.text === 'Map contains an additional Strongbox')
+      expect(chip?.id).toBe('explicit.stat_3040603554')
+    })
+
+    it('keeps the strongbox mod on the regular stat id when the advanced-mod suffix is "of the Antiquarian"', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['Map contains an additional Strongbox'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Overseer Tablet' }),
+        [
+          {
+            type: 'suffix',
+            name: 'of the Antiquarian',
+            tier: 1,
+            tags: [],
+            lines: ['Map contains an additional Strongbox'],
+            ranges: [],
+          },
+        ],
+      )
+      const chip = filters.find((f) => f.text === 'Map contains an additional Strongbox')
+      expect(chip?.id).toBe('explicit.stat_3240183538')
+    })
+
+    it('routes an essence numeric-roll mod to the boss-pool stat id when the advanced-mod suffix is "of Crystals"', () => {
+      _setStatEntriesForTests([])
+      const filters = matchItemMods(
+        ['Map contains 2 additional Essences'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Rare', itemClass: 'Tablet', baseType: 'Overseer Tablet' }),
+        [
+          {
+            type: 'suffix',
+            name: 'of Crystals',
+            tier: 1,
+            tags: [],
+            lines: ['Map contains 2 additional Essences'],
+            ranges: [],
+          },
+        ],
+      )
+      const chip = filters.find((f) => f.text === 'Map contains 2 additional Essences')
+      expect(chip?.id).toBe('explicit.stat_2162684861')
+      expect(chip?.value).toBe(2)
+    })
+
+    // Regression guard (issue #471): these ids are dead on trade2 -- the first has no
+    // indexed items, the rest were removed from /data/stats and blank the whole query.
+    // If a future EE2 resync reintroduces one, the build overrides/delisted list needs
+    // re-checking.
+    it('never emits a dead or delisted trade stat id from the generated tablet-mods table', () => {
+      const deadIds = [
+        'explicit.stat_1174954559', // dead delirium twin (0 listings)
+        'explicit.stat_866117935', // delisted summoning circle
+        'explicit.stat_1443457598', // delisted union of souls (rare)
+        'explicit.stat_2885317882', // delisted union of souls (natural packs)
+        'explicit.stat_166883716', // delisted monster defences
+        'explicit.stat_2068415277', // delisted player defences
+      ]
+      const values = Object.values(tabletMods as Record<string, string>)
+      for (const id of deadIds) {
+        expect(values).not.toContain(id)
+      }
     })
 
     // Unique tablet count-mods (Wraeclast Besieged, issue #417): the clipboard
