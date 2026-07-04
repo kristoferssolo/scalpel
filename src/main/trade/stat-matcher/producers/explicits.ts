@@ -29,7 +29,11 @@ const TINCTURE_STAT_REMAP: Record<string, string> = {
 // text, so we tell the matcher which qualified variant to pick (issue #397).
 const QUALIFIER_BY_ITEM_CLASS: Record<string, string> = {
   Charms: 'Charm',
+  // PoE1 flask copies say "Flasks"; PoE2 splits the class into "Life Flasks" /
+  // "Mana Flasks", so all three must point at the "(Flask)" qualifier (issue #466).
   Flasks: 'Flask',
+  'Life Flasks': 'Flask',
+  'Mana Flasks': 'Flask',
   Jewels: 'Jewel',
 }
 

@@ -3152,6 +3152,79 @@ describe('matchItemMods', () => {
       expect(flaskFilter?.value).toBe(20)
       expect(filters.find((f) => f.id === 'explicit.stat_2541588185')).toBeUndefined()
     })
+
+    it('PoE2 Life Flasks class picks the (Flask) Duration variant (#466)', () => {
+      _setStatEntriesForTests(DURATION_STATS)
+      const filters = matchItemMods(
+        ['39% increased Duration'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Life Flasks' }),
+      )
+      const flaskFilter = filters.find((f) => f.id === 'explicit.stat_1256719186')
+      expect(flaskFilter).toBeDefined()
+      expect(flaskFilter?.value).toBe(39)
+      expect(filters.find((f) => f.id === 'explicit.stat_2541588185')).toBeUndefined()
+      expect(filters.find((f) => f.id === 'explicit.stat_3841138199')).toBeUndefined()
+    })
+
+    it('PoE2 Mana Flasks class picks the (Flask) Duration variant (#466)', () => {
+      _setStatEntriesForTests(DURATION_STATS)
+      const filters = matchItemMods(
+        ['20% increased Duration'],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Mana Flasks' }),
+      )
+      expect(filters.find((f) => f.id === 'explicit.stat_1256719186')).toBeDefined()
+    })
+
+    it('Blood of the Warrior (PoE2 unique life flask) surfaces every trade-indexed line (#466)', () => {
+      _setStatEntriesForTests([
+        ...DURATION_STATS,
+        { id: 'explicit.stat_1726753705', text: '#% less Life Recovered', type: 'explicit' },
+        {
+          id: 'explicit.stat_2932359713',
+          text: 'Effect is not removed when Unreserved Life is Filled',
+          type: 'explicit',
+        },
+        { id: 'explicit.stat_3598623697', text: '#% of Damage taken during effect Recouped as Life', type: 'explicit' },
+        { id: 'explicit.stat_555311715', text: 'Gain # Rage when Hit by an Enemy during effect', type: 'explicit' },
+        { id: 'explicit.stat_3464644319', text: 'No Inherent loss of Rage during effect', type: 'explicit' },
+        // Decoys: non-flask twins that must not swallow the flask lines
+        { id: 'explicit.stat_1444556985', text: '#% of Damage taken Recouped as Life', type: 'explicit' },
+        { id: 'explicit.stat_3292710273', text: 'Gain # Rage when Hit by an Enemy', type: 'explicit' },
+        { id: 'explicit.stat_4163076972', text: 'No Inherent loss of Rage', type: 'explicit' },
+      ])
+      // Explicits as clipboard.ts emits them for the real item: the Recoup/Rage/
+      // no-rage-loss lines are one hybrid advanced-mod block, so the joined
+      // variant is pushed alongside the individual lines.
+      const filters = matchItemMods(
+        [
+          '90% less Life Recovered',
+          'Effect is not removed when Unreserved Life is Filled',
+          '18% of Damage taken during effect Recouped as Life',
+          'Gain 3 Rage when Hit by an Enemy during effect',
+          'No Inherent loss of Rage during effect',
+          '18% of Damage taken during effect Recouped as Life\nGain 3 Rage when Hit by an Enemy during effect\nNo Inherent loss of Rage during effect',
+          '39% increased Duration',
+        ],
+        [],
+        undefined,
+        makeItemInfo({ rarity: 'Unique', itemClass: 'Life Flasks', itemLevel: 45 }),
+      )
+      const ids = filters.filter((f) => f.type === 'explicit').map((f) => f.id)
+      expect(ids).toContain('explicit.stat_1726753705')
+      expect(ids).toContain('explicit.stat_2932359713')
+      expect(ids).toContain('explicit.stat_3598623697')
+      expect(ids).toContain('explicit.stat_555311715')
+      expect(ids).toContain('explicit.stat_3464644319')
+      expect(ids).toContain('explicit.stat_1256719186')
+      // The valueless line matches with a null value and stays enabled
+      const notRemoved = filters.find((f) => f.id === 'explicit.stat_2932359713')
+      expect(notRemoved?.value).toBeNull()
+      expect(notRemoved?.enabled).toBe(true)
+    })
   })
 
   describe('perfectRoll flag (unique best-or-better rolls)', () => {
