@@ -195,17 +195,17 @@ describe('matchItemMods', () => {
       const pdps = filters.find((f) => f.id === 'weapon.pdps')!
       // physAvg = (100 + 200) / 2 = 150, qualityNorm = 1, pdps = 150 * 1.5 = 225
       expect(pdps.value).toBe(225)
-      expect(pdps.enabled).toBe(true)
+      expect(pdps.enabled).toBe(false)
 
       const edps = filters.find((f) => f.id === 'weapon.edps')!
       // 50 * 1.5 = 75
       expect(edps.value).toBe(75)
-      expect(edps.enabled).toBe(true)
+      expect(edps.enabled).toBe(false)
 
-      // Total DPS chip should exist but be disabled
+      // Total DPS chip should exist and be enabled by default
       const totalDps = filters.find((f) => f.id === 'weapon.dps')!
       expect(totalDps.value).toBe(300)
-      expect(totalDps.enabled).toBe(false)
+      expect(totalDps.enabled).toBe(true)
     })
 
     it('normalizes pDPS to 20% quality when quality < 20', () => {
