@@ -229,11 +229,6 @@
       "confidence": "verified",
       "note": "rarity/life/quantity roll negative to positive; the rolled set is the item"
     },
-    "Mageblood": {
-      "mode": "all_explicits",
-      "confidence": "verified",
-      "note": "0.5: 4x random Legacy of # mods plus a duplicate-stacking effect mod; the rolled Legacies are the item"
-    },
     "Astramentis": {
       "mode": "stat_list",
       "confidence": "verified",

@@ -1023,6 +1023,8 @@ export async function searchTrade(
     (f) =>
       f.enabled &&
       f.type !== 'timeless' &&
+      f.type !== 'mageblood-dup' &&
+      f.type !== 'mageblood-legacy' &&
       f.id !== 'misc.memory_level' &&
       f.id !== 'misc.area_level' &&
       f.id !== 'socket.white_sockets' &&
@@ -1099,6 +1101,65 @@ export async function searchTrade(
       type: 'and',
       filters: [{ id: timelessSpecific.id, value: { min: timelessSpecific.min, max: timelessSpecific.max } }],
     })
+  }
+
+  // Mageblood: each Mage's Legacy is its own trade stat id (the specific Legacy is
+  // baked into the id as an "|N" suffix; the trade index counts copies of that id).
+  // The stat-matcher post-processor collapses same-Legacy duplicates to one chip per
+  // distinct Legacy plus a synthetic Duplicates chip (duplicates = 4 - distinctCount).
+  // Only the "easy" cases (every Legacy row still enabled, so distinct + duplicates ==
+  // 4) get full count-group fidelity; anything else (a user-deselected Legacy row, or
+  // an inconsistent duplicate count) degrades to present-only filters.
+  // Legacy mods are explicit (hidden pre-ID), so an unidentified search must not leak
+  // them -- zero them out under unid exactly like the timeless block above.
+  const legacyChips = unidEnabled ? [] : statFilters.filter((f) => f.enabled && f.type === 'mageblood-legacy')
+  const dupChip = unidEnabled ? undefined : statFilters.find((f) => f.enabled && f.type === 'mageblood-dup')
+  if (legacyChips.length > 0) {
+    const knownCount = legacyChips.length
+    const dupCount = dupChip ? (dupChip.min ?? dupChip.value ?? 0) : 0
+    // Easy case = every Legacy still enabled, so distinct + duplicates == 4. This
+    // is strictly stronger than "<= 4", so it also guards against an inconsistent
+    // chip set claiming more than 4 total Legacies.
+    const isEasyCase = dupChip != null && dupCount > 0 && knownCount + dupCount === 4
+
+    if (knownCount === 4 && dupCount === 0) {
+      // All 4 Legacies distinct: each must appear at least once.
+      statGroups.push({
+        type: 'and',
+        filters: legacyChips.map((f) => ({ id: f.id, value: { min: 1 } })),
+      })
+    } else if (knownCount === 1 && dupCount === 3) {
+      // A single Legacy repeated 4 times: that Legacy must appear exactly 4 times.
+      statGroups.push({
+        type: 'and',
+        filters: legacyChips.map((f) => ({ id: f.id, value: { min: 4 } })),
+      })
+    } else {
+      // Hard cases and the 2+2 / 3+1 easy cases (which carry their exact-count
+      // constraint in the count group below) both emit present-only filters.
+      statGroups.push({
+        type: 'and',
+        filters: legacyChips.map((f) => ({ id: f.id })),
+      })
+    }
+
+    if (isEasyCase && (knownCount === 2 || knownCount === 3)) {
+      // 2 distinct + 2 duplicates: one Legacy has 3 copies, the other 1 (or 2+2) --
+      // total count across both Legacy ids must reach 4.
+      // 3 distinct + 1 duplicate: one Legacy has 2 copies, the other two have 1 each
+      // -- total count across all three must reach 7.
+      // Each Legacy is queried by its own suffixed id with a count bound (value:{min/
+      // max}); this is EE2's proven buildMageBloodNotFilter form and matches the live
+      // trade2 stat ids. The count-as-value semantics are inherited from EE2.
+      const countValue = knownCount === 2 ? 4 : 7
+      const perLegacyValues: Array<{ min?: number; max?: number }> =
+        knownCount === 2 ? [{ min: 1 }, { min: 2 }, { min: 3 }] : [{ min: 1 }, { min: 2 }, { max: 2 }]
+      statGroups.push({
+        type: 'count',
+        filters: legacyChips.flatMap((f) => perLegacyValues.map((v) => ({ id: f.id, value: { ...v } }))),
+        value: { min: countValue },
+      })
+    }
   }
 
   // Inscribed Ultimatum filters. Each enabled chip carries the API-internal id

@@ -17,6 +17,7 @@ import { buildImbueFilters } from './producers/imbues'
 import { processImplicits } from './producers/implicits'
 import { postProcessInscribedUltimatum } from './producers/inscribed-ultimatum'
 import { buildLogbookFilters } from './producers/logbook'
+import { postProcessMageblood } from './producers/mageblood'
 import { buildMapFilters } from './producers/maps'
 import { buildMiscFilters } from './producers/misc'
 import { emitPseudoFilters } from './producers/pseudo-emit'
@@ -161,6 +162,7 @@ export function matchItemMods(
   ]
 
   let assembled = postProcessInscribedUltimatum(combined, itemInfo)
+  assembled = postProcessMageblood(assembled, itemInfo)
 
   const resolved = resolveUniqueOverride(itemInfo)
   if (resolved) {

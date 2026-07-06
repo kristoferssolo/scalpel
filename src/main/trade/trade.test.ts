@@ -1228,6 +1228,172 @@ describe('searchTrade filter-group dispatch', () => {
   })
 })
 
+// Mageblood: 4 Mage's Legacy mods share one trade stat (option selects the Legacy,
+// count how many copies). stat-matcher's postProcessMageblood collapses same-Legacy
+// duplicates to one mageblood-legacy chip per distinct Legacy plus a synthetic
+// mageblood-dup chip (duplicates = 4 - distinctCount); these tests build that chip
+// shape directly and assert the query.stats groups trade.ts emits from it.
+describe('searchTrade Mageblood handling', () => {
+  const mageblood = {
+    name: 'Mageblood',
+    baseType: 'Heavy Belt',
+    itemClass: 'Belts',
+    rarity: 'Unique',
+  }
+
+  // Live trade2 bakes the specific Legacy into the id as an "|N" suffix (no option
+  // field). Each Legacy is queried by its own suffixed id.
+  const LEGACY_BASE = 'explicit.stat_264262054'
+  function legacyChip(n: number): StatFilter {
+    return {
+      id: `${LEGACY_BASE}|${n}`,
+      text: `Legacy of ${n}`,
+      type: 'mageblood-legacy',
+      enabled: true,
+      value: null,
+      min: null,
+      max: null,
+      premium: true,
+    }
+  }
+
+  function dupChip(n: number, enabled = n > 0): StatFilter {
+    return {
+      id: 'mageblood-duplicates',
+      text: `Duplicates: ${n}`,
+      type: 'mageblood-dup',
+      enabled,
+      value: n,
+      min: n,
+      max: null,
+    }
+  }
+
+  beforeEach(() => {
+    capturedRequests.length = 0
+    _resetRateLimitsForTests()
+    setPoeVersion(2)
+  })
+
+  it('4 distinct / 0 duplicates: each Legacy present with min:1, no count group', async () => {
+    const filters = [legacyChip(1), legacyChip(5), legacyChip(7), legacyChip(14), dupChip(0)]
+    await searchTrade('Standard', mageblood, filters, { tradeStatus: 'any', tradePriceOption: 'exalted_divine' })
+    const body = parseCapturedBody(capturedRequests.find((r) => r.url.includes('/search/')))
+    const andGroup = body.query.stats.find(
+      (g) => g.type === 'and' && g.filters?.some((f) => f.id.startsWith(LEGACY_BASE)),
+    )
+    expect(andGroup?.filters).toEqual([
+      { id: 'explicit.stat_264262054|1', value: { min: 1 } },
+      { id: 'explicit.stat_264262054|5', value: { min: 1 } },
+      { id: 'explicit.stat_264262054|7', value: { min: 1 } },
+      { id: 'explicit.stat_264262054|14', value: { min: 1 } },
+    ])
+    expect(body.query.stats.some((g) => g.type === 'count')).toBe(false)
+  })
+
+  it('1 distinct / 3 duplicates: the single Legacy present with min:4, no count group', async () => {
+    const filters = [legacyChip(14), dupChip(3)]
+    await searchTrade('Standard', mageblood, filters, { tradeStatus: 'any', tradePriceOption: 'exalted_divine' })
+    const body = parseCapturedBody(capturedRequests.find((r) => r.url.includes('/search/')))
+    const andGroup = body.query.stats.find(
+      (g) => g.type === 'and' && g.filters?.some((f) => f.id.startsWith(LEGACY_BASE)),
+    )
+    expect(andGroup?.filters).toEqual([{ id: 'explicit.stat_264262054|14', value: { min: 4 } }])
+    expect(body.query.stats.some((g) => g.type === 'count')).toBe(false)
+  })
+
+  it('2 distinct / 2 duplicates: present-only and group + count group value:{min:4}', async () => {
+    const filters = [legacyChip(5), legacyChip(14), dupChip(2)]
+    await searchTrade('Standard', mageblood, filters, { tradeStatus: 'any', tradePriceOption: 'exalted_divine' })
+    const body = parseCapturedBody(capturedRequests.find((r) => r.url.includes('/search/')))
+    const andGroup = body.query.stats.find(
+      (g) => g.type === 'and' && g.filters?.some((f) => f.id.startsWith(LEGACY_BASE)),
+    )
+    expect(andGroup?.filters).toEqual([{ id: 'explicit.stat_264262054|5' }, { id: 'explicit.stat_264262054|14' }])
+    const countGroup = body.query.stats.find((g) => g.type === 'count')
+    expect(countGroup?.value).toEqual({ min: 4 })
+    expect(countGroup?.filters).toEqual([
+      { id: 'explicit.stat_264262054|5', value: { min: 1 } },
+      { id: 'explicit.stat_264262054|5', value: { min: 2 } },
+      { id: 'explicit.stat_264262054|5', value: { min: 3 } },
+      { id: 'explicit.stat_264262054|14', value: { min: 1 } },
+      { id: 'explicit.stat_264262054|14', value: { min: 2 } },
+      { id: 'explicit.stat_264262054|14', value: { min: 3 } },
+    ])
+  })
+
+  it('3 distinct / 1 duplicate: present-only and group + count group value:{min:7}', async () => {
+    const filters = [legacyChip(1), legacyChip(5), legacyChip(14), dupChip(1)]
+    await searchTrade('Standard', mageblood, filters, { tradeStatus: 'any', tradePriceOption: 'exalted_divine' })
+    const body = parseCapturedBody(capturedRequests.find((r) => r.url.includes('/search/')))
+    const andGroup = body.query.stats.find(
+      (g) => g.type === 'and' && g.filters?.some((f) => f.id.startsWith(LEGACY_BASE)),
+    )
+    expect(andGroup?.filters).toEqual([
+      { id: 'explicit.stat_264262054|1' },
+      { id: 'explicit.stat_264262054|5' },
+      { id: 'explicit.stat_264262054|14' },
+    ])
+    const countGroup = body.query.stats.find((g) => g.type === 'count')
+    expect(countGroup?.value).toEqual({ min: 7 })
+    expect(countGroup?.filters).toEqual([
+      { id: 'explicit.stat_264262054|1', value: { min: 1 } },
+      { id: 'explicit.stat_264262054|1', value: { min: 2 } },
+      { id: 'explicit.stat_264262054|1', value: { max: 2 } },
+      { id: 'explicit.stat_264262054|5', value: { min: 1 } },
+      { id: 'explicit.stat_264262054|5', value: { min: 2 } },
+      { id: 'explicit.stat_264262054|5', value: { max: 2 } },
+      { id: 'explicit.stat_264262054|14', value: { min: 1 } },
+      { id: 'explicit.stat_264262054|14', value: { min: 2 } },
+      { id: 'explicit.stat_264262054|14', value: { max: 2 } },
+    ])
+  })
+
+  it('hard case: a Legacy row deselected while Duplicates stays on -> present-only, no count group', async () => {
+    // User manually disabled one of the two enabled Legacy rows. legacyChips only
+    // sees the enabled one, so knownCount=1 but dupCount is still 2 -> 1+2 != 4,
+    // not an easy case -> present-only, no count group.
+    const filters = [legacyChip(5), { ...legacyChip(14), enabled: false }, dupChip(2)]
+    await searchTrade('Standard', mageblood, filters, { tradeStatus: 'any', tradePriceOption: 'exalted_divine' })
+    const body = parseCapturedBody(capturedRequests.find((r) => r.url.includes('/search/')))
+    const andGroup = body.query.stats.find(
+      (g) => g.type === 'and' && g.filters?.some((f) => f.id.startsWith(LEGACY_BASE)),
+    )
+    expect(andGroup?.filters).toEqual([{ id: 'explicit.stat_264262054|5' }])
+    expect(body.query.stats.some((g) => g.type === 'count')).toBe(false)
+  })
+
+  it('dup chip disabled: present-only filters, no count group', async () => {
+    const filters = [legacyChip(5), legacyChip(14), { ...dupChip(2), enabled: false }]
+    await searchTrade('Standard', mageblood, filters, { tradeStatus: 'any', tradePriceOption: 'exalted_divine' })
+    const body = parseCapturedBody(capturedRequests.find((r) => r.url.includes('/search/')))
+    const andGroup = body.query.stats.find(
+      (g) => g.type === 'and' && g.filters?.some((f) => f.id.startsWith(LEGACY_BASE)),
+    )
+    expect(andGroup?.filters).toEqual([{ id: 'explicit.stat_264262054|5' }, { id: 'explicit.stat_264262054|14' }])
+    expect(body.query.stats.some((g) => g.type === 'count')).toBe(false)
+  })
+
+  it('unidentified search: no Legacy and/count groups (explicit mods drop pre-ID)', async () => {
+    // Legacy mods are explicit, hidden before ID -- an unid search must not leak
+    // them, mirroring the timeless-jewel unid gate.
+    const unidChip: StatFilter = {
+      id: 'misc.identified',
+      text: 'Unidentified',
+      type: 'misc',
+      enabled: true,
+      value: null,
+      min: null,
+      max: null,
+    }
+    const filters = [legacyChip(5), legacyChip(14), dupChip(2), unidChip]
+    await searchTrade('Standard', mageblood, filters, { tradeStatus: 'any', tradePriceOption: 'exalted_divine' })
+    const body = parseCapturedBody(capturedRequests.find((r) => r.url.includes('/search/')))
+    expect(body.query.stats.some((g) => g.filters?.some((f) => f.id.startsWith(LEGACY_BASE)))).toBe(false)
+    expect(body.query.stats.some((g) => g.type === 'count')).toBe(false)
+  })
+})
+
 describe('searchTrade pseudo emission', () => {
   const lifePseudo: StatFilter = {
     id: 'pseudo.pseudo_total_life',
