@@ -1,94 +1,124 @@
-import { Fragment, forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import { Search, CloseSmall, Magic, ListView, Level, Plus } from '@icon-park/react'
-import { TAB_COLORS, TabSeparator, useRegexKey, usePersistedJSON, QualifierSection, ToggleRow } from './mapmods-helpers'
+import { Fragment, forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import { CloseSmall, Diamond, LinkOne, Magic, Plus, Search } from '@icon-park/react'
+import { QualifierSection, TAB_COLORS, TabSeparator, ToggleRow, usePersistedJSON, useRegexKey } from './mapmods-helpers'
 import { FilterChip } from '../../components/primitives/FilterChip'
-import { ScrubInput } from '../../components/primitives/ScrubInput'
 import { InfoChip } from '../../shared/InfoChip'
 import { DismissibleTip } from '../../shared/DismissibleTip'
-import { buildVendorGroupsRegex, type VendorSettings } from './vendor-engine'
-import { generateVendorPresetTags } from './vendor-preset-tags'
+import { ErrorBanner } from '../../components/ErrorBanner'
+import { buildVendorPoe1GroupsRegex, buildVendorPoe1Warnings } from './vendor-poe1-engine'
+import { generateVendorPoe1PresetTags } from './vendor-poe1-preset-tags'
 import {
-  VENDOR_TABS,
-  DEFAULT_VENDOR_SETTINGS,
-  DEFAULT_VENDOR_GROUPS_STATE,
-  vendorGroupsToQualifiers,
-  qualifiersToVendorGroups,
-  isVendorGroupsEmpty,
-  ensureVendorGroupsMigrated,
-  sanitizeVendorGroups,
-  type VendorTabKey,
-  type VendorGroupsState,
-} from '@shared/data/regex/vendor-toggles'
+  DEFAULT_VENDOR_POE1_GROUPS_STATE,
+  DEFAULT_VENDOR_POE1_SETTINGS,
+  VENDOR_POE1_TABS,
+  isVendorPoe1GroupsEmpty,
+  qualifiersToVendorPoe1Groups,
+  sanitizeVendorPoe1Groups,
+  vendorPoe1GroupsToQualifiers,
+  type VendorPoe1BooleanGroup,
+  type VendorPoe1Settings,
+  type VendorPoe1GroupsState,
+  type VendorPoe1TabKey,
+} from '@shared/data/regex/vendor-poe1-toggles'
+import { regexGems } from '@shared/data/regex/vendor/gems/Generated.Gems.English'
+import socketRed from '../../assets/sockets/socket-red.png'
+import socketGreen from '../../assets/sockets/socket-green.png'
+import socketBlue from '../../assets/sockets/socket-blue.png'
+import socketColorless from '../../assets/sockets/socket-colorless.png'
+import socketLink from '../../assets/sockets/socket-link.png'
 import type { RegexPreset, RegexPresetTag } from '@shared/types'
 import type { GeneratorHandle, GeneratorProps } from './generator-types'
 
 /** Per-category-tab icon. */
-const TAB_ICONS: Record<VendorTabKey, typeof Magic> = {
-  mods: Magic,
-  item: ListView,
-  class: Level,
+const TAB_ICONS: Record<VendorPoe1TabKey, typeof Magic> = {
+  links: LinkOne,
+  item: Magic,
+  gems: Diamond,
 }
 
-/** The two numeric level ranges on the Item tab. Declared as data so the search
- *  filter can match individual rows by their real labels (same as the toggle
- *  sections) instead of a coarse section-name guard. */
-const LEVEL_SECTIONS: Array<{
-  label: string
-  group: 'itemLevel' | 'characterLevel'
-  rows: Array<{ label: string; bound: 'min' | 'max' }>
-}> = [
-  {
-    label: 'ITEM LEVEL',
-    group: 'itemLevel',
-    rows: [
-      { label: 'Min item level', bound: 'min' },
-      { label: 'Max item level', bound: 'max' },
-    ],
-  },
-  {
-    label: 'CHARACTER LEVEL',
-    group: 'characterLevel',
-    rows: [
-      { label: 'Min character level', bound: 'min' },
-      { label: 'Max character level', bound: 'max' },
-    ],
-  },
+/** Socket-chain art for link rows. '*' is the 3.29 colorless (any-color) socket. */
+const SOCKET_IMG: Record<string, string> = {
+  r: socketRed,
+  g: socketGreen,
+  b: socketBlue,
+  '*': socketColorless,
+  '-': socketLink,
+}
+
+/** Unchecked-label tints for the gem list (poe.re's palette); white gems keep the
+ *  default dim text. */
+const GEM_LABEL_COLORS: Record<string, string | undefined> = {
+  r: '#fab4bb',
+  g: '#c2ffe3',
+  b: '#8c7df0',
+  w: undefined,
+}
+
+const GEM_SECTIONS: Array<{ c: string; label: string }> = [
+  { c: 'r', label: 'Red gems' },
+  { c: 'g', label: 'Green gems' },
+  { c: 'b', label: 'Blue gems' },
+  { c: 'w', label: 'White gems' },
 ]
+
+function SocketChain({ pattern }: { pattern: string }): JSX.Element {
+  return (
+    <span className="inline-flex items-center gap-[2px] align-middle">
+      {pattern.split('').map((c, i) => (
+        <img
+          key={`${c}-${i}`}
+          src={SOCKET_IMG[c]}
+          alt={c === '-' ? '' : c}
+          style={c === '-' ? { width: 10, height: 10 } : { width: 16, height: 16 }}
+        />
+      ))}
+    </span>
+  )
+}
+
+/** Row label for a socket toggle: the chain art plus a compact text tag ("rrb",
+ *  "Any 3-link"). Pure-pattern labels drop their dashes like poe.re's link-text. */
+function socketRowLabel(label: string, sockets: string): React.ReactNode {
+  const text = label === sockets ? label.replaceAll('-', '') : label
+  return (
+    <span className="flex items-center gap-2">
+      <SocketChain pattern={sockets} />
+      <span>{text}</span>
+    </span>
+  )
+}
 
 /** Aggregate auto-tags across all groups (+ a "N groups" marker when grouped), so
  *  preset name-derivation and the matchesPreset dedup keep working. */
-function vendorGroupsTags(state: VendorGroupsState): RegexPresetTag[] {
-  const tags = state.groups.flatMap((g) => generateVendorPresetTags(g))
+function vendorPoe1GroupsTags(state: VendorPoe1GroupsState): RegexPresetTag[] {
+  const tags = state.groups.flatMap((g) => generateVendorPoe1PresetTags(g))
   if (state.groups.length > 1) {
     tags.push({ text: `${state.groups.length} groups`, color: TAB_COLORS.qualifiers, source: 'qualifier' })
   }
   return tags
 }
 
-/** Per-category selected counts as compact parts (e.g. ["3 mods", "2 classes"]),
- *  singular/plural aware. Empty array when the group has nothing selected. The
- *  "item" bucket folds in the two level ranges. The pill renders these joined by a
- *  bold "OR" (within-group conditions are OR'd). */
-function vendorGroupSummary(group: VendorSettings): string[] {
-  const counts: Record<VendorTabKey, number> = { mods: 0, item: 0, class: 0 }
-  for (const tab of VENDOR_TABS) {
+/** Per-category selected counts as compact parts (e.g. ["3 links", "2 gems"]),
+ *  singular/plural aware. The pill renders these joined by a bold "OR". */
+function vendorPoe1GroupSummary(group: VendorPoe1Settings): string[] {
+  const counts: Record<VendorPoe1TabKey, number> = { links: 0, item: 0, gems: 0 }
+  for (const tab of VENDOR_POE1_TABS) {
     for (const section of tab.sections) {
       for (const tg of section.toggles) {
         if ((group[tg.group] as Record<string, boolean>)[tg.field]) counts[tab.key]++
       }
     }
   }
-  if (group.itemLevel.min !== 0 || group.itemLevel.max !== 0) counts.item++
-  if (group.characterLevel.min !== 0 || group.characterLevel.max !== 0) counts.item++
+  counts.gems = group.gems.length
 
   const parts: string[] = []
-  if (counts.mods) parts.push(`${counts.mods} ${counts.mods === 1 ? 'mod' : 'mods'}`)
-  if (counts.item) parts.push(`${counts.item} ${counts.item === 1 ? 'item' : 'items'}`)
-  if (counts.class) parts.push(`${counts.class} ${counts.class === 1 ? 'class' : 'classes'}`)
+  if (counts.links) parts.push(`${counts.links} ${counts.links === 1 ? 'link' : 'links'}`)
+  if (counts.item) parts.push(`${counts.item} ${counts.item === 1 ? 'mod' : 'mods'}`)
+  if (counts.gems) parts.push(`${counts.gems} ${counts.gems === 1 ? 'gem' : 'gems'}`)
   return parts
 }
 
-export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(function VendorGenerator(
+export const VendorPoe1Generator = forwardRef<GeneratorHandle, GeneratorProps>(function VendorPoe1Generator(
   {
     onRegexChange,
     onAutoTagsChange,
@@ -102,17 +132,12 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
   ref,
 ) {
   const key = useRegexKey()
-  // Migrate the legacy single-settings key into the grouped key. Must run in render
-  // body BEFORE usePersistedJSON's lazy initializer reads the key (a useEffect would
-  // run too late); idempotent + cheap, mirroring ensureLegacyRegexKeysMigrated in
-  // RegexGenerator.
-  ensureVendorGroupsMigrated(key('vendor-settings'), key('vendor-groups'))
-  const [state, setState] = usePersistedJSON<VendorGroupsState>(
+  const [state, setState] = usePersistedJSON<VendorPoe1GroupsState>(
     key('vendor-groups'),
-    DEFAULT_VENDOR_GROUPS_STATE,
-    sanitizeVendorGroups,
+    DEFAULT_VENDOR_POE1_GROUPS_STATE,
+    sanitizeVendorPoe1Groups,
   )
-  const [tab, setTab] = useState<VendorTabKey>('mods')
+  const [tab, setTab] = useState<VendorPoe1TabKey>('links')
   const [search, setSearch] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -120,10 +145,12 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
   const selectedGroupId = Math.min(Math.max(0, state.selectedGroupId), state.groups.length - 1)
   const selectedGroup = state.groups[selectedGroupId]
 
-  const regex = buildVendorGroupsRegex(state.groups)
+  const regex = buildVendorPoe1GroupsRegex(state.groups)
   useEffect(() => {
     onRegexChange(regex)
   }, [regex, onRegexChange])
+
+  const warnings = buildVendorPoe1Warnings(state.groups)
 
   // Emit auto-tags whenever the selection changes (ref keeps callback identity out of deps).
   const onAutoTagsChangeRef = useRef(onAutoTagsChange)
@@ -131,7 +158,7 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
     onAutoTagsChangeRef.current = onAutoTagsChange
   }, [onAutoTagsChange])
   useEffect(() => {
-    onAutoTagsChangeRef.current(vendorGroupsTags(state))
+    onAutoTagsChangeRef.current(vendorPoe1GroupsTags(state))
   }, [state])
 
   useImperativeHandle(
@@ -145,14 +172,14 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
         avoid: [],
         want: [],
         wantMode: 'any',
-        qualifiers: vendorGroupsToQualifiers(state),
+        qualifiers: vendorPoe1GroupsToQualifiers(state),
       }),
       applyPreset: (preset: RegexPreset) => {
-        setState(qualifiersToVendorGroups(preset.qualifiers ?? {}))
+        setState(qualifiersToVendorPoe1Groups(preset.qualifiers ?? {}))
       },
       matchesPreset: (preset: RegexPreset) => {
         if ((preset.generator ?? 'maps') !== 'vendor') return false
-        const fresh = vendorGroupsTags(state)
+        const fresh = vendorPoe1GroupsTags(state)
           .map((t) => t.text)
           .sort()
           .join('|')
@@ -168,14 +195,14 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
   )
 
   // ---- Group operations (immutable; always edit the clamped selected group) ----
-  const updateSelectedGroup = (fn: (g: VendorSettings) => VendorSettings): void => {
+  const updateSelectedGroup = (fn: (g: VendorPoe1Settings) => VendorPoe1Settings): void => {
     setState((prev) => {
       const id = Math.min(Math.max(0, prev.selectedGroupId), prev.groups.length - 1)
       return { ...prev, groups: prev.groups.map((g, i) => (i === id ? fn(g) : g)) }
     })
   }
 
-  const toggleField = (group: keyof VendorSettings, field: string): void => {
+  const toggleField = (group: VendorPoe1BooleanGroup, field: string): void => {
     updateSelectedGroup((g) => {
       const next = structuredClone(g)
       const obj = next[group] as Record<string, boolean>
@@ -184,10 +211,10 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
     })
   }
 
-  const setLevel = (group: 'itemLevel' | 'characterLevel', bound: 'min' | 'max', v: number | null): void => {
+  const toggleGem = (id: number): void => {
     updateSelectedGroup((g) => ({
       ...g,
-      [group]: { ...g[group], [bound]: v == null ? 0 : Math.max(0, Math.min(100, v)) },
+      gems: g.gems.includes(id) ? g.gems.filter((x) => x !== id) : [...g.gems, id],
     }))
   }
 
@@ -196,26 +223,38 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
 
   const addGroup = (): void =>
     setState((prev) => ({
-      groups: [...prev.groups, structuredClone(DEFAULT_VENDOR_SETTINGS)],
+      groups: [...prev.groups, structuredClone(DEFAULT_VENDOR_POE1_SETTINGS)],
       selectedGroupId: prev.groups.length,
     }))
 
   const removeGroup = (i: number): void =>
     setState((prev) => {
       const groups = prev.groups.filter((_, idx) => idx !== i)
-      if (groups.length === 0) groups.push(structuredClone(DEFAULT_VENDOR_SETTINGS))
+      if (groups.length === 0) groups.push(structuredClone(DEFAULT_VENDOR_POE1_SETTINGS))
       let sel = prev.selectedGroupId
       if (sel > i) sel -= 1
       sel = Math.min(Math.max(0, sel), groups.length - 1)
       return { groups, selectedGroupId: sel }
     })
 
-  const activeTab = VENDOR_TABS.find((t) => t.key === tab) ?? VENDOR_TABS[0]
+  const activeTab = VENDOR_POE1_TABS.find((t) => t.key === tab) ?? VENDOR_POE1_TABS[0]
   const matchesSearch = (label: string): boolean => !search || label.toLowerCase().includes(search.toLowerCase())
 
+  // Alphabetized gem rows per color section; static dataset, computed once.
+  const gemsByColor = useMemo(() => {
+    const byColor: Record<string, Array<{ id: number; name: string }>> = { r: [], g: [], b: [], w: [] }
+    for (const token of regexGems.tokens) {
+      const bucket = byColor[token.options.c]
+      if (bucket) bucket.push({ id: token.id, name: token.rawText.replaceAll('|', ' ') })
+    }
+    for (const c of Object.keys(byColor)) byColor[c].sort((a, b) => a.name.localeCompare(b.name))
+    return byColor
+  }, [])
+
   // Per-category-tab count for the badges, over the selected group.
-  const tabCount = (tabKey: VendorTabKey): number => {
-    const t = VENDOR_TABS.find((x) => x.key === tabKey)
+  const tabCount = (tabKey: VendorPoe1TabKey): number => {
+    if (tabKey === 'gems') return selectedGroup.gems.length
+    const t = VENDOR_POE1_TABS.find((x) => x.key === tabKey)
     let n = 0
     if (t) {
       for (const section of t.sections) {
@@ -224,14 +263,10 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
         }
       }
     }
-    if (tabKey === 'item') {
-      if (selectedGroup.itemLevel.min !== 0 || selectedGroup.itemLevel.max !== 0) n++
-      if (selectedGroup.characterLevel.min !== 0 || selectedGroup.characterLevel.max !== 0) n++
-    }
     return n
   }
 
-  const showGroupBar = !isVendorGroupsEmpty(state)
+  const showGroupBar = !isVendorPoe1GroupsEmpty(state)
 
   return (
     <>
@@ -286,6 +321,9 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
         {sharedSavePanel}
       </div>
 
+      {/* Conflict warnings (poe.re parity), e.g. +1 wand together with base=wand. */}
+      <ErrorBanner message={warnings} tone="warn" inline />
+
       {sharedSavedPresets}
 
       {/* Group bar - hidden until the first condition is ticked. */}
@@ -294,7 +332,7 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
           <div className="flex items-center gap-1 overflow-x-auto pb-1">
             {state.groups.map((g, i) => {
               const isSel = i === selectedGroupId
-              const summary = vendorGroupSummary(g)
+              const summary = vendorPoe1GroupSummary(g)
               return (
                 <Fragment key={`group-${i}`}>
                   {i > 0 && <span className="text-[9px] font-bold text-text-dim px-[2px] shrink-0">AND</span>}
@@ -334,8 +372,7 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
                 </Fragment>
               )
             })}
-            {/* Plain button (not FilterChip) so it matches the group pills' height exactly:
-                same padding, no border, same text size. */}
+            {/* Plain button (not FilterChip) so it matches the group pills' height exactly. */}
             <button
               onClick={addGroup}
               className="flex items-center gap-1 px-2 py-[4px] rounded text-[11px] font-semibold border-none cursor-pointer shrink-0"
@@ -350,7 +387,7 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
               <Plus size={12} theme="outline" fill="currentColor" /> Group
             </button>
           </div>
-          <DismissibleTip id="vendor.groups">
+          <DismissibleTip id="vendor-poe1.groups">
             Conditions in a group match with OR; separate groups must all match (AND).
           </DismissibleTip>
         </div>
@@ -358,11 +395,11 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
 
       {/* Category tab strip */}
       <div className="flex gap-1 px-2 pt-1 pb-0 bg-bg-card">
-        {VENDOR_TABS.map((t, i) => {
+        {VENDOR_POE1_TABS.map((t, i) => {
           const isActive = tab === t.key
           const count = tabCount(t.key)
           const Icon = TAB_ICONS[t.key]
-          const prev = VENDOR_TABS[i - 1]
+          const prev = VENDOR_POE1_TABS[i - 1]
           const showSep = i > 0 && tab !== prev.key && !isActive
           return (
             <Fragment key={t.key}>
@@ -409,10 +446,11 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
           if (visible.length === 0) return null
           return (
             <QualifierSection key={section.label} label={section.label}>
+              {section.caption && <div className="px-3 pb-[4px] text-[10px] text-text-dim">{section.caption}</div>}
               {visible.map((t, i) => (
                 <ToggleRow
                   key={t.field}
-                  label={t.label}
+                  label={t.sockets ? socketRowLabel(t.label, t.sockets) : t.label}
                   checked={(selectedGroup[t.group] as Record<string, boolean>)[t.field]}
                   onChange={() => toggleField(t.group, t.field)}
                   alt={i % 2 === 1}
@@ -422,20 +460,20 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
           )
         })}
 
-        {/* Item tab also renders the two level ranges as numeric inputs, filtered
-            per-row by the search the same way the toggle sections are. */}
-        {tab === 'item' &&
-          LEVEL_SECTIONS.map((section) => {
-            const visible = section.rows.filter((r) => matchesSearch(r.label))
+        {/* Gems tab renders the color-sectioned gem list, filtered by the same search. */}
+        {tab === 'gems' &&
+          GEM_SECTIONS.map((section) => {
+            const visible = gemsByColor[section.c].filter((g) => matchesSearch(g.name))
             if (visible.length === 0) return null
             return (
               <QualifierSection key={section.label} label={section.label}>
-                {visible.map((r, i) => (
-                  <LevelRow
-                    key={r.bound}
-                    label={r.label}
-                    value={selectedGroup[section.group][r.bound]}
-                    onChange={(v) => setLevel(section.group, r.bound, v)}
+                {visible.map((g, i) => (
+                  <ToggleRow
+                    key={g.id}
+                    label={g.name}
+                    labelColor={GEM_LABEL_COLORS[section.c]}
+                    checked={selectedGroup.gems.includes(g.id)}
+                    onChange={() => toggleGem(g.id)}
                     alt={i % 2 === 1}
                   />
                 ))}
@@ -446,25 +484,3 @@ export const VendorGenerator = forwardRef<GeneratorHandle, GeneratorProps>(funct
     </>
   )
 })
-
-function LevelRow({
-  label,
-  value,
-  onChange,
-  alt = false,
-}: {
-  label: string
-  value: number
-  onChange: (v: number | null) => void
-  alt?: boolean
-}): JSX.Element {
-  return (
-    <div
-      className="flex items-center gap-2 px-3 py-[6px]"
-      style={{ background: alt ? 'rgba(255,255,255,0.02)' : 'transparent' }}
-    >
-      <span className="text-[11px] flex-1 text-text">{label}</span>
-      <ScrubInput value={value === 0 ? null : value} placeholder="0" step={1} min={0} max={100} onChange={onChange} />
-    </div>
-  )
-}

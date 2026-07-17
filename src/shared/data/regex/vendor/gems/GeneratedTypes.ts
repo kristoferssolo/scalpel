@@ -17,9 +17,7 @@ export interface Regex<T> {
   tokens: Token<T>[],
   optimizationTable: {[ids: string]: TokenOptimization },
 }
-export interface MapModsTokenOption {
-  scary: number,
-  nm: boolean,
-  prefix: boolean,
-  rewards?: string[],
+export interface GemsTokenOption {
+  c: string,
+  support: boolean,
 }
