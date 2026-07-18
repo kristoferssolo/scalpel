@@ -4,6 +4,7 @@ import { UiohookKey, uIOhook } from 'uiohook-napi'
 import { appMacroEffectiveScope, chatCommandEffectiveScope, type MacroScope, scopeAppliesTo } from '@shared/macro-scope'
 import { POE_SIDEBAR_RATIO } from '@shared/poe-geometry'
 import { snapshotClipboard } from './clipboard-preserve'
+import { detectFocusedPoeVersion } from './game-detector'
 import { type KeyCombo, isElectronRegisterable, parseAccelerator } from './hotkey-accelerator'
 import {
   guardNativeListener,
@@ -12,8 +13,8 @@ import {
   registerDiagnosticProvider,
 } from './diagnostics'
 import { getPoeVersion } from './game-state'
-import { focusGameWindow, getOverlayWindow, isTypingInOverlay, setOverlayVisibilityListener } from './overlay'
-import { hideFocusedOrAnyVisibleSecondaryOverlay } from './windowing'
+import { focusGameWindow, isTypingInOverlay, setOverlayVisibilityListener } from './overlay'
+import { hideFocusedOrAnyVisibleSecondaryOverlay, isAnyScalpelBrowserWindowFocused } from './windowing'
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -88,17 +89,21 @@ function fireTrigger(): void {
   lastTriggerFireAt = now
   if (injecting) return
   releaseHotkeyKey(triggerCombo)
+  // No focus gate here: onTrigger (createHotkeyHandler) runs ensureCorrectGameForHotkey,
+  // which is the single focus authority for this path -- it already does the active-win
+  // check plus an OverlayController.targetHasFocus fallback and the game-switch logic. A
+  // second gate here would only duplicate the active-win lookup and, lacking that
+  // fallback, could swallow a valid press on a foreground-change race. See evaluation.ts.
   if (onTrigger) onTrigger()
 }
 
-/** True when PoE has foreground focus or one of Scalpel's overlay windows is
- *  focused. Used to gate hotkeys that only make sense in a PoE-adjacent context
- *  (chat commands, Escape-closes-overlay) so they don't fire in a browser or
- *  random app when Scalpel is running in the background. See issues #18, #21. */
-function hasPoeOrOverlayFocus(): boolean {
-  if (OverlayController.targetHasFocus) return true
-  const overlayWin = getOverlayWindow()
-  return !!overlayWin && !overlayWin.isDestroyed() && overlayWin.isFocused()
+/** True when the OS foreground context is exactly PoE/PoE2 or a Scalpel-owned
+ *  window. This deliberately does not trust OverlayController.targetHasFocus:
+ *  that flag can be stale or prefix-confused between "Path of Exile" and
+ *  "Path of Exile 2", while active-win gives us the exact foreground title. */
+export async function hasPoeOrOverlayFocus(): Promise<boolean> {
+  if (isAnyScalpelBrowserWindowFocused()) return true
+  return (await detectFocusedPoeVersion()) !== null
 }
 
 function firePriceCheck(): void {
@@ -107,6 +112,8 @@ function firePriceCheck(): void {
   lastPriceCheckFireAt = now
   if (injecting) return
   releaseHotkeyKey(priceCheckCombo)
+  // No focus gate here: onPriceCheck (createPriceCheckHandler) runs ensureCorrectGameForHotkey,
+  // which is the single focus authority for this path (see fireTrigger above).
   if (onPriceCheck) onPriceCheck()
 }
 
@@ -121,7 +128,12 @@ function fireEscape(): void {
   // Secondary overlays (cheat sheets etc.) own Esc when visible - same
   // precedence as the existing uiohook branch, and NOT gated on focus.
   if (hideFocusedOrAnyVisibleSecondaryOverlay()) return
-  if (onEscape && hasPoeOrOverlayFocus()) onEscape()
+  if (!onEscape) return
+  void hasPoeOrOverlayFocus()
+    .then((ok) => {
+      if (ok && onEscape) onEscape()
+    })
+    .catch((err) => recordMainDiagnostic('hotkey-context:escape', err))
 }
 
 /** Register/unregister the Escape globalShortcut so the OS consumes the key
@@ -194,9 +206,13 @@ function runChatCommand(command: string, autoSubmit: boolean, combo: KeyCombo | 
   // races between focus events and key delivery could otherwise route a press to
   // the wrong app's keystroke injection. Gate on PoE/overlay focus so unrelated
   // apps see the raw key. Issues #18, #21.
-  if (!hasPoeOrOverlayFocus()) return
-  releaseHotkeyKey(combo)
-  sendChatCommand(command, autoSubmit)
+  void hasPoeOrOverlayFocus()
+    .then((ok) => {
+      if (!ok || injecting || isTypingInOverlay()) return
+      releaseHotkeyKey(combo)
+      sendChatCommand(command, autoSubmit)
+    })
+    .catch((e) => recordMainDiagnostic('hotkey-context:chat-command', e))
 }
 
 function runAppMacro(
@@ -206,14 +222,24 @@ function runAppMacro(
   combo: KeyCombo | null,
 ): void {
   if (injecting || isTypingInOverlay() || !onAppMacro) return
-  releaseHotkeyKey(combo)
-  onAppMacro(action, tag, presetId)
+  void hasPoeOrOverlayFocus()
+    .then((ok) => {
+      if (!ok || injecting || isTypingInOverlay() || !onAppMacro) return
+      releaseHotkeyKey(combo)
+      onAppMacro(action, tag, presetId)
+    })
+    .catch((e) => recordMainDiagnostic('hotkey-context:app-macro', e))
 }
 
 function runSecondaryOverlay(handler: () => void, combo: KeyCombo | null): void {
   if (isTypingInOverlay()) return
-  releaseHotkeyKey(combo)
-  handler()
+  void hasPoeOrOverlayFocus()
+    .then((ok) => {
+      if (!ok || isTypingInOverlay()) return
+      releaseHotkeyKey(combo)
+      handler()
+    })
+    .catch((e) => recordMainDiagnostic('hotkey-context:secondary-overlay', e))
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
