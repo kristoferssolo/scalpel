@@ -35,6 +35,9 @@ const FILES = [
   // PoE1 vendor gems (Vendor tab gem list + gem regex tokens).
   'gems/Generated.Gems.English.ts',
   'gems/GeneratedTypes.ts',
+  // PoE1 Items tab (rare crafting mods + magic name matching).
+  { from: 'GeneratedItemBases.ts', to: 'item/GeneratedItemBases.ts' },
+  { from: 'GeneratedItemMods.ts', to: 'item/GeneratedItemMods.ts' },
 ]
 
 const ATTRIBUTION = `// Data sourced from poe-vendor-string (https://github.com/${REPO})

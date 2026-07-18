@@ -17,6 +17,7 @@ import { InfoChip } from '../../shared/InfoChip'
 import { MapsGenerator } from './MapsGenerator'
 import { CustomGenerator } from './CustomGenerator'
 import { FlaskGenerator } from './FlaskGenerator'
+import { ItemsGenerator } from './ItemsGenerator'
 import { WaystonesGenerator } from './WaystonesGenerator'
 import { VendorGenerator } from './VendorGenerator'
 import { VendorPoe1Generator } from './VendorPoe1Generator'
@@ -50,6 +51,7 @@ const GENERATORS_POE1 = [
   { key: 'maps', label: 'Maps' },
   { key: 'vendor', label: 'Vendor' },
   { key: 'flasks', label: 'Flasks' },
+  { key: 'items', label: 'Items' },
   { key: 'custom', label: 'Custom' },
 ] as const satisfies readonly GeneratorConfig[]
 
@@ -118,6 +120,7 @@ export function RegexGenerator({ settings, update, tryHotkey }: Props): JSX.Elem
 
   const mapsRef = useRef<GeneratorHandle>(null)
   const flasksRef = useRef<GeneratorHandle>(null)
+  const itemsRef = useRef<GeneratorHandle>(null)
   const customRef = useRef<GeneratorHandle>(null)
   const waystonesRef = useRef<GeneratorHandle>(null)
   const tabletRef = useRef<GeneratorHandle>(null)
@@ -129,6 +132,8 @@ export function RegexGenerator({ settings, update, tryHotkey }: Props): JSX.Elem
         return mapsRef
       case 'flasks':
         return flasksRef
+      case 'items':
+        return itemsRef
       case 'waystones':
         return waystonesRef
       case 'tablet':
@@ -481,6 +486,8 @@ export function RegexGenerator({ settings, update, tryHotkey }: Props): JSX.Elem
         return <MapsGenerator ref={mapsRef} {...sharedProps} />
       case 'flasks':
         return <FlaskGenerator ref={flasksRef} {...sharedProps} />
+      case 'items':
+        return <ItemsGenerator ref={itemsRef} {...sharedProps} />
       case 'waystones':
         return <WaystonesGenerator ref={waystonesRef} {...sharedProps} />
       case 'tablet':
