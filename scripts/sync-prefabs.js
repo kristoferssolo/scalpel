@@ -69,6 +69,21 @@ function packPoeVersion(dir) {
   return undefined
 }
 
+const VALID_GROUPS = new Set(['leveling-complete', 'leveling-simple'])
+
+/** Optional picker section: drop a `_group.txt` containing "leveling-complete"
+ *  or "leveling-simple" in the pack directory. No file = the Other section. */
+function packGroup(dir, slug) {
+  const overridePath = path.join(dir, '_group.txt')
+  if (!fs.existsSync(overridePath)) return undefined
+  const raw = fs.readFileSync(overridePath, 'utf8').trim()
+  if (!VALID_GROUPS.has(raw)) {
+    console.error(`_group.txt in pack "${slug}" has unknown group "${raw}"`)
+    process.exit(1)
+  }
+  return raw
+}
+
 /** Load _zones.json for a pack directory if it exists. Returns a Map from
  *  filename to areaCodes array, or null if no sidecar exists. */
 function loadZonesSidecar(packDir) {
@@ -134,6 +149,8 @@ function main() {
 
     const pack = { slug, name: packDisplayName(packDir, slug), images }
     if (poeVersion) pack.poeVersion = poeVersion
+    const group = packGroup(packDir, slug)
+    if (group) pack.group = group
     packs.push(pack)
   }
 
@@ -163,6 +180,9 @@ export interface PrefabPack {
   /** When set, the pack only appears for users on the matching PoE version.
    *  Unset = visible in both. Configured via _poe.txt in the pack directory. */
   poeVersion?: 1 | 2
+  /** Picker section the pack is listed under. Unset = the Other section.
+   *  Configured via _group.txt in the pack directory. */
+  group?: 'leveling-complete' | 'leveling-simple'
 }
 
 export const PREFAB_PACKS: PrefabPack[] = ${JSON.stringify(packs, null, 2)}

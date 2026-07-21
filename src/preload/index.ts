@@ -251,8 +251,15 @@ export const api = {
     ipcRenderer.invoke('cheat-sheet:remove', categoryId, sheetId, ext),
   removeCheatSheetCategory: (categoryId: string): Promise<void> =>
     ipcRenderer.invoke('cheat-sheet:remove-category', categoryId),
-  listCheatSheetPrefabs: (): Promise<Array<{ slug: string; name: string; imageCount: number; poeVersion?: 1 | 2 }>> =>
-    ipcRenderer.invoke('cheat-sheet:list-prefabs'),
+  listCheatSheetPrefabs: (): Promise<
+    Array<{
+      slug: string
+      name: string
+      imageCount: number
+      poeVersion?: 1 | 2
+      group?: 'leveling-complete' | 'leveling-simple'
+    }>
+  > => ipcRenderer.invoke('cheat-sheet:list-prefabs'),
   importCheatSheetPrefab: (
     slug: string,
   ): Promise<{ categoryId: string; sheets: Array<{ id: string; ext: string; areaCodes?: string[] }> }> =>

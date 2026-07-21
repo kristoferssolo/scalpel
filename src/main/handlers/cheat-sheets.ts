@@ -97,12 +97,19 @@ export function register(): void {
 
   ipcMain.handle(
     'cheat-sheet:list-prefabs',
-    (): Array<{ slug: string; name: string; imageCount: number; poeVersion?: 1 | 2 }> => {
+    (): Array<{
+      slug: string
+      name: string
+      imageCount: number
+      poeVersion?: 1 | 2
+      group?: 'leveling-complete' | 'leveling-simple'
+    }> => {
       return PREFAB_PACKS.map((p) => ({
         slug: p.slug,
         name: p.name,
         imageCount: p.images.length,
         poeVersion: p.poeVersion,
+        group: p.group,
       }))
     },
   )
