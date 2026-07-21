@@ -9,8 +9,8 @@ export interface PrefabPackImage {
   /** Repo-relative path under cheat-sheet-prefabs/. */
   path: string
   /** Area codes from Client.txt that this image's zone maps to. Empty when
-   *  the image has no zone metadata (PoE1 packs, or PoE2 packs lacking an
-   *  entry in their _zones.json sidecar). */
+   *  the image has no zone metadata (packs without a _zones.json sidecar,
+   *  or images lacking an entry in it). */
   areaCodes: string[]
 }
 
@@ -310,6 +310,2052 @@ export const PREFAB_PACKS: PrefabPack[] = [
       {
         path: 'leagues/sanctum.png',
         areaCodes: [],
+      },
+    ],
+    poeVersion: 1,
+  },
+  {
+    slug: 'poe1-act-01',
+    name: 'Act 1',
+    images: [
+      {
+        path: 'poe1-act-01/01-twilight-strand-1.webp',
+        areaCodes: ['1_1_1'],
+      },
+      {
+        path: 'poe1-act-01/01-twilight-strand-2.webp',
+        areaCodes: ['1_1_1'],
+      },
+      {
+        path: 'poe1-act-01/02-coast-1.webp',
+        areaCodes: ['1_1_2'],
+      },
+      {
+        path: 'poe1-act-01/02-coast-2.webp',
+        areaCodes: ['1_1_2'],
+      },
+      {
+        path: 'poe1-act-01/02-coast-3.webp',
+        areaCodes: ['1_1_2'],
+      },
+      {
+        path: 'poe1-act-01/02-coast-4.webp',
+        areaCodes: ['1_1_2'],
+      },
+      {
+        path: 'poe1-act-01/02-coast-5.webp',
+        areaCodes: ['1_1_2'],
+      },
+      {
+        path: 'poe1-act-01/02-coast-6.webp',
+        areaCodes: ['1_1_2'],
+      },
+      {
+        path: 'poe1-act-01/02-coast-7.webp',
+        areaCodes: ['1_1_2'],
+      },
+      {
+        path: 'poe1-act-01/02-coast-8.webp',
+        areaCodes: ['1_1_2'],
+      },
+      {
+        path: 'poe1-act-01/03-tidal-island-1.webp',
+        areaCodes: ['1_1_2a'],
+      },
+      {
+        path: 'poe1-act-01/03-tidal-island-10.webp',
+        areaCodes: ['1_1_2a'],
+      },
+      {
+        path: 'poe1-act-01/03-tidal-island-2.webp',
+        areaCodes: ['1_1_2a'],
+      },
+      {
+        path: 'poe1-act-01/03-tidal-island-3.webp',
+        areaCodes: ['1_1_2a'],
+      },
+      {
+        path: 'poe1-act-01/03-tidal-island-4.webp',
+        areaCodes: ['1_1_2a'],
+      },
+      {
+        path: 'poe1-act-01/03-tidal-island-5.webp',
+        areaCodes: ['1_1_2a'],
+      },
+      {
+        path: 'poe1-act-01/03-tidal-island-6.webp',
+        areaCodes: ['1_1_2a'],
+      },
+      {
+        path: 'poe1-act-01/03-tidal-island-7.webp',
+        areaCodes: ['1_1_2a'],
+      },
+      {
+        path: 'poe1-act-01/03-tidal-island-8.webp',
+        areaCodes: ['1_1_2a'],
+      },
+      {
+        path: 'poe1-act-01/03-tidal-island-9.webp',
+        areaCodes: ['1_1_2a'],
+      },
+      {
+        path: 'poe1-act-01/04-mud-flats-1.webp',
+        areaCodes: ['1_1_3'],
+      },
+      {
+        path: 'poe1-act-01/04-mud-flats-2.webp',
+        areaCodes: ['1_1_3'],
+      },
+      {
+        path: 'poe1-act-01/04-mud-flats-3.webp',
+        areaCodes: ['1_1_3'],
+      },
+      {
+        path: 'poe1-act-01/04-mud-flats-4.webp',
+        areaCodes: ['1_1_3'],
+      },
+      {
+        path: 'poe1-act-01/04-mud-flats-5.webp',
+        areaCodes: ['1_1_3'],
+      },
+      {
+        path: 'poe1-act-01/04-mud-flats-6.webp',
+        areaCodes: ['1_1_3'],
+      },
+      {
+        path: 'poe1-act-01/04-mud-flats-7.webp',
+        areaCodes: ['1_1_3'],
+      },
+      {
+        path: 'poe1-act-01/05-submerged-passage-1.webp',
+        areaCodes: ['1_1_4_1'],
+      },
+      {
+        path: 'poe1-act-01/05-submerged-passage-2.webp',
+        areaCodes: ['1_1_4_1'],
+      },
+      {
+        path: 'poe1-act-01/05-submerged-passage-3.webp',
+        areaCodes: ['1_1_4_1'],
+      },
+      {
+        path: 'poe1-act-01/05-submerged-passage-4.webp',
+        areaCodes: ['1_1_4_1'],
+      },
+      {
+        path: 'poe1-act-01/05-submerged-passage-5.webp',
+        areaCodes: ['1_1_4_1'],
+      },
+      {
+        path: 'poe1-act-01/05-submerged-passage-6.webp',
+        areaCodes: ['1_1_4_1'],
+      },
+      {
+        path: 'poe1-act-01/06-flooded-depths-1.webp',
+        areaCodes: ['1_1_4_0'],
+      },
+      {
+        path: 'poe1-act-01/06-flooded-depths-2.webp',
+        areaCodes: ['1_1_4_0'],
+      },
+      {
+        path: 'poe1-act-01/06-flooded-depths-3.webp',
+        areaCodes: ['1_1_4_0'],
+      },
+      {
+        path: 'poe1-act-01/06-flooded-depths-4.webp',
+        areaCodes: ['1_1_4_0'],
+      },
+      {
+        path: 'poe1-act-01/07-ledge-1.webp',
+        areaCodes: ['1_1_5'],
+      },
+      {
+        path: 'poe1-act-01/07-ledge-2.webp',
+        areaCodes: ['1_1_5'],
+      },
+      {
+        path: 'poe1-act-01/08-climb-1.webp',
+        areaCodes: ['1_1_6'],
+      },
+      {
+        path: 'poe1-act-01/08-climb-2.webp',
+        areaCodes: ['1_1_6'],
+      },
+      {
+        path: 'poe1-act-01/08-climb-3.webp',
+        areaCodes: ['1_1_6'],
+      },
+      {
+        path: 'poe1-act-01/08-climb-4.webp',
+        areaCodes: ['1_1_6'],
+      },
+      {
+        path: 'poe1-act-01/08-climb-5.webp',
+        areaCodes: ['1_1_6'],
+      },
+      {
+        path: 'poe1-act-01/08-climb-6.webp',
+        areaCodes: ['1_1_6'],
+      },
+      {
+        path: 'poe1-act-01/09-lower-prison-1.webp',
+        areaCodes: ['1_1_7_1'],
+      },
+      {
+        path: 'poe1-act-01/09-lower-prison-2.webp',
+        areaCodes: ['1_1_7_1'],
+      },
+      {
+        path: 'poe1-act-01/09-lower-prison-3.webp',
+        areaCodes: ['1_1_7_1'],
+      },
+      {
+        path: 'poe1-act-01/09-lower-prison-4.webp',
+        areaCodes: ['1_1_7_1'],
+      },
+      {
+        path: 'poe1-act-01/09-lower-prison-5.webp',
+        areaCodes: ['1_1_7_1'],
+      },
+      {
+        path: 'poe1-act-01/09-lower-prison-6.webp',
+        areaCodes: ['1_1_7_1'],
+      },
+      {
+        path: 'poe1-act-01/09-lower-prison-7.webp',
+        areaCodes: ['1_1_7_1'],
+      },
+      {
+        path: 'poe1-act-01/10-upper-prison-1.webp',
+        areaCodes: ['1_1_7_2'],
+      },
+      {
+        path: 'poe1-act-01/10-upper-prison-2.webp',
+        areaCodes: ['1_1_7_2'],
+      },
+      {
+        path: 'poe1-act-01/10-upper-prison-3.webp',
+        areaCodes: ['1_1_7_2'],
+      },
+      {
+        path: 'poe1-act-01/10-upper-prison-4.webp',
+        areaCodes: ['1_1_7_2'],
+      },
+      {
+        path: 'poe1-act-01/10-upper-prison-5.webp',
+        areaCodes: ['1_1_7_2'],
+      },
+      {
+        path: 'poe1-act-01/10-upper-prison-6.webp',
+        areaCodes: ['1_1_7_2'],
+      },
+      {
+        path: 'poe1-act-01/10-upper-prison-7.webp',
+        areaCodes: ['1_1_7_2'],
+      },
+      {
+        path: 'poe1-act-01/10-upper-prison-8.webp',
+        areaCodes: ['1_1_7_2'],
+      },
+      {
+        path: 'poe1-act-01/11-prisoners-gate-1.webp',
+        areaCodes: ['1_1_8'],
+      },
+      {
+        path: 'poe1-act-01/11-prisoners-gate-10.webp',
+        areaCodes: ['1_1_8'],
+      },
+      {
+        path: 'poe1-act-01/11-prisoners-gate-11.webp',
+        areaCodes: ['1_1_8'],
+      },
+      {
+        path: 'poe1-act-01/11-prisoners-gate-12.webp',
+        areaCodes: ['1_1_8'],
+      },
+      {
+        path: 'poe1-act-01/11-prisoners-gate-13.webp',
+        areaCodes: ['1_1_8'],
+      },
+      {
+        path: 'poe1-act-01/11-prisoners-gate-2.webp',
+        areaCodes: ['1_1_8'],
+      },
+      {
+        path: 'poe1-act-01/11-prisoners-gate-3.webp',
+        areaCodes: ['1_1_8'],
+      },
+      {
+        path: 'poe1-act-01/11-prisoners-gate-4.webp',
+        areaCodes: ['1_1_8'],
+      },
+      {
+        path: 'poe1-act-01/11-prisoners-gate-5.webp',
+        areaCodes: ['1_1_8'],
+      },
+      {
+        path: 'poe1-act-01/11-prisoners-gate-6.webp',
+        areaCodes: ['1_1_8'],
+      },
+      {
+        path: 'poe1-act-01/11-prisoners-gate-7.webp',
+        areaCodes: ['1_1_8'],
+      },
+      {
+        path: 'poe1-act-01/11-prisoners-gate-8.webp',
+        areaCodes: ['1_1_8'],
+      },
+      {
+        path: 'poe1-act-01/11-prisoners-gate-9.webp',
+        areaCodes: ['1_1_8'],
+      },
+      {
+        path: 'poe1-act-01/12-ship-graveyard-1.webp',
+        areaCodes: ['1_1_9'],
+      },
+      {
+        path: 'poe1-act-01/12-ship-graveyard-2.webp',
+        areaCodes: ['1_1_9'],
+      },
+      {
+        path: 'poe1-act-01/12-ship-graveyard-3.webp',
+        areaCodes: ['1_1_9'],
+      },
+      {
+        path: 'poe1-act-01/12-ship-graveyard-4.webp',
+        areaCodes: ['1_1_9'],
+      },
+      {
+        path: 'poe1-act-01/12-ship-graveyard-5.webp',
+        areaCodes: ['1_1_9'],
+      },
+      {
+        path: 'poe1-act-01/12-ship-graveyard-6.webp',
+        areaCodes: ['1_1_9'],
+      },
+      {
+        path: 'poe1-act-01/12-ship-graveyard-7.webp',
+        areaCodes: ['1_1_9'],
+      },
+      {
+        path: 'poe1-act-01/12-ship-graveyard-8.webp',
+        areaCodes: ['1_1_9'],
+      },
+      {
+        path: 'poe1-act-01/13-ship-graveyard-cave-1.webp',
+        areaCodes: ['1_1_9a'],
+      },
+      {
+        path: 'poe1-act-01/13-ship-graveyard-cave-2.webp',
+        areaCodes: ['1_1_9a'],
+      },
+      {
+        path: 'poe1-act-01/13-ship-graveyard-cave-3.webp',
+        areaCodes: ['1_1_9a'],
+      },
+      {
+        path: 'poe1-act-01/13-ship-graveyard-cave-4.webp',
+        areaCodes: ['1_1_9a'],
+      },
+      {
+        path: 'poe1-act-01/14-cavern-of-wrath-1.webp',
+        areaCodes: ['1_1_11_1'],
+      },
+      {
+        path: 'poe1-act-01/14-cavern-of-wrath-2.webp',
+        areaCodes: ['1_1_11_1'],
+      },
+      {
+        path: 'poe1-act-01/15-cavern-of-anger-1.webp',
+        areaCodes: ['1_1_11_2'],
+      },
+      {
+        path: 'poe1-act-01/15-cavern-of-anger-2.webp',
+        areaCodes: ['1_1_11_2'],
+      },
+    ],
+    poeVersion: 1,
+  },
+  {
+    slug: 'poe1-act-02',
+    name: 'Act 2',
+    images: [
+      {
+        path: 'poe1-act-02/01-southern-forest.webp',
+        areaCodes: ['1_2_1'],
+      },
+      {
+        path: 'poe1-act-02/02-old-fields-1.webp',
+        areaCodes: ['1_2_2'],
+      },
+      {
+        path: 'poe1-act-02/02-old-fields-2.webp',
+        areaCodes: ['1_2_2'],
+      },
+      {
+        path: 'poe1-act-02/02-old-fields-3.webp',
+        areaCodes: ['1_2_2'],
+      },
+      {
+        path: 'poe1-act-02/02-old-fields-4.webp',
+        areaCodes: ['1_2_2'],
+      },
+      {
+        path: 'poe1-act-02/03-crossroads.webp',
+        areaCodes: ['1_2_3'],
+      },
+      {
+        path: 'poe1-act-02/04-chamber-of-sins-1-1.webp',
+        areaCodes: ['1_2_6_1'],
+      },
+      {
+        path: 'poe1-act-02/04-chamber-of-sins-1-2.webp',
+        areaCodes: ['1_2_6_1'],
+      },
+      {
+        path: 'poe1-act-02/04-chamber-of-sins-1-3.webp',
+        areaCodes: ['1_2_6_1'],
+      },
+      {
+        path: 'poe1-act-02/05-chamber-of-sins-2-1.webp',
+        areaCodes: ['1_2_6_2'],
+      },
+      {
+        path: 'poe1-act-02/05-chamber-of-sins-2-2.webp',
+        areaCodes: ['1_2_6_2'],
+      },
+      {
+        path: 'poe1-act-02/05-chamber-of-sins-2-3.webp',
+        areaCodes: ['1_2_6_2'],
+      },
+      {
+        path: 'poe1-act-02/05-chamber-of-sins-2-4.webp',
+        areaCodes: ['1_2_6_2'],
+      },
+      {
+        path: 'poe1-act-02/05-chamber-of-sins-2-5.webp',
+        areaCodes: ['1_2_6_2'],
+      },
+      {
+        path: 'poe1-act-02/05-chamber-of-sins-2-6.webp',
+        areaCodes: ['1_2_6_2'],
+      },
+      {
+        path: 'poe1-act-02/06-riverways-1.webp',
+        areaCodes: ['1_2_7'],
+      },
+      {
+        path: 'poe1-act-02/06-riverways-2.webp',
+        areaCodes: ['1_2_7'],
+      },
+      {
+        path: 'poe1-act-02/06-riverways-3.webp',
+        areaCodes: ['1_2_7'],
+      },
+      {
+        path: 'poe1-act-02/07-western-forest-1.webp',
+        areaCodes: ['1_2_9'],
+      },
+      {
+        path: 'poe1-act-02/07-western-forest-2.webp',
+        areaCodes: ['1_2_9'],
+      },
+      {
+        path: 'poe1-act-02/08-weavers-chamber-1.webp',
+        areaCodes: ['1_2_10'],
+      },
+      {
+        path: 'poe1-act-02/08-weavers-chamber-2.webp',
+        areaCodes: ['1_2_10'],
+      },
+      {
+        path: 'poe1-act-02/08-weavers-chamber-3.webp',
+        areaCodes: ['1_2_10'],
+      },
+      {
+        path: 'poe1-act-02/08-weavers-chamber-4.webp',
+        areaCodes: ['1_2_10'],
+      },
+      {
+        path: 'poe1-act-02/09-broken-bridge-1.webp',
+        areaCodes: ['1_2_4'],
+      },
+      {
+        path: 'poe1-act-02/09-broken-bridge-2.webp',
+        areaCodes: ['1_2_4'],
+      },
+      {
+        path: 'poe1-act-02/10-wetlands-1.webp',
+        areaCodes: ['1_2_12'],
+      },
+      {
+        path: 'poe1-act-02/10-wetlands-2.webp',
+        areaCodes: ['1_2_12'],
+      },
+      {
+        path: 'poe1-act-02/10-wetlands-3.webp',
+        areaCodes: ['1_2_12'],
+      },
+      {
+        path: 'poe1-act-02/10-wetlands-4.webp',
+        areaCodes: ['1_2_12'],
+      },
+      {
+        path: 'poe1-act-02/10-wetlands-5.webp',
+        areaCodes: ['1_2_12'],
+      },
+      {
+        path: 'poe1-act-02/11-fellshrine-ruins.webp',
+        areaCodes: ['1_2_15'],
+      },
+      {
+        path: 'poe1-act-02/12-crypt-1.webp',
+        areaCodes: ['1_2_5_1'],
+      },
+      {
+        path: 'poe1-act-02/12-crypt-2.webp',
+        areaCodes: ['1_2_5_1'],
+      },
+      {
+        path: 'poe1-act-02/12-crypt-3.webp',
+        areaCodes: ['1_2_5_1'],
+      },
+      {
+        path: 'poe1-act-02/12-crypt-4.webp',
+        areaCodes: ['1_2_5_1'],
+      },
+      {
+        path: 'poe1-act-02/13-crypt-2-1.webp',
+        areaCodes: ['1_2_5_2'],
+      },
+      {
+        path: 'poe1-act-02/13-crypt-2-2.webp',
+        areaCodes: ['1_2_5_2'],
+      },
+      {
+        path: 'poe1-act-02/13-crypt-2-3.webp',
+        areaCodes: ['1_2_5_2'],
+      },
+      {
+        path: 'poe1-act-02/13-crypt-2-4.webp',
+        areaCodes: ['1_2_5_2'],
+      },
+      {
+        path: 'poe1-act-02/13-crypt-2-5.webp',
+        areaCodes: ['1_2_5_2'],
+      },
+      {
+        path: 'poe1-act-02/14-vaal-ruins-1.webp',
+        areaCodes: ['1_2_11'],
+      },
+      {
+        path: 'poe1-act-02/14-vaal-ruins-2.webp',
+        areaCodes: ['1_2_11'],
+      },
+      {
+        path: 'poe1-act-02/14-vaal-ruins-3.webp',
+        areaCodes: ['1_2_11'],
+      },
+      {
+        path: 'poe1-act-02/14-vaal-ruins-4.webp',
+        areaCodes: ['1_2_11'],
+      },
+      {
+        path: 'poe1-act-02/14-vaal-ruins-5.webp',
+        areaCodes: ['1_2_11'],
+      },
+      {
+        path: 'poe1-act-02/14-vaal-ruins-6.webp',
+        areaCodes: ['1_2_11'],
+      },
+      {
+        path: 'poe1-act-02/15-northern-forest-1.webp',
+        areaCodes: ['1_2_8'],
+      },
+      {
+        path: 'poe1-act-02/15-northern-forest-2.webp',
+        areaCodes: ['1_2_8'],
+      },
+      {
+        path: 'poe1-act-02/15-northern-forest-3.webp',
+        areaCodes: ['1_2_8'],
+      },
+      {
+        path: 'poe1-act-02/15-northern-forest-4.webp',
+        areaCodes: ['1_2_8'],
+      },
+      {
+        path: 'poe1-act-02/16-cavern-1.webp',
+        areaCodes: ['1_2_14_2'],
+      },
+      {
+        path: 'poe1-act-02/16-cavern-2.webp',
+        areaCodes: ['1_2_14_2'],
+      },
+      {
+        path: 'poe1-act-02/16-cavern-3.webp',
+        areaCodes: ['1_2_14_2'],
+      },
+      {
+        path: 'poe1-act-02/16-cavern-4.webp',
+        areaCodes: ['1_2_14_2'],
+      },
+      {
+        path: 'poe1-act-02/17-ancient-pyramid-1.webp',
+        areaCodes: ['1_2_14_3'],
+      },
+      {
+        path: 'poe1-act-02/17-ancient-pyramid-2.webp',
+        areaCodes: ['1_2_14_3'],
+      },
+      {
+        path: 'poe1-act-02/17-ancient-pyramid-3.webp',
+        areaCodes: ['1_2_14_3'],
+      },
+      {
+        path: 'poe1-act-02/17-ancient-pyramid-4.webp',
+        areaCodes: ['1_2_14_3'],
+      },
+    ],
+    poeVersion: 1,
+  },
+  {
+    slug: 'poe1-act-03',
+    name: 'Act 3',
+    images: [
+      {
+        path: 'poe1-act-03/01-city-of-sarn.webp',
+        areaCodes: ['1_3_1'],
+      },
+      {
+        path: 'poe1-act-03/02-slums-1.webp',
+        areaCodes: ['1_3_2'],
+      },
+      {
+        path: 'poe1-act-03/02-slums-2.webp',
+        areaCodes: ['1_3_2'],
+      },
+      {
+        path: 'poe1-act-03/02-slums-3.webp',
+        areaCodes: ['1_3_2'],
+      },
+      {
+        path: 'poe1-act-03/02-slums-4.webp',
+        areaCodes: ['1_3_2'],
+      },
+      {
+        path: 'poe1-act-03/02-slums-5.webp',
+        areaCodes: ['1_3_2'],
+      },
+      {
+        path: 'poe1-act-03/02-slums-6.webp',
+        areaCodes: ['1_3_2'],
+      },
+      {
+        path: 'poe1-act-03/03-crematorium-1.webp',
+        areaCodes: ['1_3_3_1'],
+      },
+      {
+        path: 'poe1-act-03/03-crematorium-10.webp',
+        areaCodes: ['1_3_3_1'],
+      },
+      {
+        path: 'poe1-act-03/03-crematorium-2.webp',
+        areaCodes: ['1_3_3_1'],
+      },
+      {
+        path: 'poe1-act-03/03-crematorium-3.webp',
+        areaCodes: ['1_3_3_1'],
+      },
+      {
+        path: 'poe1-act-03/03-crematorium-4.webp',
+        areaCodes: ['1_3_3_1'],
+      },
+      {
+        path: 'poe1-act-03/03-crematorium-5.webp',
+        areaCodes: ['1_3_3_1'],
+      },
+      {
+        path: 'poe1-act-03/03-crematorium-6.webp',
+        areaCodes: ['1_3_3_1'],
+      },
+      {
+        path: 'poe1-act-03/03-crematorium-7.webp',
+        areaCodes: ['1_3_3_1'],
+      },
+      {
+        path: 'poe1-act-03/03-crematorium-8.webp',
+        areaCodes: ['1_3_3_1'],
+      },
+      {
+        path: 'poe1-act-03/03-crematorium-9.webp',
+        areaCodes: ['1_3_3_1'],
+      },
+      {
+        path: 'poe1-act-03/04-sewers-1.webp',
+        areaCodes: ['1_3_10_1'],
+      },
+      {
+        path: 'poe1-act-03/04-sewers-2.webp',
+        areaCodes: ['1_3_10_1'],
+      },
+      {
+        path: 'poe1-act-03/04-sewers-3.webp',
+        areaCodes: ['1_3_10_1'],
+      },
+      {
+        path: 'poe1-act-03/05-marketplace-1.webp',
+        areaCodes: ['1_3_5'],
+      },
+      {
+        path: 'poe1-act-03/05-marketplace-2.webp',
+        areaCodes: ['1_3_5'],
+      },
+      {
+        path: 'poe1-act-03/05-marketplace-3.webp',
+        areaCodes: ['1_3_5'],
+      },
+      {
+        path: 'poe1-act-03/05-marketplace-4.webp',
+        areaCodes: ['1_3_5'],
+      },
+      {
+        path: 'poe1-act-03/05-marketplace-5.webp',
+        areaCodes: ['1_3_5'],
+      },
+      {
+        path: 'poe1-act-03/05-marketplace-6.webp',
+        areaCodes: ['1_3_5'],
+      },
+      {
+        path: 'poe1-act-03/05-marketplace-7.webp',
+        areaCodes: ['1_3_5'],
+      },
+      {
+        path: 'poe1-act-03/05-marketplace-8.webp',
+        areaCodes: ['1_3_5'],
+      },
+      {
+        path: 'poe1-act-03/06-catacombs-1.webp',
+        areaCodes: ['1_3_6'],
+      },
+      {
+        path: 'poe1-act-03/06-catacombs-2.webp',
+        areaCodes: ['1_3_6'],
+      },
+      {
+        path: 'poe1-act-03/06-catacombs-3.webp',
+        areaCodes: ['1_3_6'],
+      },
+      {
+        path: 'poe1-act-03/06-catacombs-4.webp',
+        areaCodes: ['1_3_6'],
+      },
+      {
+        path: 'poe1-act-03/07-battlefront-1.webp',
+        areaCodes: ['1_3_7'],
+      },
+      {
+        path: 'poe1-act-03/07-battlefront-2.webp',
+        areaCodes: ['1_3_7'],
+      },
+      {
+        path: 'poe1-act-03/08-docks-1.webp',
+        areaCodes: ['1_3_9'],
+      },
+      {
+        path: 'poe1-act-03/08-docks-2.webp',
+        areaCodes: ['1_3_9'],
+      },
+      {
+        path: 'poe1-act-03/08-docks-3.webp',
+        areaCodes: ['1_3_9'],
+      },
+      {
+        path: 'poe1-act-03/08-docks-4.webp',
+        areaCodes: ['1_3_9'],
+      },
+      {
+        path: 'poe1-act-03/08-docks-5.webp',
+        areaCodes: ['1_3_9'],
+      },
+      {
+        path: 'poe1-act-03/09-solaris-temple-1-1.webp',
+        areaCodes: ['1_3_8_1'],
+      },
+      {
+        path: 'poe1-act-03/09-solaris-temple-1-2.webp',
+        areaCodes: ['1_3_8_1'],
+      },
+      {
+        path: 'poe1-act-03/09-solaris-temple-1-3.webp',
+        areaCodes: ['1_3_8_1'],
+      },
+      {
+        path: 'poe1-act-03/09-solaris-temple-1-4.webp',
+        areaCodes: ['1_3_8_1'],
+      },
+      {
+        path: 'poe1-act-03/09-solaris-temple-1-5.webp',
+        areaCodes: ['1_3_8_1'],
+      },
+      {
+        path: 'poe1-act-03/09-solaris-temple-1-6.webp',
+        areaCodes: ['1_3_8_1'],
+      },
+      {
+        path: 'poe1-act-03/10-solaris-temple-2-1.webp',
+        areaCodes: ['1_3_8_2'],
+      },
+      {
+        path: 'poe1-act-03/10-solaris-temple-2-2.webp',
+        areaCodes: ['1_3_8_2'],
+      },
+      {
+        path: 'poe1-act-03/10-solaris-temple-2-3.webp',
+        areaCodes: ['1_3_8_2'],
+      },
+      {
+        path: 'poe1-act-03/10-solaris-temple-2-4.webp',
+        areaCodes: ['1_3_8_2'],
+      },
+      {
+        path: 'poe1-act-03/10-solaris-temple-2-5.webp',
+        areaCodes: ['1_3_8_2'],
+      },
+      {
+        path: 'poe1-act-03/10-solaris-temple-2-6.webp',
+        areaCodes: ['1_3_8_2'],
+      },
+      {
+        path: 'poe1-act-03/11-ebony-barracks-1.webp',
+        areaCodes: ['1_3_13'],
+      },
+      {
+        path: 'poe1-act-03/11-ebony-barracks-2.webp',
+        areaCodes: ['1_3_13'],
+      },
+      {
+        path: 'poe1-act-03/12-lunaris-temple-1-1.webp',
+        areaCodes: ['1_3_14_1'],
+      },
+      {
+        path: 'poe1-act-03/12-lunaris-temple-1-2.webp',
+        areaCodes: ['1_3_14_1'],
+      },
+      {
+        path: 'poe1-act-03/13-lunaris-temple-2-1.webp',
+        areaCodes: ['1_3_14_2'],
+      },
+      {
+        path: 'poe1-act-03/13-lunaris-temple-2-2.webp',
+        areaCodes: ['1_3_14_2'],
+      },
+      {
+        path: 'poe1-act-03/13-lunaris-temple-2-3.webp',
+        areaCodes: ['1_3_14_2'],
+      },
+      {
+        path: 'poe1-act-03/13-lunaris-temple-2-4.webp',
+        areaCodes: ['1_3_14_2'],
+      },
+      {
+        path: 'poe1-act-03/13-lunaris-temple-2-5.webp',
+        areaCodes: ['1_3_14_2'],
+      },
+      {
+        path: 'poe1-act-03/13-lunaris-temple-2-6.webp',
+        areaCodes: ['1_3_14_2'],
+      },
+      {
+        path: 'poe1-act-03/13-lunaris-temple-2-7.webp',
+        areaCodes: ['1_3_14_2'],
+      },
+      {
+        path: 'poe1-act-03/13-lunaris-temple-2-8.webp',
+        areaCodes: ['1_3_14_2'],
+      },
+      {
+        path: 'poe1-act-03/13-lunaris-temple-2-9.webp',
+        areaCodes: ['1_3_14_2'],
+      },
+      {
+        path: 'poe1-act-03/14-imperial-garden-1.webp',
+        areaCodes: ['1_3_15'],
+      },
+      {
+        path: 'poe1-act-03/14-imperial-garden-2.webp',
+        areaCodes: ['1_3_15'],
+      },
+      {
+        path: 'poe1-act-03/15-library-1.webp',
+        areaCodes: ['1_3_17_1'],
+      },
+      {
+        path: 'poe1-act-03/15-library-2.webp',
+        areaCodes: ['1_3_17_1'],
+      },
+      {
+        path: 'poe1-act-03/15-library-3.webp',
+        areaCodes: ['1_3_17_1'],
+      },
+      {
+        path: 'poe1-act-03/15-library-4.webp',
+        areaCodes: ['1_3_17_1'],
+      },
+      {
+        path: 'poe1-act-03/15-library-5.webp',
+        areaCodes: ['1_3_17_1'],
+      },
+      {
+        path: 'poe1-act-03/15-library-6.webp',
+        areaCodes: ['1_3_17_1'],
+      },
+      {
+        path: 'poe1-act-03/16-archives-1.webp',
+        areaCodes: ['1_3_17_2'],
+      },
+      {
+        path: 'poe1-act-03/16-archives-2.webp',
+        areaCodes: ['1_3_17_2'],
+      },
+      {
+        path: 'poe1-act-03/17-sceptre-of-god-1.webp',
+        areaCodes: ['1_3_18_1'],
+      },
+      {
+        path: 'poe1-act-03/17-sceptre-of-god-2.webp',
+        areaCodes: ['1_3_18_1'],
+      },
+      {
+        path: 'poe1-act-03/17-sceptre-of-god-3.webp',
+        areaCodes: ['1_3_18_1'],
+      },
+      {
+        path: 'poe1-act-03/18-upper-sceptre-of-god-1.webp',
+        areaCodes: ['1_3_18_2'],
+      },
+      {
+        path: 'poe1-act-03/18-upper-sceptre-of-god-2.webp',
+        areaCodes: ['1_3_18_2'],
+      },
+      {
+        path: 'poe1-act-03/18-upper-sceptre-of-god-3.webp',
+        areaCodes: ['1_3_18_2'],
+      },
+      {
+        path: 'poe1-act-03/18-upper-sceptre-of-god-4.webp',
+        areaCodes: ['1_3_18_2'],
+      },
+    ],
+    poeVersion: 1,
+  },
+  {
+    slug: 'poe1-act-04',
+    name: 'Act 4',
+    images: [
+      {
+        path: 'poe1-act-04/01-aqueduct.webp',
+        areaCodes: ['1_4_1'],
+      },
+      {
+        path: 'poe1-act-04/02-dried-lake-1.webp',
+        areaCodes: ['1_4_2'],
+      },
+      {
+        path: 'poe1-act-04/02-dried-lake-2.webp',
+        areaCodes: ['1_4_2'],
+      },
+      {
+        path: 'poe1-act-04/02-dried-lake-3.webp',
+        areaCodes: ['1_4_2'],
+      },
+      {
+        path: 'poe1-act-04/02-dried-lake-4.webp',
+        areaCodes: ['1_4_2'],
+      },
+      {
+        path: 'poe1-act-04/03-mines.webp',
+        areaCodes: ['1_4_3_1'],
+      },
+      {
+        path: 'poe1-act-04/04-mines-2-1.webp',
+        areaCodes: ['1_4_3_2'],
+      },
+      {
+        path: 'poe1-act-04/04-mines-2-2.webp',
+        areaCodes: ['1_4_3_2'],
+      },
+      {
+        path: 'poe1-act-04/04-mines-2-3.webp',
+        areaCodes: ['1_4_3_2'],
+      },
+      {
+        path: 'poe1-act-04/04-mines-2-4.webp',
+        areaCodes: ['1_4_3_2'],
+      },
+      {
+        path: 'poe1-act-04/04-mines-2-5.webp',
+        areaCodes: ['1_4_3_2'],
+      },
+      {
+        path: 'poe1-act-04/05-crystal-veins-1.webp',
+        areaCodes: ['1_4_3_3'],
+      },
+      {
+        path: 'poe1-act-04/05-crystal-veins-2.webp',
+        areaCodes: ['1_4_3_3'],
+      },
+      {
+        path: 'poe1-act-04/05-crystal-veins-3.webp',
+        areaCodes: ['1_4_3_3'],
+      },
+      {
+        path: 'poe1-act-04/05-crystal-veins-4.webp',
+        areaCodes: ['1_4_3_3'],
+      },
+      {
+        path: 'poe1-act-04/06-daressos-dream-1.webp',
+        areaCodes: ['1_4_5_1'],
+      },
+      {
+        path: 'poe1-act-04/06-daressos-dream-10.webp',
+        areaCodes: ['1_4_5_1'],
+      },
+      {
+        path: 'poe1-act-04/06-daressos-dream-2.webp',
+        areaCodes: ['1_4_5_1'],
+      },
+      {
+        path: 'poe1-act-04/06-daressos-dream-3.webp',
+        areaCodes: ['1_4_5_1'],
+      },
+      {
+        path: 'poe1-act-04/06-daressos-dream-4.webp',
+        areaCodes: ['1_4_5_1'],
+      },
+      {
+        path: 'poe1-act-04/06-daressos-dream-5.webp',
+        areaCodes: ['1_4_5_1'],
+      },
+      {
+        path: 'poe1-act-04/06-daressos-dream-6.webp',
+        areaCodes: ['1_4_5_1'],
+      },
+      {
+        path: 'poe1-act-04/06-daressos-dream-7.webp',
+        areaCodes: ['1_4_5_1'],
+      },
+      {
+        path: 'poe1-act-04/06-daressos-dream-8.webp',
+        areaCodes: ['1_4_5_1'],
+      },
+      {
+        path: 'poe1-act-04/06-daressos-dream-9.webp',
+        areaCodes: ['1_4_5_1'],
+      },
+      {
+        path: 'poe1-act-04/07-grand-arena-1.webp',
+        areaCodes: ['1_4_5_2'],
+      },
+      {
+        path: 'poe1-act-04/07-grand-arena-2.webp',
+        areaCodes: ['1_4_5_2'],
+      },
+      {
+        path: 'poe1-act-04/07-grand-arena-3.webp',
+        areaCodes: ['1_4_5_2'],
+      },
+      {
+        path: 'poe1-act-04/07-grand-arena-4.webp',
+        areaCodes: ['1_4_5_2'],
+      },
+      {
+        path: 'poe1-act-04/08-kaoms-dream-1.webp',
+        areaCodes: ['1_4_4_1'],
+      },
+      {
+        path: 'poe1-act-04/08-kaoms-dream-2.webp',
+        areaCodes: ['1_4_4_1'],
+      },
+      {
+        path: 'poe1-act-04/08-kaoms-dream-3.webp',
+        areaCodes: ['1_4_4_1'],
+      },
+      {
+        path: 'poe1-act-04/08-kaoms-dream-4.webp',
+        areaCodes: ['1_4_4_1'],
+      },
+      {
+        path: 'poe1-act-04/08-kaoms-dream-5.webp',
+        areaCodes: ['1_4_4_1'],
+      },
+      {
+        path: 'poe1-act-04/08-kaoms-dream-6.webp',
+        areaCodes: ['1_4_4_1'],
+      },
+      {
+        path: 'poe1-act-04/09-kaoms-stronghold-1.webp',
+        areaCodes: ['1_4_4_3'],
+      },
+      {
+        path: 'poe1-act-04/09-kaoms-stronghold-2.webp',
+        areaCodes: ['1_4_4_3'],
+      },
+      {
+        path: 'poe1-act-04/10-belly-of-the-beast-1.webp',
+        areaCodes: ['1_4_6_1'],
+      },
+      {
+        path: 'poe1-act-04/10-belly-of-the-beast-2.webp',
+        areaCodes: ['1_4_6_1'],
+      },
+      {
+        path: 'poe1-act-04/10-belly-of-the-beast-3.webp',
+        areaCodes: ['1_4_6_1'],
+      },
+      {
+        path: 'poe1-act-04/11-belly-of-the-beast-2-1.webp',
+        areaCodes: ['1_4_6_2'],
+      },
+      {
+        path: 'poe1-act-04/11-belly-of-the-beast-2-2.webp',
+        areaCodes: ['1_4_6_2'],
+      },
+      {
+        path: 'poe1-act-04/11-belly-of-the-beast-2-3.webp',
+        areaCodes: ['1_4_6_2'],
+      },
+      {
+        path: 'poe1-act-04/11-belly-of-the-beast-2-4.webp',
+        areaCodes: ['1_4_6_2'],
+      },
+      {
+        path: 'poe1-act-04/11-belly-of-the-beast-2-5.webp',
+        areaCodes: ['1_4_6_2'],
+      },
+      {
+        path: 'poe1-act-04/11-belly-of-the-beast-2-6.webp',
+        areaCodes: ['1_4_6_2'],
+      },
+      {
+        path: 'poe1-act-04/12-harvest.webp',
+        areaCodes: ['1_4_6_3'],
+      },
+      {
+        path: 'poe1-act-04/13-ascent.webp',
+        areaCodes: ['1_4_7'],
+      },
+    ],
+    poeVersion: 1,
+  },
+  {
+    slug: 'poe1-act-05',
+    name: 'Act 5',
+    images: [
+      {
+        path: 'poe1-act-05/01-slave-pens-1.webp',
+        areaCodes: ['1_5_1'],
+      },
+      {
+        path: 'poe1-act-05/01-slave-pens-2.webp',
+        areaCodes: ['1_5_1'],
+      },
+      {
+        path: 'poe1-act-05/02-control-blocks-1.webp',
+        areaCodes: ['1_5_2'],
+      },
+      {
+        path: 'poe1-act-05/02-control-blocks-2.webp',
+        areaCodes: ['1_5_2'],
+      },
+      {
+        path: 'poe1-act-05/02-control-blocks-3.webp',
+        areaCodes: ['1_5_2'],
+      },
+      {
+        path: 'poe1-act-05/02-control-blocks-4.webp',
+        areaCodes: ['1_5_2'],
+      },
+      {
+        path: 'poe1-act-05/02-control-blocks-5.webp',
+        areaCodes: ['1_5_2'],
+      },
+      {
+        path: 'poe1-act-05/02-control-blocks-6.webp',
+        areaCodes: ['1_5_2'],
+      },
+      {
+        path: 'poe1-act-05/03-templar-courts.webp',
+        areaCodes: ['1_5_4'],
+      },
+      {
+        path: 'poe1-act-05/04-chamber-of-innocence-1.webp',
+        areaCodes: ['1_5_5'],
+      },
+      {
+        path: 'poe1-act-05/04-chamber-of-innocence-2.webp',
+        areaCodes: ['1_5_5'],
+      },
+      {
+        path: 'poe1-act-05/05-torched-courts.webp',
+        areaCodes: ['1_5_4b'],
+      },
+      {
+        path: 'poe1-act-05/06-ruined-square.webp',
+        areaCodes: ['1_5_3b'],
+      },
+      {
+        path: 'poe1-act-05/07-ossuary-1.webp',
+        areaCodes: ['1_5_6'],
+      },
+      {
+        path: 'poe1-act-05/07-ossuary-2.webp',
+        areaCodes: ['1_5_6'],
+      },
+      {
+        path: 'poe1-act-05/08-reliquary.webp',
+        areaCodes: ['1_5_7'],
+      },
+      {
+        path: 'poe1-act-05/09-cathedral-rooftop.webp',
+        areaCodes: ['1_5_8'],
+      },
+    ],
+    poeVersion: 1,
+  },
+  {
+    slug: 'poe1-act-06',
+    name: 'Act 6',
+    images: [
+      {
+        path: 'poe1-act-06/01-twilight-strand-1.webp',
+        areaCodes: ['2_6_1'],
+      },
+      {
+        path: 'poe1-act-06/01-twilight-strand-2.webp',
+        areaCodes: ['2_6_1'],
+      },
+      {
+        path: 'poe1-act-06/02-coast-1.webp',
+        areaCodes: ['2_6_2'],
+      },
+      {
+        path: 'poe1-act-06/02-coast-2.webp',
+        areaCodes: ['2_6_2'],
+      },
+      {
+        path: 'poe1-act-06/02-coast-3.webp',
+        areaCodes: ['2_6_2'],
+      },
+      {
+        path: 'poe1-act-06/02-coast-4.webp',
+        areaCodes: ['2_6_2'],
+      },
+      {
+        path: 'poe1-act-06/02-coast-5.webp',
+        areaCodes: ['2_6_2'],
+      },
+      {
+        path: 'poe1-act-06/02-coast-6.webp',
+        areaCodes: ['2_6_2'],
+      },
+      {
+        path: 'poe1-act-06/02-coast-7.webp',
+        areaCodes: ['2_6_2'],
+      },
+      {
+        path: 'poe1-act-06/02-coast-8.webp',
+        areaCodes: ['2_6_2'],
+      },
+      {
+        path: 'poe1-act-06/03-mud-flats-1.webp',
+        areaCodes: ['2_6_4'],
+      },
+      {
+        path: 'poe1-act-06/03-mud-flats-2.webp',
+        areaCodes: ['2_6_4'],
+      },
+      {
+        path: 'poe1-act-06/03-mud-flats-3.webp',
+        areaCodes: ['2_6_4'],
+      },
+      {
+        path: 'poe1-act-06/04-karui-fortress.webp',
+        areaCodes: ['2_6_5'],
+      },
+      {
+        path: 'poe1-act-06/05-tidal-island-1.webp',
+        areaCodes: ['2_6_3'],
+      },
+      {
+        path: 'poe1-act-06/05-tidal-island-2.webp',
+        areaCodes: ['2_6_3'],
+      },
+      {
+        path: 'poe1-act-06/05-tidal-island-3.webp',
+        areaCodes: ['2_6_3'],
+      },
+      {
+        path: 'poe1-act-06/05-tidal-island-4.webp',
+        areaCodes: ['2_6_3'],
+      },
+      {
+        path: 'poe1-act-06/05-tidal-island-5.webp',
+        areaCodes: ['2_6_3'],
+      },
+      {
+        path: 'poe1-act-06/05-tidal-island-6.webp',
+        areaCodes: ['2_6_3'],
+      },
+      {
+        path: 'poe1-act-06/05-tidal-island-7.webp',
+        areaCodes: ['2_6_3'],
+      },
+      {
+        path: 'poe1-act-06/05-tidal-island-8.webp',
+        areaCodes: ['2_6_3'],
+      },
+      {
+        path: 'poe1-act-06/06-ridge-1.webp',
+        areaCodes: ['2_6_6'],
+      },
+      {
+        path: 'poe1-act-06/06-ridge-2.webp',
+        areaCodes: ['2_6_6'],
+      },
+      {
+        path: 'poe1-act-06/07-lower-prison-1.webp',
+        areaCodes: ['2_6_7_1'],
+      },
+      {
+        path: 'poe1-act-06/07-lower-prison-2.webp',
+        areaCodes: ['2_6_7_1'],
+      },
+      {
+        path: 'poe1-act-06/07-lower-prison-3.webp',
+        areaCodes: ['2_6_7_1'],
+      },
+      {
+        path: 'poe1-act-06/07-lower-prison-4.webp',
+        areaCodes: ['2_6_7_1'],
+      },
+      {
+        path: 'poe1-act-06/07-lower-prison-5.webp',
+        areaCodes: ['2_6_7_1'],
+      },
+      {
+        path: 'poe1-act-06/07-lower-prison-6.webp',
+        areaCodes: ['2_6_7_1'],
+      },
+      {
+        path: 'poe1-act-06/08-shavronnes-tower-1.webp',
+        areaCodes: ['2_6_7_2'],
+      },
+      {
+        path: 'poe1-act-06/08-shavronnes-tower-2.webp',
+        areaCodes: ['2_6_7_2'],
+      },
+      {
+        path: 'poe1-act-06/08-shavronnes-tower-3.webp',
+        areaCodes: ['2_6_7_2'],
+      },
+      {
+        path: 'poe1-act-06/08-shavronnes-tower-4.webp',
+        areaCodes: ['2_6_7_2'],
+      },
+      {
+        path: 'poe1-act-06/08-shavronnes-tower-5.webp',
+        areaCodes: ['2_6_7_2'],
+      },
+      {
+        path: 'poe1-act-06/09-prisoners-gate-1.webp',
+        areaCodes: ['2_6_8'],
+      },
+      {
+        path: 'poe1-act-06/09-prisoners-gate-2.webp',
+        areaCodes: ['2_6_8'],
+      },
+      {
+        path: 'poe1-act-06/09-prisoners-gate-3.webp',
+        areaCodes: ['2_6_8'],
+      },
+      {
+        path: 'poe1-act-06/09-prisoners-gate-4.webp',
+        areaCodes: ['2_6_8'],
+      },
+      {
+        path: 'poe1-act-06/10-western-forest.webp',
+        areaCodes: ['2_6_9'],
+      },
+      {
+        path: 'poe1-act-06/11-riverways.webp',
+        areaCodes: ['2_6_10'],
+      },
+      {
+        path: 'poe1-act-06/12-wetlands-1.webp',
+        areaCodes: ['2_6_11'],
+      },
+      {
+        path: 'poe1-act-06/12-wetlands-2.webp',
+        areaCodes: ['2_6_11'],
+      },
+      {
+        path: 'poe1-act-06/12-wetlands-3.webp',
+        areaCodes: ['2_6_11'],
+      },
+      {
+        path: 'poe1-act-06/13-southern-forest.webp',
+        areaCodes: ['2_6_12'],
+      },
+      {
+        path: 'poe1-act-06/14-cavern-of-anger-1.webp',
+        areaCodes: ['2_6_13'],
+      },
+      {
+        path: 'poe1-act-06/14-cavern-of-anger-2.webp',
+        areaCodes: ['2_6_13'],
+      },
+      {
+        path: 'poe1-act-06/14-cavern-of-anger-3.webp',
+        areaCodes: ['2_6_13'],
+      },
+      {
+        path: 'poe1-act-06/15-beacon-1.webp',
+        areaCodes: ['2_6_14'],
+      },
+      {
+        path: 'poe1-act-06/15-beacon-2.webp',
+        areaCodes: ['2_6_14'],
+      },
+      {
+        path: 'poe1-act-06/16-brine-kings-reef-1.webp',
+        areaCodes: ['2_6_15'],
+      },
+      {
+        path: 'poe1-act-06/16-brine-kings-reef-2.webp',
+        areaCodes: ['2_6_15'],
+      },
+      {
+        path: 'poe1-act-06/16-brine-kings-reef-3.webp',
+        areaCodes: ['2_6_15'],
+      },
+    ],
+    poeVersion: 1,
+  },
+  {
+    slug: 'poe1-act-07',
+    name: 'Act 7',
+    images: [
+      {
+        path: 'poe1-act-07/01-broken-bridge-1.webp',
+        areaCodes: ['2_7_1'],
+      },
+      {
+        path: 'poe1-act-07/01-broken-bridge-2.webp',
+        areaCodes: ['2_7_1'],
+      },
+      {
+        path: 'poe1-act-07/01-broken-bridge-3.webp',
+        areaCodes: ['2_7_1'],
+      },
+      {
+        path: 'poe1-act-07/02-crossroads.webp',
+        areaCodes: ['2_7_2'],
+      },
+      {
+        path: 'poe1-act-07/03-fellshrine-ruins.webp',
+        areaCodes: ['2_7_3'],
+      },
+      {
+        path: 'poe1-act-07/04-crypt-1.webp',
+        areaCodes: ['2_7_4'],
+      },
+      {
+        path: 'poe1-act-07/04-crypt-2.webp',
+        areaCodes: ['2_7_4'],
+      },
+      {
+        path: 'poe1-act-07/04-crypt-3.webp',
+        areaCodes: ['2_7_4'],
+      },
+      {
+        path: 'poe1-act-07/04-crypt-4.webp',
+        areaCodes: ['2_7_4'],
+      },
+      {
+        path: 'poe1-act-07/04-crypt-5.webp',
+        areaCodes: ['2_7_4'],
+      },
+      {
+        path: 'poe1-act-07/05-chamber-of-sins-1.webp',
+        areaCodes: ['2_7_5_1'],
+      },
+      {
+        path: 'poe1-act-07/05-chamber-of-sins-2.webp',
+        areaCodes: ['2_7_5_1'],
+      },
+      {
+        path: 'poe1-act-07/05-chamber-of-sins-3.webp',
+        areaCodes: ['2_7_5_1'],
+      },
+      {
+        path: 'poe1-act-07/06-chamber-of-sins-2-1.webp',
+        areaCodes: ['2_7_5_2'],
+      },
+      {
+        path: 'poe1-act-07/06-chamber-of-sins-2-2.webp',
+        areaCodes: ['2_7_5_2'],
+      },
+      {
+        path: 'poe1-act-07/06-chamber-of-sins-2-3.webp',
+        areaCodes: ['2_7_5_2'],
+      },
+      {
+        path: 'poe1-act-07/06-chamber-of-sins-2-4.webp',
+        areaCodes: ['2_7_5_2'],
+      },
+      {
+        path: 'poe1-act-07/06-chamber-of-sins-2-5.webp',
+        areaCodes: ['2_7_5_2'],
+      },
+      {
+        path: 'poe1-act-07/06-chamber-of-sins-2-6.webp',
+        areaCodes: ['2_7_5_2'],
+      },
+      {
+        path: 'poe1-act-07/07-den-1.webp',
+        areaCodes: ['2_7_6'],
+      },
+      {
+        path: 'poe1-act-07/07-den-2.webp',
+        areaCodes: ['2_7_6'],
+      },
+      {
+        path: 'poe1-act-07/07-den-3.webp',
+        areaCodes: ['2_7_6'],
+      },
+      {
+        path: 'poe1-act-07/08-ashen-fields.webp',
+        areaCodes: ['2_7_7'],
+      },
+      {
+        path: 'poe1-act-07/09-northern-forest-1.webp',
+        areaCodes: ['2_7_8'],
+      },
+      {
+        path: 'poe1-act-07/09-northern-forest-2.webp',
+        areaCodes: ['2_7_8'],
+      },
+      {
+        path: 'poe1-act-07/09-northern-forest-3.webp',
+        areaCodes: ['2_7_8'],
+      },
+      {
+        path: 'poe1-act-07/09-northern-forest-4.webp',
+        areaCodes: ['2_7_8'],
+      },
+      {
+        path: 'poe1-act-07/10-causeway-1.webp',
+        areaCodes: ['2_7_10'],
+      },
+      {
+        path: 'poe1-act-07/10-causeway-2.webp',
+        areaCodes: ['2_7_10'],
+      },
+      {
+        path: 'poe1-act-07/10-causeway-3.webp',
+        areaCodes: ['2_7_10'],
+      },
+      {
+        path: 'poe1-act-07/11-vaal-city-1.webp',
+        areaCodes: ['2_7_11'],
+      },
+      {
+        path: 'poe1-act-07/11-vaal-city-2.webp',
+        areaCodes: ['2_7_11'],
+      },
+      {
+        path: 'poe1-act-07/11-vaal-city-3.webp',
+        areaCodes: ['2_7_11'],
+      },
+      {
+        path: 'poe1-act-07/11-vaal-city-4.webp',
+        areaCodes: ['2_7_11'],
+      },
+      {
+        path: 'poe1-act-07/12-temple-of-decay-1-1.webp',
+        areaCodes: ['2_7_12_1'],
+      },
+      {
+        path: 'poe1-act-07/12-temple-of-decay-1-2.webp',
+        areaCodes: ['2_7_12_1'],
+      },
+      {
+        path: 'poe1-act-07/12-temple-of-decay-1-3.webp',
+        areaCodes: ['2_7_12_1'],
+      },
+      {
+        path: 'poe1-act-07/12-temple-of-decay-1-4.webp',
+        areaCodes: ['2_7_12_1'],
+      },
+      {
+        path: 'poe1-act-07/13-temple-of-decay-2-1.webp',
+        areaCodes: ['2_7_12_2'],
+      },
+      {
+        path: 'poe1-act-07/13-temple-of-decay-2-2.webp',
+        areaCodes: ['2_7_12_2'],
+      },
+      {
+        path: 'poe1-act-07/13-temple-of-decay-2-3.webp',
+        areaCodes: ['2_7_12_2'],
+      },
+    ],
+    poeVersion: 1,
+  },
+  {
+    slug: 'poe1-act-08',
+    name: 'Act 8',
+    images: [
+      {
+        path: 'poe1-act-08/01-sarn-ramparts-1.webp',
+        areaCodes: ['2_8_1'],
+      },
+      {
+        path: 'poe1-act-08/01-sarn-ramparts-2.webp',
+        areaCodes: ['2_8_1'],
+      },
+      {
+        path: 'poe1-act-08/02-toxic-conduit-1.webp',
+        areaCodes: ['2_8_2_1'],
+      },
+      {
+        path: 'poe1-act-08/02-toxic-conduit-2.webp',
+        areaCodes: ['2_8_2_1'],
+      },
+      {
+        path: 'poe1-act-08/02-toxic-conduit-3.webp',
+        areaCodes: ['2_8_2_1'],
+      },
+      {
+        path: 'poe1-act-08/03-doedres-cespool-1.webp',
+        areaCodes: ['2_8_2_2'],
+      },
+      {
+        path: 'poe1-act-08/03-doedres-cespool-2.webp',
+        areaCodes: ['2_8_2_2'],
+      },
+      {
+        path: 'poe1-act-08/03-doedres-cespool-3.webp',
+        areaCodes: ['2_8_2_2'],
+      },
+      {
+        path: 'poe1-act-08/03-doedres-cespool-4.webp',
+        areaCodes: ['2_8_2_2'],
+      },
+      {
+        path: 'poe1-act-08/04-quay-1.webp',
+        areaCodes: ['2_8_8'],
+      },
+      {
+        path: 'poe1-act-08/04-quay-2.webp',
+        areaCodes: ['2_8_8'],
+      },
+      {
+        path: 'poe1-act-08/05-grain-gate-1.webp',
+        areaCodes: ['2_8_9'],
+      },
+      {
+        path: 'poe1-act-08/05-grain-gate-10.webp',
+        areaCodes: ['2_8_9'],
+      },
+      {
+        path: 'poe1-act-08/05-grain-gate-2.webp',
+        areaCodes: ['2_8_9'],
+      },
+      {
+        path: 'poe1-act-08/05-grain-gate-3.webp',
+        areaCodes: ['2_8_9'],
+      },
+      {
+        path: 'poe1-act-08/05-grain-gate-4.webp',
+        areaCodes: ['2_8_9'],
+      },
+      {
+        path: 'poe1-act-08/05-grain-gate-5.webp',
+        areaCodes: ['2_8_9'],
+      },
+      {
+        path: 'poe1-act-08/05-grain-gate-6.webp',
+        areaCodes: ['2_8_9'],
+      },
+      {
+        path: 'poe1-act-08/05-grain-gate-7.webp',
+        areaCodes: ['2_8_9'],
+      },
+      {
+        path: 'poe1-act-08/05-grain-gate-8.webp',
+        areaCodes: ['2_8_9'],
+      },
+      {
+        path: 'poe1-act-08/05-grain-gate-9.webp',
+        areaCodes: ['2_8_9'],
+      },
+      {
+        path: 'poe1-act-08/06-hidden-underbelly-1.webp',
+        areaCodes: ['2_8_14'],
+      },
+      {
+        path: 'poe1-act-08/06-hidden-underbelly-2.webp',
+        areaCodes: ['2_8_14'],
+      },
+      {
+        path: 'poe1-act-08/07-solaris-concourse-1.webp',
+        areaCodes: ['2_8_11'],
+      },
+      {
+        path: 'poe1-act-08/07-solaris-concourse-2.webp',
+        areaCodes: ['2_8_11'],
+      },
+      {
+        path: 'poe1-act-08/07-solaris-concourse-3.webp',
+        areaCodes: ['2_8_11'],
+      },
+      {
+        path: 'poe1-act-08/07-solaris-concourse-4.webp',
+        areaCodes: ['2_8_11'],
+      },
+      {
+        path: 'poe1-act-08/08-solaris-temple-1-1.webp',
+        areaCodes: ['2_8_12_1'],
+      },
+      {
+        path: 'poe1-act-08/08-solaris-temple-1-2.webp',
+        areaCodes: ['2_8_12_1'],
+      },
+      {
+        path: 'poe1-act-08/09-solaris-temple-2-1.webp',
+        areaCodes: ['2_8_12_2'],
+      },
+      {
+        path: 'poe1-act-08/09-solaris-temple-2-2.webp',
+        areaCodes: ['2_8_12_2'],
+      },
+      {
+        path: 'poe1-act-08/09-solaris-temple-2-3.webp',
+        areaCodes: ['2_8_12_2'],
+      },
+      {
+        path: 'poe1-act-08/09-solaris-temple-2-4.webp',
+        areaCodes: ['2_8_12_2'],
+      },
+      {
+        path: 'poe1-act-08/10-bathhouse-1.webp',
+        areaCodes: ['2_8_5'],
+      },
+      {
+        path: 'poe1-act-08/10-bathhouse-2.webp',
+        areaCodes: ['2_8_5'],
+      },
+      {
+        path: 'poe1-act-08/10-bathhouse-3.webp',
+        areaCodes: ['2_8_5'],
+      },
+      {
+        path: 'poe1-act-08/10-bathhouse-4.webp',
+        areaCodes: ['2_8_5'],
+      },
+      {
+        path: 'poe1-act-08/10-bathhouse-5.webp',
+        areaCodes: ['2_8_5'],
+      },
+      {
+        path: 'poe1-act-08/11-high-gardens.webp',
+        areaCodes: ['2_8_4'],
+      },
+      {
+        path: 'poe1-act-08/12-lunaris-concourse-1.webp',
+        areaCodes: ['2_8_6'],
+      },
+      {
+        path: 'poe1-act-08/12-lunaris-concourse-2.webp',
+        areaCodes: ['2_8_6'],
+      },
+      {
+        path: 'poe1-act-08/13-lunaris-temple-1-1.webp',
+        areaCodes: ['2_8_7_1'],
+      },
+      {
+        path: 'poe1-act-08/13-lunaris-temple-1-2.webp',
+        areaCodes: ['2_8_7_1'],
+      },
+      {
+        path: 'poe1-act-08/13-lunaris-temple-1-3.webp',
+        areaCodes: ['2_8_7_1'],
+      },
+      {
+        path: 'poe1-act-08/14-lunaris-temple-2-1.webp',
+        areaCodes: ['2_8_7_2'],
+      },
+      {
+        path: 'poe1-act-08/14-lunaris-temple-2-2.webp',
+        areaCodes: ['2_8_7_2'],
+      },
+      {
+        path: 'poe1-act-08/14-lunaris-temple-2-3.webp',
+        areaCodes: ['2_8_7_2'],
+      },
+      {
+        path: 'poe1-act-08/14-lunaris-temple-2-4.webp',
+        areaCodes: ['2_8_7_2'],
+      },
+      {
+        path: 'poe1-act-08/14-lunaris-temple-2-5.webp',
+        areaCodes: ['2_8_7_2'],
+      },
+      {
+        path: 'poe1-act-08/14-lunaris-temple-2-6.webp',
+        areaCodes: ['2_8_7_2'],
+      },
+      {
+        path: 'poe1-act-08/14-lunaris-temple-2-7.webp',
+        areaCodes: ['2_8_7_2'],
+      },
+      {
+        path: 'poe1-act-08/15-harbour-bridge.webp',
+        areaCodes: ['2_8_13'],
+      },
+    ],
+    poeVersion: 1,
+  },
+  {
+    slug: 'poe1-act-09',
+    name: 'Act 9',
+    images: [
+      {
+        path: 'poe1-act-09/01-blood-aqueduct.webp',
+        areaCodes: ['2_9_1'],
+      },
+      {
+        path: 'poe1-act-09/02-descent-1.webp',
+        areaCodes: ['2_9_2'],
+      },
+      {
+        path: 'poe1-act-09/02-descent-2.webp',
+        areaCodes: ['2_9_2'],
+      },
+      {
+        path: 'poe1-act-09/03-vastiri-desert-1.webp',
+        areaCodes: ['2_9_3'],
+      },
+      {
+        path: 'poe1-act-09/03-vastiri-desert-2.webp',
+        areaCodes: ['2_9_3'],
+      },
+      {
+        path: 'poe1-act-09/03-vastiri-desert-3.webp',
+        areaCodes: ['2_9_3'],
+      },
+      {
+        path: 'poe1-act-09/03-vastiri-desert-4.webp',
+        areaCodes: ['2_9_3'],
+      },
+      {
+        path: 'poe1-act-09/04-oasis-1.webp',
+        areaCodes: ['2_9_4'],
+      },
+      {
+        path: 'poe1-act-09/04-oasis-2.webp',
+        areaCodes: ['2_9_4'],
+      },
+      {
+        path: 'poe1-act-09/04-oasis-3.webp',
+        areaCodes: ['2_9_4'],
+      },
+      {
+        path: 'poe1-act-09/05-foothills.webp',
+        areaCodes: ['2_9_5'],
+      },
+      {
+        path: 'poe1-act-09/06-boiling-lake.webp',
+        areaCodes: ['2_9_6'],
+      },
+      {
+        path: 'poe1-act-09/07-tunnel-1.webp',
+        areaCodes: ['2_9_7'],
+      },
+      {
+        path: 'poe1-act-09/07-tunnel-2.webp',
+        areaCodes: ['2_9_7'],
+      },
+      {
+        path: 'poe1-act-09/07-tunnel-3.webp',
+        areaCodes: ['2_9_7'],
+      },
+      {
+        path: 'poe1-act-09/08-quarry-1.webp',
+        areaCodes: ['2_9_8'],
+      },
+      {
+        path: 'poe1-act-09/08-quarry-2.webp',
+        areaCodes: ['2_9_8'],
+      },
+      {
+        path: 'poe1-act-09/09-refinery-1.webp',
+        areaCodes: ['2_9_9'],
+      },
+      {
+        path: 'poe1-act-09/09-refinery-2.webp',
+        areaCodes: ['2_9_9'],
+      },
+      {
+        path: 'poe1-act-09/09-refinery-3.webp',
+        areaCodes: ['2_9_9'],
+      },
+      {
+        path: 'poe1-act-09/09-refinery-4.webp',
+        areaCodes: ['2_9_9'],
+      },
+      {
+        path: 'poe1-act-09/10-belly-of-the-beast-1.webp',
+        areaCodes: ['2_9_10_1'],
+      },
+      {
+        path: 'poe1-act-09/10-belly-of-the-beast-10.webp',
+        areaCodes: ['2_9_10_1'],
+      },
+      {
+        path: 'poe1-act-09/10-belly-of-the-beast-2.webp',
+        areaCodes: ['2_9_10_1'],
+      },
+      {
+        path: 'poe1-act-09/10-belly-of-the-beast-3.webp',
+        areaCodes: ['2_9_10_1'],
+      },
+      {
+        path: 'poe1-act-09/10-belly-of-the-beast-4.webp',
+        areaCodes: ['2_9_10_1'],
+      },
+      {
+        path: 'poe1-act-09/10-belly-of-the-beast-5.webp',
+        areaCodes: ['2_9_10_1'],
+      },
+      {
+        path: 'poe1-act-09/10-belly-of-the-beast-6.webp',
+        areaCodes: ['2_9_10_1'],
+      },
+      {
+        path: 'poe1-act-09/10-belly-of-the-beast-7.webp',
+        areaCodes: ['2_9_10_1'],
+      },
+      {
+        path: 'poe1-act-09/10-belly-of-the-beast-8.webp',
+        areaCodes: ['2_9_10_1'],
+      },
+      {
+        path: 'poe1-act-09/10-belly-of-the-beast-9.webp',
+        areaCodes: ['2_9_10_1'],
+      },
+      {
+        path: 'poe1-act-09/11-rotting-core-1.webp',
+        areaCodes: ['2_9_10_2'],
+      },
+      {
+        path: 'poe1-act-09/11-rotting-core-2.webp',
+        areaCodes: ['2_9_10_2'],
+      },
+      {
+        path: 'poe1-act-09/11-rotting-core-3.webp',
+        areaCodes: ['2_9_10_2'],
+      },
+      {
+        path: 'poe1-act-09/11-rotting-core-4.webp',
+        areaCodes: ['2_9_10_2'],
+      },
+    ],
+    poeVersion: 1,
+  },
+  {
+    slug: 'poe1-act-10',
+    name: 'Act 10',
+    images: [
+      {
+        path: 'poe1-act-10/01-cathedral-rooftop-1.webp',
+        areaCodes: ['2_10_1'],
+      },
+      {
+        path: 'poe1-act-10/01-cathedral-rooftop-2.webp',
+        areaCodes: ['2_10_1'],
+      },
+      {
+        path: 'poe1-act-10/02-ruined-square.webp',
+        areaCodes: ['2_10_2'],
+      },
+      {
+        path: 'poe1-act-10/03-torched-courts.webp',
+        areaCodes: ['2_10_3'],
+      },
+      {
+        path: 'poe1-act-10/04-desecrated-chambers-1.webp',
+        areaCodes: ['2_10_4'],
+      },
+      {
+        path: 'poe1-act-10/04-desecrated-chambers-2.webp',
+        areaCodes: ['2_10_4'],
+      },
+      {
+        path: 'poe1-act-10/05-control-blocks-1.webp',
+        areaCodes: ['2_10_7'],
+      },
+      {
+        path: 'poe1-act-10/05-control-blocks-2.webp',
+        areaCodes: ['2_10_7'],
+      },
+      {
+        path: 'poe1-act-10/05-control-blocks-3.webp',
+        areaCodes: ['2_10_7'],
+      },
+      {
+        path: 'poe1-act-10/06-ossuary-1.webp',
+        areaCodes: ['2_10_9'],
+      },
+      {
+        path: 'poe1-act-10/06-ossuary-2.webp',
+        areaCodes: ['2_10_9'],
+      },
+      {
+        path: 'poe1-act-10/06-ossuary-3.webp',
+        areaCodes: ['2_10_9'],
+      },
+      {
+        path: 'poe1-act-10/06-ossuary-4.webp',
+        areaCodes: ['2_10_9'],
+      },
+      {
+        path: 'poe1-act-10/07-canals-1.webp',
+        areaCodes: ['2_10_5'],
+      },
+      {
+        path: 'poe1-act-10/07-canals-2.webp',
+        areaCodes: ['2_10_5'],
+      },
+      {
+        path: 'poe1-act-10/07-canals-3.webp',
+        areaCodes: ['2_10_5'],
+      },
+      {
+        path: 'poe1-act-10/07-canals-4.webp',
+        areaCodes: ['2_10_5'],
+      },
+      {
+        path: 'poe1-act-10/07-canals-5.webp',
+        areaCodes: ['2_10_5'],
+      },
+      {
+        path: 'poe1-act-10/08-feeding-through.webp',
+        areaCodes: ['2_10_6'],
       },
     ],
     poeVersion: 1,

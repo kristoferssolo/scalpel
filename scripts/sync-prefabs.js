@@ -9,7 +9,8 @@
  *      -> pack: { name: 'Betrayal', images: [{ path: 'betrayal/aisling.png', areaCodes: [] }] }
  *
  * Area codes are sourced from optional _zones.json sidecars in each pack
- * directory. PoE2 packs are validated against src/shared/data/poe2-zones.json.
+ * directory. PoE1 packs are validated against src/shared/data/poe1-zones.json,
+ * PoE2 packs against src/shared/data/poe2-zones.json.
  *
  * Run manually: npm run sync-prefabs
  * The images directory is gitignored from the packaged build (electron-
@@ -22,14 +23,16 @@ const path = require('node:path')
 
 const PREFAB_DIR = path.join(__dirname, '..', 'cheat-sheet-prefabs')
 const OUTPUT_FILE = path.join(__dirname, '..', 'src', 'shared', 'data', 'cheat-sheet-prefabs.ts')
-const REGISTRY_FILE = path.join(__dirname, '..', 'src', 'shared', 'data', 'poe2-zones.json')
+const REGISTRY_FILES = {
+  1: path.join(__dirname, '..', 'src', 'shared', 'data', 'poe1-zones.json'),
+  2: path.join(__dirname, '..', 'src', 'shared', 'data', 'poe2-zones.json'),
+}
 
 const ALLOWED_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp'])
 
-const registry = require(REGISTRY_FILE)
-
-/** Build a Set of all valid area codes from the PoE2 zone registry. */
-function buildValidAreaCodes() {
+/** Build a Set of all valid area codes from a zone registry file. */
+function buildValidAreaCodes(registryFile) {
+  const registry = require(registryFile)
   const codes = new Set()
   for (const act of registry.zonesByAct) {
     for (const zone of act.zones) {
@@ -39,7 +42,10 @@ function buildValidAreaCodes() {
   return codes
 }
 
-const VALID_POE2_AREA_CODES = buildValidAreaCodes()
+const VALID_AREA_CODES = {
+  1: buildValidAreaCodes(REGISTRY_FILES[1]),
+  2: buildValidAreaCodes(REGISTRY_FILES[2]),
+}
 
 /** Convert a directory name like 'path-of-building' to 'Path Of Building'.
  *  For overrides, drop a `_name.txt` file inside the pack directory containing
@@ -88,7 +94,7 @@ function main() {
   for (const slug of slugs) {
     const packDir = path.join(PREFAB_DIR, slug)
     const poeVersion = packPoeVersion(packDir)
-    const isPoe2 = poeVersion === 2
+    const validCodes = poeVersion ? VALID_AREA_CODES[poeVersion] : undefined
 
     const imageFiles = fs
       .readdirSync(packDir)
@@ -107,11 +113,11 @@ function main() {
           console.error(`_zones.json in pack "${slug}" references missing file "${filename}"`)
           process.exit(1)
         }
-        if (isPoe2) {
+        if (validCodes) {
           for (const code of areaCodes) {
-            if (!VALID_POE2_AREA_CODES.has(code)) {
+            if (!validCodes.has(code)) {
               console.error(
-                `_zones.json in pack "${slug}" references unknown area code "${code}" (not in poe2-zones.json)`,
+                `_zones.json in pack "${slug}" references unknown area code "${code}" (not in poe${poeVersion}-zones.json)`,
               )
               process.exit(1)
             }
@@ -142,8 +148,8 @@ export interface PrefabPackImage {
   /** Repo-relative path under cheat-sheet-prefabs/. */
   path: string
   /** Area codes from Client.txt that this image's zone maps to. Empty when
-   *  the image has no zone metadata (PoE1 packs, or PoE2 packs lacking an
-   *  entry in their _zones.json sidecar). */
+   *  the image has no zone metadata (packs without a _zones.json sidecar,
+   *  or images lacking an entry in it). */
   areaCodes: string[]
 }
 

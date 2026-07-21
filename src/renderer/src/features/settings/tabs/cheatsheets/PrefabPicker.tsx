@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { CheatSheetCategory } from '@shared/types'
+import { DEFINITIV_GUIDE_URL } from '@shared/endpoints'
+import { m } from '@shared/paraglide/messages.js'
 import { usePoeVersion } from '@renderer/shared/poe-version-context'
 
 /** Lists the bundled starter packs (PREFAB_PACKS, scoped to the active PoE
@@ -67,6 +69,17 @@ export function PrefabPicker({
         ))}
       </div>
       {error && <div className="text-[10px] text-danger mt-1">{error}</div>}
+      {visible.some((p) => p.slug.startsWith('poe1-act-')) && (
+        <div className="text-[10px] text-text-dim mt-1">
+          {m.settings_cs_poe1_pack_credit()}{' '}
+          <button
+            onClick={() => window.api.openExternal(DEFINITIV_GUIDE_URL)}
+            className="underline bg-transparent border-0 p-0 text-text-dim cursor-pointer"
+          >
+            definitivguide.com
+          </button>
+        </div>
+      )}
     </section>
   )
 }

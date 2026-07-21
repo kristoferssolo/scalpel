@@ -81,6 +81,11 @@ export const KOFI_URL = 'https://ko-fi.com/scalpelpoe'
 export const CHEAT_SHEET_PREFAB_BASE_URL =
   'https://raw.githubusercontent.com/scalpelpoe/scalpel/main/cheat-sheet-prefabs/'
 
+/** Cyclon's Definitiv Guide - source of the PoE1 act starter-pack layout
+ *  images (used with permission). Linked from the attribution line under
+ *  the starter packs in Settings -> Sheets. */
+export const DEFINITIV_GUIDE_URL = 'https://www.definitivguide.com/'
+
 /** Runtime-fetched manifest of values that may change between releases (e.g.
  *  ninja league slugs). Fetched on app start; bundled copy in the repo root
  *  acts as the offline fallback. New leagues only need a push to main. */
