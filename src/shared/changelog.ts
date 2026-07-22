@@ -11,6 +11,8 @@ export const CHANGELOG: { version: string; notes: string[] }[] = [
       'Updated the PoE2 regex tools for the new league: tablet types and rare matching, bounded value matching, waystone revives and rarity, and vendor fixes.',
       'Added a Vendor tab to the PoE1 regex tool for finding socket, link, and color combos when shopping vendors.',
       'Added an Items tab to the PoE1 regex tool for matching rare mods on chosen item bases (ALL mods, ANY mod, or 1 Prefix + 1 Suffix).',
+      'Added PoE1 leveling starter packs to the cheat sheets: ready-made act-by-act zone layout maps (layouts by CyclonDefinitiv).',
+      'Added a simplified version of each act pack with per-zone tip cards, and split the starter pack picker into Complete, Simplified, and Other sections.',
       'Added a right-click "Set Learned Preference" menu on price-check rows to pin a filter on or off; pins survive Reset Learning.',
       '"Grants Skill" price-check rows now take part in learned defaults.',
       'Weapon price-check now defaults to Total DPS, with Physical and Elemental DPS off.',
