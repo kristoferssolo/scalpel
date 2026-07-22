@@ -1040,6 +1040,16 @@ describe('parseItemText', () => {
       expect(item.mirrored).toBe(true)
     })
 
+    it('detects Vestigial flag', () => {
+      const item = parseItemText(makeRing(['--------', 'Vestigial']))!
+      expect(item.vestigial).toBe(true)
+    })
+
+    it('a normal item is not vestigial', () => {
+      const item = parseItemText(makeRing([]))!
+      expect(item.vestigial).toBe(false)
+    })
+
     it('detects Fractured flag via (fractured) suffix', () => {
       const text = [
         'Item Class: Rings',

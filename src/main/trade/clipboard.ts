@@ -448,6 +448,9 @@ export function parseItemText(text: string): PoeItem | null {
   const transfigured = isGemClass && allLines.some((l) => l === 'Transfigured')
   const vaalGem = isGemClass && rarity === 'Gem' && allLines.some((l) => l.startsWith('Souls Per Use:'))
   const scourged = allLines.some((l) => l.includes('Scourge'))
+  // Vestigial uniques (3.27 Legion, replaces incubators). Marker line is the
+  // expected form; unverified against a real in-game item copy yet.
+  const vestigial = allLines.some((l) => l === 'Vestigial' || l === 'Vestigial Item')
   const zanaMemory = allLines.some((l) => l.toLowerCase().includes("originator's memories"))
   const implicitCount = allLines.filter((l) => l.endsWith('(implicit)')).length
 
@@ -665,6 +668,7 @@ export function parseItemText(text: string): PoeItem | null {
     blighted,
     uberBlighted,
     scourged,
+    vestigial,
     zanaMemory,
     implicitCount,
     gemLevel,
