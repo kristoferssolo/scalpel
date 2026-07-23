@@ -89,4 +89,11 @@ describe('pinned-zone gateShow', () => {
 
     expect(fakeOverlay.hide).toHaveBeenCalled()
   })
+
+  it('registers as a persistent overlay so Esc never dismisses it', async () => {
+    const { registerPinnedZoneOverlay } = await import('./pinned-zone')
+    registerPinnedZoneOverlay({ storedAnchor: () => undefined, onAnchorChanged: () => {} })
+
+    expect(fakeOverlay.setPersistOverOthers).toHaveBeenCalledWith(true)
+  })
 })

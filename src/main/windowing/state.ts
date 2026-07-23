@@ -26,6 +26,8 @@ export interface OverlayState {
   // any visible secondary" sweep (focus.ts); other hide sites that should
   // spare a persisting overlay must check it explicitly. Set and cleared by
   // the owner (the whiteboard sets it true in passthrough, false in edit).
+  // The pinned-zone overlay sets it true permanently at registration, since
+  // it has no edit/passthrough mode to toggle between.
   persistOverOthers: boolean
 }
 

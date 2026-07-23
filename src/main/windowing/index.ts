@@ -122,7 +122,8 @@ export interface SecondaryOverlay {
    *  instead of hiding it when another surface opens. Currently honored by the
    *  Esc "hide any visible secondary" sweep; other hide sites must check it
    *  explicitly. The owner sets/clears it - the whiteboard sets it true in
-   *  passthrough mode, false in edit. */
+   *  passthrough mode, false in edit; the pinned-zone overlay sets it true
+   *  permanently at registration. */
   setPersistOverOthers(value: boolean): void
   getPersistOverOthers(): boolean
   /** Set window bounds without triggering the anchor-persist callback that

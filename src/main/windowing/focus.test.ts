@@ -150,6 +150,27 @@ describe('hideFocusedOrAnyVisibleSecondaryOverlay - persistOverOthers', () => {
     expect(cs.win?.hide).toHaveBeenCalled()
     expect(wb.win?.hide).not.toHaveBeenCalled()
   })
+
+  it('does not hide a persistent overlay even when it is focused', () => {
+    const pz = fakeState({ visible: true, persist: true })
+    focusHolder.current = pz.win
+    overlays.set('pinned-zone', pz)
+    const hid = hideFocusedOrAnyVisibleSecondaryOverlay()
+    expect(hid).toBe(false)
+    expect(pz.win?.hide).not.toHaveBeenCalled()
+  })
+
+  it('focused persistent overlay falls through to hiding another visible non-persistent overlay', () => {
+    const pz = fakeState({ visible: true, persist: true })
+    const cs = fakeState({ visible: true, persist: false })
+    focusHolder.current = pz.win
+    overlays.set('pinned-zone', pz)
+    overlays.set('cheatsheet', cs)
+    const hid = hideFocusedOrAnyVisibleSecondaryOverlay()
+    expect(hid).toBe(true)
+    expect(cs.win?.hide).toHaveBeenCalled()
+    expect(pz.win?.hide).not.toHaveBeenCalled()
+  })
 })
 
 describe('restoreAllOnPoeFocus', () => {

@@ -38,6 +38,10 @@ export function registerPinnedZoneOverlay(deps: {
     onFirstShow: (win) => sendCurrentZoneTo(win),
     gateShow: () => rendererVisible,
   })
+  // The pinned zone map is a persistent pinned surface: Esc must never
+  // dismiss it (it would stay gone until the next zone change). It hides
+  // via unpinning, a no-match zone, or PoE blur - not the Esc sweep.
+  overlay.setPersistOverOthers(true)
   forwardZoneChangesTo(() => overlay?.getWindow() ?? null)
   return overlay
 }
