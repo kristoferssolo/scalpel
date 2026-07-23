@@ -287,6 +287,9 @@ export const api = {
     ipcRenderer.on('secondary-overlay-canvas:snap-ghost', handler)
     return () => ipcRenderer.removeListener('secondary-overlay-canvas:snap-ghost', handler)
   },
+  // Secondary-overlay pin (Esc exemption). Sender-resolved in main.
+  getOverlayPinned: (): Promise<boolean> => ipcRenderer.invoke('secondary-overlay:get-pinned'),
+  setOverlayPinned: (pinned: boolean): void => ipcRenderer.send('secondary-overlay:set-pinned', pinned),
   onCheatSheetPreview: (cb: (state: { src: string | null }) => void): (() => void) => {
     const handler = (_: Electron.IpcRendererEvent, state: { src: string | null }): void => cb(state)
     ipcRenderer.on('cheat-sheet-preview:render', handler)

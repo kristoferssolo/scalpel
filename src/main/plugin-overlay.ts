@@ -79,7 +79,7 @@ function fullGameAnchor(): OverlayAnchor {
  *  elements (e.g. value labels next to a menu). Reuses the same overlays-map key
  *  as registerPluginOverlay, so open/close/dispose work unchanged. */
 export function registerPluginAnnotationOverlay(pluginId: string): SecondaryOverlay {
-  return registerPluginOverlayInternal(pluginId, {
+  const overlay = registerPluginOverlayInternal(pluginId, {
     id: `plugin-overlay:${pluginId}`,
     htmlEntry: 'plugin-annotation-overlay.html',
     defaultAnchor: fullGameAnchor,
@@ -99,6 +99,11 @@ export function registerPluginAnnotationOverlay(pluginId: string): SecondaryOver
       })
     },
   })
+  // Click-through surface with no chrome and no close button - if the Esc
+  // sweep hid it, the user would have no visible way to bring it back. Same
+  // reasoning as the whiteboard's passthrough mode. Idempotent on re-register.
+  overlay.setPersistOverOthers(true)
+  return overlay
 }
 
 export function getPluginOverlay(pluginId: string): SecondaryOverlay | null {

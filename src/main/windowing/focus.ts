@@ -150,21 +150,21 @@ export function restoreAllOnPoeFocus(): void {
 /** Esc handling: hide the focused overlay if any, else any visible overlay.
  *  Returns true if an overlay was hidden so the caller can short-circuit (we
  *  don't want Esc to also dismiss the main overlay when a secondary was up).
- *  Overlays flagged `persistOverOthers` are exempt from both branches - they
- *  are pinned/persistent surfaces Esc must not dismiss, whether or not they
- *  currently hold focus.
+ *  Overlays flagged `persistOverOthers` or pinned by the user (`userPinned`)
+ *  are exempt from both branches - they are pinned/persistent surfaces Esc
+ *  must not dismiss, whether or not they currently hold focus.
  *  Called from the kernel-level Esc handler in hotkeys.ts. */
 export function hideFocusedOrAnyVisibleSecondaryOverlay(): boolean {
   const focused = BrowserWindow.getFocusedWindow()
   for (const state of overlays.values()) {
-    if (state.persistOverOthers) continue
+    if (state.persistOverOthers || state.userPinned) continue
     if (state.win && state.win === focused && state.win.isVisible()) {
       hideOverlayState(state)
       return true
     }
   }
   for (const state of overlays.values()) {
-    if (state.persistOverOthers) continue
+    if (state.persistOverOthers || state.userPinned) continue
     if (state.win && !state.win.isDestroyed() && state.win.isVisible()) {
       hideOverlayState(state)
       return true

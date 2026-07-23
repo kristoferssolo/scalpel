@@ -3,6 +3,7 @@ import { OverlayController } from 'electron-overlay-window'
 import { uIOhook } from 'uiohook-napi'
 import { guardNativeListener } from '../diagnostics'
 import { hideAllOnPoeBlur, isAnyScalpelWindowFocused } from './focus'
+import { seedUserPinned } from './pin'
 import { prewarmSnapCanvas, type Rect, setSnapGhost } from './snap-canvas'
 import { fireOnLeaveScalpel, type OverlayState, overlays } from './state'
 import { createOverlayWindow } from './window'
@@ -19,6 +20,7 @@ export {
   isSecondaryOverlayWindow,
   restoreAllOnPoeFocus,
 } from './focus'
+export { getOverlayPinnedForWebContents, setOverlayPinnedForWebContents } from './pin'
 export { prewarmSnapCanvas, setSnapGhost } from './snap-canvas'
 export { registerAuxiliaryScalpelWindow, registerOnPoeLeave, setMainOverlayGetter, setOnLeaveScalpel } from './state'
 // Public re-exports - this module is the public face of the windowing system.
@@ -288,7 +290,9 @@ export function registerSecondaryOverlay(spec: OverlaySpec): SecondaryOverlay {
     isResizing: false,
     wasVisibleBeforeFocusLoss: false,
     persistOverOthers: false,
+    userPinned: false,
   }
+  seedUserPinned(state)
   overlays.set(spec.id, state)
   return makeOverlayApi(state)
 }

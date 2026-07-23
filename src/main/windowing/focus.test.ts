@@ -39,6 +39,7 @@ function fakeState(opts: {
   wasVisible?: boolean
   persist?: boolean
   gateShow?: () => boolean
+  userPinned?: boolean
 }): OverlayState {
   return {
     spec: { gateShow: opts.gateShow } as unknown as OverlayState['spec'],
@@ -55,6 +56,7 @@ function fakeState(opts: {
     isResizing: false,
     wasVisibleBeforeFocusLoss: opts.wasVisible ?? false,
     persistOverOthers: opts.persist ?? false,
+    userPinned: opts.userPinned ?? false,
   }
 }
 
@@ -94,6 +96,7 @@ describe('closeAllOverlaysOnPoeExit', () => {
       isResizing: false,
       wasVisibleBeforeFocusLoss: true,
       persistOverOthers: false,
+      userPinned: false,
     }
     overlays.set('destroyed', destroyed)
 
@@ -111,6 +114,7 @@ describe('closeAllOverlaysOnPoeExit', () => {
       isResizing: false,
       wasVisibleBeforeFocusLoss: true,
       persistOverOthers: false,
+      userPinned: false,
     }
     overlays.set('nowin', noWin)
 
@@ -170,6 +174,34 @@ describe('hideFocusedOrAnyVisibleSecondaryOverlay - persistOverOthers', () => {
     expect(hid).toBe(true)
     expect(cs.win?.hide).toHaveBeenCalled()
     expect(pz.win?.hide).not.toHaveBeenCalled()
+  })
+
+  it('does not hide a user-pinned overlay via the any-visible sweep', () => {
+    const pinned = fakeState({ visible: true, userPinned: true })
+    overlays.set('pinned', pinned)
+    const hid = hideFocusedOrAnyVisibleSecondaryOverlay()
+    expect(hid).toBe(false)
+    expect(pinned.win?.hide).not.toHaveBeenCalled()
+  })
+
+  it('does not hide a user-pinned overlay even when it is focused', () => {
+    const pinned = fakeState({ visible: true, userPinned: true })
+    focusHolder.current = pinned.win
+    overlays.set('pinned', pinned)
+    const hid = hideFocusedOrAnyVisibleSecondaryOverlay()
+    expect(hid).toBe(false)
+    expect(pinned.win?.hide).not.toHaveBeenCalled()
+  })
+
+  it('user-pinned overlay falls through to hiding a non-pinned overlay', () => {
+    const pinned = fakeState({ visible: true, userPinned: true })
+    const plain = fakeState({ visible: true })
+    overlays.set('pinned', pinned)
+    overlays.set('plain', plain)
+    const hid = hideFocusedOrAnyVisibleSecondaryOverlay()
+    expect(hid).toBe(true)
+    expect(plain.win?.hide).toHaveBeenCalled()
+    expect(pinned.win?.hide).not.toHaveBeenCalled()
   })
 })
 
