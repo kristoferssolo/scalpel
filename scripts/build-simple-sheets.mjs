@@ -20,6 +20,7 @@ import sharp from 'sharp'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const READS_FILE = path.join(__dirname, 'simple-sheet-reads.json')
 const PREFAB_DIR = path.join(__dirname, '..', 'cheat-sheet-prefabs')
+const LAYOUT_DIR = path.join(__dirname, 'simple-sheet-layouts')
 
 // Card layout constants (px).
 const WIDTH = 1000
@@ -83,7 +84,35 @@ function renderCard(act, index, zone) {
     `<text x="${WIDTH - PAD}" y="${height - 18}" font-size="15" fill="${COLORS.credit}" text-anchor="end">Zone reads by CyclonDefinitiv - definitivguide.com</text>`,
   )
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${height}" font-family="Segoe UI, Arial, sans-serif">${parts.join('')}</svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${height}" font-family="Segoe UI, Arial, sans-serif">${parts.join('')}</svg>`
+  return { svg, height }
+}
+
+/** Write one zone card: the text strip alone (q90, byte-compatible with the
+ *  previous cards), or strip + layout map stacked vertically (q82 - photo
+ *  content) when the zone has a chosen layout image. */
+async function writeZoneCard(act, index, zone, outFile) {
+  const { svg, height: stripHeight } = renderCard(act, index, zone)
+  const stripPng = await sharp(Buffer.from(svg)).png().toBuffer()
+  const layoutPath = zone.layout
+    ? path.join(LAYOUT_DIR, `act-${String(act).padStart(2, '0')}`, zone.layout)
+    : null
+  if (!layoutPath || !fs.existsSync(layoutPath)) {
+    if (zone.layout) console.warn(`  act ${act} ${zone.name}: layout ${zone.layout} not found - text-only card`)
+    await sharp(stripPng).webp({ quality: 90 }).toFile(outFile)
+    return
+  }
+  const map = await sharp(layoutPath).resize({ width: WIDTH }).png().toBuffer()
+  const mapHeight = (await sharp(map).metadata()).height
+  await sharp({
+    create: { width: WIDTH, height: stripHeight + mapHeight, channels: 3, background: COLORS.bg },
+  })
+    .composite([
+      { input: stripPng, top: 0, left: 0 },
+      { input: map, top: stripHeight, left: 0 },
+    ])
+    .webp({ quality: 82 })
+    .toFile(outFile)
 }
 
 const kebab = (s) =>
@@ -110,8 +139,7 @@ async function main() {
       if (!zone.tip) continue
       index++
       const name = `${String(index).padStart(2, '0')}-${kebab(zone.name)}.webp`
-      const svg = renderCard(act, index, zone)
-      await sharp(Buffer.from(svg)).webp({ quality: 90 }).toFile(path.join(dir, name))
+      await writeZoneCard(act, index, zone, path.join(dir, name))
       zonesJson[name] = zone.codes
     }
     const lines = Object.entries(zonesJson).map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v)}`)
