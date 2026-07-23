@@ -1,5 +1,14 @@
 export const CHANGELOG: { version: string; notes: string[] }[] = [
   {
+    version: '1.0.0',
+    notes: [
+      'Updated PoE1 data for the 3.27 league: new base types, renames, and support for the new "Vestigial" filter condition.',
+      'Added a pin toggle to overlay window headers; pinned windows stay open when Esc dismisses the overlay, and the choice is remembered.',
+      'Merged the PoE1 leveling packs: each zone tip card now shows its layout map and tips together, replacing the separate Complete and Simplified packs.',
+      'Fixed pressing Esc also closing the pinned zone map.',
+    ],
+  },
+  {
     version: '0.9.17',
     notes: [
       'Added a live mirror whiteboard element that pins a region of the game window and shows it in real time, with your placement persisted between sessions.',
