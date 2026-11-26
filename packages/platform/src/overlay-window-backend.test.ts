@@ -1,5 +1,6 @@
 import type { BrowserWindow } from 'electron'
 import { beforeEach, expect, it, vi } from 'vitest'
+import type { X11OverlayIntegration } from './linux/common/layer-shell/adapter'
 import { __resetLinuxGameDisplayModeForTests, getLinuxGameDisplayModeStatus } from './linux/common/game-display-mode'
 
 const mock = vi.hoisted(() => ({
@@ -70,6 +71,21 @@ it('links an X11 overlay to the current game but no other native overlay', () =>
   mock.link.mockClear()
   createOverlayWindowBackend('windows').windowTracker.beforeOverlayShow(win, 'Path of Exile 2')
   expect(mock.link).not.toHaveBeenCalled()
+})
+
+it('lets the desktop adapter style mapped X11 overlay windows', () => {
+  const on = vi.fn()
+  const x11Overlay: X11OverlayIntegration = { prepare: vi.fn() }
+  const target = { on } as unknown as BrowserWindow
+  createOverlayWindowBackend('x11', x11Overlay).windowTracker.adoptOverlay(target)
+  const show = on.mock.calls.find(([event]) => event === 'show')?.[1] as (() => void) | undefined
+  expect(show).toBeTypeOf('function')
+  show?.()
+  expect(x11Overlay.prepare).toHaveBeenCalledWith(target)
+
+  on.mockClear()
+  createOverlayWindowBackend('windows', x11Overlay).windowTracker.adoptOverlay(target)
+  expect(on).not.toHaveBeenCalled()
 })
 
 it('keeps the overlay usable when native binding fails', () => {

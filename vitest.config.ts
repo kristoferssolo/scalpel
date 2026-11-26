@@ -23,7 +23,7 @@ export default defineConfig({
       'packages/stream-viewer/src/**/*.test.ts',
       'packages/stream-viewer/src/**/*.test.tsx',
     ],
-    exclude: ['node_modules', 'out', 'dist'],
+    exclude: ['node_modules', 'out', 'dist', '**/.inactive-old/**'],
     passWithNoTests: true,
     environmentMatchGlobs: [
       ['src/renderer/**/*.test.tsx', 'jsdom'],

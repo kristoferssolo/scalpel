@@ -20,8 +20,7 @@ packages/platform/src/
     settings-rules*.ts       editable defaults + compatibility rules
     common/                  Linux-wide mechanisms; never imports a desktop
     desktops/                desktop adapters, registry and geometry providers
-      index.ts               registry: adapters, providers, defaults, game mode, backends
-      backend-policy.ts      desktop-specific backend gates (Hyprland version)
+      index.ts               registry: adapters, providers, defaults and game mode
       kde-plasma/ niri/ sway/ umbriel/ hyprland/
   ms-windows/                Windows admin check, cursor warp, DIP conversion
 ```
@@ -37,18 +36,17 @@ relative paths.
 
 ## Backends
 
-`selectBackend` picks one backend per process; `platform()` resolves it lazily.
-Boot-registered native overlay wins over the router, and regular-window mode
-wins over both.
+`selectBackend` picks the OS/overlay fallback per process; `platform()` resolves
+it lazily. Boot-registered native overlay wins over the router, and
+regular-window mode wins over both.
 
 | Backend | Used for | Traits | Window tracking | Capture |
 | --- | --- | --- | --- | --- |
 | `windows` | Windows | | electron-overlay-window | `desktopCapturer` |
 | `macos` | macOS | | electron-overlay-window | `desktopCapturer` |
 | `x11` | X11 / XWayland | | electron-overlay-window | `desktopCapturer` |
-| `layer-shell` | native Wayland (wlr layer-shell) | `compositorFocus` | foreign toplevels + adapter geometry | wlr-screencopy |
+| `layer-shell` | native Wayland (wlr layer-shell): Niri, Sway, Umbriel, Hyprland | `compositorFocus` | foreign toplevels + adapter geometry | wlr-screencopy |
 | `kwin-layer-shell` | KDE Plasma Wayland | `compositorFocus` | KWin DBus scripting bridge | none |
-| `hyprland` | Hyprland ≥ 0.56 | `compositorFocus` | `hyprctl` + event socket | `grim` |
 | `window` | regular-window mode | `windowLocal` | electron-overlay-window / Wayland host | Electron |
 
 `compositorFocus` means the compositor owns focus and stacking: hide overlays by
@@ -145,9 +143,10 @@ The registry returns a `LinuxDesktopAdapter`:
   only contributes geometry.
 
 KWin is the only adapter with a custom tracker, input path and probe
-requirements today. Niri, Sway and Umbriel contribute geometry providers; Niri
-also sets `evdev` as its Auto shortcut default, and Hyprland supplies the
-game-mode probe.
+requirements today. Niri, Sway, Umbriel and Hyprland contribute geometry
+providers; Niri also sets `evdev` as its Auto shortcut default, and Hyprland
+supplies the game-mode probe, reads its clients from `hyprctl`, and decorates
+the shared X11 overlay fallback.
 
 ## Input, shortcuts, clipboard
 
@@ -213,9 +212,12 @@ external dependency.
 
 - Windows code is preserved under `ms-windows/` and macOS uses the generic
   overlay backend, but neither was tested on this branch.
-- The Hyprland backend under `linux/desktops/hyprland/` is the one from
-  `main`, moved without changes; it needs `grim` and has not been revalidated
-  on this branch.
+- Hyprland uses the shared native-Wayland layer-shell backend with `hyprctl`
+  geometry and XWayland mode probes; there is no bespoke XWayland overlay
+  backend anymore. Its X11 fallback also applies `no_blur`/decoration
+  properties to Scalpel's transparent overlay automatically, so no local
+  Hyprland window rules are required. The previous backend remains archived
+  under `linux/desktops/hyprland/.inactive-old/` for reference.
 - GNOME, COSMIC, XFCE and other non-layer-shell desktops use X11/XWayland or
   regular-window mode; they do not get the native overlay.
 - Native layer-shell overlays do not support interactive child popups (native

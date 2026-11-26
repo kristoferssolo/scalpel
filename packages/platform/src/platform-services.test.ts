@@ -1,14 +1,13 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 const mock = vi.hoisted(() => ({
-  version: vi.fn(() => '{"tag":"v0.56.0"}'),
   controller: { events: { on: vi.fn() } },
   electronReadText: vi.fn(() => 'electron clipboard'),
   backendReadText: vi.fn(() => 'backend clipboard'),
   services: vi.fn(() => null as { clipboard: { readText: () => string } } | null),
 }))
 
-vi.mock('node:child_process', () => ({ execFile: vi.fn(), execFileSync: mock.version }))
+vi.mock('node:child_process', () => ({ execFile: vi.fn(), execFileSync: vi.fn() }))
 vi.mock('electron-overlay-window', () => ({ OverlayController: mock.controller }))
 vi.mock('./common/electron', () => ({
   electronClipboard: { readText: mock.electronReadText },
@@ -17,14 +16,6 @@ vi.mock('./common/electron', () => ({
 vi.mock('./common/input', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./common/input')>()),
   uiohookInput: {},
-}))
-vi.mock('./linux/desktops/hyprland/backend', () => ({
-  createHyprlandBackend: () => ({
-    traits: {},
-    cursor: {},
-    capture: {},
-    services: mock.services() ?? undefined,
-  }),
 }))
 vi.mock('./overlay-window-backend', () => ({
   createOverlayWindowBackend: () => ({
@@ -55,9 +46,9 @@ it('uses shared services and selects a backend only when a service is called', a
   const { clipboard, input, shortcuts } = platform()
   expect(input).toBeDefined()
   expect(shortcuts).toBeDefined()
-  expect(mock.version).not.toHaveBeenCalled()
+  expect(mock.electronReadText).not.toHaveBeenCalled()
   expect(clipboard.readText()).toBe('electron clipboard')
-  expect(mock.version).toHaveBeenCalledOnce()
+  expect(mock.electronReadText).toHaveBeenCalledOnce()
 })
 
 it('uses a service supplied by the selected backend', async () => {

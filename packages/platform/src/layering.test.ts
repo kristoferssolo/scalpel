@@ -19,8 +19,10 @@ const SPEC_RE = /(?:\bfrom\s+|\bimport\s*\(\s*|\bimport\s+)(['"])([^'"]+)\1/g
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(join(SRC, dir), { withFileTypes: true })) {
     const rel = dir ? `${dir}/${entry.name}` : entry.name
-    if (entry.isDirectory()) walk(rel, out)
-    else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts') && !entry.name.endsWith('.d.ts')) {
+    if (entry.isDirectory()) {
+      if (entry.name === '.inactive-old') continue
+      walk(rel, out)
+    } else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts') && !entry.name.endsWith('.d.ts')) {
       out.push(rel)
     }
   }
@@ -82,7 +84,7 @@ describe('platform layering', () => {
   })
 
   it('lets top-level modules reach desktops only through the registry', () => {
-    const allowed = new Set(['linux/desktops', 'linux/desktops/index', 'linux/desktops/backend-policy'])
+    const allowed = new Set(['linux/desktops', 'linux/desktops/index'])
     const violations = edges
       .filter(
         ({ fileRel, target }) => !fileRel.includes('/') && target.startsWith('linux/desktops/') && !allowed.has(target),

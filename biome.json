@@ -12,7 +12,8 @@
       "tests/**/*.ts",
       "playwright.electron.config.ts",
       "!src/shared/data/regex/vendor",
-      "!src/shared/paraglide"
+      "!src/shared/paraglide",
+      "!packages/platform/**/.inactive-old/**"
     ]
   },
   "formatter": {

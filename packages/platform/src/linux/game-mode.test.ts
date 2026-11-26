@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { PlatformEnv } from '../types'
 import { detectPlatformGameMode, gameModeFromClients } from './game-mode'
-import type { HyprClient } from './desktops/hyprland/policy'
+import type { HyprlandClient } from './desktops/hyprland/ipc'
 
-const client = (title: string, xwayland?: boolean): HyprClient => ({
+const client = (title: string, xwayland?: boolean): HyprlandClient & { title: string } => ({
   address: '0x1',
   pid: 1,
   title,

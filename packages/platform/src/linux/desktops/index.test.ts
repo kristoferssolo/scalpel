@@ -27,6 +27,7 @@ describe('linux desktop adapter registry', () => {
   it('contributes compositor geometry for tiling desktops', () => {
     expect(providerIds(linuxDesktopAdapter('sway'))).toEqual(['sway', 'umbriel'])
     expect(providerIds(linuxDesktopAdapter('niri'))).toEqual(['niri', 'umbriel'])
+    expect(providerIds(linuxDesktopAdapter('hyprland'))).toEqual(['hyprland', 'umbriel'])
     expect(providerIds(linuxDesktopAdapter('umbriel'))).toEqual(['umbriel'])
   })
 
@@ -52,9 +53,12 @@ describe('linux desktop adapter registry', () => {
       shortcutBackend: 'evdev',
     })
     expect(linuxDesktopAdapter('sway').defaults).toEqual({ windowingMode: 'layer-shell' })
+    expect(linuxDesktopAdapter('hyprland').defaults).toEqual({ windowingMode: 'layer-shell' })
     expect(linuxDesktopAdapter('kde-plasma').defaults).toEqual({ windowingMode: 'layer-shell' })
     expect(linuxDesktopAdapter(undefined).defaults).toBeUndefined()
     expect(linuxDesktopAdapter('hyprland').detectGameMode).toBeTypeOf('function')
+    expect(linuxDesktopAdapter('hyprland').x11Overlay).toBeDefined()
+    expect(linuxDesktopAdapter('sway').x11Overlay).toBeUndefined()
     expect(linuxDesktopAdapter('niri').detectGameMode).toBeUndefined()
   })
 })

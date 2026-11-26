@@ -1,7 +1,7 @@
 import type { BrowserWindow, BrowserWindowConstructorOptions, NativeImage, Point, Rectangle } from 'electron'
 
 /** The desktop integration selected for this process. */
-export type BackendId = 'windows' | 'macos' | 'x11' | 'window' | 'hyprland' | 'layer-shell' | 'kwin-layer-shell'
+export type BackendId = 'windows' | 'macos' | 'x11' | 'window' | 'layer-shell' | 'kwin-layer-shell'
 
 /** A compositor proven to be running from runtime facts (socket or CLI), used
  *  when the environment does not name the desktop. */

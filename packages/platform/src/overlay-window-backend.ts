@@ -1,6 +1,7 @@
 import { type BrowserWindow, screen } from 'electron'
 import { OVERLAY_WINDOW_OPTS, OverlayController } from 'electron-overlay-window'
 import { reportLinuxGameDisplayMode } from './linux/common/game-display-mode'
+import type { X11OverlayIntegration } from './linux/common/layer-shell/adapter'
 import { x11ScreenDip } from './linux/common/x11-xwayland/dip'
 import { linkX11Transient } from './linux/common/x11-xwayland/transient'
 import { windowsScreenDip } from './ms-windows/dip'
@@ -16,8 +17,10 @@ export type OverlayWindowBackendId = 'windows' | 'macos' | 'x11'
 
 /** electron-overlay-window's native tracker with Electron capture. OS-only
  *  details are supplied by the per-OS modules so this shared backend has no
- *  platform API of its own. Cursor warping is implemented on Windows only. */
-export function createOverlayWindowBackend(id: OverlayWindowBackendId): Backend {
+ *  platform API of its own. Cursor warping is implemented on Windows only.
+ *  `x11Overlay` is an optional desktop adapter hook for compositor-side
+ *  decorations on the shared transparent X11/XWayland window. */
+export function createOverlayWindowBackend(id: OverlayWindowBackendId, x11Overlay?: X11OverlayIntegration): Backend {
   const dip: ScreenDip = id === 'windows' ? windowsScreenDip : id === 'x11' ? x11ScreenDip : identityScreenDip
 
   const windowTracker = controllerTracker({
@@ -30,7 +33,17 @@ export function createOverlayWindowBackend(id: OverlayWindowBackendId): Backend 
     focusOverlay: (win) => win.focus(),
     inputAllowed: () => true,
     overlayWindowOptions: () => ({ ...OVERLAY_WINDOW_OPTS }),
-    adoptOverlay: () => {},
+    adoptOverlay: (win) => {
+      if (id !== 'x11' || !x11Overlay) return
+      // The native window can only be styled after the compositor maps it.
+      win.on('show', () => {
+        try {
+          x11Overlay.prepare(win)
+        } catch {
+          // Decorations are best-effort and must never stop the overlay.
+        }
+      })
+    },
     beforeOverlayShow: (win, gameTitle) => {
       if (id !== 'x11') return
       try {

@@ -1,17 +1,24 @@
-import type { CompositorWindowInfo, PlatformEnv } from '@platform/types'
+import { detectDesktopEnvironment } from '@platform/select'
+import type { PlatformEnv } from '@platform/types'
 import { readHyprlandClients } from './ipc'
 
 export type PlatformGameMode = 'x11' | 'wayland'
 
-type ReadClients = () => readonly CompositorWindowInfo[]
+/** Minimal client facts the Hyprland probe needs; `hyprctl` may omit them. */
+export interface HyprlandGameClient {
+  readonly title?: string
+  readonly xwayland?: boolean
+}
 
-/** Pure matching helper so tests and future compositors can reuse the policy. */
+type ReadClients = () => readonly HyprlandGameClient[]
+
+/** Pure matching helper so tests can exercise the policy without a compositor. */
 export function gameModeFromClients(
-  clients: readonly CompositorWindowInfo[],
+  clients: readonly HyprlandGameClient[],
   titles: readonly string[],
 ): PlatformGameMode | null {
   const wanted = titles.map((title) => title.toLowerCase())
-  const game = clients.find((client) => wanted.includes(client.title.toLowerCase()))
+  const game = clients.find((client) => wanted.includes((client.title ?? '').toLowerCase()))
   if (!game || typeof game.xwayland !== 'boolean') return null
   return game.xwayland ? 'x11' : 'wayland'
 }
@@ -24,9 +31,9 @@ export function gameModeFromClients(
 export function detectHyprlandGameMode(
   titles: readonly string[],
   env: PlatformEnv,
-  readClients: ReadClients = readHyprlandClients,
+  readClients: ReadClients = () => readHyprlandClients(env.env),
 ): PlatformGameMode | null {
-  if (!env.env.HYPRLAND_INSTANCE_SIGNATURE) return null
+  if (!env.env.HYPRLAND_INSTANCE_SIGNATURE && detectDesktopEnvironment(env) !== 'hyprland') return null
   try {
     return gameModeFromClients(readClients(), titles)
   } catch {

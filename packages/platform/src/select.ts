@@ -7,7 +7,6 @@ import {
   ozoneModeFromArgs,
   toLinuxDisplayMode,
 } from './linux/common/display'
-import { linuxBackendSupport } from './linux/desktops/backend-policy'
 import type { BackendId, PlatformEnv, RuntimeDesktop } from './types'
 
 export type OperatingSystem = 'windows' | 'macos' | 'linux' | 'unknown'
@@ -182,17 +181,12 @@ export function relaunchArgs(env: PlatformEnv, savedMode?: unknown): string[] | 
   return ozoneArgsForMode(env.argv.slice(1), desired)
 }
 
-/** Picks the backend for this process. `hyprlandVersion` returns
- *  `hyprctl -j version` output and is only called inside a Hyprland session.
- *  Desktop-specific gates (for example Hyprland's minimum release) live behind
- *  the desktop registry; everything else keeps the X11 tracker. */
-export function selectBackend(
-  env: PlatformEnv,
-  hyprlandVersion: () => string,
-): Exclude<BackendId, 'layer-shell' | 'kwin-layer-shell' | 'window'> {
+/** Picks the backend for this process. Desktop-specific backends register
+ *  during boot; this router only chooses the OS/overlay fallback. */
+export function selectBackend(env: PlatformEnv): Exclude<BackendId, 'layer-shell' | 'kwin-layer-shell' | 'window'> {
   const os = detectOperatingSystem(env)
   if (os === 'windows') return 'windows'
   if (os === 'macos') return 'macos'
   if (os !== 'linux') return 'x11'
-  return linuxBackendSupport(detectDesktopEnvironment(env), hyprlandVersion) ?? 'x11'
+  return 'x11'
 }

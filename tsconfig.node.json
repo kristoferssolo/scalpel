@@ -29,5 +29,5 @@
     "src/renderer/src/env.d.ts",
     "electron.vite.config.ts"
   ],
-  "exclude": ["src/plugin-sdk/dist/**", "src/plugin-sdk/node_modules/**", "src/shared/data/filter/filter-actions.ts"]
+  "exclude": ["src/plugin-sdk/dist/**", "src/plugin-sdk/node_modules/**", "src/shared/data/filter/filter-actions.ts", "packages/platform/src/**/.inactive-old/**"]
 }

@@ -55,7 +55,7 @@ const MAX_RELATIVE_DEPTH = 2
 // Skipped trees: generated (paraglide), vendored regex data, and the plugin-sdk
 // - a separately-published package with its own build that does not know the
 // monorepo aliases, so its imports must stay relative.
-const SKIP_DIRS = new Set(['paraglide', 'node_modules', 'plugin-sdk', 'vendor'])
+const SKIP_DIRS = new Set(['paraglide', 'node_modules', 'plugin-sdk', 'vendor', '.inactive-old'])
 
 /** Area that an `src/...`-relative posix path belongs to, or 'other'. */
 export function areaOf(relPath) {

@@ -806,7 +806,14 @@ export function hideOverlay(): void {
   // The window tracker manages window visibility and would re-show it, causing flicker)
   overlayWindow.webContents.send('overlay-hide')
   if (overlayBoundsAreLogical()) applyLayerInputRects(overlayWindow)
-  if (!traits.compositorFocus && !traits.windowLocal) windowTracker.focusTarget()
+  if (!traits.compositorFocus && !traits.windowLocal) {
+    windowTracker.focusTarget()
+    // On Linux the X11 overlay is a transparent top-level window. Leaving it
+    // mapped after close makes compositors keep compositing (and often
+    // blurring/dimming) the game behind an invisible surface. Unmap the native
+    // window instead; the BrowserWindow object stays alive for the next show.
+    if (process.platform === 'linux') unmapMainOverlay?.()
+  }
   overlayVisibilityListener?.(false)
 }
 

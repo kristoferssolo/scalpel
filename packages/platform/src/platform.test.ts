@@ -1,20 +1,11 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 const mock = vi.hoisted(() => ({
-  version: vi.fn(() => '{"tag":"v0.56.0"}'),
   elevation: vi.fn(),
-  hyprland: { warpTo: vi.fn(), capture: vi.fn(), compositorFocus: true },
   overlayWindow: { warpTo: vi.fn(), capture: vi.fn(), compositorFocus: false },
   controller: { events: { on: vi.fn() }, targetHasFocus: true },
 }))
-vi.mock('node:child_process', () => ({ execFile: vi.fn(), execFileSync: mock.version, execSync: mock.elevation }))
+vi.mock('node:child_process', () => ({ execFile: vi.fn(), execFileSync: vi.fn(), execSync: mock.elevation }))
 vi.mock('electron-overlay-window', () => ({ OverlayController: mock.controller }))
-vi.mock('./linux/desktops/hyprland/backend', () => ({
-  createHyprlandBackend: () => ({
-    traits: { compositorFocus: mock.hyprland.compositorFocus },
-    cursor: { warpTo: mock.hyprland.warpTo },
-    capture: { captureGame: mock.hyprland.capture },
-  }),
-}))
 vi.mock('./overlay-window-backend', () => ({
   createOverlayWindowBackend: () => ({
     traits: { compositorFocus: mock.overlayWindow.compositorFocus },
@@ -38,46 +29,38 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-it('defers the compositor query until a backend member is first used', async () => {
+it('defers backend selection until a backend member is first used', async () => {
   const { platform } = await import('./platform')
   const { cursor, traits } = platform()
-  expect(mock.version).not.toHaveBeenCalled()
+  expect(mock.overlayWindow.warpTo).not.toHaveBeenCalled()
   cursor.warpTo({ x: 1, y: 2 })
-  expect(mock.hyprland.warpTo).toHaveBeenCalledWith({ x: 1, y: 2 })
-  expect(traits.compositorFocus).toBe(true)
-  expect(platform().id).toBe('hyprland')
-  expect(mock.version).toHaveBeenCalledOnce()
+  expect(mock.overlayWindow.warpTo).toHaveBeenCalledWith({ x: 1, y: 2 })
+  expect(traits.compositorFocus).toBe(false)
+  expect(platform().id).toBe('x11')
 })
 
-it('routes to the overlay-window backend outside a Hyprland session', async () => {
-  vi.stubEnv('HYPRLAND_INSTANCE_SIGNATURE', '')
+it('leaves a Hyprland session to the layer-shell backend registered at boot', async () => {
   const { platform } = await import('./platform')
   platform().cursor.warpTo({ x: 1, y: 2 })
+  // No native overlay was registered in this process, so the generic X11
+  // overlay remains the fallback. Hyprland itself no longer owns a backend.
   expect(mock.overlayWindow.warpTo).toHaveBeenCalledWith({ x: 1, y: 2 })
-  expect(platform().traits.compositorFocus).toBe(false)
   expect(platform().id).toBe('x11')
-  expect(mock.version).not.toHaveBeenCalled()
 })
 
-it('subscribes to game window events and reads target focus without a compositor query', async () => {
+it('subscribes to game window events and reads target focus without selecting a backend', async () => {
   const { platform } = await import('./platform')
   const listener = () => {}
   platform().windowTracker.events.on('focus', listener)
   expect(mock.controller.events.on).toHaveBeenCalledWith('focus', listener)
   expect(platform().windowTracker.targetHasFocus).toBe(true)
-  expect(mock.version).not.toHaveBeenCalled()
+  expect(mock.overlayWindow.warpTo).not.toHaveBeenCalled()
 })
 
-it.each([
-  ['test', 'hyprland'],
-  ['', 'overlayWindow'],
-] as const)('routes capture with its options to the selected backend (signature %j)', async (signature, routed) => {
-  vi.stubEnv('HYPRLAND_INSTANCE_SIGNATURE', signature)
-  const other = routed === 'hyprland' ? 'overlayWindow' : 'hyprland'
+it('routes capture with its options to the selected backend', async () => {
   const { platform } = await import('./platform')
   await platform().capture.captureGame({ skipFocusGate: true })
-  expect(mock[routed].capture).toHaveBeenCalledWith({ skipFocusGate: true })
-  expect(mock[other].capture).not.toHaveBeenCalled()
+  expect(mock.overlayWindow.capture).toHaveBeenCalledWith({ skipFocusGate: true })
 })
 
 it.each(['linux', 'darwin'])('never starts the Windows admin check on %s', async (os) => {

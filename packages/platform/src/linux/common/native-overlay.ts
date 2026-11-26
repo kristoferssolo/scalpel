@@ -12,8 +12,8 @@ export type NativeInputEvent =
 /**
  * Generic native-overlay boundary.
  *
- * Compositor-specific backends (KWin/KDE layer-shell, Hyprland, generic
- * wlr-layer-shell) register themselves here. Feature code only sees this
+ * Compositor-specific backends (KWin/KDE layer-shell and the generic
+ * wlr-layer-shell host) register themselves here. Feature code only sees this
  * facade, so compositor-specific imports stay behind the backend.
  */
 

@@ -8,6 +8,7 @@ const mock = vi.hoisted(() => ({
   focus: vi.fn(),
   unmap: vi.fn(),
   allowed: true,
+  compositorFocus: true,
   panelFocus: vi.fn(),
   pointer: { x: 150, y: 150 },
   secondary: null as any,
@@ -43,7 +44,11 @@ vi.mock('electron', () => ({
 vi.mock('@scalpel/platform', () => {
   const targetBounds = { x: 0, y: 0, width: 1000, height: 800 }
   const instance = {
-    traits: { compositorFocus: true },
+    traits: {
+      get compositorFocus() {
+        return mock.compositorFocus
+      },
+    },
     input: {
       on: (name: string, cb: any) => {
         mock.mouse[name] = cb
@@ -103,10 +108,15 @@ import {
 import { desktop } from './desktop'
 let window: ReturnType<typeof createOverlayWindow>
 
-describe('Hyprland manual dialog focus', () => {
+beforeEach(() => {
+  mock.compositorFocus = true
+})
+
+describe('Compositor manual dialog focus', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     mock.allowed = true
+    mock.compositorFocus = true
     installOverlayInputListeners()
     window = createOverlayWindow(2)
     setCloseOnClickOutside(false)
@@ -174,9 +184,16 @@ describe('Hyprland manual dialog focus', () => {
     expect(window.isVisible()).toBe(true)
     expect(mock.activate).toHaveBeenCalledTimes(2)
   })
+  it('unmaps an X11 overlay when hidden instead of leaving a transparent surface mapped', () => {
+    mock.compositorFocus = false
+    mock.unmap.mockClear()
+    hideOverlay()
+    expect(mock.unmap).toHaveBeenCalledOnce()
+    expect(window.isVisible()).toBe(false)
+  })
 })
 
-describe('Hyprland annotation interaction', () => {
+describe('Compositor annotation interaction', () => {
   it('focuses a secondary panel on hover and returns focus to the game on exit', async () => {
     vi.useFakeTimers()
     mock.allowed = true

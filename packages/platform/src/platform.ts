@@ -3,6 +3,7 @@ import { reportBreadcrumb } from './common/diagnostics'
 import { electronClipboard } from './common/electron'
 import { uiohookInput } from './common/input'
 import { createLinuxClipboard } from './linux/common/clipboard'
+import { getLinuxDesktop } from './linux/common/desktop'
 import { isNativeWayland } from './linux/common/display'
 import { createLinuxInput } from './linux/common/input'
 import { platformShortcuts } from './linux/common/global-shortcuts'
@@ -10,7 +11,7 @@ import { createLayerShellBackend } from './linux/common/layer-shell/backend'
 import { nativeOverlayBackendId } from './linux/common/native-overlay'
 import { linuxRegularWindowMode } from './linux/common/layer-shell/windowing'
 import { createRegularWindowBackend } from './linux/common/regular-window/backend'
-import { createLinuxDesktopBackend, readLinuxDesktopVersion } from './linux/desktops'
+import { linuxDesktopAdapter } from './linux/desktops'
 import { createOverlayWindowBackend, type OverlayWindowBackendId } from './overlay-window-backend'
 import { isElevated as windowsIsElevated } from './ms-windows/elevation'
 import { currentEnv, detectOperatingSystem, selectBackend } from './select'
@@ -39,13 +40,14 @@ function active(): { id: BackendId; backend: Backend } {
   } else if (overlayId === 'layer-shell' || overlayId === 'kwin-layer-shell') {
     selected = { id: overlayId, backend: createLayerShellBackend() }
   } else {
-    const id = selectBackend(currentEnv(), readLinuxDesktopVersion)
-    const desktopBackend = createLinuxDesktopBackend(id)
-    selected = desktopBackend
-      ? { id, backend: desktopBackend }
-      : // selectBackend only returns an overlay id when the desktop has no
-        // backend of its own (windows/macos/x11).
-        { id, backend: createOverlayWindowBackend(id as OverlayWindowBackendId) }
+    const env = currentEnv()
+    const id = selectBackend(env)
+    // Only the shared X11/XWayland overlay has a desktop-specific decoration
+    // hook. Resolve it from the profile boot already selected; an Auto profile
+    // has no compositor-specific integration here.
+    const desktop = getLinuxDesktop()
+    const x11Overlay = id === 'x11' && desktop !== 'auto' ? linuxDesktopAdapter(desktop).x11Overlay : undefined
+    selected = { id, backend: createOverlayWindowBackend(id as OverlayWindowBackendId, x11Overlay) }
   }
   reportBreadcrumb(`platform backend selected id=${selected.id} native=${overlayId ?? '-'}`, 'debug')
   return selected

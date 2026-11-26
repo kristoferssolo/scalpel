@@ -1,3 +1,4 @@
+import type { BrowserWindow } from 'electron'
 import type { HostFeatures, LayerTracker, TrackerEvent } from 'electron-overlay-window'
 import type { ConcreteLinuxDesktopPreference } from '../../linux-settings'
 import type { LinuxDesktopDefaults } from '../../settings-rules'
@@ -56,6 +57,16 @@ export interface LayerShellIntegration {
   stop?(): void
 }
 
+/**
+ * Optional compositor integration for the shared X11/XWayland overlay window.
+ *
+ * `prepare` is called when an overlay window is shown. Implementations must be
+ * best-effort: an unavailable compositor CLI may not affect the overlay.
+ */
+export interface X11OverlayIntegration {
+  prepare(win: BrowserWindow): void
+}
+
 /** A desktop adapter: shared backends ask for it instead of naming a desktop. */
 export interface LinuxDesktopAdapter {
   /** Resolved desktop id; undefined for the generic adapter. */
@@ -73,6 +84,8 @@ export interface LinuxDesktopAdapter {
   ): 'x11' | 'wayland' | null
   /** Layer-shell hooks, when this desktop can host the native overlay. */
   readonly layerShell?: LayerShellIntegration
+  /** Decorations after a shared X11/XWayland overlay window maps. */
+  readonly x11Overlay?: X11OverlayIntegration
   /** Focus tracking for non-layer-shell modes (regular window, X11 overlay). */
   startFocusTracking?(): void
 }
